@@ -19,7 +19,7 @@ class LLMConfig(BaseModel):
       Groq       → GROQ_API_KEY
     """
 
-    model: str = "gpt-4o-mini"
+    model: str = "claude-sonnet-4-6"
     temperature: float = 0.0
     max_tokens: int = 512
     timeout: int = 30

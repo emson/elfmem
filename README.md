@@ -10,7 +10,7 @@ from elfmem import MemorySystem
 
 async def main():
     system = await MemorySystem.from_config("agent.db", {
-        "llm": {"model": "gpt-4o-mini"},
+        "llm": {"model": "claude-sonnet-4-6"},
         "embeddings": {"model": "text-embedding-3-small", "dimensions": 1536},
     })
 
@@ -42,6 +42,12 @@ asyncio.run(main())
 - **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to local Ollama with a config change.
 
 ## Installation
+
+```bash
+uv add elfmem
+```
+
+Or with pip:
 
 ```bash
 pip install elfmem
@@ -118,8 +124,8 @@ Each frame uses different weights. SELF emphasizes confidence and reinforcement.
 
 ```python
 system = await MemorySystem.from_config("agent.db")
-# Uses gpt-4o-mini for LLM, text-embedding-3-small for embeddings
-# Requires OPENAI_API_KEY environment variable
+# Uses claude-sonnet-4-6 for LLM, text-embedding-3-small for embeddings
+# Requires ANTHROPIC_API_KEY environment variable
 ```
 
 ### YAML config file
@@ -127,8 +133,8 @@ system = await MemorySystem.from_config("agent.db")
 ```yaml
 # elfmem.yaml
 llm:
-  model: "gpt-4o-mini"
-  contradiction_model: "gpt-4o"  # higher precision for contradictions
+  model: "claude-sonnet-4-6"
+  contradiction_model: "claude-opus-4-6"  # higher precision for contradictions
 
 embeddings:
   model: "text-embedding-3-small"
@@ -161,9 +167,9 @@ embeddings:
 ### Environment variables
 
 ```bash
-export OPENAI_API_KEY=sk-...
-# or
 export ANTHROPIC_API_KEY=sk-ant-...
+# or
+export OPENAI_API_KEY=sk-...
 # or any provider LiteLLM supports
 ```
 
@@ -311,20 +317,20 @@ src/elfmem/
 
 ```bash
 # Clone
-git clone https://github.com/your-org/elfmem.git
+git clone https://github.com/emson/elfmem.git
 cd elfmem
 
 # Install with dev dependencies
-pip install -e ".[dev]"
+uv sync --extra dev
 
 # Run tests (no API key needed — uses deterministic mocks)
-pytest
+uv run pytest
 
 # Type checking
-mypy
+uv run mypy --ignore-missing-imports src/elfmem/
 
 # Lint
-ruff check src/ tests/
+uv run ruff check src/ tests/
 ```
 
 ### Testing Philosophy
