@@ -21,11 +21,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Import the schema metadata so Alembic can diff against it
-# (populated once db/models.py is created in Step 3)
-try:
-    from elfmem.db.models import metadata as target_metadata
-except ImportError:
-    target_metadata = None  # type: ignore[assignment]
+from elfmem.db.models import metadata as target_metadata
 
 # Allow DATABASE_URL env var to override alembic.ini
 database_url = os.environ.get("ELFMEM_DATABASE_URL", config.get_main_option("sqlalchemy.url"))

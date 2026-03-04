@@ -17,6 +17,7 @@ dependencies = [
     "litellm>=1.30",
     "instructor>=1.2",
     "pyyaml>=6.0",
+    "greenlet>=3.3.2",
 ]
 
 [project.optional-dependencies]
