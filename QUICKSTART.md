@@ -1,17 +1,12 @@
-# Quick Start: AMGS Simulation
+# Quick Start: elfmem Simulation
 
-A document-driven simulation where Claude reasons through the system's behavior using
-structured markdown files with worked mathematical examples.
+**elfmem** (ELF Memory) is a Python library for adaptive, self-aware memory systems in LLM agents.
 
----
+This document-driven simulation uses markdown files where Claude reasons through the system's behavior
+with worked mathematical examples. Every computation is explicit and editable — this is the **whiteboard**
+for building confidence that the architecture works before implementation.
 
-## What Is This?
-
-Instead of running Python code, we use markdown files as the simulation medium. Every
-computation is explicit and editable. This is the **whiteboard** for exploring architectural
-ideas before writing code.
-
-**Goal:** Rapidly test design concepts and build confidence that the architecture works.
+**Goal:** Understand the elfmem design through 26 structured explorations covering architecture, integration, and refinement.
 
 ---
 
@@ -98,17 +93,23 @@ I'll trace through the math and explain each component.
 
 ---
 
-## The Five Explorations
+## The 26 Explorations
 
-| # | Title | Key Question | Main Insight |
-|---|-------|--------------|--------------|
-| 001 | Basic Decay | How long do blocks survive? | Standard blocks die in 12.5 days without reinforcement |
-| 002 | Confidence Trap | Does ATTENTION frame work? | Yes, query-similarity dominates; the bug was corpus composition |
-| 003 | SELF Scoring | How does a full frame assembly work? | Reinforcement is so powerful it can override self-tagging |
-| 004 | Self Interest Model | Should self gate learning or influence it? | Soft bias, not hard gates; self grows naturally without blocking |
-| 005 | Decay Sophistication | Why does wall-clock decay kill knowledge on holidays? | Separate staleness (time), interference (events), disuse (usage) |
+**By category:**
+- **001–022:** Core architecture (memory blocks, decay, scoring, frames, graph, storage, retrieval, layers)
+- **023:** Agent usage patterns — LLM agents using elfmem across sessions
+- **024:** System refinement — comprehensive audit and unified design
+- **025–026:** External integrations — LLM gateway (LiteLLM + instructor) and prompt customisation
 
-**Start with 001, read in order. They build on each other.**
+**Key explorations to start with:**
+- **001:** Basic decay — Standard knowledge dies in 12.5 days without reinforcement
+- **004:** Self interest model — Soft bias (not hard gates); identity grows with usage
+- **015:** Context frames — SELF, ATTENTION, TASK frames, scoring weights
+- **023:** Agent usage — How agents use elfmem across sessions
+- **024:** System refinement — Comprehensive audit and design decisions
+- **025–026:** LLM integration — Provider switching, prompt customisation
+
+**Full index:** See `sim/EXPLORATIONS.md` for all 26 explorations with links and summaries.
 
 ---
 

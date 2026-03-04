@@ -1,8 +1,10 @@
-# AMGS Markdown Simulation
+# elfmem Design Simulation
 
-A document-driven simulation of the Adaptive Memory Graph System.
-Instead of running Python code, we reason through the system's behavior
-using structured markdown files with embedded YAML state.
+A comprehensive document-driven specification system for **elfmem** (ELF Memory),
+an adaptive, self-aware memory system for LLM agents.
+
+Instead of writing code immediately, we reason through the system's behavior
+using structured markdown files with explicit mathematical computation and design reasoning.
 
 ## How It Works
 

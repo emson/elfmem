@@ -1,21 +1,15 @@
-# START HERE
+# START HERE — elfmem
 
-You now have a complete markdown-based simulation system ready to use.
+**elfmem** (ELF Memory) is a Python library for building adaptive, self-aware memory systems for LLM agents.
 
----
+This repository contains a complete markdown-based simulation and specification system for the elfmem architecture with **26 complete explorations** covering all major design areas and decisions.
 
-## What Was Built
+**Core architecture (001–022):** Memory blocks, decay, scoring, frames, graph layer, retrieval pipelines, four-layer architecture
+**Agent integration (023):** How LLM agents use elfmem over sessions, with SELF evolution patterns
+**System refinement (024):** Comprehensive audit and unified design
+**External integrations (025–026):** LLM gateway (LiteLLM, instructor), prompt customisation, per-call-type model overrides
 
-A document-driven simulation of the AMGS architecture with **5 complete explorations**
-covering the major design areas:
-
-1. **001:** Decay — how long knowledge survives
-2. **002:** Scoring — ATTENTION frame correctness  
-3. **003:** Frames — complete SELF assembly with graph
-4. **004:** Self — hard gates vs. soft bias (MAJOR DECISION)
-5. **005:** Decay 2.0 — staleness, interference, disuse
-
-**~1,900 lines** of worked mathematical examples, design insights, and decision records.
+**~8,000+ lines** of worked mathematical examples, design decisions, and implementation specifications.
 
 ---
 
@@ -51,13 +45,13 @@ You'll understand all major design decisions and see the mathematical evidence b
 
 ## Key Documents
 
-| Document | Purpose | Length | Read When |
-|----------|---------|--------|-----------|
-| **QUICKSTART.md** | Overview, file structure, how to use | 250 lines | First |
-| **SIMULATION_OVERVIEW.md** | Philosophy, phases, insights | 380 lines | After quickstart |
-| **sim/README.md** | Detailed guide, formulas, conventions | 276 lines | When writing explorations |
-| **sim/EXPLORATIONS.md** | Index, navigation, decisions made | 226 lines | To find topics |
-| **sim/explorations/001-005** | The actual explorations | 1,355 lines | As questions arise |
+| Document | Purpose | Read When |
+|----------|---------|-----------|
+| **QUICKSTART.md** | Quick overview, how to navigate | First (5 min) |
+| **SIMULATION_OVERVIEW.md** | Philosophy, what elfmem solves | After quickstart |
+| **sim/EXPLORATIONS.md** | Index of all 26 explorations, decisions, open questions | To find topics |
+| **sim/README.md** | Detailed guide, formulas, conventions | When exploring specific topics |
+| **docs/amgs_architecture.md** | Full elfmem specification | Reference |
 
 ---
 

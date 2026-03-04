@@ -1,13 +1,32 @@
-# The AMGS Markdown Simulation
+# The elfmem Design Simulation
 
 ## What Was Built
 
-A document-driven simulation system for exploring the Adaptive Memory Graph System architecture.
+A comprehensive document-driven specification system for **elfmem** (ELF Memory), a Python library
+for adaptive, self-aware memory systems in LLM agents.
+
 Instead of writing code immediately, we use structured markdown files as the simulation medium,
 where Claude reasons through the system's behavior using explicit mathematical computation.
 
-This is the **whiteboard phase** — before implementation, we build confidence that the design
-actually works by testing it against concrete scenarios.
+This is the **specification and design validation phase** — 26 complete explorations building
+confidence that the architecture works through rigorous design reasoning before implementation.
+
+---
+
+## What Is elfmem?
+
+**elfmem** (ELF Memory) is a Python library that gives LLM agents adaptive, self-aware memory systems.
+
+**Core capabilities:**
+- **Knowledge graphs:** Blocks (immutable markdown), edges (relationships), graph expansion
+- **Identity persistence:** SELF frame captures agent personality, values, constraints
+- **Adaptive decay:** Knowledge survives longer when used, fades when ignored
+- **Retrieval:** Hybrid 4-stage pipeline (pre-filter → vector search → graph expansion → composite score)
+- **Lifecycle:** learn() → consolidate() → curate() → recall() with automatic transitions
+- **LLM integration:** Configurable providers (OpenAI, Anthropic, Groq, local Ollama), structured outputs
+- **Prompt customisation:** Override alignment, tagging, and contradiction detection prompts
+
+**Target:** Single-agent systems, 50–500 blocks, SQLite backend, zero infrastructure
 
 ---
 
@@ -15,23 +34,24 @@ actually works by testing it against concrete scenarios.
 
 ```
 elf0_mem_sim/
-├── QUICKSTART.md                    ← START HERE (5 min read)
+├── START_HERE.md                    ← Entry point
+├── QUICKSTART.md                    ← Quick overview (5 min)
 ├── SIMULATION_OVERVIEW.md           ← This file
 ├── docs/
-│   ├── amgs_architecture.md         (the full spec — 750 lines)
-│   ├── amgs_instructions.md         (old Python sim guide)
-│   └── notes.md                     (observations from Python sim)
+│   ├── amgs_architecture.md         (full specification ~ 1000 lines)
+│   ├── amgs_instructions.md         (old Python sim reference)
+│   └── notes.md                     (Python sim observations)
 ├── sim/
-│   ├── README.md                    (detailed guide to writing explorations)
-│   ├── EXPLORATIONS.md              (index of all explorations)
+│   ├── README.md                    (explorations guide & formulas)
+│   ├── EXPLORATIONS.md              (index of 26 explorations + decisions)
 │   └── explorations/
-│       ├── _template.md             (blank template for new explorations)
-│       ├── 001_basic_decay.md       (decay profiles and survival timelines)
-│       ├── 002_confidence_trap.md   (ATTENTION frame scoring correctness)
-│       ├── 003_scoring_walkthrough.md (full SELF frame assembly)
-│       ├── 004_self_interest_model.md (self as filter vs. context)
-│       └── 005_decay_sophistication.md (staleness, interference, disuse)
-└── (playgrounds/ and specs/ — future phases)
+│       ├── _template.md             (blank template)
+│       ├── 001–022_core/            (architecture, storage, retrieval, layers)
+│       ├── 023_agent_usage.md       (LLM agent patterns & SELF evolution)
+│       ├── 024_system_refinement.md (design audit & unification)
+│       ├── 025_llm_gateway.md       (LiteLLM, instructor, config)
+│       └── 026_prompt_overrides.md  (custom prompts, per-call models)
+└── (playgrounds/ and specs/ — Phase 2+)
 ```
 
 ---
@@ -69,7 +89,16 @@ What if we... ← Run variation ← Compare to baseline ← Design decision
 
 ---
 
-## The Five Explorations
+## The 26 Explorations — By Category
+
+**Core Architecture (001–022):** Memory blocks and decay (001–005), self-concept and tagging (006–012),
+graph structures (013–014), context frames (015–016), storage layer (017–019), graph algorithms (020),
+retrieval pipelines (021), four-layer architecture (022).
+
+**Integration & Refinement (023–026):** Agent usage patterns (023), system audit and refinement (024),
+LLM gateway and configuration (025), prompt customisation and overrides (026).
+
+---
 
 ### 001: Basic Decay Showdown
 

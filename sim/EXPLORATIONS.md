@@ -1,11 +1,12 @@
-# Explorations Index
+# elfmem Explorations Index
 
-A catalog of Phase 1 micro-scenarios. Each exploration answers one question about
-the AMGS design through worked mathematical examples.
+A complete catalog of 26 explorations for **elfmem** (ELF Memory), an adaptive, self-aware memory system for LLM agents.
+
+Each exploration answers one design question through worked mathematical examples, design decisions, and implementation insights.
 
 ---
 
-## The Twenty-Four Explorations (So Far)
+## The Twenty-Six Explorations (So Far)
 
 ### 001 — Basic Decay Showdown
 
@@ -762,6 +763,95 @@ inelegance. Refactor into the most robust, flexible, and elegant form.
 
 ---
 
+### 025 — LLM Gateway: Configuration, Providers, and Structured Outputs
+
+**Question:** AMGS makes three LLM calls (score_self_alignment, infer_self_tags,
+detect_contradiction) and one embedding call. How should the gateway be designed
+for easy provider switching, reliable structured outputs, and clean configuration?
+
+**Key result:** LiteLLM as unified backend + instructor for structured outputs.
+Provider switching is a one-line config change (model name only). API keys come
+from env vars. Config in YAML. Factory method `MemorySystem.from_config()`.
+
+**LiteLLM model naming convention encodes the provider:**
+- `"gpt-4o-mini"` → OpenAI, reads `OPENAI_API_KEY`
+- `"anthropic/claude-haiku-4-5-20251001"` → Anthropic, reads `ANTHROPIC_API_KEY`
+- `"ollama/llama3.2"` + `base_url` → local Ollama, no API key
+- `"groq/llama-3.1-8b-instant"` → Groq, reads `GROQ_API_KEY`
+
+**Structured outputs via `instructor`:** Wraps LiteLLM, forces Pydantic-validated
+responses, auto-retries on malformed output. Three Pydantic response models:
+`AlignmentScore` (float), `SelfTagInference` (validated list[str]), `ContradictionScore` (float).
+
+**Config hierarchy:** `MemorySystem.from_config()` accepts: None (reads `AMGS_CONFIG`
+env var, falls back to defaults), YAML path, dict, or `AMGSConfig` object.
+Fully programmatic constructor still available for custom adapter injection.
+
+**6 production dependencies:** sqlalchemy, alembic, pydantic + pydantic-settings,
+numpy, litellm, instructor, pyyaml.
+
+**Design Decisions:** 10 locked decisions covering provider selection, output
+validation, config loading, secrets handling, and test mocking strategy.
+
+---
+
+### 026 — Prompt Override Mechanism
+
+**Question:** AMGS ships three default prompts for alignment scoring, tag
+inference, and contradiction detection. How can library users override these
+prompts for domain-specific agents — without modifying library code?
+
+**Key result:** Three levels of override. Level 1 (inline in YAML): paste the
+custom prompt string under `prompts.self_alignment`. Level 2 (file reference):
+point `prompts.contradiction_file` at a `.txt` file. Level 3 (subclass):
+extend `LiteLLMAdapter` and override any method.
+
+**The gap fixed:** `MemorySystem.from_config()` was not passing any prompts to
+`LiteLLMAdapter`. A new `PromptsConfig` section in `AMGSConfig` closes this.
+One line change in the factory: `LiteLLMAdapter(cfg.llm, cfg.prompts)`.
+
+**SelfTagInference change:** The `@field_validator` on `SelfTagInference.tags`
+that used the module-level `VALID_SELF_TAGS` constant is removed. Tag filtering
+moves to the adapter, which has access to the configured vocabulary. This allows
+`valid_self_tags` in `PromptsConfig` to replace the default tag set.
+
+**Per-call-type model overrides (from 025 open question #3):** Resolved by adding
+optional `alignment_model`, `tags_model`, `contradiction_model` fields to
+`LLMConfig`. Each defaults to the base `model`. Contradiction detection, where
+false positives are costly, can target a higher-precision model while alignment
+scoring uses a cheap model. No code changes — config only.
+
+**Template variable reference:**
+- `self_alignment` and `self_tags` require: `{self_context}`, `{block}`
+- `contradiction` requires: `{block_a}`, `{block_b}`
+
+**Optional validation:** `cfg.prompts.validate_templates()` at startup detects
+missing variables before any LLM calls. Failure is loud (`ValueError`) not silent.
+
+**Design Decisions:** 9 locked decisions covering priority (inline > file > default),
+tag vocabulary semantics (replace not augment), model override orthogonality to prompts.
+
+---
+
+## Phase 2: Playgrounds
+
+Test specification documents organized by subsystem. Each playground contains:
+formal invariants, explicit PASS/FAIL test cases, parameter tuning scenarios,
+and a Python test sketch directly translatable to `pytest`.
+
+| Playground | Test Cases | Status |
+|-----------|------------|--------|
+| `sim/playgrounds/scoring/` | 12 TC + 3 tuning | Draft |
+| `sim/playgrounds/decay/` | 10 TC + 4 tuning | Draft |
+| `sim/playgrounds/lifecycle/` | 14 TC + 4 tuning | Draft |
+| `sim/playgrounds/frames/` | 10 TC + 3 tuning | Draft |
+| `sim/playgrounds/retrieval/` | 8 TC + 2 tuning | Draft |
+| `sim/playgrounds/graph/` | 10 TC + 2 tuning | Draft |
+
+See `sim/playgrounds/README.md` for format guide.
+
+---
+
 ## How to Extend
 
 Each exploration ends with **Variations** — ideas for follow-up explorations:
@@ -787,7 +877,7 @@ Or ask Claude: "Run variation 3 from exploration 001"
 
 ## Design Decisions Made
 
-From these twenty-four explorations, the following decisions are locked in:
+From these twenty-five explorations, the following decisions are locked in:
 
 | Decision | Exploration | Rationale |
 |----------|-------------|-----------|
@@ -948,6 +1038,25 @@ From these twenty-four explorations, the following decisions are locked in:
 | `memory/decay.py` removed; decay computed in `scoring.py` | 024 | Decay weight is a function, not stored state |
 | `consolidate()` auto-triggered at `end_session()` | 024 | Developer doesn't need to remember; inbox always processed |
 | `curate()` auto-triggered at `begin_session()` | 024 | Maintenance runs before session starts |
+| LiteLLM as unified LLM + embedding backend | 025 | One dependency, 100+ providers; provider switch = model name change only |
+| `instructor` for all structured LLM outputs | 025 | Pydantic-validated; auto-retry on malformed output; provider-agnostic |
+| API keys from env vars only, never in config files | 025 | LiteLLM reads standard env vars automatically; prevents credential leaks |
+| `AMGSConfig` (Pydantic) as single config source of truth | 025 | Validated at load time; LLM, embedding, and memory tuning all in one place |
+| YAML config for structure; env vars for secrets | 025 | Clean separation: app behaviour (YAML) vs credentials (env) |
+| `AMGS_CONFIG` env var as implicit config file pointer | 025 | Container/CI override without code change |
+| Prompts in `amgs/prompts.py` as named string constants | 025 | Visible, reviewable, overridable at construction time |
+| `LLMConfig.base_url` enables local Ollama support | 025 | Zero-cost local development and testing without API keys |
+| `MemorySystem.from_config()` factory accepts path / dict / object / None | 025 | All config styles supported; fully programmatic constructor still available |
+| Mock services use text-hash seeding for deterministic embeddings | 025 | Same text → same vector → deterministic similarity tests |
+| `PromptsConfig` in `AMGSConfig` — prompts are config-level, not code-level | 026 | Prompt changes are deployment concerns; no code changes needed |
+| Inline prompt override takes priority over file override | 026 | Inline is explicit; file is referenced; explicit beats implicit |
+| Prompt files resolved at adapter construction time, not at YAML parse time | 026 | One file read per adapter instance; I/O not triggered at config import |
+| `valid_self_tags` list replaces (not augments) default tags | 026 | Prevents silent tag accumulation; explicit opt-in for all tags in vocabulary |
+| Tag filtering moves from `SelfTagInference` validator to adapter | 026 | Adapter has configured vocabulary; Pydantic model captures raw LLM output only |
+| Per-call model overrides on `LLMConfig` (alignment_model, tags_model, contradiction_model) | 026 | Model selection is an LLM concern; prompts and models are orthogonal |
+| Subclassing `LiteLLMAdapter` is the Level 3 escape hatch | 026 | Full method override; no framework-level hooks needed |
+| `validate_templates()` is opt-in, not enforced at load time | 026 | Startup check is optional; config loading stays synchronous and side-effect-free |
+| No hot-reload of prompts — resolved once at startup | 026 | Process restart required for prompt changes; simplest mental model |
 
 ---
 
@@ -1011,6 +1120,14 @@ Some questions are unanswered and worth exploring:
 | Active hours crash recovery: periodic flush vs session-end-only? | 024 | Unanswered |
 | Does frame `extends=` inheritance survive the refactoring? | 024 | Yes — compatible with refined FrameDefinition |
 | `forget()` confirmation flow: immediate vs return-candidates-first? | 024 | Unanswered |
+| Should the adapter support batched LLM calls for consolidate()? | 025 | Phase 2 — serial fine for small inbox |
+| Should AMGS log LLM token costs to a `llm_costs` table? | 025 | Unanswered |
+| Per-method model overrides (large model for contradiction, small for alignment)? | 025 | **Resolved in 026** — `alignment_model`, `tags_model`, `contradiction_model` in `LLMConfig` |
+| Should `frame()` be async (required since `embed()` is async)? | 025 | Yes — consistently async API is cleaner |
+| Should custom prompt templates be stored in `system_config` table for DB-level versioning? | 026 | Unanswered — config files sufficient for Phase 1 |
+| Should a prompt hash be stored alongside alignment scores for drift detection? | 026 | Unanswered — adds schema complexity; Phase 2 consideration |
+| Should `begin_session()` accept a prompt override for per-session customisation? | 026 | Unanswered — Phase 2 extension |
+| Should the template engine upgrade from `str.format()` to Jinja2 for complex prompts? | 026 | Phase 2 if prompts need conditionals or partials; `str.format()` sufficient for Phase 1 |
 
 These can drive Phase 2 explorations.
 
@@ -1018,6 +1135,12 @@ These can drive Phase 2 explorations.
 
 ## Reference
 
-- **README.md:** How to write and run explorations
-- **docs/amgs_architecture.md:** The full specification
-- **docs/notes.md:** Previous Python sim observations
+- **START_HERE.md:** Project entry point
+- **QUICKSTART.md:** Quick overview of explorations
+- **sim/README.md:** How to write and run explorations
+- **docs/amgs_architecture.md:** The full elfmem specification
+- **docs/notes.md:** Previous Python simulator observations
+
+---
+
+**Project:** [elfmem](https://github.com/yourusername/elfmem) — Self-aware memory for LLM agents
