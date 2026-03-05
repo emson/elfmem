@@ -11,7 +11,7 @@ import pytest
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.db.engine import create_test_engine
-from elfmem.db.queries import get_block, seed_builtin_data
+from elfmem.db.queries import get_block, seed_builtin_data, update_block_scoring
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.learn import learn
 from elfmem.operations.outcome import compute_bayesian_update, record_outcome
@@ -365,7 +365,9 @@ class TestOutcomeAPI:
     async def test_to_dict_has_correct_keys(self, system):
         result = await system.outcome([], signal=0.8)
         d = result.to_dict()
-        assert set(d.keys()) == {"blocks_updated", "mean_confidence_delta", "edges_reinforced"}
+        assert set(d.keys()) == {
+            "blocks_updated", "mean_confidence_delta", "edges_reinforced", "blocks_penalized"
+        }
 
     async def test_works_without_active_session(self, system):
         # No session started
@@ -425,3 +427,174 @@ class TestOutcomeAPI:
         confidence_after = next(b.confidence for b in blocks_after if b.id == block_id)
 
         assert confidence_after < confidence_initial
+
+
+# ── TestOutcomePenalize ────────────────────────────────────────────────────────
+
+
+class TestOutcomePenalize:
+    """Tests for the automatic penalize branch in record_outcome()."""
+
+    async def test_outcome_penalizes_blocks_when_signal_below_threshold(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "penalize me")
+            lambda_before = (await get_block(conn, block_id))["decay_lambda"]
+
+            await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.05,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+            lambda_after = (await get_block(conn, block_id))["decay_lambda"]
+
+        assert lambda_after > lambda_before
+
+    async def test_outcome_does_not_penalize_when_signal_above_threshold(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "no penalize")
+            lambda_before = (await get_block(conn, block_id))["decay_lambda"]
+
+            await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.80,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+            lambda_after = (await get_block(conn, block_id))["decay_lambda"]
+
+        assert lambda_after == lambda_before
+
+    async def test_outcome_penalize_respects_lambda_ceiling(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "ceiling block")
+            # Set lambda near ceiling so multiplication would exceed it
+            await update_block_scoring(conn, block_id, decay_lambda=0.040)
+
+            await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.05,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+            lambda_after = (await get_block(conn, block_id))["decay_lambda"]
+
+        assert lambda_after <= 0.050
+
+    async def test_outcome_penalize_skips_durable_blocks(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "durable block")
+            await update_block_scoring(conn, block_id, decay_lambda=0.001)  # DURABLE tier
+
+            result = await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.05,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+        assert result.blocks_penalized == 0
+
+    async def test_outcome_penalize_skips_permanent_blocks(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "permanent block")
+            await update_block_scoring(conn, block_id, decay_lambda=0.00001)  # PERMANENT tier
+
+            result = await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.05,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+        assert result.blocks_penalized == 0
+
+    async def test_outcome_result_includes_blocks_penalized_count(self, setup):
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "count me")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.05,
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+        assert result.blocks_penalized == 1
+
+    async def test_outcome_penalize_threshold_boundary_at_exactly_threshold(self, setup):
+        """Signal exactly equal to penalize_threshold does NOT trigger penalization."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding, "boundary block")
+            lambda_before = (await get_block(conn, block_id))["decay_lambda"]
+
+            result = await record_outcome(
+                conn,
+                block_ids=[block_id],
+                signal=0.20,  # exactly at threshold — NOT < threshold
+                weight=1.0,
+                source="test",
+                current_active_hours=1.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+                penalize_threshold=0.20,
+                penalty_factor=2.0,
+                lambda_ceiling=0.050,
+            )
+
+            lambda_after = (await get_block(conn, block_id))["decay_lambda"]
+
+        assert result.blocks_penalized == 0
+        assert lambda_after == lambda_before

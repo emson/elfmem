@@ -252,13 +252,17 @@ GUIDES: dict[str, AgentGuide] = {
         returns=(
             "OutcomeResult with: blocks_updated (active blocks whose confidence changed), "
             "mean_confidence_delta (average confidence shift, positive or negative), "
-            "edges_reinforced (graph edges strengthened for positive signals). "
+            "edges_reinforced (graph edges strengthened for positive signals), "
+            "blocks_penalized (blocks whose decay was accelerated for low signals). "
             "blocks_updated=0 means all block_ids were non-active (silently skipped)."
         ),
         next=(
-            "Blocks with positive signal gain confidence and reinforcement (decay-resistant). "
-            "Blocks with negative signal lose confidence and decay naturally. "
-            "Over ~10 outcomes, evidence dominates the LLM alignment prior."
+            "Signal spectrum (default thresholds): "
+            "0.8–1.0 → confidence UP + reinforce (decay resets). "
+            "0.2–0.8 → confidence adjusted only (neutral dead-band). "
+            "0.0–0.2 → confidence DOWN + decay accelerated automatically (no separate call needed). "
+            "Over ~10 outcomes, evidence dominates the LLM alignment prior. "
+            "DURABLE and PERMANENT blocks are never penalized."
         ),
         example=(
             "# Trading: Brier score resolved after 30 days\n"

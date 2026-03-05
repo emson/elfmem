@@ -201,6 +201,7 @@ class OutcomeResult:
     blocks_updated: int
     mean_confidence_delta: float
     edges_reinforced: int
+    blocks_penalized: int = 0
 
     @property
     def summary(self) -> str:
@@ -211,6 +212,9 @@ class OutcomeResult:
         parts = [f"{self.blocks_updated} {noun} updated ({delta_str} avg confidence)"]
         if self.edges_reinforced:
             parts.append(f"{self.edges_reinforced} edges reinforced")
+        if self.blocks_penalized:
+            pen_noun = "block" if self.blocks_penalized == 1 else "blocks"
+            parts.append(f"{self.blocks_penalized} {pen_noun} penalized")
         return f"Outcome recorded: {', '.join(parts)}."
 
     def __str__(self) -> str:
@@ -221,6 +225,7 @@ class OutcomeResult:
             "blocks_updated": self.blocks_updated,
             "mean_confidence_delta": self.mean_confidence_delta,
             "edges_reinforced": self.edges_reinforced,
+            "blocks_penalized": self.blocks_penalized,
         }
 
 

@@ -279,6 +279,37 @@ async def reinforce_blocks(
     )
 
 
+# DURABLE λ=0.001, PERMANENT λ=0.00001 — both at or below this floor are protected.
+_DURABLE_LAMBDA_THRESHOLD: float = 0.001
+
+
+async def accelerate_block_decay(
+    conn: AsyncConnection,
+    block_ids: list[str],
+    penalty_factor: float,
+    lambda_ceiling: float,
+) -> list[tuple[str, float, float]]:
+    """Multiply decay_lambda by penalty_factor for STANDARD/EPHEMERAL tier blocks.
+
+    Skips non-active blocks and DURABLE/PERMANENT tier blocks
+    (decay_lambda <= 0.001).
+
+    Returns list of (block_id, lambda_before, lambda_after) for audit.
+    """
+    audit: list[tuple[str, float, float]] = []
+    for block_id in block_ids:
+        block = await get_block(conn, block_id)
+        if block is None or block["status"] != "active":
+            continue
+        current_lambda = float(block["decay_lambda"])
+        if current_lambda <= _DURABLE_LAMBDA_THRESHOLD:
+            continue  # DURABLE or PERMANENT — protected
+        new_lambda = min(current_lambda * penalty_factor, lambda_ceiling)
+        await update_block_scoring(conn, block_id, decay_lambda=new_lambda)
+        audit.append((block_id, current_lambda, new_lambda))
+    return audit
+
+
 # ── Tag queries ───────────────────────────────────────────────────────────────
 
 async def add_tags(

@@ -651,12 +651,20 @@ class MemorySystem:
 
         RETURNS: OutcomeResult with: blocks_updated (active blocks changed),
         mean_confidence_delta (average shift, positive or negative),
-        edges_reinforced (graph edges strengthened for positive signals).
+        edges_reinforced (graph edges strengthened for positive signals),
+        blocks_penalized (blocks whose decay was accelerated for low signals).
         blocks_updated=0 means all block_ids were non-active (silently skipped).
 
         NEXT: Positive signal → confidence grows + blocks resist decay.
-        Negative signal → confidence falls + blocks decay naturally.
+        Negative signal → confidence falls. Below penalize_threshold (default
+        0.20), blocks also have decay_lambda accelerated automatically.
         After ~10 outcomes, evidence dominates the LLM alignment prior.
+
+        Signal spectrum::
+
+            0.8–1.0  → confidence UP + reinforce (decay resets)
+            0.2–0.8  → confidence adjusted, no reinforcement or penalization
+            0.0–0.2  → confidence DOWN + decay accelerated automatically
 
         Domain signal normalisation (one-liners in agent code)::
 
@@ -695,6 +703,9 @@ class MemorySystem:
                 current_active_hours=current_hours,
                 prior_strength=mem.outcome_prior_strength,
                 reinforce_threshold=mem.outcome_reinforce_threshold,
+                penalize_threshold=mem.penalize_threshold,
+                penalty_factor=mem.penalty_factor,
+                lambda_ceiling=mem.lambda_ceiling,
             )
         self._record_op("outcome", result.summary)
         return result

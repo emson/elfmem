@@ -82,6 +82,16 @@ class MemoryConfig(BaseModel):
     # Minimum signal to trigger block reinforcement and Hebbian edge learning.
     # Blocks below this threshold receive no reinforcement (decay naturally).
 
+    penalize_threshold: float = 0.20
+    # Signal below this triggers decay acceleration (decay_lambda *= penalty_factor).
+    # Dead-band: signals in [penalize_threshold, reinforce_threshold] adjust confidence only.
+
+    penalty_factor: float = 2.0
+    # Multiplier applied to decay_lambda on penalization. Capped at lambda_ceiling.
+
+    lambda_ceiling: float = 0.050
+    # Maximum decay_lambda after penalization. Equals EPHEMERAL tier (0.050).
+
 
 class PromptsConfig(BaseModel):
     """Configuration for LLM prompt templates.
