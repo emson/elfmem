@@ -22,6 +22,8 @@ from elfmem.types import ScoredBlock
 N_SEEDS_MULTIPLIER = 4
 CONTRADICTION_OVERSAMPLE = 2
 DEFAULT_SEARCH_WINDOW_HOURS = 200.0
+# MMR diversity coefficient: 1.0 = pure relevance, 0.0 = pure diversity
+MMR_DIVERSITY_LAMBDA = 0.7
 
 
 async def hybrid_retrieve(
@@ -35,12 +37,13 @@ async def hybrid_retrieve(
     tag_filter: str | None = None,
     search_window_hours: float = DEFAULT_SEARCH_WINDOW_HOURS,
 ) -> list[ScoredBlock]:
-    """Execute the 4-stage hybrid retrieval pipeline.
+    """Execute the 5-stage hybrid retrieval pipeline.
 
     Stage 1 — Pre-filter: active blocks within search window.
     Stage 2 — Vector search: cosine similarity → top N_seeds. (Skipped if no query.)
     Stage 3 — Graph expand: 1-hop neighbours of seeds. (Skipped if no query.)
     Stage 4 — Composite score: rank all candidates.
+    Stage 5 — MMR diversity: reorder for relevance + diversity. (Query-aware only.)
 
     Returns top_k * CONTRADICTION_OVERSAMPLE ScoredBlocks for contradiction headroom.
     """
@@ -85,7 +88,14 @@ async def hybrid_retrieve(
     centralities = await compute_centrality(conn, all_ids)
     max_reinforcement = max((b["reinforcement_count"] for b, _, _ in scored_inputs), default=0)
 
-    return _stage_4_composite_score(
+    # Build embedding map for Stage 5 MMR (extracted before stage 4 scoring)
+    embedding_map: dict[str, Any] = {
+        block["id"]: bytes_to_embedding(block["embedding"])
+        for block, _, _ in scored_inputs
+        if block.get("embedding") is not None
+    }
+
+    ranked = _stage_4_composite_score(
         scored_inputs,
         weights=weights,
         current_active_hours=current_active_hours,
@@ -93,6 +103,12 @@ async def hybrid_retrieve(
         max_reinforcement_count=max_reinforcement,
         top_k=top_k,
     )
+
+    # Stage 5: MMR diversity reordering (query-aware retrievals with embeddings only)
+    if query is not None and len(embedding_map) > 1:
+        ranked = _stage_5_mmr_diversity(ranked, embedding_map, limit=len(ranked))
+
+    return ranked
 
 
 async def _stage_1_prefilter(
@@ -210,3 +226,61 @@ def _stage_4_composite_score(
     scored.sort(key=lambda x: x.score, reverse=True)
     limit = top_k * CONTRADICTION_OVERSAMPLE
     return scored[:limit]
+
+
+def _stage_5_mmr_diversity(
+    candidates: list[ScoredBlock],
+    embeddings: dict[str, Any],
+    limit: int,
+) -> list[ScoredBlock]:
+    """Stage 5: Maximal Marginal Relevance reordering for result diversity.
+
+    Greedily selects blocks maximising:
+        MMR(b) = λ × score(b) − (1−λ) × max_{s∈Selected} cosine_sim(b, s)
+
+    Where λ = MMR_DIVERSITY_LAMBDA. Higher λ favours relevance; lower favours
+    diversity. Blocks without embeddings fall back to score-only selection.
+
+    Effect: prevents the context frame from being dominated by near-duplicate
+    blocks that all score high due to shared reinforcement history.
+
+    Returns `limit` blocks in MMR-priority order.
+    """
+    if len(candidates) <= 1:
+        return candidates[:limit]
+
+    lam = MMR_DIVERSITY_LAMBDA
+    selected: list[ScoredBlock] = []
+    remaining = list(candidates)
+
+    while remaining and len(selected) < limit:
+        best_block: ScoredBlock | None = None
+        best_mmr = float("-inf")
+
+        for block in remaining:
+            block_emb = embeddings.get(block.id)
+
+            if not selected or block_emb is None:
+                # First pick, or block has no embedding: use raw score
+                mmr_val = block.score
+            else:
+                # MMR = λ×relevance − (1−λ)×max_similarity_to_already_selected
+                max_sim = max(
+                    (
+                        cosine_similarity(block_emb, embeddings[s.id])
+                        for s in selected
+                        if s.id in embeddings
+                    ),
+                    default=0.0,
+                )
+                mmr_val = lam * block.score - (1 - lam) * max_sim
+
+            if mmr_val > best_mmr:
+                best_mmr = mmr_val
+                best_block = block
+
+        if best_block is not None:
+            selected.append(best_block)
+            remaining.remove(best_block)
+
+    return selected

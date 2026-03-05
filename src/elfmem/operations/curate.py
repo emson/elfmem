@@ -26,6 +26,8 @@ PRUNE_THRESHOLD = 0.05
 EDGE_PRUNE_THRESHOLD = 0.10
 CURATE_REINFORCE_TOP_N = 5
 CURATE_INTERVAL_HOURS = 40.0
+# Blocks above this percentile of weighted degree are bridge-protected from archival
+BRIDGE_PROTECTION_QUANTILE = 0.80
 
 
 async def should_curate(
@@ -80,8 +82,33 @@ async def _archive_decayed_blocks(
     current_active_hours: float,
     prune_threshold: float,
 ) -> int:
-    """Archive active blocks whose recency has fallen below prune_threshold."""
+    """Archive active blocks whose recency has fallen below prune_threshold.
+
+    Bridge protection: blocks in the top 20% by weighted degree are structurally
+    important connectors and are exempt from archival even when their recency
+    drops below the threshold. This preserves graph connectivity across knowledge
+    clusters that might otherwise be silently severed.
+    """
     active = await get_active_blocks(conn)
+    if not active:
+        return 0
+
+    # Compute weighted degree for all active blocks
+    all_ids = [b["id"] for b in active]
+    degrees = await get_weighted_degree(conn, all_ids)
+
+    # Bridge threshold: 80th percentile of non-zero weighted degrees.
+    # Blocks with degree=0 (isolated) are never bridge-protected.
+    nonzero_degs = sorted(d for d in degrees.values() if d > 0.0)
+    if nonzero_degs:
+        p_idx = min(
+            int(len(nonzero_degs) * BRIDGE_PROTECTION_QUANTILE),
+            len(nonzero_degs) - 1,
+        )
+        bridge_threshold = nonzero_degs[p_idx]
+    else:
+        bridge_threshold = 0.0  # no edges in graph — nothing to protect
+
     archived = 0
     for block in active:
         tags_row = await _get_tags_fast(conn, block["id"])
@@ -89,6 +116,9 @@ async def _archive_decayed_blocks(
         hours_since = current_active_hours - float(block["last_reinforced_at"])
         recency = compute_recency(tier, hours_since)
         if recency < prune_threshold:
+            # Skip archival for highly-connected bridge nodes
+            if bridge_threshold > 0.0 and degrees.get(block["id"], 0.0) >= bridge_threshold:
+                continue
             await update_block_status(conn, block["id"], "archived", archive_reason="decayed")
             archived += 1
     return archived
