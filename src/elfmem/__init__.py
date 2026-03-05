@@ -34,6 +34,7 @@ from elfmem.types import (
     OperationRecord,
     ScoredBlock,
     SystemStatus,
+    TokenUsage,
 )
 
 __all__ = [
@@ -48,6 +49,7 @@ __all__ = [
     "ScoredBlock",
     "SystemStatus",
     "OperationRecord",
+    "TokenUsage",
     # Exceptions
     "ElfmemError",
     "SessionError",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections import deque
@@ -28,6 +29,7 @@ from elfmem.db.queries import (
 from elfmem.exceptions import FrameError
 from elfmem.guide import get_guide
 from elfmem.memory.retrieval import hybrid_retrieve
+from elfmem.token_counter import TokenCounter
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.curate import curate as _curate
 from elfmem.operations.curate import should_curate
@@ -51,6 +53,7 @@ from elfmem.types import (
     OperationRecord,
     ScoredBlock,
     SystemStatus,
+    TokenUsage,
 )
 
 
@@ -80,6 +83,7 @@ class MemorySystem:
         llm_service: LLMService,
         embedding_service: EmbeddingService,
         config: ElfmemConfig | None = None,
+        token_counter: TokenCounter | None = None,
     ) -> None:
         self._engine = engine
         self._llm = llm_service
@@ -89,6 +93,7 @@ class MemorySystem:
         self._session_id: str | None = None
         self._session_started_at: float | None = None  # monotonic seconds
         self._history: deque[OperationRecord] = deque(maxlen=100)
+        self._token_counter = token_counter
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -136,6 +141,10 @@ class MemorySystem:
             await conn.run_sync(metadata.create_all)
             await seed_builtin_data(conn)
 
+        # Shared counter: both adapters record to the same object.
+        # MemorySystem reads it in status() and manages its lifecycle.
+        counter = TokenCounter()
+
         llm_svc = LiteLLMAdapter(
             model=cfg.llm.model,
             temperature=cfg.llm.temperature,
@@ -150,6 +159,7 @@ class MemorySystem:
             tag_prompt=cfg.prompts.resolve_self_tags(),
             contradiction_prompt=cfg.prompts.resolve_contradiction(),
             valid_self_tags=cfg.prompts.resolve_valid_tags(),
+            token_counter=counter,
         )
 
         embedding_svc = LiteLLMEmbeddingAdapter(
@@ -157,6 +167,7 @@ class MemorySystem:
             dimensions=cfg.embeddings.dimensions,
             timeout=cfg.embeddings.timeout,
             base_url=cfg.embeddings.base_url,
+            token_counter=counter,
         )
 
         return cls(
@@ -164,6 +175,7 @@ class MemorySystem:
             llm_service=llm_svc,
             embedding_service=embedding_svc,
             config=cfg,
+            token_counter=counter,
         )
 
     @classmethod
@@ -218,8 +230,9 @@ class MemorySystem:
         COST: Fast. One database read; no LLM calls.
 
         RETURNS: SystemStatus with inbox_count, inbox_threshold, active_count,
-        archived_count, session_active, health ('good'|'attention'), and a
-        suggestion string. Use result.suggestion for the recommended action.
+        archived_count, session_active, health ('good'|'attention'), suggestion,
+        session_tokens (TokenUsage for this session), and lifetime_tokens
+        (TokenUsage all-time). Use result.suggestion for the recommended action.
 
         NEXT: Follow result.suggestion. If health == 'attention', call
         consolidate() to process a full inbox.
@@ -235,6 +248,15 @@ class MemorySystem:
             counts = await get_block_counts(conn)
             last_consolidated = await get_config(conn, "last_consolidated_at") or "never"
             total_active_hours = await get_total_active_hours(conn)
+            lifetime_tokens = _parse_token_usage(
+                await get_config(conn, "lifetime_token_usage")
+            )
+
+        session_tokens = (
+            self._token_counter.snapshot()
+            if self._token_counter is not None
+            else TokenUsage()
+        )
 
         session_active = self._session_id is not None
         session_hours: float | None = None
@@ -258,6 +280,8 @@ class MemorySystem:
             last_consolidated=last_consolidated,
             health=health,
             suggestion=suggestion,
+            session_tokens=session_tokens,
+            lifetime_tokens=lifetime_tokens,
         )
 
     def history(self, last_n: int = 10) -> list[OperationRecord]:
@@ -336,13 +360,16 @@ class MemorySystem:
         existing session_id without starting a new one (idempotent).
         """
         if self._session_id is not None:
-            # Already active — idempotent, return existing session
+            # Already active — idempotent; do NOT reset the token counter
             return self._session_id
 
         async with self._engine.begin() as conn:
             session_id = await _begin_session(conn, task_type=task_type)
         self._session_id = session_id
         self._session_started_at = time.monotonic()
+        # Fresh token slate for every new session
+        if self._token_counter is not None:
+            self._token_counter.reset()
         self._record_op("begin_session", f"Session {session_id[:8]} started.")
         return session_id
 
@@ -361,8 +388,20 @@ class MemorySystem:
         """
         if self._session_id is None:
             return 0.0
+        # Capture and zero the counter before the DB transaction — prevents
+        # any tokens from being double-counted if begin_session follows soon.
+        session_usage = (
+            self._token_counter.reset() if self._token_counter is not None else None
+        )
         async with self._engine.begin() as conn:
             duration = await _end_session(conn, self._session_id)
+            if session_usage is not None:
+                raw = await get_config(conn, "lifetime_token_usage")
+                lifetime = _parse_token_usage(raw)
+                updated = lifetime + session_usage
+                await set_config(
+                    conn, "lifetime_token_usage", json.dumps(updated.to_dict())
+                )
         self._session_id = None
         self._session_started_at = None
         self._record_op("end_session", f"Session ended ({duration:.2f}h active).")
@@ -678,3 +717,23 @@ def _resolve_config(
     if isinstance(config, dict):
         return ElfmemConfig.model_validate(config)
     return config
+
+
+_TOKEN_USAGE_FIELDS = frozenset(
+    {"llm_input_tokens", "llm_output_tokens", "embedding_tokens", "llm_calls", "embedding_calls"}
+)
+
+
+def _parse_token_usage(raw: str | None) -> TokenUsage:
+    """Safely deserialise a TokenUsage from a JSON string stored in system_config.
+
+    Returns ``TokenUsage()`` (all zeros) on any error — missing key, corrupted
+    JSON, or unexpected schema all degrade gracefully rather than raising.
+    """
+    if not raw:
+        return TokenUsage()
+    try:
+        data = json.loads(raw)
+        return TokenUsage(**{k: int(data.get(k, 0)) for k in _TOKEN_USAGE_FIELDS})
+    except (json.JSONDecodeError, TypeError, ValueError, KeyError):
+        return TokenUsage()

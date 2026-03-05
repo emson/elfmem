@@ -196,13 +196,17 @@ GUIDES: dict[str, AgentGuide] = {
         cost="Fast. One database read; no LLM calls.",
         returns=(
             "SystemStatus with: session_active, inbox_count/inbox_threshold, "
-            "active_count, archived_count, health ('good'|'attention'), suggestion. "
-            "Use result.suggestion for the recommended next action."
+            "active_count, archived_count, health ('good'|'attention'), suggestion, "
+            "session_tokens (TokenUsage — LLM + embedding calls this session), "
+            "lifetime_tokens (TokenUsage — all-time total, persisted across restarts). "
+            "Use result.suggestion for the recommended next action. "
+            "Use str(result.session_tokens) for a compact token cost line."
         ),
         next="Follow result.suggestion for the recommended action.",
         example=(
             "s = await system.status()\n"
             "print(s)  # Session: active (0.5h) | Inbox: 8/10 | Active: 42 | Health: good\n"
+            "          # Tokens this session: LLM: 4,820 tokens (9 calls) | Embed: 1,230 tokens (14 calls)\n"
             "          # Suggestion: Inbox nearly full. Consolidation approaching.\n"
             "if s.health == 'attention':\n"
             "    await system.consolidate()"

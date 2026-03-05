@@ -186,6 +186,71 @@ class CurateResult:
         }
 
 
+@dataclass(frozen=True)
+class TokenUsage:
+    """Immutable snapshot of token consumption for a time window.
+
+    Returned via ``SystemStatus.session_tokens`` (current session) and
+    ``SystemStatus.lifetime_tokens`` (all-time total).
+
+    Agent-friendly surface
+    ----------------------
+    - ``str(usage)`` → compact one-liner for context injection
+    - ``to_dict()``  → JSON-serialisable dict for programmatic access
+    - ``usage_a + usage_b`` → combine two windows into one snapshot
+    """
+
+    llm_input_tokens: int = 0
+    llm_output_tokens: int = 0
+    embedding_tokens: int = 0
+    llm_calls: int = 0
+    embedding_calls: int = 0
+
+    @property
+    def llm_total_tokens(self) -> int:
+        return self.llm_input_tokens + self.llm_output_tokens
+
+    @property
+    def total_tokens(self) -> int:
+        return self.llm_total_tokens + self.embedding_tokens
+
+    def __add__(self, other: TokenUsage) -> TokenUsage:
+        return TokenUsage(
+            llm_input_tokens=self.llm_input_tokens + other.llm_input_tokens,
+            llm_output_tokens=self.llm_output_tokens + other.llm_output_tokens,
+            embedding_tokens=self.embedding_tokens + other.embedding_tokens,
+            llm_calls=self.llm_calls + other.llm_calls,
+            embedding_calls=self.embedding_calls + other.embedding_calls,
+        )
+
+    @property
+    def summary(self) -> str:
+        if self.total_tokens == 0 and self.llm_calls == 0 and self.embedding_calls == 0:
+            return "no token usage recorded"
+        parts: list[str] = []
+        if self.llm_calls:
+            parts.append(f"LLM: {self.llm_total_tokens:,} tokens ({self.llm_calls} calls)")
+        else:
+            parts.append("LLM: \u2014")
+        if self.embedding_calls:
+            parts.append(f"Embed: {self.embedding_tokens:,} tokens ({self.embedding_calls} calls)")
+        else:
+            parts.append("Embed: \u2014")
+        return " | ".join(parts)
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "llm_input_tokens": self.llm_input_tokens,
+            "llm_output_tokens": self.llm_output_tokens,
+            "embedding_tokens": self.embedding_tokens,
+            "llm_calls": self.llm_calls,
+            "embedding_calls": self.embedding_calls,
+        }
+
+
 @dataclass
 class SystemStatus:
     """Snapshot of system state returned by MemorySystem.status().
@@ -204,6 +269,8 @@ class SystemStatus:
     last_consolidated: str        # ISO timestamp string or "never"
     health: str                   # "good" | "attention" | "degraded"
     suggestion: str               # one actionable sentence
+    session_tokens: TokenUsage = field(default_factory=TokenUsage)
+    lifetime_tokens: TokenUsage = field(default_factory=TokenUsage)
 
     @property
     def summary(self) -> str:
@@ -221,7 +288,11 @@ class SystemStatus:
         )
 
     def __str__(self) -> str:
-        return f"{self.summary}\nSuggestion: {self.suggestion}"
+        return (
+            f"{self.summary}\n"
+            f"Tokens this session: {self.session_tokens}\n"
+            f"Suggestion: {self.suggestion}"
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -235,6 +306,8 @@ class SystemStatus:
             "last_consolidated": self.last_consolidated,
             "health": self.health,
             "suggestion": self.suggestion,
+            "session_tokens": self.session_tokens.to_dict(),
+            "lifetime_tokens": self.lifetime_tokens.to_dict(),
         }
 
 

@@ -157,6 +157,7 @@ class TestStatus:
             "session_active", "session_hours", "inbox_count", "inbox_threshold",
             "active_count", "archived_count", "total_active_hours",
             "last_consolidated", "health", "suggestion",
+            "session_tokens", "lifetime_tokens",
         }
         assert set(d.keys()) == expected
 

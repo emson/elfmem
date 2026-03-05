@@ -13,6 +13,7 @@ from elfmem.prompts import (
     SELF_TAG_PROMPT,
     VALID_SELF_TAGS,
 )
+from elfmem.token_counter import TokenCounter
 
 
 class LiteLLMAdapter:
@@ -57,6 +58,7 @@ class LiteLLMAdapter:
         tag_prompt: str | None = None,
         contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
+        token_counter: TokenCounter | None = None,
     ) -> None:
         self._model = model
         self._temperature = temperature
@@ -81,6 +83,7 @@ class LiteLLMAdapter:
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
         )
 
+        self._token_counter = token_counter
         self._client = instructor.from_litellm(litellm.acompletion)
 
     def _call_kwargs(self, model_override: str | None = None) -> dict[str, object]:
@@ -95,37 +98,52 @@ class LiteLLMAdapter:
             kwargs["api_base"] = self._base_url
         return kwargs
 
+    def _record_llm_usage(self, completion: object) -> None:
+        """Record token usage from a completion response, if counter is active."""
+        if self._token_counter is None:
+            return
+        usage = getattr(completion, "usage", None)
+        if usage is None:
+            return
+        self._token_counter.record_llm(
+            input_tokens=getattr(usage, "prompt_tokens", None) or 0,
+            output_tokens=getattr(usage, "completion_tokens", None) or 0,
+        )
+
     async def score_self_alignment(self, block: str, self_context: str) -> float:
         """Score how much a block reflects the agent's identity."""
         prompt = self._alignment_prompt.format(self_context=self_context, block=block)
-        result: AlignmentScore = await self._client.chat.completions.create(
+        result, completion = await self._client.chat.completions.create_with_completion(
             messages=[{"role": "user", "content": prompt}],
             response_model=AlignmentScore,
             max_retries=self._max_retries,
             **self._call_kwargs(self._alignment_model),
         )
+        self._record_llm_usage(completion)
         return result.score
 
     async def infer_self_tags(self, block: str, self_context: str) -> list[str]:
         """Infer self/* tags for a block, filtered to the valid vocabulary."""
         prompt = self._tag_prompt.format(self_context=self_context, block=block)
-        result: SelfTagInference = await self._client.chat.completions.create(
+        result, completion = await self._client.chat.completions.create_with_completion(
             messages=[{"role": "user", "content": prompt}],
             response_model=SelfTagInference,
             max_retries=self._max_retries,
             **self._call_kwargs(self._tags_model),
         )
+        self._record_llm_usage(completion)
         return [tag for tag in result.tags if tag in self._valid_self_tags]
 
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Score how contradictory two blocks are."""
         prompt = self._contradiction_prompt.format(block_a=block_a, block_b=block_b)
-        result: ContradictionScore = await self._client.chat.completions.create(
+        result, completion = await self._client.chat.completions.create_with_completion(
             messages=[{"role": "user", "content": prompt}],
             response_model=ContradictionScore,
             max_retries=self._max_retries,
             **self._call_kwargs(self._contradiction_model),
         )
+        self._record_llm_usage(completion)
         return result.score
 
 
@@ -146,11 +164,13 @@ class LiteLLMEmbeddingAdapter:
         dimensions: int = 1536,
         timeout: int = 30,
         base_url: str | None = None,
+        token_counter: TokenCounter | None = None,
     ) -> None:
         self._model = model
         self._dimensions = dimensions
         self._timeout = timeout
         self._base_url = base_url
+        self._token_counter = token_counter
 
     async def embed(self, text: str) -> np.ndarray:
         """Embed text and return a unit-normalised float32 ndarray."""
@@ -163,6 +183,14 @@ class LiteLLMEmbeddingAdapter:
             kwargs["api_base"] = self._base_url
 
         response = await litellm.aembedding(**kwargs)
+
+        if self._token_counter is not None:
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                self._token_counter.record_embedding(
+                    tokens=getattr(usage, "prompt_tokens", None) or 0,
+                )
+
         raw = response.data[0]["embedding"]
         vec = np.array(raw, dtype=np.float32)
         norm = float(np.linalg.norm(vec))
