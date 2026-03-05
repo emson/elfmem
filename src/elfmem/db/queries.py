@@ -135,6 +135,23 @@ async def get_inbox_count(conn: AsyncConnection) -> int:
     return result.scalar() or 0
 
 
+async def get_block_counts(conn: AsyncConnection) -> dict[str, int]:
+    """Return block counts grouped by status in a single query.
+
+    Returns a dict with keys 'inbox', 'active', 'archived', each defaulting
+    to 0 if no blocks of that status exist.
+    """
+    result = await conn.execute(
+        select(blocks.c.status, func.count().label("n")).group_by(blocks.c.status)
+    )
+    counts: dict[str, int] = {"inbox": 0, "active": 0, "archived": 0}
+    for row in result.mappings():
+        status = row["status"]
+        if status in counts:
+            counts[status] = row["n"]
+    return counts
+
+
 async def update_block_status(
     conn: AsyncConnection,
     block_id: str,

@@ -2,6 +2,13 @@
 
 These are the shared vocabulary for every layer. Changing these types requires
 updating every module that imports them — treat as stable contracts.
+
+Agent-friendly surface
+----------------------
+Every result type implements three methods:
+- ``__str__``   → one-line summary optimised for agent context windows
+- ``summary``   → property; same as ``__str__`` (single source of truth)
+- ``to_dict()`` → JSON-serialisable dict for programmatic access
 """
 
 from __future__ import annotations
@@ -43,6 +50,30 @@ class ScoredBlock:
     was_expanded: bool = False
     status: str = BlockStatus.ACTIVE.value
 
+    @property
+    def summary(self) -> str:
+        tag_str = f" [{', '.join(self.tags[:3])}]" if self.tags else ""
+        truncated = self.content[:80] + ("…" if len(self.content) > 80 else "")
+        return f"[{self.score:.2f}] {truncated}{tag_str}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "tags": self.tags,
+            "score": self.score,
+            "similarity": self.similarity,
+            "confidence": self.confidence,
+            "recency": self.recency,
+            "centrality": self.centrality,
+            "reinforcement": self.reinforcement,
+            "was_expanded": self.was_expanded,
+            "status": self.status,
+        }
+
 
 @dataclass
 class FrameResult:
@@ -51,11 +82,49 @@ class FrameResult:
     frame_name: str
     cached: bool = False
 
+    @property
+    def summary(self) -> str:
+        count = len(self.blocks)
+        cached_note = " (cached)" if self.cached else ""
+        if count == 0:
+            return f"{self.frame_name} frame: no blocks found."
+        noun = "block" if count == 1 else "blocks"
+        return f"{self.frame_name} frame: {count} {noun} returned{cached_note}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict:
+        return {
+            "frame_name": self.frame_name,
+            "block_count": len(self.blocks),
+            "cached": self.cached,
+            "text": self.text,
+        }
+
 
 @dataclass
 class LearnResult:
     block_id: str
     status: str  # "created" | "duplicate_rejected" | "near_duplicate_superseded"
+
+    @property
+    def summary(self) -> str:
+        short_id = self.block_id[:8]
+        if self.status == "created":
+            return f"Stored block {short_id}. Status: created."
+        if self.status == "duplicate_rejected":
+            return f"Duplicate — block {short_id} already exists."
+        if self.status == "near_duplicate_superseded":
+            return f"Updated block {short_id} (superseded near-duplicate)."
+        # Fallback for future status values
+        return f"Block {short_id}. Status: {self.status}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {"block_id": self.block_id, "status": self.status}
 
 
 @dataclass
@@ -65,12 +134,132 @@ class ConsolidateResult:
     deduplicated: int
     edges_created: int
 
+    @property
+    def summary(self) -> str:
+        if self.processed == 0:
+            return "Nothing to consolidate. Inbox was empty."
+        parts: list[str] = [f"{self.promoted} promoted"]
+        if self.deduplicated:
+            parts.append(f"{self.deduplicated} deduped")
+        parts.append(f"{self.edges_created} edges")
+        return f"Consolidated {self.processed}: {', '.join(parts)}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "processed": self.processed,
+            "promoted": self.promoted,
+            "deduplicated": self.deduplicated,
+            "edges_created": self.edges_created,
+        }
+
 
 @dataclass
 class CurateResult:
     archived: int
     edges_pruned: int
     reinforced: int
+
+    @property
+    def summary(self) -> str:
+        if not any([self.archived, self.edges_pruned, self.reinforced]):
+            return "Curated: nothing required."
+        parts: list[str] = []
+        if self.archived:
+            parts.append(f"{self.archived} archived")
+        if self.edges_pruned:
+            parts.append(f"{self.edges_pruned} edges pruned")
+        if self.reinforced:
+            parts.append(f"{self.reinforced} reinforced")
+        return f"Curated: {', '.join(parts)}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "archived": self.archived,
+            "edges_pruned": self.edges_pruned,
+            "reinforced": self.reinforced,
+        }
+
+
+@dataclass
+class SystemStatus:
+    """Snapshot of system state returned by MemorySystem.status().
+
+    Use ``health`` and ``suggestion`` to decide on next actions.
+    Use ``__str__`` for a compact one-line summary suitable for agent context.
+    """
+
+    session_active: bool
+    session_hours: float | None   # None when no session is active
+    inbox_count: int
+    inbox_threshold: int
+    active_count: int
+    archived_count: int
+    total_active_hours: float
+    last_consolidated: str        # ISO timestamp string or "never"
+    health: str                   # "good" | "attention" | "degraded"
+    suggestion: str               # one actionable sentence
+
+    @property
+    def summary(self) -> str:
+        if self.session_active and self.session_hours is not None:
+            session_str = f"active ({self.session_hours:.1f}h)"
+        elif self.session_active:
+            session_str = "active"
+        else:
+            session_str = "inactive"
+        return (
+            f"Session: {session_str} | "
+            f"Inbox: {self.inbox_count}/{self.inbox_threshold} | "
+            f"Active: {self.active_count} blocks | "
+            f"Health: {self.health}"
+        )
+
+    def __str__(self) -> str:
+        return f"{self.summary}\nSuggestion: {self.suggestion}"
+
+    def to_dict(self) -> dict:
+        return {
+            "session_active": self.session_active,
+            "session_hours": self.session_hours,
+            "inbox_count": self.inbox_count,
+            "inbox_threshold": self.inbox_threshold,
+            "active_count": self.active_count,
+            "archived_count": self.archived_count,
+            "total_active_hours": self.total_active_hours,
+            "last_consolidated": self.last_consolidated,
+            "health": self.health,
+            "suggestion": self.suggestion,
+        }
+
+
+@dataclass
+class OperationRecord:
+    """A single entry in the MemorySystem operation history.
+
+    Returned by ``MemorySystem.history()``. In-memory only; resets on restart.
+    """
+
+    operation: str   # method name, e.g. "learn", "consolidate"
+    summary: str     # str(result) captured at call time
+    timestamp: str   # ISO 8601 UTC timestamp
+
+    def __str__(self) -> str:
+        # Show HH:MM:SS from the ISO timestamp for compact display
+        time_str = self.timestamp[11:19] if len(self.timestamp) >= 19 else self.timestamp
+        return f"{self.operation}()  →  {self.summary}  [{time_str}]"
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "operation": self.operation,
+            "summary": self.summary,
+            "timestamp": self.timestamp,
+        }
 
 
 @dataclass

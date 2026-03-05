@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import os
+import time
+from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -14,7 +17,16 @@ from elfmem.config import ElfmemConfig
 from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
 from elfmem.db.models import metadata
-from elfmem.db.queries import seed_builtin_data
+from elfmem.db.queries import (
+    get_block_counts,
+    get_config,
+    get_inbox_count,
+    get_total_active_hours,
+    seed_builtin_data,
+    set_config,
+)
+from elfmem.exceptions import FrameError
+from elfmem.guide import get_guide
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.curate import curate as _curate
@@ -36,7 +48,9 @@ from elfmem.types import (
     CurateResult,
     FrameResult,
     LearnResult,
+    OperationRecord,
     ScoredBlock,
+    SystemStatus,
 )
 
 
@@ -49,10 +63,14 @@ class MemorySystem:
         async with system.session():
             await system.learn("I prefer explicit error handling.")
             result = await system.frame("attention", query="error handling")
-            print(result.text)
+            print(result.text)  # inject into your LLM prompt
 
-    All methods require an active session (started via :meth:`session` or
-    :meth:`begin_session`).
+    Quick reference::
+
+        system.guide()           # overview of all operations
+        system.guide("learn")    # detailed guide for a specific method
+        await system.status()    # system health + suggested next action
+        system.history()         # recent operations in this session
     """
 
     def __init__(
@@ -69,6 +87,8 @@ class MemorySystem:
         self._config = config or ElfmemConfig()
         self._frame_cache = FrameCache()
         self._session_id: str | None = None
+        self._session_started_at: float | None = None  # monotonic seconds
+        self._history: deque[OperationRecord] = deque(maxlen=100)
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -80,19 +100,25 @@ class MemorySystem:
     ) -> MemorySystem:
         """Create a MemorySystem from configuration.
 
-        This is the primary entry point for users. Handles all wiring:
-        database engine, LLM adapter, embedding adapter.
+        USE WHEN: Primary entry point. Handles all wiring: database, LLM
+        adapter, embedding adapter.
+
+        DON'T USE WHEN: You need full control over service injection — use
+        the constructor directly with custom LLMService/EmbeddingService.
+
+        COST: Fast. Creates the database file and schema if needed.
+
+        RETURNS: Fully configured MemorySystem, ready for session().
+
+        NEXT: Use ``async with system.session():`` to start interacting.
 
         Args:
             db_path: Path to SQLite database file (created if not exists).
             config: Configuration source:
-                - None: reads ELFMEM_CONFIG env var for YAML path, or uses defaults
+                - None: reads ELFMEM_CONFIG env var for YAML path, else defaults
                 - str: path to YAML config file
-                - dict: configuration values (validated by Pydantic)
+                - dict: inline configuration values (validated by Pydantic)
                 - ElfmemConfig: pre-built config object
-
-        Returns:
-            Fully configured MemorySystem, ready for session().
 
         Example::
 
@@ -105,7 +131,6 @@ class MemorySystem:
         """
         cfg = _resolve_config(config)
 
-        # Create engine and initialise schema
         engine = await create_engine(db_path)
         async with engine.begin() as conn:
             await conn.run_sync(metadata.create_all)
@@ -145,10 +170,119 @@ class MemorySystem:
     async def from_env(cls, db_path: str) -> MemorySystem:
         """Create a MemorySystem from ELFMEM_ environment variables.
 
-        Convenience wrapper around from_config with env-based config.
+        USE WHEN: Deploying in environments where YAML config files are
+        not practical (containers, CI, serverless).
+
+        COST: Fast. Reads env vars and delegates to from_config().
+
+        RETURNS: Fully configured MemorySystem.
         """
         cfg = ElfmemConfig.from_env()
         return await cls.from_config(db_path, cfg)
+
+    # ── Agent-friendly introspection ─────────────────────────────────────────
+
+    def guide(self, method_name: str | None = None) -> str:
+        """Return agent-friendly documentation for this library or a specific method.
+
+        USE WHEN: Discovering what operations are available, or understanding
+        how a specific method should be used before calling it.
+
+        DON'T USE WHEN: (Always safe to call. No side effects.)
+
+        COST: Instant. No database access. Can be called before a session starts.
+
+        RETURNS: str. With no argument: compact overview of all operations.
+        With a method name: full guide (what/when/cost/returns/next/example).
+        With an unknown name: the list of valid method names.
+
+        NEXT: (Informational only. No action required.)
+
+        Example::
+
+            print(system.guide())           # full overview table
+            print(system.guide("learn"))    # detailed guide for learn()
+            print(system.guide("unknown"))  # lists valid method names
+        """
+        return get_guide(method_name)
+
+    async def status(self) -> SystemStatus:
+        """Return a snapshot of current system state with a suggested next action.
+
+        USE WHEN: Deciding whether to consolidate, curate, or start a session.
+        Checking memory health before a long agent run. Verifying state after
+        operations complete.
+
+        DON'T USE WHEN: (Always safe to call. No side effects.)
+
+        COST: Fast. One database read; no LLM calls.
+
+        RETURNS: SystemStatus with inbox_count, inbox_threshold, active_count,
+        archived_count, session_active, health ('good'|'attention'), and a
+        suggestion string. Use result.suggestion for the recommended action.
+
+        NEXT: Follow result.suggestion. If health == 'attention', call
+        consolidate() to process a full inbox.
+
+        Example::
+
+            s = await system.status()
+            print(s)  # Session: active (0.5h) | Inbox: 8/10 | Active: 42 | Health: good
+            if s.health == "attention":
+                await system.consolidate()
+        """
+        async with self._engine.connect() as conn:
+            counts = await get_block_counts(conn)
+            last_consolidated = await get_config(conn, "last_consolidated_at") or "never"
+            total_active_hours = await get_total_active_hours(conn)
+
+        session_active = self._session_id is not None
+        session_hours: float | None = None
+        if session_active and self._session_started_at is not None:
+            session_hours = (time.monotonic() - self._session_started_at) / 3600.0
+
+        health, suggestion = _derive_health(
+            inbox_count=counts["inbox"],
+            inbox_threshold=self._config.memory.inbox_threshold,
+            active_count=counts["active"],
+        )
+
+        return SystemStatus(
+            session_active=session_active,
+            session_hours=session_hours,
+            inbox_count=counts["inbox"],
+            inbox_threshold=self._config.memory.inbox_threshold,
+            active_count=counts["active"],
+            archived_count=counts["archived"],
+            total_active_hours=total_active_hours,
+            last_consolidated=last_consolidated,
+            health=health,
+            suggestion=suggestion,
+        )
+
+    def history(self, last_n: int = 10) -> list[OperationRecord]:
+        """Return the most recent operations performed by this MemorySystem.
+
+        USE WHEN: Debugging unexpected results — e.g., recall() returns nothing
+        and you want to verify that consolidate() actually ran.
+
+        DON'T USE WHEN: Persistent audit logging is needed — history is
+        in-memory only and resets when the process restarts.
+
+        COST: Instant. In-memory only; no database access.
+
+        RETURNS: list[OperationRecord] (operation, summary, timestamp), most
+        recent last. Empty list if no operations have run yet.
+
+        NEXT: (Informational only. No action required.)
+
+        Example::
+
+            for record in system.history(last_n=5):
+                print(record)  # learn()  →  Stored block a1b2.  [14:32:01]
+        """
+        records = list(self._history)
+        return records[-last_n:] if last_n < len(records) else records
 
     # ── Session management ───────────────────────────────────────────────────
 
@@ -158,6 +292,15 @@ class MemorySystem:
         task_type: str = "general",
     ) -> AsyncIterator[MemorySystem]:
         """Async context manager that wraps a single interaction session.
+
+        USE WHEN: Starting an agent interaction loop. Handles session lifecycle
+        and auto-consolidation automatically.
+
+        COST: Fast on entry. May trigger consolidate() on exit if inbox is full.
+
+        RETURNS: Yields self. Use as ``async with system.session() as mem:``.
+
+        NEXT: Call learn(), frame(), recall() inside the context.
 
         On entry: begins session (starts active-hours clock).
         On exit: runs consolidate() if inbox threshold reached, then ends session.
@@ -172,29 +315,57 @@ class MemorySystem:
         try:
             yield self
         finally:
-            inbox_threshold = self._config.memory.inbox_threshold
             async with self._engine.begin() as conn:
-                from elfmem.db.queries import get_inbox_count
                 count = await get_inbox_count(conn)
-                if count >= inbox_threshold:
+                if count >= self._config.memory.inbox_threshold:
                     await self.consolidate()
             await self.end_session()
             self._frame_cache.clear()
 
     async def begin_session(self, task_type: str = "general") -> str:
-        """Start a session. Returns session_id."""
+        """Start a session explicitly. Returns the session_id.
+
+        USE WHEN: You need manual session control outside a context manager.
+
+        DON'T USE WHEN: Using ``async with system.session():`` — that handles
+        this automatically.
+
+        COST: Fast.
+
+        RETURNS: str session_id. If a session is already active, returns the
+        existing session_id without starting a new one (idempotent).
+        """
+        if self._session_id is not None:
+            # Already active — idempotent, return existing session
+            return self._session_id
+
         async with self._engine.begin() as conn:
             session_id = await _begin_session(conn, task_type=task_type)
         self._session_id = session_id
+        self._session_started_at = time.monotonic()
+        self._record_op("begin_session", f"Session {session_id[:8]} started.")
         return session_id
 
     async def end_session(self) -> float:
-        """End the current session. Returns session duration in active hours."""
+        """End the current session. Returns session duration in active hours.
+
+        USE WHEN: Paired with begin_session() for manual session control.
+
+        DON'T USE WHEN: Using ``async with system.session():`` — handled
+        automatically.
+
+        COST: Fast.
+
+        RETURNS: float — session duration in active hours. Returns 0.0 if no
+        session was active (safe to call redundantly).
+        """
         if self._session_id is None:
             return 0.0
         async with self._engine.begin() as conn:
             duration = await _end_session(conn, self._session_id)
         self._session_id = None
+        self._session_started_at = None
+        self._record_op("end_session", f"Session ended ({duration:.2f}h active).")
         return duration
 
     # ── Public operations ────────────────────────────────────────────────────
@@ -207,25 +378,58 @@ class MemorySystem:
         category: str = "knowledge",
         source: str = "api",
     ) -> LearnResult:
-        """Ingest a new piece of knowledge into the inbox.
+        """Store a knowledge block for future retrieval.
+
+        USE WHEN: The agent discovers a fact, preference, decision, or
+        observation worth remembering across sessions.
+
+        DON'T USE WHEN: Information is transient (current turn only) or
+        already present in the active prompt context.
+
+        COST: Instant. No LLM calls.
+
+        RETURNS: LearnResult. status values:
+          'created'                   — new block stored in inbox
+          'duplicate_rejected'        — exact content already exists
+          'near_duplicate_superseded' — similar block replaced
+
+        NEXT: Blocks queue in inbox until consolidate() runs. The session()
+        context manager auto-consolidates on exit when inbox >= threshold.
 
         Args:
-            content: Text content to store.
-            tags: Optional initial tags (self/* tags assigned during consolidate).
-            category: Block category ("knowledge", "observation", etc.).
-            source: Source label (e.g., "api", "tool_result", "user").
-
-        Returns:
-            LearnResult with block_id and status.
+            content: Text content to store. Be specific and self-contained —
+                     this text is what gets retrieved later.
+            tags: Optional initial tags. Self-aligned tags are inferred
+                  during consolidate().
+            category: Block category (e.g. "knowledge", "preference",
+                      "decision", "observation").
+            source: Source label for provenance (e.g. "api", "tool_result").
         """
         async with self._engine.begin() as conn:
-            return await _learn(conn, content=content, tags=tags, category=category, source=source)
+            result = await _learn(
+                conn, content=content, tags=tags, category=category, source=source
+            )
+        self._record_op("learn", result.summary)
+        return result
 
     async def consolidate(self) -> ConsolidateResult:
-        """Run inbox processing: score, embed, promote, dedup, build edges.
+        """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
 
-        Processes all inbox blocks through the full consolidation pipeline.
-        Also runs curate() if the curate interval has elapsed.
+        USE WHEN: After a batch of learn() calls, or explicitly before
+        recall/frame when you know new blocks are in the inbox. The session()
+        context manager handles this automatically.
+
+        DON'T USE WHEN: Inbox is empty — safe to call but returns zero counts.
+        Avoid calling in a tight loop; one call processes all pending blocks.
+
+        COST: LLM call per block (alignment scoring + tag inference). Slow for
+        large inboxes; fast when inbox is small.
+
+        RETURNS: ConsolidateResult with counts: processed, promoted,
+        deduplicated, edges_created. processed=0 means inbox was empty.
+
+        NEXT: Promoted blocks are now searchable via frame() and recall().
+        Also triggers curate() automatically if curate_interval has elapsed.
         """
         current_hours = compute_current_active_hours()
         mem = self._config.memory
@@ -241,7 +445,6 @@ class MemorySystem:
                 edge_degree_cap=mem.edge_degree_cap,
             )
 
-            # Auto-curate if interval elapsed
             if await should_curate(
                 conn,
                 current_hours,
@@ -255,6 +458,10 @@ class MemorySystem:
                     reinforce_top_n=mem.curate_reinforce_top_n,
                 )
 
+            # Record consolidation timestamp for status() reporting
+            await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
+
+        self._record_op("consolidate", result.summary)
         return result
 
     async def frame(
@@ -264,22 +471,44 @@ class MemorySystem:
         *,
         top_k: int | None = None,
     ) -> FrameResult:
-        """Retrieve and render context for the named frame.
+        """Retrieve and render context for the named frame, ready for prompt injection.
+
+        USE WHEN: Assembling context for an LLM prompt. Use 'self' for identity
+        context, 'attention' for query-relevant knowledge, 'task' for goals.
+
+        DON'T USE WHEN: You only need raw block data without rendering — use
+        recall() instead.
+
+        COST: Fast. Embedding call if query provided; no LLM calls.
+
+        RETURNS: FrameResult. Use result.text for direct prompt injection.
+        result.blocks are the scored candidates. result.cached indicates a TTL
+        cache hit (no retrieval occurred).
+
+        NEXT: Inject result.text into your LLM prompt.
 
         Args:
-            name: Frame name ("self", "attention", "task").
-            query: Query text (required for ATTENTION, optional for TASK).
+            name: Frame name — 'self', 'attention', or 'task'.
+            query: Query text. Required for ATTENTION; optional for TASK;
+                   not used for SELF (identity context is queryless).
             top_k: Number of blocks to return. Defaults to config.memory.top_k.
 
-        Returns:
-            FrameResult with .text (rendered string) and .blocks (scored blocks).
+        Raises:
+            FrameError: If name is not a valid frame. Recovery hint included.
         """
+        try:
+            frame_def = get_frame_definition(name)
+        except ValueError as exc:
+            raise FrameError(
+                str(exc),
+                recovery="Valid frames: 'self', 'attention', 'task'.",
+            ) from exc
+
         k = top_k if top_k is not None else self._config.memory.top_k
-        frame_def = get_frame_definition(name)
         current_hours = compute_current_active_hours()
 
         async with self._engine.begin() as conn:
-            return await _recall(
+            result = await _recall(
                 conn,
                 embedding_svc=self._embedding,
                 frame_def=frame_def,
@@ -288,6 +517,8 @@ class MemorySystem:
                 top_k=k,
                 cache=self._frame_cache,
             )
+        self._record_op("frame", result.summary)
+        return result
 
     async def recall(
         self,
@@ -298,18 +529,36 @@ class MemorySystem:
     ) -> list[ScoredBlock]:
         """Raw retrieval without rendering. No reinforcement side effects.
 
-        Power-user method for inspection.
+        USE WHEN: Inspecting what is in memory, debugging retrieval quality,
+        or building custom rendering from scored block data.
+
+        DON'T USE WHEN: You need context ready for prompt injection — use
+        frame() instead. frame() renders, respects token budgets, and caches.
+
+        COST: Fast. Embedding call if query provided; no LLM calls.
+
+        RETURNS: list[ScoredBlock] sorted by composite score descending.
+        Empty list if nothing found — never raises for empty results.
+
+        NEXT: No side effects. Safe to call multiple times.
 
         Args:
             query: Query text (None for queryless retrieval).
             top_k: Number of blocks to return.
             frame: Frame name for weights/filters. Default "attention".
 
-        Returns:
-            List of ScoredBlock objects, sorted by score descending.
+        Raises:
+            FrameError: If frame is not a valid frame name.
         """
+        try:
+            frame_def = get_frame_definition(frame)
+        except ValueError as exc:
+            raise FrameError(
+                str(exc),
+                recovery="Valid frames: 'self', 'attention', 'task'.",
+            ) from exc
+
         k = top_k if top_k is not None else self._config.memory.top_k
-        frame_def = get_frame_definition(frame)
         current_hours = compute_current_active_hours()
 
         if query is None:
@@ -322,7 +571,7 @@ class MemorySystem:
             tag_filter = frame_def.filters.tag_patterns[0]
 
         async with self._engine.begin() as conn:
-            return await hybrid_retrieve(
+            blocks = await hybrid_retrieve(
                 conn,
                 embedding_svc=self._embedding,
                 query=query,
@@ -333,25 +582,89 @@ class MemorySystem:
                 search_window_hours=frame_def.filters.search_window_hours,
             )
 
+        count = len(blocks)
+        noun = "block" if count == 1 else "blocks"
+        self._record_op("recall", f"recall({frame!r}) → {count} {noun} returned.")
+        return blocks
+
     async def curate(self) -> CurateResult:
-        """Run manual maintenance: archive decayed blocks, prune edges, reinforce top-N."""
+        """Archive decayed blocks, prune weak edges, reinforce top-N knowledge.
+
+        USE WHEN: Explicit maintenance after heavy use, or when retrieval
+        quality degrades. Also runs automatically after consolidate() when
+        curate_interval_hours has elapsed.
+
+        DON'T USE WHEN: Immediately after consolidate() — auto-curate already
+        triggers if the interval elapsed. Don't call after every session.
+
+        COST: Fast. Database operations only; no LLM calls.
+
+        RETURNS: CurateResult with counts: archived (decayed blocks removed),
+        edges_pruned (weak edges removed), reinforced (top-N blocks boosted).
+        All zeros means memory was already clean.
+
+        NEXT: Memory is cleaner. Retrieval quality may improve.
+        """
         current_hours = compute_current_active_hours()
         mem = self._config.memory
         async with self._engine.begin() as conn:
-            return await _curate(
+            result = await _curate(
                 conn,
                 current_active_hours=current_hours,
                 prune_threshold=mem.prune_threshold,
                 edge_prune_threshold=mem.edge_prune_threshold,
                 reinforce_top_n=mem.curate_reinforce_top_n,
             )
+        self._record_op("curate", result.summary)
+        return result
 
     async def close(self) -> None:
-        """Dispose the database engine. Call when done with this MemorySystem."""
+        """Dispose the database engine. Call when done with this MemorySystem.
+
+        USE WHEN: Shutting down. Releases the SQLite connection pool.
+
+        COST: Fast.
+        """
         await self._engine.dispose()
 
+    # ── Private helpers ──────────────────────────────────────────────────────
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+    def _record_op(self, operation: str, summary: str) -> None:
+        """Append an operation record to the in-memory history deque."""
+        self._history.append(
+            OperationRecord(
+                operation=operation,
+                summary=summary,
+                timestamp=datetime.now(UTC).isoformat(),
+            )
+        )
+
+
+# ── Module-level helpers ───────────────────────────────────────────────────────
+
+def _derive_health(
+    inbox_count: int,
+    inbox_threshold: int,
+    active_count: int,
+) -> tuple[str, str]:
+    """Derive health level and suggestion from current system state.
+
+    Returns:
+        Tuple of (health: str, suggestion: str).
+        health is 'good' or 'attention'.
+    """
+    fill_ratio = inbox_count / max(inbox_threshold, 1)
+    if fill_ratio >= 1.0:
+        return "attention", "Inbox full. Call consolidate() to process pending blocks."
+    if fill_ratio >= 0.8:
+        return (
+            "good",
+            f"Inbox nearly full ({inbox_count}/{inbox_threshold}). Consolidation approaching.",
+        )
+    if active_count == 0 and inbox_count == 0:
+        return "good", "Memory is empty. Call learn() to add knowledge."
+    return "good", "Memory healthy. No action required."
+
 
 def _resolve_config(
     config: ElfmemConfig | str | dict[str, Any] | None,
