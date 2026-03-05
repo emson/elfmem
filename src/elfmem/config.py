@@ -73,6 +73,15 @@ class MemoryConfig(BaseModel):
     # Curate
     curate_reinforce_top_n: int = 5
 
+    # Outcome scoring
+    outcome_prior_strength: float = 2.0
+    # Weight of LLM alignment prior in Bayesian update.
+    # 2.0 = alignment has the weight of 2 observations; evidence dominates after ~10 outcomes.
+
+    outcome_reinforce_threshold: float = 0.5
+    # Minimum signal to trigger block reinforcement and Hebbian edge learning.
+    # Blocks below this threshold receive no reinforcement (decay naturally).
+
 
 class PromptsConfig(BaseModel):
     """Configuration for LLM prompt templates.

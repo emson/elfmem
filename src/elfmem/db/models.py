@@ -36,6 +36,7 @@ blocks = Table(
     Column("embedding_model", Text),
     Column("token_count", Integer),
     Column("last_session_id", Text),
+    Column("outcome_evidence", Float, nullable=False, default=0.0),
 )
 
 block_tags = Table(
@@ -99,12 +100,26 @@ system_config = Table(
     Column("value", Text, nullable=False),
 )
 
+block_outcomes = Table(
+    "block_outcomes",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("block_id", Text, ForeignKey("blocks.id", ondelete="CASCADE"), nullable=False),
+    Column("signal", Float, nullable=False),
+    Column("weight", Float, nullable=False),
+    Column("source", Text, nullable=False, default=""),
+    Column("confidence_before", Float, nullable=False),
+    Column("confidence_after", Float, nullable=False),
+    Column("created_at", Text, nullable=False),
+)
+
 Index("idx_blocks_status", blocks.c.status)
 Index("idx_blocks_last_reinforced", blocks.c.last_reinforced_at)
 Index("idx_block_tags_tag", block_tags.c.tag)
 Index("idx_block_tags_block_id", block_tags.c.block_id)
 Index("idx_edges_from", edges.c.from_id)
 Index("idx_edges_to", edges.c.to_id)
+Index("idx_block_outcomes_block_id", block_outcomes.c.block_id)
 Index(
     "idx_contradictions_unresolved",
     contradictions.c.block_a_id,

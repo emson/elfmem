@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -13,6 +14,7 @@ from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db.models import (
+    block_outcomes,
     block_tags,
     blocks,
     contradictions,
@@ -219,6 +221,46 @@ async def update_block_scoring(
         await conn.execute(
             update(blocks).where(blocks.c.id == block_id).values(**values)
         )
+
+
+async def update_block_outcome(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    new_confidence: float,
+    new_outcome_evidence: float,
+) -> None:
+    """Update a block's confidence and outcome_evidence after a Bayesian update."""
+    await conn.execute(
+        update(blocks)
+        .where(blocks.c.id == block_id)
+        .values(confidence=new_confidence, outcome_evidence=new_outcome_evidence)
+    )
+
+
+async def insert_block_outcome(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    signal: float,
+    weight: float,
+    source: str,
+    confidence_before: float,
+    confidence_after: float,
+) -> None:
+    """Append an outcome audit record to block_outcomes."""
+    await conn.execute(
+        insert(block_outcomes).values(
+            id=uuid.uuid4().hex,
+            block_id=block_id,
+            signal=signal,
+            weight=weight,
+            source=source,
+            confidence_before=confidence_before,
+            confidence_after=confidence_after,
+            created_at=_now_iso(),
+        )
+    )
 
 
 async def reinforce_blocks(

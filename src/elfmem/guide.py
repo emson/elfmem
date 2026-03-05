@@ -235,6 +235,50 @@ GUIDES: dict[str, AgentGuide] = {
             "    print(record)  # learn()  →  Stored block a1b2.  [14:32:01]"
         ),
     ),
+    "outcome": AgentGuide(
+        name="outcome",
+        what="Update block confidence using a normalised domain signal via Bayesian update.",
+        when=(
+            "After an observable result can be scored: a forecast resolves, tests pass/fail, "
+            "content engagement is measured, or a CSAT score arrives. "
+            "Works without an active session — outcomes may arrive weeks after retrieval."
+        ),
+        when_not=(
+            "To reinforce recently-used blocks — that happens automatically via frame(). "
+            "Don't call outcome() for transient observations; only for measurable results "
+            "that reflect whether retrieved knowledge was actually correct or useful."
+        ),
+        cost="Fast. Database operations only; no LLM calls.",
+        returns=(
+            "OutcomeResult with: blocks_updated (active blocks whose confidence changed), "
+            "mean_confidence_delta (average confidence shift, positive or negative), "
+            "edges_reinforced (graph edges strengthened for positive signals). "
+            "blocks_updated=0 means all block_ids were non-active (silently skipped)."
+        ),
+        next=(
+            "Blocks with positive signal gain confidence and reinforcement (decay-resistant). "
+            "Blocks with negative signal lose confidence and decay naturally. "
+            "Over ~10 outcomes, evidence dominates the LLM alignment prior."
+        ),
+        example=(
+            "# Trading: Brier score resolved after 30 days\n"
+            "signal = 1.0 - brier_score  # 0.85 = good forecast\n"
+            "result = await system.outcome(block_ids, signal=signal, source='brier')\n"
+            "print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced.\n"
+            "\n"
+            "# Coding: test suite pass/fail\n"
+            "signal = 1.0 if all_tests_passed else 0.0\n"
+            "result = await system.outcome(block_ids, signal=signal, source='test_suite')\n"
+            "\n"
+            "# Writing: engagement rate vs baseline\n"
+            "signal = min(engagement_rate / baseline, 1.0)\n"
+            "result = await system.outcome(block_ids, signal=signal, source='engagement')\n"
+            "\n"
+            "# Support: CSAT score 1–5\n"
+            "signal = (csat_score - 1.0) / 4.0\n"
+            "result = await system.outcome(block_ids, signal=signal, source='csat')"
+        ),
+    ),
     "guide": AgentGuide(
         name="guide",
         what="Return agent-friendly documentation for a specific method or all methods.",
@@ -270,12 +314,13 @@ OVERVIEW: str = "\n".join([
     "  recall(query, ...)     Fast         Raw retrieval — list of scored blocks",
     "  frame(name, ...)       Fast         Retrieve + render a named context frame",
     "  consolidate()          LLM call     Process inbox: score, embed, promote",
+    "  outcome(ids, signal)   Fast         Bayesian confidence update from domain result",
     "  curate()               Fast         Archive stale blocks, prune weak edges",
     "  status()               Fast         System health snapshot + suggested action",
     "  history(last_n=10)     Instant      Recent operations in this process session",
     "  guide(method?)         Instant      This help",
     "",
-    "Lifecycle:  session() → learn() → [consolidate()] → frame() / recall()",
+    "Lifecycle:  session() → learn() → [consolidate()] → frame() / recall() → outcome()",
     "Quick start: system.status() | system.guide('learn') | system.guide('frame')",
 ])
 

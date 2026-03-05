@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 
 class BlockStatus(StrEnum):
@@ -183,6 +184,43 @@ class CurateResult:
             "archived": self.archived,
             "edges_pruned": self.edges_pruned,
             "reinforced": self.reinforced,
+        }
+
+
+@dataclass(frozen=True)
+class OutcomeResult:
+    """Result of an outcome() call — Bayesian confidence updates from domain signals.
+
+    Agent-friendly surface
+    ----------------------
+    - ``__str__`` → one-line summary optimised for agent context windows
+    - ``summary`` → property; same as ``__str__``
+    - ``to_dict()`` → JSON-serialisable dict for programmatic access
+    """
+
+    blocks_updated: int
+    mean_confidence_delta: float
+    edges_reinforced: int
+
+    @property
+    def summary(self) -> str:
+        if self.blocks_updated == 0:
+            return "Outcome recorded: nothing to update."
+        noun = "block" if self.blocks_updated == 1 else "blocks"
+        delta_str = f"{self.mean_confidence_delta:+.3f}"
+        parts = [f"{self.blocks_updated} {noun} updated ({delta_str} avg confidence)"]
+        if self.edges_reinforced:
+            parts.append(f"{self.edges_reinforced} edges reinforced")
+        return f"Outcome recorded: {', '.join(parts)}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_updated": self.blocks_updated,
+            "mean_confidence_delta": self.mean_confidence_delta,
+            "edges_reinforced": self.edges_reinforced,
         }
 
 

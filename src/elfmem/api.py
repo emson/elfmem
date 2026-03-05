@@ -34,6 +34,7 @@ from elfmem.operations.consolidate import consolidate
 from elfmem.operations.curate import curate as _curate
 from elfmem.operations.curate import should_curate
 from elfmem.operations.learn import learn as _learn
+from elfmem.operations.outcome import record_outcome as _record_outcome
 from elfmem.operations.recall import recall as _recall
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.session import (
@@ -51,6 +52,7 @@ from elfmem.types import (
     FrameResult,
     LearnResult,
     OperationRecord,
+    OutcomeResult,
     ScoredBlock,
     SystemStatus,
     TokenUsage,
@@ -625,6 +627,77 @@ class MemorySystem:
         noun = "block" if count == 1 else "blocks"
         self._record_op("recall", f"recall({frame!r}) → {count} {noun} returned.")
         return blocks
+
+    async def outcome(
+        self,
+        block_ids: list[str],
+        signal: float,
+        *,
+        weight: float = 1.0,
+        source: str = "",
+    ) -> OutcomeResult:
+        """Update block confidence from a normalised domain outcome signal.
+
+        USE WHEN: A measurable result is available — a forecast resolved,
+        tests passed or failed, content engagement was measured, a CSAT
+        score arrived. Converts domain metrics to elfmem confidence updates.
+
+        DON'T USE WHEN: Reinforcing recently-used blocks — frame() handles
+        that automatically. Don't call for transient observations; only for
+        outcomes that reflect whether retrieved knowledge was correct/useful.
+
+        COST: Fast. Database operations only; no LLM calls. Does not require
+        an active session — outcomes can arrive weeks after retrieval.
+
+        RETURNS: OutcomeResult with: blocks_updated (active blocks changed),
+        mean_confidence_delta (average shift, positive or negative),
+        edges_reinforced (graph edges strengthened for positive signals).
+        blocks_updated=0 means all block_ids were non-active (silently skipped).
+
+        NEXT: Positive signal → confidence grows + blocks resist decay.
+        Negative signal → confidence falls + blocks decay naturally.
+        After ~10 outcomes, evidence dominates the LLM alignment prior.
+
+        Domain signal normalisation (one-liners in agent code)::
+
+            signal = 1.0 - brier_score           # trading: 0=worst, 1=perfect
+            signal = 1.0 if tests_passed else 0.0  # coding
+            signal = min(engagement / baseline, 1.0)  # writing
+            signal = (csat_score - 1.0) / 4.0    # support (1–5 scale)
+
+        Args:
+            block_ids: Block IDs that contributed to the outcome (from recall/frame).
+            signal: Normalised quality signal in [0.0, 1.0]. Raises ValueError if outside.
+            weight: Observation weight (> 0.0). Higher = faster convergence.
+                    Use weight > 1.0 for high-stakes outcomes.
+            source: Audit label (e.g. "brier", "test_suite", "csat", "engagement").
+
+        Raises:
+            ValueError: If signal is outside [0.0, 1.0] or weight <= 0.0.
+
+        Example::
+
+            # Trading: Brier score resolves after 30 days
+            block_ids = [b.id for b in await system.recall("EUR/USD forecast")]
+            signal = 1.0 - brier_score
+            result = await system.outcome(block_ids, signal=signal, source="brier")
+            print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced.
+        """
+        current_hours = compute_current_active_hours()
+        mem = self._config.memory
+        async with self._engine.begin() as conn:
+            result = await _record_outcome(
+                conn,
+                block_ids=block_ids,
+                signal=signal,
+                weight=weight,
+                source=source,
+                current_active_hours=current_hours,
+                prior_strength=mem.outcome_prior_strength,
+                reinforce_threshold=mem.outcome_reinforce_threshold,
+            )
+        self._record_op("outcome", result.summary)
+        return result
 
     async def curate(self) -> CurateResult:
         """Archive decayed blocks, prune weak edges, reinforce top-N knowledge.
