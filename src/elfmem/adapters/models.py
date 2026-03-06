@@ -5,26 +5,27 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
-class AlignmentScore(BaseModel):
-    """Structured response for self-alignment scoring."""
+class BlockAnalysisModel(BaseModel):
+    """Instructor-structured response for combined block analysis.
 
-    score: float = Field(
+    Used internally by LiteLLMAdapter.process_block(). The adapter
+    converts this to types.BlockAnalysis after filtering tags.
+    """
+
+    alignment_score: float = Field(
         ge=0.0,
         le=1.0,
         description="Self-alignment score: 0=unrelated, 1=core identity",
     )
-
-
-class SelfTagInference(BaseModel):
-    """Structured response for self-tag inference.
-
-    Tags are the raw LLM output. Filtering against the valid tag vocabulary
-    is the adapter's responsibility, not this model's.
-    """
-
     tags: list[str] = Field(
         default_factory=list,
         description="Self/* tags inferred by the LLM.",
+    )
+    summary: str = Field(
+        description=(
+            "Factual 1-2 sentence distillation of the block. "
+            "Preserves all specific details. Third person."
+        ),
     )
 
 

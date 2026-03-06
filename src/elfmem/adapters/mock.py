@@ -6,18 +6,22 @@ import hashlib
 
 import numpy as np
 
+from elfmem.types import BlockAnalysis
+
 
 class MockLLMService:
     """Deterministic mock LLM service for testing.
 
     All methods are async to match the LLMService protocol.
-    Returns configurable scores and tags without making any API calls.
+    Returns configurable analysis and scores without making any API calls.
 
     Args:
         default_alignment: Default self-alignment score (0.0–1.0).
         alignment_overrides: Substring → score mapping; first match wins.
-        default_tags: Default tags returned by infer_self_tags.
+        default_tags: Default tags returned by process_block.
         tag_overrides: Substring → tags mapping; first match wins.
+        default_summary_prefix: Prefix prepended to block content for default summary.
+        summary_overrides: Substring → exact summary mapping; first match wins.
         default_contradiction: Default contradiction score (0.0–1.0).
         contradiction_overrides: (sub_a, sub_b) → score; matches when
             sub_a in block_a AND sub_b in block_b.
@@ -30,6 +34,8 @@ class MockLLMService:
         alignment_overrides: dict[str, float] | None = None,
         default_tags: list[str] | None = None,
         tag_overrides: dict[str, list[str]] | None = None,
+        default_summary_prefix: str = "Summary: ",
+        summary_overrides: dict[str, str] | None = None,
         default_contradiction: float = 0.1,
         contradiction_overrides: dict[tuple[str, str], float] | None = None,
     ) -> None:
@@ -37,29 +43,69 @@ class MockLLMService:
         self._alignment_overrides = alignment_overrides or {}
         self._default_tags = default_tags or []
         self._tag_overrides = tag_overrides or {}
+        self._default_summary_prefix = default_summary_prefix
+        self._summary_overrides = summary_overrides or {}
         self._default_contradiction = default_contradiction
         self._contradiction_overrides = contradiction_overrides or {}
-        self.alignment_calls: int = 0
-        self.tag_calls: int = 0
+        self.process_block_calls: int = 0
         self.contradiction_calls: int = 0
 
-    async def score_self_alignment(self, block: str, self_context: str) -> float:
-        """Return alignment score. Checks overrides first, then default."""
-        self.alignment_calls += 1
-        block_lower = block.lower()
-        for substring, score in self._alignment_overrides.items():
-            if substring.lower() in block_lower:
-                return score
+    # ── Public attribute aliases ──────────────────────────────────────────────
+    # These allow tests to override behaviour after construction
+    # (e.g. mock_llm.tag_overrides = {"key": ["tag"]})
+
+    @property
+    def default_alignment(self) -> float:
         return self._default_alignment
 
-    async def infer_self_tags(self, block: str, self_context: str) -> list[str]:
-        """Return inferred tags. Checks overrides first, then default."""
-        self.tag_calls += 1
+    @default_alignment.setter
+    def default_alignment(self, value: float) -> None:
+        self._default_alignment = value
+
+    @property
+    def default_tags(self) -> list[str]:
+        return self._default_tags
+
+    @default_tags.setter
+    def default_tags(self, value: list[str]) -> None:
+        self._default_tags = value
+
+    @property
+    def tag_overrides(self) -> dict[str, list[str]]:
+        return self._tag_overrides
+
+    @tag_overrides.setter
+    def tag_overrides(self, value: dict[str, list[str]]) -> None:
+        self._tag_overrides = value
+
+    @property
+    def alignment_overrides(self) -> dict[str, float]:
+        return self._alignment_overrides
+
+    @alignment_overrides.setter
+    def alignment_overrides(self, value: dict[str, float]) -> None:
+        self._alignment_overrides = value
+
+    @property
+    def contradiction_overrides(self) -> dict[tuple[str, str], float]:
+        return self._contradiction_overrides
+
+    @contradiction_overrides.setter
+    def contradiction_overrides(self, value: dict[tuple[str, str], float]) -> None:
+        self._contradiction_overrides = value
+
+    # ── Protocol methods ──────────────────────────────────────────────────────
+
+    async def process_block(self, block: str, self_context: str) -> BlockAnalysis:
+        """Return deterministic BlockAnalysis. Checks overrides, then defaults."""
+        self.process_block_calls += 1
         block_lower = block.lower()
-        for substring, tags in self._tag_overrides.items():
-            if substring.lower() in block_lower:
-                return tags
-        return list(self._default_tags)
+
+        alignment = self._resolve_alignment(block_lower)
+        tags = self._resolve_tags(block_lower)
+        summary = self._resolve_summary(block, block_lower)
+
+        return BlockAnalysis(alignment_score=alignment, tags=tags, summary=summary)
 
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Return contradiction score. Checks overrides first, then default."""
@@ -68,6 +114,26 @@ class MockLLMService:
             if sub_a in block_a and sub_b in block_b:
                 return score
         return self._default_contradiction
+
+    # ── Private helpers ───────────────────────────────────────────────────────
+
+    def _resolve_alignment(self, block_lower: str) -> float:
+        for substring, score in self._alignment_overrides.items():
+            if substring.lower() in block_lower:
+                return score
+        return self._default_alignment
+
+    def _resolve_tags(self, block_lower: str) -> list[str]:
+        for substring, tags in self._tag_overrides.items():
+            if substring.lower() in block_lower:
+                return list(tags)
+        return list(self._default_tags)
+
+    def _resolve_summary(self, block: str, block_lower: str) -> str:
+        for substring, summary in self._summary_overrides.items():
+            if substring.lower() in block_lower:
+                return summary
+        return f"{self._default_summary_prefix}{block}"
 
 
 class MockEmbeddingService:

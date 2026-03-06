@@ -115,27 +115,35 @@ async def consolidate(
             active_vecs.pop(removed_key, None)
             deduplicated += 1
 
-        # Score alignment + infer tags
-        alignment = await llm.score_self_alignment(content, "")
-        inferred_tags = await llm.infer_self_tags(content, "")
-        if inferred_tags:
-            await add_tags(conn, block_id, inferred_tags)
+        # Analyse block: alignment score + tags + summary (one LLM call)
+        analysis = await llm.process_block(content, "")
+        if analysis.tags:
+            await add_tags(conn, block_id, analysis.tags)
 
         all_tags = await get_tags(conn, block_id)
         tier = determine_decay_tier(all_tags, category)
         lam = decay_lambda_for_tier(tier)
-        confidence = alignment if alignment >= self_alignment_threshold else 0.50
+        confidence = (
+            analysis.alignment_score
+            if analysis.alignment_score >= self_alignment_threshold
+            else 0.50
+        )
         token_count = max(1, len(content) // 4)
+
+        # Embed summary for DB storage; content vec (vec) is used for near-dup/edges
+        summary_text = analysis.summary or content
+        summary_vec = await embedding_svc.embed(summary_text.strip().lower())
 
         await update_block_scoring(
             conn,
             block_id,
             confidence=confidence,
-            self_alignment=alignment,
+            self_alignment=analysis.alignment_score,
             decay_lambda=lam,
-            embedding=vec,
+            embedding=summary_vec,
             embedding_model="mock",
             token_count=token_count,
+            summary=analysis.summary,
         )
 
         # Contradiction detection

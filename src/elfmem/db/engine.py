@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import event
@@ -42,6 +43,7 @@ async def create_engine(db_path: str, *, echo: bool = False) -> AsyncEngine:
     Returns:
         Configured AsyncEngine with WAL mode and foreign keys enabled.
     """
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     engine = create_async_engine(
         f"sqlite+aiosqlite:///{db_path}",
         poolclass=NullPool,

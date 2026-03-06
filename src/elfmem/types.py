@@ -379,6 +379,20 @@ class OperationRecord:
 
 
 @dataclass
+class BlockAnalysis:
+    """Result of combined block analysis during consolidation.
+
+    Returned by LLMService.process_block(). Contains all three outputs
+    produced in a single LLM call: alignment score, self-tags, and a
+    normalised summary for embedding and rendering.
+    """
+
+    alignment_score: float  # [0.0, 1.0] — how strongly identity-aligned
+    tags: list[str]         # self/* tags, already filtered to valid vocabulary
+    summary: str            # factual distillation of raw content
+
+
+@dataclass
 class Edge:
     from_id: str  # canonical: min(A, B)
     to_id: str  # canonical: max(A, B)

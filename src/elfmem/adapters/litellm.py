@@ -6,14 +6,14 @@ import instructor
 import litellm
 import numpy as np
 
-from elfmem.adapters.models import AlignmentScore, ContradictionScore, SelfTagInference
+from elfmem.adapters.models import BlockAnalysisModel, ContradictionScore
 from elfmem.prompts import (
+    BLOCK_ANALYSIS_PROMPT,
     CONTRADICTION_PROMPT,
-    SELF_ALIGNMENT_PROMPT,
-    SELF_TAG_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
+from elfmem.types import BlockAnalysis
 
 
 class LiteLLMAdapter:
@@ -33,11 +33,9 @@ class LiteLLMAdapter:
         timeout: Request timeout in seconds. Default 30.
         max_retries: instructor retry count on malformed output. Default 3.
         base_url: Optional base URL for local/proxy endpoints (e.g. Ollama).
-        alignment_model: Per-call model override for alignment scoring.
-        tags_model: Per-call model override for tag inference.
+        process_block_model: Per-call model override for process_block.
         contradiction_model: Per-call model override for contradiction detection.
-        alignment_prompt: Override alignment prompt template.
-        tag_prompt: Override tag prompt template.
+        process_block_prompt: Override the combined block analysis prompt template.
         contradiction_prompt: Override contradiction prompt template.
         valid_self_tags: Override valid tag vocabulary.
     """
@@ -51,11 +49,9 @@ class LiteLLMAdapter:
         timeout: int = 30,
         max_retries: int = 3,
         base_url: str | None = None,
-        alignment_model: str | None = None,
-        tags_model: str | None = None,
+        process_block_model: str | None = None,
         contradiction_model: str | None = None,
-        alignment_prompt: str | None = None,
-        tag_prompt: str | None = None,
+        process_block_prompt: str | None = None,
         contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
         token_counter: TokenCounter | None = None,
@@ -67,17 +63,17 @@ class LiteLLMAdapter:
         self._max_retries = max_retries
         self._base_url = base_url
 
-        self._alignment_model = alignment_model
-        self._tags_model = tags_model
+        self._process_block_model = process_block_model
         self._contradiction_model = contradiction_model
 
         # Resolve prompts at construction time (no I/O per call)
-        self._alignment_prompt = (
-            alignment_prompt if alignment_prompt is not None else SELF_ALIGNMENT_PROMPT
+        self._process_block_prompt = (
+            process_block_prompt if process_block_prompt is not None
+            else BLOCK_ANALYSIS_PROMPT
         )
-        self._tag_prompt = tag_prompt if tag_prompt is not None else SELF_TAG_PROMPT
         self._contradiction_prompt = (
-            contradiction_prompt if contradiction_prompt is not None else CONTRADICTION_PROMPT
+            contradiction_prompt if contradiction_prompt is not None
+            else CONTRADICTION_PROMPT
         )
         self._valid_self_tags: frozenset[str] = (
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
@@ -110,29 +106,24 @@ class LiteLLMAdapter:
             output_tokens=getattr(usage, "completion_tokens", None) or 0,
         )
 
-    async def score_self_alignment(self, block: str, self_context: str) -> float:
-        """Score how much a block reflects the agent's identity."""
-        prompt = self._alignment_prompt.format(self_context=self_context, block=block)
+    async def process_block(self, block: str, self_context: str) -> BlockAnalysis:
+        """Analyse a block: alignment score + self-tags + summary in one LLM call."""
+        prompt = self._process_block_prompt.format(
+            self_context=self_context, block=block
+        )
         result, completion = await self._client.chat.completions.create_with_completion(
             messages=[{"role": "user", "content": prompt}],
-            response_model=AlignmentScore,
+            response_model=BlockAnalysisModel,
             max_retries=self._max_retries,
-            **self._call_kwargs(self._alignment_model),
+            **self._call_kwargs(self._process_block_model),
         )
         self._record_llm_usage(completion)
-        return result.score
-
-    async def infer_self_tags(self, block: str, self_context: str) -> list[str]:
-        """Infer self/* tags for a block, filtered to the valid vocabulary."""
-        prompt = self._tag_prompt.format(self_context=self_context, block=block)
-        result, completion = await self._client.chat.completions.create_with_completion(
-            messages=[{"role": "user", "content": prompt}],
-            response_model=SelfTagInference,
-            max_retries=self._max_retries,
-            **self._call_kwargs(self._tags_model),
+        filtered_tags = [tag for tag in result.tags if tag in self._valid_self_tags]
+        return BlockAnalysis(
+            alignment_score=result.alignment_score,
+            tags=filtered_tags,
+            summary=result.summary,
         )
-        self._record_llm_usage(completion)
-        return [tag for tag in result.tags if tag in self._valid_self_tags]
 
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Score how contradictory two blocks are."""

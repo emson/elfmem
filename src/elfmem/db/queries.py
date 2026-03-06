@@ -199,6 +199,7 @@ async def update_block_scoring(
     embedding: np.ndarray | None = None,
     embedding_model: str | None = None,
     token_count: int | None = None,
+    summary: str | None = None,
 ) -> None:
     """Update scoring-related fields after consolidation (partial update).
 
@@ -217,6 +218,8 @@ async def update_block_scoring(
         values["embedding_model"] = embedding_model
     if token_count is not None:
         values["token_count"] = token_count
+    if summary is not None:
+        values["summary"] = summary
     if values:
         await conn.execute(
             update(blocks).where(blocks.c.id == block_id).values(**values)

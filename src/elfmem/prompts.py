@@ -15,8 +15,8 @@ VALID_SELF_TAGS: frozenset[str] = frozenset({
     "self/context",
 })
 
-SELF_ALIGNMENT_PROMPT: str = """\
-You are evaluating whether a memory block expresses the identity of an agent.
+BLOCK_ANALYSIS_PROMPT: str = """\
+You are analysing a memory block for an agent's adaptive memory system.
 
 ## Agent Identity
 {self_context}
@@ -24,37 +24,35 @@ You are evaluating whether a memory block expresses the identity of an agent.
 ## Memory Block
 {block}
 
-Rate how much this block expresses, reinforces, or reflects the agent's identity,
-values, or self-concept on a scale from 0.0 to 1.0:
-- 0.0: Unrelated — technical fact, external knowledge, no identity relevance
-- 0.3: Adjacent — relevant to the agent's domain but not their identity
-- 0.7: Identity-adjacent — reflects how the agent thinks or works
-- 1.0: Core identity — directly states a value, constraint, or self-defining belief
+Analyse this block and return three things:
 
-Respond with JSON: {{"score": <float between 0.0 and 1.0>}}
-"""
+1. **alignment_score** (0.0–1.0): How much does this block express or reinforce
+   the agent's identity, values, or self-concept?
+   - 0.0: Unrelated — technical fact, external knowledge, no identity relevance
+   - 0.3: Adjacent — relevant to the agent's domain but not their identity
+   - 0.7: Identity-adjacent — reflects how the agent thinks or works
+   - 1.0: Core identity — directly states a value, constraint, or self-defining belief
 
-SELF_TAG_PROMPT: str = """\
-You are classifying a memory block against an agent's identity taxonomy.
+2. **tags**: Which self/* tags apply? Choose from:
+   - self/constitutional: core invariants — never violated, fundamental to existence
+   - self/constraint: strong rules — rarely violated, firm preferences
+   - self/value: beliefs and principles that consistently guide behavior
+   - self/style: communication style, tone, and interaction preferences
+   - self/goal: active goals or objectives the agent is pursuing
+   - self/context: situational context about who the agent is or what they know
+   A block may have 0, 1, or multiple tags.
+   Only assign a tag if you are confident it applies. Prefer no tags over guessing.
 
-## Agent Identity
-{self_context}
+3. **summary**: A factual 1–2 sentence distillation of the block content.
+   Rules for the summary:
+   - Preserve ALL specific details (names, numbers, preferences, constraints)
+   - Remove filler words, formatting artifacts, and conversational tone
+   - Write in third person ("User prefers..." not "I prefer...")
+   - Keep domain-specific terms intact
+   - If the content is already concise and factual, copy it as-is
 
-## Memory Block
-{block}
-
-## Available Tags
-- self/constitutional: core invariants — never violated, fundamental to existence
-- self/constraint: strong rules — rarely violated, firm preferences
-- self/value: beliefs and principles that consistently guide behavior
-- self/style: communication style, tone, and interaction preferences
-- self/goal: active goals or objectives the agent is pursuing
-- self/context: situational context about who the agent is or what they know
-
-Which tags apply? A block may have 0, 1, or multiple tags.
-Only assign a tag if you are confident it applies. Prefer no tags over guessing.
-
-Respond with JSON: {{"tags": [<list of applicable tag strings>]}}
+Respond with JSON:
+{{"alignment_score": <float>, "tags": [<strings>], "summary": "<string>"}}
 """
 
 CONTRADICTION_PROMPT: str = """\

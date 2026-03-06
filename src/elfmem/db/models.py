@@ -35,6 +35,7 @@ blocks = Table(
     Column("embedding", LargeBinary),
     Column("embedding_model", Text),
     Column("token_count", Integer),
+    Column("summary", Text),
     Column("last_session_id", Text),
     Column("outcome_evidence", Float, nullable=False, default=0.0),
 )

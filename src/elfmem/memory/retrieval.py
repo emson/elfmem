@@ -210,7 +210,7 @@ def _stage_4_composite_score(
         scored.append(
             ScoredBlock(
                 id=block_id,
-                content=block.get("content", ""),
+                content=block.get("summary") or block.get("content", ""),
                 tags=[],
                 similarity=similarity,
                 confidence=confidence,

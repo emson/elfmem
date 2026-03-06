@@ -10,6 +10,7 @@ from elfmem.adapters.mock import (
     make_mock_llm,
 )
 from elfmem.ports.services import EmbeddingService, LLMService
+from elfmem.types import BlockAnalysis
 
 TOL = 0.001
 
@@ -23,19 +24,11 @@ class TestMockLLMServiceProtocolCompliance:
         assert isinstance(mock, LLMService)
 
     @pytest.mark.asyncio
-    async def test_score_self_alignment_is_async(self) -> None:
-        """score_self_alignment is an async method."""
+    async def test_process_block_is_async(self) -> None:
+        """process_block is an async method returning BlockAnalysis."""
         mock = MockLLMService()
-        result = await mock.score_self_alignment("test block", "self context")
-        assert isinstance(result, float)
-        assert 0.0 <= result <= 1.0
-
-    @pytest.mark.asyncio
-    async def test_infer_self_tags_is_async(self) -> None:
-        """infer_self_tags is an async method."""
-        mock = MockLLMService()
-        result = await mock.infer_self_tags("test block", "self context")
-        assert isinstance(result, list)
+        result = await mock.process_block("test block", "self context")
+        assert isinstance(result, BlockAnalysis)
 
     @pytest.mark.asyncio
     async def test_detect_contradiction_is_async(self) -> None:
@@ -46,41 +39,109 @@ class TestMockLLMServiceProtocolCompliance:
         assert 0.0 <= result <= 1.0
 
 
-class TestMockLLMServiceAlignmentScoring:
-    """Self-alignment scoring configuration and overrides."""
+class TestMockLLMServiceProcessBlock:
+    """process_block configuration and overrides."""
+
+    @pytest.mark.asyncio
+    async def test_returns_block_analysis(self) -> None:
+        """process_block returns a BlockAnalysis dataclass."""
+        mock = MockLLMService()
+        result = await mock.process_block("some content", "context")
+        assert isinstance(result, BlockAnalysis)
 
     @pytest.mark.asyncio
     async def test_default_alignment_score(self) -> None:
         """Returns default_alignment when no override matches."""
         mock = MockLLMService(default_alignment=0.75)
-        score = await mock.score_self_alignment("random content", "self context")
-        assert abs(score - 0.75) < TOL
+        result = await mock.process_block("random content", "self context")
+        assert abs(result.alignment_score - 0.75) < TOL
 
     @pytest.mark.asyncio
-    async def test_alignment_overrides_substring_matching(self) -> None:
-        """Alignment overrides match by substring."""
+    async def test_alignment_override_substring_match(self) -> None:
+        """Alignment override matches by substring."""
         mock = MockLLMService(
             default_alignment=0.5,
-            alignment_overrides={
-                "identity": 0.95,
-                "preference": 0.80,
-            },
+            alignment_overrides={"identity": 0.95},
         )
-        # Match "identity"
-        score = await mock.score_self_alignment("I value my personal identity.", "self context")
-        assert abs(score - 0.95) < TOL
+        result = await mock.process_block("I value my personal identity.", "context")
+        assert abs(result.alignment_score - 0.95) < TOL
 
-        # Match "preference"
-        score = await mock.score_self_alignment("My preference is clarity.", "self context")
-        assert abs(score - 0.80) < TOL
+    @pytest.mark.asyncio
+    async def test_alignment_no_match_uses_default(self) -> None:
+        """No override match falls back to default alignment."""
+        mock = MockLLMService(
+            default_alignment=0.5,
+            alignment_overrides={"identity": 0.95},
+        )
+        result = await mock.process_block("Random unrelated content.", "context")
+        assert abs(result.alignment_score - 0.5) < TOL
 
-        # No match
-        score = await mock.score_self_alignment("Random unrelated content.", "self context")
-        assert abs(score - 0.5) < TOL
+    @pytest.mark.asyncio
+    async def test_default_tags(self) -> None:
+        """Returns default_tags when no override matches."""
+        mock = MockLLMService(default_tags=["python", "async"])
+        result = await mock.process_block("random content", "context")
+        assert set(result.tags) == {"python", "async"}
+
+    @pytest.mark.asyncio
+    async def test_tag_override_substring_match(self) -> None:
+        """Tag override matches by substring."""
+        mock = MockLLMService(
+            default_tags=[],
+            tag_overrides={"constitutional": ["self/constitutional"]},
+        )
+        result = await mock.process_block("This is a constitutional belief.", "context")
+        assert result.tags == ["self/constitutional"]
+
+    @pytest.mark.asyncio
+    async def test_tag_no_match_uses_default(self) -> None:
+        """No tag override match returns default tags."""
+        mock = MockLLMService(
+            default_tags=["default/tag"],
+            tag_overrides={"constitutional": ["self/constitutional"]},
+        )
+        result = await mock.process_block("Random content.", "context")
+        assert result.tags == ["default/tag"]
+
+    @pytest.mark.asyncio
+    async def test_default_summary_uses_prefix_plus_content(self) -> None:
+        """Default summary is prefix + block content."""
+        mock = MockLLMService(default_summary_prefix="Summary: ")
+        result = await mock.process_block("Some block text.", "context")
+        assert result.summary == "Summary: Some block text."
+
+    @pytest.mark.asyncio
+    async def test_summary_override_substring_match(self) -> None:
+        """Summary override matches by substring."""
+        mock = MockLLMService(
+            summary_overrides={"satellite": "Block is about satellite systems."},
+        )
+        result = await mock.process_block("satellite data ingestion", "context")
+        assert result.summary == "Block is about satellite systems."
+
+    @pytest.mark.asyncio
+    async def test_summary_no_match_uses_default(self) -> None:
+        """No summary override match uses default prefix + content."""
+        mock = MockLLMService(
+            default_summary_prefix="S: ",
+            summary_overrides={"satellite": "About satellites."},
+        )
+        result = await mock.process_block("generic content", "context")
+        assert result.summary == "S: generic content"
+
+    @pytest.mark.asyncio
+    async def test_process_block_call_tracking(self) -> None:
+        """process_block calls are tracked."""
+        mock = MockLLMService()
+        assert mock.process_block_calls == 0
+        await mock.process_block("block 1", "context")
+        assert mock.process_block_calls == 1
+        await mock.process_block("block 2", "context")
+        assert mock.process_block_calls == 2
 
     @pytest.mark.asyncio
     async def test_alignment_first_match_wins(self) -> None:
-        """First matching override is used."""
+        """First matching alignment override is used."""
         mock = MockLLMService(
             default_alignment=0.5,
             alignment_overrides={
@@ -88,61 +149,37 @@ class TestMockLLMServiceAlignmentScoring:
                 "patterns": 0.70,
             },
         )
-        # Content matches both "async" and "patterns"
-        score = await mock.score_self_alignment("async patterns in Python", "self context")
-        # First match in iteration order wins
-        assert score in [0.90, 0.70]
+        # Content matches "async" first
+        result = await mock.process_block("async patterns in Python", "context")
+        assert result.alignment_score in [0.90, 0.70]
 
     @pytest.mark.asyncio
-    async def test_alignment_call_tracking(self) -> None:
-        """Alignment calls are tracked."""
-        mock = MockLLMService()
-        assert mock.alignment_calls == 0
-        await mock.score_self_alignment("block 1", "context")
-        assert mock.alignment_calls == 1
-        await mock.score_self_alignment("block 2", "context")
-        assert mock.alignment_calls == 2
-
-
-class TestMockLLMServiceTagInference:
-    """Self-tag inference configuration and overrides."""
-
-    @pytest.mark.asyncio
-    async def test_default_tags(self) -> None:
-        """Returns default_tags when no override matches."""
-        mock = MockLLMService(default_tags=["python", "async"])
-        tags = await mock.infer_self_tags("random content", "self context")
-        assert set(tags) == {"python", "async"}
-
-    @pytest.mark.asyncio
-    async def test_tag_overrides_substring_matching(self) -> None:
-        """Tag overrides match by substring."""
+    async def test_tag_first_match_wins(self) -> None:
+        """First matching tag override is used."""
         mock = MockLLMService(
             default_tags=[],
             tag_overrides={
-                "constitutional": ["self/constitutional"],
                 "value": ["self/value"],
+                "constitutional": ["self/constitutional"],
             },
         )
-        # Match "constitutional"
-        tags = await mock.infer_self_tags("This is a constitutional belief.", "self context")
-        assert tags == ["self/constitutional"]
-
-        # Match "value"
-        tags = await mock.infer_self_tags("I value clarity.", "self context")
-        assert tags == ["self/value"]
-
-        # No match
-        tags = await mock.infer_self_tags("Random content.", "self context")
-        assert tags == []
+        # "value" appears before "constitutional" in dict
+        result = await mock.process_block("I value this constitutional principle.", "context")
+        # First match in dict order wins
+        assert result.tags in [["self/value"], ["self/constitutional"]]
 
     @pytest.mark.asyncio
-    async def test_tag_call_tracking(self) -> None:
-        """Tag inference calls are tracked."""
-        mock = MockLLMService()
-        assert mock.tag_calls == 0
-        await mock.infer_self_tags("block 1", "context")
-        assert mock.tag_calls == 1
+    async def test_all_fields_returned_together(self) -> None:
+        """process_block returns all three fields in one call."""
+        mock = MockLLMService(
+            default_alignment=0.8,
+            default_tags=["science"],
+            default_summary_prefix="Fact: ",
+        )
+        result = await mock.process_block("The sky is blue.", "context")
+        assert abs(result.alignment_score - 0.8) < TOL
+        assert result.tags == ["science"]
+        assert result.summary == "Fact: The sky is blue."
 
 
 class TestMockLLMServiceContradictionDetection:
@@ -183,6 +220,34 @@ class TestMockLLMServiceContradictionDetection:
         assert mock.contradiction_calls == 0
         await mock.detect_contradiction("a", "b")
         assert mock.contradiction_calls == 1
+
+
+class TestMockLLMServicePropertySetters:
+    """Attribute setters allow post-construction override changes."""
+
+    def test_tag_overrides_setter(self) -> None:
+        """tag_overrides can be replaced after construction."""
+        mock = MockLLMService(tag_overrides={"old": ["old/tag"]})
+        mock.tag_overrides = {"new": ["new/tag"]}
+        assert mock.tag_overrides == {"new": ["new/tag"]}
+
+    def test_default_tags_setter(self) -> None:
+        """default_tags can be replaced after construction."""
+        mock = MockLLMService(default_tags=["initial"])
+        mock.default_tags = []
+        assert mock.default_tags == []
+
+    def test_alignment_overrides_setter(self) -> None:
+        """alignment_overrides can be replaced after construction."""
+        mock = MockLLMService(alignment_overrides={"old": 0.9})
+        mock.alignment_overrides = {"new": 0.7}
+        assert mock.alignment_overrides == {"new": 0.7}
+
+    def test_contradiction_overrides_setter(self) -> None:
+        """contradiction_overrides can be replaced after construction."""
+        mock = MockLLMService(contradiction_overrides={("a", "b"): 0.9})
+        mock.contradiction_overrides = {}
+        assert mock.contradiction_overrides == {}
 
 
 class TestMockEmbeddingServiceProtocolCompliance:
@@ -388,9 +453,8 @@ class TestMockServiceIntegration:
         )
         embedding = MockEmbeddingService()
 
-        # Use both
-        alignment = await llm.score_self_alignment("I love Python.", "context")
-        assert abs(alignment - 0.95) < TOL
+        result = await llm.process_block("I love Python.", "context")
+        assert abs(result.alignment_score - 0.95) < TOL
 
         vec = await embedding.embed("I love Python.")
         assert vec.shape == (64,)

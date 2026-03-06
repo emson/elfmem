@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from elfmem.adapters.litellm import LiteLLMAdapter, LiteLLMEmbeddingAdapter
-from elfmem.adapters.models import AlignmentScore
+from elfmem.adapters.models import BlockAnalysisModel
 from elfmem.api import MemorySystem
 from elfmem.token_counter import TokenCounter
 from elfmem.types import TokenUsage
@@ -455,10 +455,13 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion.usage.prompt_tokens = 100
         mock_completion.usage.completion_tokens = 20
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(AlignmentScore(score=0.8), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
 
-        await adapter.score_self_alignment("block content", "self context")
+        await adapter.process_block("block content", "self context")
 
         snap = counter.snapshot()
         assert snap.llm_input_tokens == 100
@@ -473,11 +476,14 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion.usage.prompt_tokens = 100
         mock_completion.usage.completion_tokens = 20
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(AlignmentScore(score=0.8), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
 
         # Must not raise — adapters work fine without a counter
-        await adapter.score_self_alignment("block content", "self context")
+        await adapter.process_block("block content", "self context")
 
     @pytest.mark.asyncio
     async def test_handles_none_usage_gracefully(self):
@@ -487,10 +493,13 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion = MagicMock()
         mock_completion.usage = None  # provider returns no usage object
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(AlignmentScore(score=0.8), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
 
-        await adapter.score_self_alignment("block content", "self context")
+        await adapter.process_block("block content", "self context")
         assert counter.snapshot() == TokenUsage()  # nothing recorded
 
     @pytest.mark.asyncio
@@ -502,19 +511,22 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion.usage.prompt_tokens = None     # field is None, not missing
         mock_completion.usage.completion_tokens = None
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(AlignmentScore(score=0.8), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
 
-        await adapter.score_self_alignment("block content", "self context")
+        await adapter.process_block("block content", "self context")
         snap = counter.snapshot()
         assert snap.llm_input_tokens == 0   # guarded to 0
         assert snap.llm_output_tokens == 0  # guarded to 0
         assert snap.llm_calls == 1          # call did happen
 
     @pytest.mark.asyncio
-    async def test_three_call_sites_each_record_independently(self):
-        """All three LLM methods record to the same counter."""
-        from elfmem.adapters.models import ContradictionScore, SelfTagInference
+    async def test_both_call_sites_record_independently(self):
+        """Both LLM methods (process_block + detect_contradiction) record to the same counter."""
+        from elfmem.adapters.models import ContradictionScore
 
         counter = TokenCounter()
         adapter = LiteLLMAdapter(model="gpt-4o-mini", token_counter=counter)
@@ -527,20 +539,21 @@ class TestLiteLLMAdapterTokenRecording:
 
         adapter._client.chat.completions.create_with_completion = AsyncMock(
             side_effect=[
-                (AlignmentScore(score=0.8), _make_completion(100, 10)),
-                (SelfTagInference(tags=["self/preference"]), _make_completion(150, 20)),
+                (
+                    BlockAnalysisModel(alignment_score=0.8, tags=[], summary="summary"),
+                    _make_completion(100, 10),
+                ),
                 (ContradictionScore(score=0.1), _make_completion(200, 5)),
             ]
         )
 
-        await adapter.score_self_alignment("block", "ctx")
-        await adapter.infer_self_tags("block", "ctx")
+        await adapter.process_block("block", "ctx")
         await adapter.detect_contradiction("block_a", "block_b")
 
         snap = counter.snapshot()
-        assert snap.llm_calls == 3
-        assert snap.llm_input_tokens == 450   # 100+150+200
-        assert snap.llm_output_tokens == 35   # 10+20+5
+        assert snap.llm_calls == 2
+        assert snap.llm_input_tokens == 300   # 100+200
+        assert snap.llm_output_tokens == 15   # 10+5
 
 
 # ── LiteLLMEmbeddingAdapter token recording ───────────────────────────────────

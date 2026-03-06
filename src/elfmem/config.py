@@ -19,7 +19,7 @@ class LLMConfig(BaseModel):
       Groq       → GROQ_API_KEY
     """
 
-    model: str = "claude-sonnet-4-6"
+    model: str = "claude-haiku-4-5-20251001"
     temperature: float = 0.0
     max_tokens: int = 512
     timeout: int = 30
@@ -27,8 +27,7 @@ class LLMConfig(BaseModel):
     base_url: str | None = None
 
     # Per-call model overrides — None = use model above
-    alignment_model: str | None = None
-    tags_model: str | None = None
+    process_block_model: str | None = None
     contradiction_model: str | None = None
 
 
@@ -106,25 +105,19 @@ class PromptsConfig(BaseModel):
     """
 
     # Level 1: Inline overrides — None = use library default
-    self_alignment: str | None = None
-    self_tags: str | None = None
+    process_block: str | None = None
     contradiction: str | None = None
 
     # Level 2: File path overrides — None = not used
-    self_alignment_file: str | None = None
-    self_tags_file: str | None = None
+    process_block_file: str | None = None
     contradiction_file: str | None = None
 
     # Tag vocabulary override — None = use VALID_SELF_TAGS from prompts.py
     valid_self_tags: list[str] | None = None
 
-    def resolve_self_alignment(self) -> str:
-        """Resolve the alignment prompt: inline > file > default."""
-        return self._resolve(self.self_alignment, self.self_alignment_file, "self_alignment")
-
-    def resolve_self_tags(self) -> str:
-        """Resolve the tag inference prompt: inline > file > default."""
-        return self._resolve(self.self_tags, self.self_tags_file, "self_tags")
+    def resolve_process_block(self) -> str:
+        """Resolve the block analysis prompt: inline > file > default."""
+        return self._resolve(self.process_block, self.process_block_file, "process_block")
 
     def resolve_contradiction(self) -> str:
         """Resolve the contradiction prompt: inline > file > default."""
@@ -139,8 +132,7 @@ class PromptsConfig(BaseModel):
 
     def validate_templates(self) -> None:
         """Raise ValueError if any resolved prompt is missing required variables."""
-        _check_vars(self.resolve_self_alignment(), ["self_context", "block"], "self_alignment")
-        _check_vars(self.resolve_self_tags(), ["self_context", "block"], "self_tags")
+        _check_vars(self.resolve_process_block(), ["self_context", "block"], "process_block")
         _check_vars(self.resolve_contradiction(), ["block_a", "block_b"], "contradiction")
 
     @staticmethod
@@ -151,8 +143,7 @@ class PromptsConfig(BaseModel):
             return Path(filepath).read_text(encoding="utf-8")
         from elfmem import prompts
         defaults = {
-            "self_alignment": prompts.SELF_ALIGNMENT_PROMPT,
-            "self_tags": prompts.SELF_TAG_PROMPT,
+            "process_block": prompts.BLOCK_ANALYSIS_PROMPT,
             "contradiction": prompts.CONTRADICTION_PROMPT,
         }
         return defaults[prompt_name]
@@ -187,7 +178,10 @@ class ElfmemConfig(BaseModel):
         """Load config from a YAML file. All sections are optional."""
         with open(path) as f:
             data = yaml.safe_load(f)
-        return cls.model_validate(data or {})
+        # Remove None values so empty sections (e.g., "prompts:" with only comments)
+        # trigger default_factory instead of validation error.
+        data = {k: v for k, v in (data or {}).items() if v is not None}
+        return cls.model_validate(data)
 
     @classmethod
     def from_env(cls) -> ElfmemConfig:
