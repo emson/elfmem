@@ -283,6 +283,34 @@ GUIDES: dict[str, AgentGuide] = {
             "result = await system.outcome(block_ids, signal=signal, source='csat')"
         ),
     ),
+    "setup": AgentGuide(
+        name="setup",
+        what="Bootstrap agent identity by seeding the SELF frame with core identity blocks.",
+        when=(
+            "First use — before any other operations. "
+            "Also when the agent's role, values, or constraints change significantly."
+        ),
+        when_not=(
+            "Every session — SELF blocks persist and decay slowly. "
+            "Don't re-seed unchanged identity on every run; duplicates are rejected automatically."
+        ),
+        cost="Fast per block. Each block requires one LLM call during consolidate().",
+        returns=(
+            "dict with status='setup_complete', blocks_created (int), and blocks (list of "
+            "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe."
+        ),
+        next=(
+            "SELF blocks sit in inbox until consolidate() runs (auto on session close). "
+            "After consolidation, elfmem_recall(frame='self') returns your identity context. "
+            "Check status with elfmem_status() or 'elfmem doctor' CLI."
+        ),
+        example=(
+            "elfmem_setup(\n"
+            "    identity='I am Claude Code, an AI-powered software engineering assistant.',\n"
+            "    values=['write minimal clean code', 'confirm before destructive operations']\n"
+            ")"
+        ),
+    ),
     "guide": AgentGuide(
         name="guide",
         what="Return agent-friendly documentation for a specific method or all methods.",
@@ -314,6 +342,7 @@ OVERVIEW: str = "\n".join([
     "",
     "  Operation              Cost         Description",
     "  ─────────────────────────────────────────────────────────────────────",
+    "  setup(identity, ...)   Fast         Seed SELF frame with agent identity (first use)",
     "  learn(content, ...)    Instant      Store knowledge for later retrieval",
     "  recall(query, ...)     Fast         Raw retrieval — list of scored blocks",
     "  frame(name, ...)       Fast         Retrieve + render a named context frame",
@@ -324,8 +353,8 @@ OVERVIEW: str = "\n".join([
     "  history(last_n=10)     Instant      Recent operations in this process session",
     "  guide(method?)         Instant      This help",
     "",
-    "Lifecycle:  session() → learn() → [consolidate()] → frame() / recall() → outcome()",
-    "Quick start: system.status() | system.guide('learn') | system.guide('frame')",
+    "Lifecycle:  setup() → session() → learn() → [consolidate()] → frame() / recall() → outcome()",
+    "Quick start: elfmem_setup(identity='...') | system.status() | system.guide('learn')",
 ])
 
 

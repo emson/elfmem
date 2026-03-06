@@ -105,6 +105,40 @@ async def elfmem_curate() -> dict[str, Any]:
 
 
 @mcp.tool()
+async def elfmem_setup(
+    identity: str,
+    values: list[str] | None = None,
+) -> dict[str, Any]:
+    """Bootstrap agent identity in the SELF frame.
+
+    Call this on first use to establish who you are. Creates SELF-tagged blocks
+    from a natural language description. Safe to call multiple times — exact
+    duplicate content is silently rejected, so re-running is harmless.
+
+    identity: Natural language description of agent role, personality, constraints.
+    values:   Optional list of core values or principles (each stored separately).
+
+    Returns blocks_created count and per-block status dicts.
+    """
+    results = []
+
+    identity_result = await _mem().remember(identity, tags=["self/context"])
+    results.append(identity_result.to_dict())
+
+    if values:
+        for value in values:
+            r = await _mem().remember(value, tags=["self/value"])
+            results.append(r.to_dict())
+
+    created = sum(1 for r in results if r["status"] == "created")
+    return {
+        "status": "setup_complete",
+        "blocks_created": created,
+        "blocks": results,
+    }
+
+
+@mcp.tool()
 async def elfmem_guide(method: str | None = None) -> str:
     """Detailed documentation for a specific operation, or the full overview.
 

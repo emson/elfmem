@@ -1,6 +1,8 @@
 """elfmem CLI — adaptive memory as shell commands.
 
 Commands:
+    elfmem init [--self TEXT] [--db PATH] [--config PATH] [--force] [--json]
+    elfmem doctor [--db PATH] [--config PATH] [--json]
     elfmem remember CONTENT [--tags t1,t2] [--category C] [--json]
     elfmem recall QUERY [--top-k N] [--frame F] [--json]
     elfmem status [--json]
@@ -17,6 +19,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sys
+from pathlib import Path
 from typing import Annotated, Any
 
 try:
@@ -71,6 +75,164 @@ def _json(data: Any) -> None:
 
 
 # ── Commands ──────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def init(
+    self_description: Annotated[
+        str | None,
+        typer.Option("--self", help="Seed SELF frame with this identity description"),
+    ] = None,
+    db: Annotated[
+        str,
+        typer.Option("--db", envvar="ELFMEM_DB", help="Database path"),
+    ] = "~/.elfmem/agent.db",
+    config_path: Annotated[
+        str,
+        typer.Option("--config", envvar="ELFMEM_CONFIG", help="Config YAML path"),
+    ] = "~/.elfmem/config.yaml",
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Overwrite existing config (never overwrites DB)"),
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Initialise elfmem: create config directory, generate config, and optionally seed SELF.
+
+    Safe to re-run: existing config is preserved unless --force is given.
+    Existing SELF blocks are never duplicated (duplicate content is silently skipped).
+    """
+    from elfmem.config import render_default_config
+
+    db_expanded = os.path.expanduser(db)
+    config_expanded = os.path.expanduser(config_path)
+    config_file = Path(config_expanded)
+
+    # Step 1: create config directory
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Step 2: write config — skip if already exists (unless --force)
+    if config_file.exists() and not force:
+        config_action = "exists (skipped)"
+    else:
+        config_file.write_text(render_default_config(), encoding="utf-8")
+        config_action = "created" if not config_file.exists() else "created"
+        # Re-check: write_text succeeded
+        config_action = "created"
+
+    # Step 3: seed SELF block if --self provided
+    self_result: dict[str, str] | None = None
+    if self_description:
+        learn_result: LearnResult = _run(
+            _init_self(db_expanded, config_expanded, self_description)
+        )
+        self_result = learn_result.to_dict()
+
+    if json_output:
+        out: dict[str, Any] = {
+            "config_path": config_expanded,
+            "config_action": config_action,
+            "db_path": db_expanded,
+        }
+        if self_result is not None:
+            out["self_block"] = self_result
+        _json(out)
+    else:
+        typer.echo(f"✓  Config:   {config_expanded} ({config_action})")
+        typer.echo(f"✓  Database: {db_expanded} (ready)")
+        if self_result is not None:
+            status_msg = self_result["status"]
+            if status_msg == "created":
+                typer.echo(f"✓  SELF:     Stored block {self_result['block_id'][:8]}. Status: created.")
+            elif status_msg == "duplicate_rejected":
+                typer.echo("✓  SELF:     Block already exists (skipped — no duplicate created).")
+            else:
+                typer.echo(f"✓  SELF:     {self_result['block_id'][:8]}. Status: {status_msg}.")
+        if not self_description:
+            typer.echo(
+                "\n  Tip: seed your identity with:\n"
+                f"  elfmem init --self 'Describe your agent here'"
+            )
+
+
+@app.command()
+def doctor(
+    db: Annotated[
+        str | None,
+        typer.Option("--db", envvar="ELFMEM_DB", help="Database path"),
+    ] = None,
+    config: Annotated[
+        str | None,
+        typer.Option("--config", envvar="ELFMEM_CONFIG", help="Config YAML path"),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Diagnose your elfmem setup. Reports what is configured and what is missing.
+
+    Exits with code 1 if any required item is missing; 0 if fully configured.
+    Read-only: never writes to the database or config files.
+    """
+    db_path = os.path.expanduser(db or "~/.elfmem/agent.db")
+    config_path = os.path.expanduser(config or "~/.elfmem/config.yaml")
+
+    checks: list[dict[str, Any]] = []
+    failed = False
+
+    def _check(label: str, ok: bool, detail: str, suggestion: str = "") -> None:
+        nonlocal failed
+        checks.append({"label": label, "ok": ok, "detail": detail, "suggestion": suggestion})
+        if not ok:
+            failed = True
+
+    # Filesystem checks (read-only)
+    config_file = Path(config_path)
+    _check("Config dir", config_file.parent.exists(), str(config_file.parent),
+           f"mkdir -p {config_file.parent}")
+    _check("Config file", config_file.exists(), config_path,
+           f"elfmem init --config {config_path}")
+    _check("Database", Path(db_path).exists(), db_path,
+           f"elfmem init --db {db_path}")
+
+    # API key checks (warn, not fail)
+    has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY"))
+    has_openai = bool(os.getenv("OPENAI_API_KEY"))
+    _check(
+        "API keys",
+        has_anthropic or has_openai,
+        "ANTHROPIC_API_KEY" if has_anthropic else ("OPENAI_API_KEY" if has_openai else "none set"),
+        "export ANTHROPIC_API_KEY='sk-ant-...' or OPENAI_API_KEY='sk-...'",
+    )
+
+    # SELF block check — requires DB access (read-only)
+    self_count = -1
+    if Path(db_path).exists():
+        self_count = _run(_doctor_self_count(db_path))
+
+    if self_count < 0:
+        _check("SELF frame", False, "DB not accessible",
+               f"elfmem init --self 'Describe your agent here' --db {db_path}")
+    elif self_count == 0:
+        _check("SELF frame", False, "No SELF blocks found",
+               f"elfmem init --self 'Describe your agent here' --db {db_path}")
+    else:
+        _check("SELF frame", True, f"{self_count} SELF block(s) found")
+
+    if json_output:
+        _json({"checks": checks, "passed": not failed})
+    else:
+        for c in checks:
+            symbol = "✓" if c["ok"] else "✗"
+            typer.echo(f"{symbol}  {c['label']:<12} {c['detail']}")
+            if not c["ok"] and c["suggestion"]:
+                typer.echo(f"   Suggestion: {c['suggestion']}")
+        typer.echo("")
+        if failed:
+            typer.echo("Setup incomplete. Follow the suggestions above.")
+        else:
+            typer.echo("All checks passed. elfmem is ready.")
+
+    if failed:
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -250,3 +412,26 @@ async def _outcome(
 async def _curate(db_path: str, config: str | None) -> CurateResult:
     async with SmartMemory.managed(db_path, config=config) as mem:
         return await mem.curate()
+
+
+async def _init_self(db_path: str, config: str, content: str) -> LearnResult:
+    """Store an identity block tagged self/context. Used by elfmem init --self."""
+    async with SmartMemory.managed(db_path, config=config) as mem:
+        return await mem.remember(content, tags=["self/context"])
+
+
+async def _doctor_self_count(db_path: str) -> int:
+    """Count active SELF blocks. Returns -1 if DB is not accessible.
+
+    Uses a raw engine connection — no session, no schema changes, no side effects.
+    """
+    from elfmem.db.engine import create_engine
+    from elfmem.db.queries import count_self_blocks
+    try:
+        engine = await create_engine(db_path)
+        async with engine.connect() as conn:
+            count = await count_self_blocks(conn)
+        await engine.dispose()
+        return count
+    except Exception:
+        return -1

@@ -193,9 +193,9 @@ class TestDeriveHealth:
         health, _ = _derive_health(inbox_count=0, inbox_threshold=10, active_count=0)
         assert health == "good"
 
-    def test_empty_memory_suggestion_mentions_learn(self):
+    def test_empty_memory_suggestion_mentions_init(self):
         _, suggestion = _derive_health(inbox_count=0, inbox_threshold=10, active_count=0)
-        assert "learn" in suggestion.lower()
+        assert "elfmem init" in suggestion
 
     def test_healthy_memory_returns_good(self):
         health, _ = _derive_health(inbox_count=2, inbox_threshold=10, active_count=50)

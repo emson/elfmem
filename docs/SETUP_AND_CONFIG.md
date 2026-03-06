@@ -4,6 +4,7 @@ Complete guide to setting up environment variables and configuration for elfmem 
 
 ## Table of Contents
 - [Quick Start](#quick-start)
+- [Initialisation Commands](#initialisation-commands)
 - [Environment Variables](#environment-variables)
 - [YAML Configuration](#yaml-configuration)
 - [MCP Server Setup](#mcp-server-setup)
@@ -14,19 +15,35 @@ Complete guide to setting up environment variables and configuration for elfmem 
 
 ## Quick Start
 
+### First-Time Setup
+
+Run `elfmem init` once before anything else. It creates `~/.elfmem/`, generates a default `config.yaml`, and optionally seeds your SELF frame (agent identity):
+
+```bash
+# Basic init (config + database only)
+elfmem init
+
+# Recommended: seed agent identity at the same time
+elfmem init --self "I am an AI assistant focused on [your purpose]."
+
+# Verify everything is ready
+elfmem doctor
+```
+
+`elfmem init` is idempotent — safe to re-run. Config is skipped if it already exists (pass `--force` to overwrite). Duplicate SELF content is silently rejected.
+
 ### Minimal MCP Server (All Defaults)
 ```bash
-# Set database path
-export ELFMEM_DB=/path/to/agent.db
-
-# Start server with defaults (OpenAI API, Anthropic SDK, etc.)
-elfmem serve --db $ELFMEM_DB
+# After init, start the server
+export ELFMEM_DB=~/.elfmem/agent.db
+export ELFMEM_CONFIG=~/.elfmem/config.yaml
+elfmem serve
 ```
 
 ### With Custom LLM Provider
 ```bash
 # Use Ollama (local)
-export ELFMEM_DB=/path/to/agent.db
+export ELFMEM_DB=~/.elfmem/agent.db
 export ELFMEM_LLM_MODEL="ollama/llama3.2"
 export ELFMEM_LLM_BASE_URL="http://localhost:11434"
 
@@ -35,11 +52,77 @@ elfmem serve --db $ELFMEM_DB
 
 ### With Config File
 ```bash
-export ELFMEM_DB=/path/to/agent.db
-export ELFMEM_CONFIG=./elfmem.yaml
+export ELFMEM_DB=~/.elfmem/agent.db
+export ELFMEM_CONFIG=~/.elfmem/config.yaml
 
-elfmem serve --db $ELFMEM_DB
+elfmem serve
 ```
+
+---
+
+## Initialisation Commands
+
+### `elfmem init`
+
+Creates the elfmem data directory, generates a default config, and optionally seeds the SELF frame.
+
+```bash
+elfmem init [OPTIONS]
+
+Options:
+  --self TEXT      Natural language description of agent identity (seeds SELF frame)
+  --db TEXT        Database path (default: ~/.elfmem/agent.db, env: ELFMEM_DB)
+  --config TEXT    Config YAML path (default: ~/.elfmem/config.yaml, env: ELFMEM_CONFIG)
+  --force          Overwrite existing config (default: skip if exists)
+  --json           Output JSON instead of human-readable text
+```
+
+**When to use:**
+- First run — before `elfmem serve` or any CLI/MCP tool use
+- When you want to add or update agent identity (re-running with `--self` is safe; duplicates are rejected)
+- After changing config defaults and wanting to regenerate `config.yaml` (use `--force`)
+
+**When NOT to use:**
+- Every session — SELF blocks persist; don't re-seed on every agent start
+- In production pipelines — use `elfmem_setup` MCP tool for programmatic identity seeding
+
+### `elfmem doctor`
+
+Read-only diagnostic command. Checks config, database, SELF blocks, and API keys. No side effects.
+
+```bash
+elfmem doctor [OPTIONS]
+
+Options:
+  --db TEXT        Database path (default: ~/.elfmem/agent.db, env: ELFMEM_DB)
+  --config TEXT    Config YAML path (default: ~/.elfmem/config.yaml, env: ELFMEM_CONFIG)
+  --json           Output JSON
+```
+
+**Output example:**
+```
+Config dir:  ~/.elfmem/ (exists)
+Config:      ~/.elfmem/config.yaml (exists)
+Database:    ~/.elfmem/agent.db (exists)
+SELF:        3 SELF blocks found
+API keys:    ANTHROPIC_API_KEY set
+```
+
+Exits `0` if everything is healthy, `1` if any check fails (useful for CI/CD).
+
+### `elfmem_setup` (MCP tool)
+
+Agent-native equivalent of `elfmem init --self`. Call it from Claude or any MCP client to seed the SELF frame programmatically:
+
+```python
+elfmem_setup(
+    identity="I am Claude Code, an AI-powered software engineering assistant.",
+    values=["write minimal clean code", "confirm before destructive operations"]
+)
+# Returns: {"status": "setup_complete", "blocks_created": 2, "blocks": [...]}
+```
+
+Safe to call multiple times — exact duplicates are silently rejected.
 
 ---
 

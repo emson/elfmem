@@ -783,7 +783,7 @@ def _derive_health(
             f"Inbox nearly full ({inbox_count}/{inbox_threshold}). Consolidation approaching.",
         )
     if active_count == 0 and inbox_count == 0:
-        return "good", "Memory is empty. Call learn() to add knowledge."
+        return "good", "Memory is empty. Seed your identity: elfmem init --self '...'"
     return "good", "Memory healthy. No action required."
 
 

@@ -709,6 +709,30 @@ _BUILTIN_CONFIG = [
 ]
 
 
+async def count_self_blocks(conn: AsyncConnection) -> int:
+    """Count inbox+active blocks that carry any self/* tag.
+
+    Used by ``elfmem doctor`` to check whether the SELF frame has been seeded.
+    Counts both inbox (pending consolidation) and active blocks so that doctor
+    reports correctly immediately after ``elfmem init --self`` runs.
+    Returns 0 if no SELF blocks exist.
+    """
+    tagged_ids = await get_blocks_by_tag_pattern(conn, "self/%")
+    if not tagged_ids:
+        return 0
+    result = await conn.execute(
+        select(func.count())
+        .select_from(blocks)
+        .where(
+            and_(
+                blocks.c.id.in_(tagged_ids),
+                blocks.c.status.in_(["inbox", "active"]),
+            )
+        )
+    )
+    return result.scalar() or 0
+
+
 async def seed_builtin_data(conn: AsyncConnection) -> None:
     """Insert built-in frames and default system_config values.
 

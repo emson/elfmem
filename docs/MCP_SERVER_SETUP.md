@@ -83,7 +83,9 @@ Options:
 
 Commands:
   curate    Archive decayed blocks, prune weak edges, reinforce top knowledge.
+  doctor    Diagnose your elfmem setup.
   guide     Show documentation for a specific operation, or the full overview.
+  init      Initialise elfmem: create config, database, and optionally seed SELF.
   outcome   Record domain outcome signal [0.0-1.0] to update block confidence.
   recall    Retrieve relevant knowledge, rendered for prompt injection.
   remember  Store knowledge for future retrieval.
@@ -91,45 +93,51 @@ Commands:
   status    System health and suggested next action.
 ```
 
-### Step 2: Create the ~/.elfmem directory
+### Step 2: Initialise elfmem
+
+Run `elfmem init` to create `~/.elfmem/`, generate a default `config.yaml`, and optionally seed your SELF frame in one step:
 
 ```bash
-mkdir -p ~/.elfmem
+# Basic init (creates directory and config)
+uv run elfmem init
+
+# With SELF frame seed (recommended — establishes agent identity)
+uv run elfmem init --self "Describe who this agent is and what it does"
 ```
 
-### Step 3: Initialize the database
+`elfmem init` is **idempotent**: re-running it is safe. It skips the config if it already exists (use `--force` to overwrite). SELF blocks with identical content are silently rejected as duplicates.
 
-The database (`agent.db`) will be created automatically on first run. However, you can initialize it explicitly:
+**Expected output:**
+```
+elfmem init --self "I am an AI engineering assistant"
+Config:   ~/.elfmem/config.yaml (created)
+Database: ~/.elfmem/agent.db (ready)
+SELF:     Stored block a1b2c3d4. Status: created.
+  Next: elfmem serve --db ~/.elfmem/agent.db --config ~/.elfmem/config.yaml
+```
+
+### Step 3: Verify your setup
 
 ```bash
-# The database is auto-created; just verify with status
-uv run elfmem status --db ~/.elfmem/agent.db --config ~/.elfmem/config.yaml
+uv run elfmem doctor
 ```
 
-**Expected output (first time):**
+**Expected output (healthy):**
 ```
-System health snapshot:
-├─ Sessions: 1 active
-├─ Blocks: 0 active, 0 archived
-├─ Memory health: empty (ready to learn)
-├─ Session tokens: usage(prompt=0, completion=0, total=0)
-├─ Lifetime tokens: usage(prompt=..., completion=..., total=...)
-└─ Next action: Start learning with elfmem_remember()
+Config dir:  ~/.elfmem/ (exists)
+Config:      ~/.elfmem/config.yaml (exists)
+Database:    ~/.elfmem/agent.db (exists)
+SELF:        1 SELF blocks found
+API keys:    ANTHROPIC_API_KEY set
 ```
 
-### Step 4: Set up configuration
+If any check shows a problem, `doctor` prints a suggestion and exits with code `1`.
 
-Copy the default config (already at `~/.elfmem/config.yaml`), or create a custom one:
+### Step 4: Custom configuration (optional)
 
-**Option A: Use existing config**
-```bash
-# It's already there with sensible defaults
-cat ~/.elfmem/config.yaml
-```
+`elfmem init` generates a commented `config.yaml` from code defaults — it is ready to use immediately. To customise it, edit `~/.elfmem/config.yaml`:
 
-**Option B: Create a custom config**
-
-Create `~/.elfmem/config.yaml`:
+**Typical customisations:**
 
 ```yaml
 # elfmem configuration for your agent
@@ -177,7 +185,7 @@ memory:
 #   contradiction_file: "~/.elfmem/prompts/contradiction.txt"
 ```
 
-### Step 5: Set up environment variables (recommended)
+### Step 5: Set up environment variables (optional)
 
 Add to `~/.zshrc` or `~/.bashrc`:
 
@@ -216,18 +224,19 @@ mcpServers:
 ### Step 7: Verify the setup
 
 ```bash
-# Test each CLI command
-uv run elfmem remember "Test fact" --db ~/.elfmem/agent.db
+# Diagnose setup (checks config, db, SELF, API keys)
+uv run elfmem doctor
 
+# Test memory round-trip
+uv run elfmem remember "Test fact" --db ~/.elfmem/agent.db
 uv run elfmem recall "test" --db ~/.elfmem/agent.db
 
+# Check system health
 uv run elfmem status --db ~/.elfmem/agent.db
 
 # Test the MCP server (starts in background)
 uv run elfmem serve --db ~/.elfmem/agent.db --config ~/.elfmem/config.yaml &
 sleep 2
-
-# Check logs
 ps aux | grep elfmem
 ```
 
@@ -431,7 +440,7 @@ uv run elfmem serve --db ~/.elfmem/agent.db --config ~/.elfmem/config.yaml
 **Solution:**
 ```bash
 cd ~/Dropbox/devel/projects/ai/elf0_mem_sim
-uv sync --extras "mcp,cli"
+uv sync --extra mcp --extra cli
 uv run elfmem serve --db ~/.elfmem/agent.db
 ```
 
@@ -530,12 +539,13 @@ ENTRYPOINT ["elfmem", "serve", "--db", "/app/agent.db", "--config", "/app/config
 
 ## Next Steps
 
-1. **Read the architecture:** `docs/amgs_architecture.md` (full system spec)
-2. **Explore examples:** `sim/explorations/` (26 design decision docs)
-3. **Start remembering:** Use `elfmem remember` to add facts
-4. **Query:** Use `elfmem recall` or Claude tools to retrieve knowledge
-5. **Feedback:** Use `elfmem outcome` to teach the system from results
-6. **Monitor:** Run `elfmem status` to check memory health
+1. **Initialise:** `elfmem init --self "Who is this agent?"` — creates config, DB, SELF
+2. **Diagnose:** `elfmem doctor` — verify everything is configured correctly
+3. **Read the architecture:** `docs/amgs_architecture.md` (full system spec)
+4. **Start remembering:** Use `elfmem remember` or `elfmem_remember` MCP tool
+5. **Query:** Use `elfmem recall` or `elfmem_recall` to retrieve knowledge
+6. **Feedback:** Use `elfmem outcome` to teach the system from results
+7. **Monitor:** Run `elfmem status` to check memory health
 
 ---
 
@@ -567,6 +577,7 @@ Once the server is running, these tools are available:
 
 | Tool | Purpose |
 |------|---------|
+| `elfmem_setup(identity, values?)` | Bootstrap agent identity (SELF frame) — call first |
 | `elfmem_remember(content, tags?)` | Store knowledge |
 | `elfmem_recall(query, top_k?, frame?)` | Retrieve knowledge |
 | `elfmem_status()` | Check memory health |
