@@ -39,13 +39,21 @@ Repository = "https://github.com/emson/elfmem"
 Issues = "https://github.com/emson/elfmem/issues"
 
 [project.optional-dependencies]
+mcp = ["fastmcp>=2.0"]
+cli = ["typer>=0.12"]
+tools = ["fastmcp>=2.0", "typer>=0.12"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "mypy>=1.8",
     "ruff>=0.3",
     "types-PyYAML",
+    "fastmcp>=2.0",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+elfmem = "elfmem.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/elfmem"]

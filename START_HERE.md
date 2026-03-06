@@ -1,236 +1,153 @@
 # START HERE — elfmem
 
-**elfmem** (ELF Memory) is a Python library for building adaptive, self-aware memory systems for LLM agents.
+**elfmem** is a Python library for adaptive, self-aware memory for LLM agents. Knowledge that gets used survives; knowledge that doesn't fades away.
 
-This repository contains a complete markdown-based simulation and specification system for the elfmem architecture with **26 complete explorations** covering all major design areas and decisions.
-
-**Core architecture (001–022):** Memory blocks, decay, scoring, frames, graph layer, retrieval pipelines, four-layer architecture
-**Agent integration (023):** How LLM agents use elfmem over sessions, with SELF evolution patterns
-**System refinement (024):** Comprehensive audit and unified design
-**External integrations (025–026):** LLM gateway (LiteLLM, instructor), prompt customisation, per-call-type model overrides
-
-**~8,000+ lines** of worked mathematical examples, design decisions, and implementation specifications.
+Three ways to use it: **MCP server** (for AI agents), **CLI** (shell scripts and automation), or **Python library** (direct integration).
 
 ---
 
-## How to Start
+## Quick Setup (2 minutes)
 
-### Option A: Quick Overview (15 minutes)
-```
-1. Read this file (2 min)
-2. Read QUICKSTART.md (5 min)
-3. Skim 004_self_interest_model.md (8 min)
-```
-
-You'll understand the design philosophy and the major self-interest decision.
-
-### Option B: Deep Dive (1 hour)
-```
-1. Read QUICKSTART.md (5 min)
-2. Read explorations 001-005 in order (45 min)
-3. Review EXPLORATIONS.md (10 min)
+```bash
+uv add 'elfmem[tools]'
+export ANTHROPIC_API_KEY=sk-ant-...
+export ELFMEM_DB=agent.db
 ```
 
-You'll understand all major design decisions and see the mathematical evidence behind them.
-
-### Option C: Exploration Mode (ongoing)
+**MCP** — add to your agent's MCP config:
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "elfmem",
+      "args": ["serve", "--db", "/absolute/path/to/agent.db"]
+    }
+  }
+}
 ```
-1. Pick an exploration that interests you
-2. Ask me to run a variation
-3. Compare results
-4. Create a new exploration for unanswered questions
+
+**CLI** — start immediately:
+```bash
+elfmem remember "User prefers dark mode"
+elfmem recall "UI preferences"
+elfmem status
+elfmem guide
+```
+
+**Python**:
+```python
+from elfmem import MemorySystem
+system = await MemorySystem.from_config("agent.db")
+async with system.session():
+    await system.learn("User prefers dark mode")
+    result = await system.frame("attention", query="UI preferences")
+    print(result.text)  # inject into your LLM prompt
 ```
 
 ---
 
 ## Key Documents
 
-| Document | Purpose | Read When |
-|----------|---------|-----------|
-| **QUICKSTART.md** | Quick overview, how to navigate | First (5 min) |
-| **SIMULATION_OVERVIEW.md** | Philosophy, what elfmem solves | After quickstart |
-| **sim/EXPLORATIONS.md** | Index of all 26 explorations, decisions, open questions | To find topics |
-| **sim/README.md** | Detailed guide, formulas, conventions | When exploring specific topics |
-| **docs/amgs_architecture.md** | Full elfmem specification | Reference |
+| Document | Purpose | Start Here If... |
+|----------|---------|------------------|
+| **QUICKSTART.md** | Installation, first 5 minutes, all three interfaces | You're setting up elfmem |
+| **README.md** | Full API reference, configuration, architecture | You want the complete picture |
+| **docs/elfmem_tool.md** | MCP tool reference + CLI reference | You're integrating with an agent |
+| **SIMULATION_OVERVIEW.md** | Philosophy — what elfmem solves and why | You want to understand the design |
+| **docs/amgs_architecture.md** | Technical specification, layer model | You're extending or debugging |
+| **sim/EXPLORATIONS.md** | 26 design explorations with mathematical proofs | You want design rationale |
 
 ---
 
-## Major Decisions Made
+## Core Operations
 
-From the 5 explorations, these design questions are **DECIDED**:
+```
+remember/learn     →  store knowledge (instant, inbox)
+consolidate        →  process inbox: embed, score, deduplicate, build graph (LLM calls)
+recall/frame       →  retrieve context for prompt injection (fast, 4-stage pipeline)
+outcome            →  record signal to update confidence (fast, no LLM)
+curate             →  maintenance: archive stale, prune weak edges (fast)
+status             →  system health snapshot + suggested next action
+guide              →  runtime documentation for any operation
+```
 
-### 1. Self Uses Soft Bias, Not Hard Gates (Exploration 004)
-
-**Decision:** Self influences decay and retrieval, but never blocks ingestion.
-
-**Why:** Hard gates create echo chambers. Soft bias enables growth while preserving coherence.
-
-**What it means:**
-- Nothing is blocked from learning
-- Self-aligned blocks decay slower and surface more
-- Self grows naturally through reinforcement
-- System can adapt to new domains
-
-### 2. Reinforcement is Non-Optional (Exploration 001)
-
-**Decision:** Knowledge dies in ~12.5 days without reinforcement.
-
-**Why:** Standard blocks (λ=0.01) need weekly reinforcement or they're pruned.
-
-**What it means:**
-- Every retrieval MUST reinforce blocks
-- Unused knowledge fades naturally (good)
-- Graph edges and good consolidation are critical
-- The system self-selects for useful knowledge
-
-### 3. Frame Weights Are Correct (Exploration 002)
-
-**Decision:** The spec weights work. Query similarity dominates (0.35).
-
-**Why:** With diverse corpus, ATTENTION correctly surfaces query-relevant blocks.
-
-**What it means:**
-- Can proceed with implementation confidence
-- ATTENTION frame will work as designed
-- The "bug" from Python sim was corpus composition, not formula
-
-### 4. Usage Can Override Self-Tags (Exploration 003)
-
-**Decision:** Blocks accessed frequently can enter the SELF frame.
-
-**Why:** Reinforcement is more powerful than explicit self-tagging.
-
-**What it means:**
-- Identity is dynamic, not static
-- What you use shapes who you become
-- Self grows through usage patterns
-- This is the self-organising property at work
-
-### 5. Decay is Multi-Factor (Exploration 005)
-
-**Decision:** Use session-aware decay in Phase 1, split into staleness/interference/disuse later.
-
-**Why:** Pure time-based decay kills knowledge on holidays (wrong).
-
-**What it means:**
-- Phase 1: Only count active session hours
-- Phase 2: Add interference tracking
-- Phase 3: Full staleness/interference/disuse separation
-- Knowledge survives across breaks
+Call `elfmem guide` at any time to see this overview. Call `elfmem guide <method>` for detailed help on any operation.
 
 ---
 
-## Open Questions (Not Yet Decided)
+## Architecture at a Glance
 
-These are worth exploring but not blockers:
+```
+Transport:    cli.py (typer)        mcp.py (fastmcp)
+                   └─────────────────────┘
+                        smart.py (SmartMemory — auto session + consolidation)
+                               ↓
+              api.py (MemorySystem — public Python API)
+                               ↓
+         ┌─────────────────────────────────────────┐
+         │  operations/  │  memory/  │  context/   │
+         │  learn        │  blocks   │  frames      │
+         │  consolidate  │  dedup    │  rendering   │
+         │  recall       │  graph    │  contradicts │
+         │  curate       │  retrieval│              │
+         └─────────────────────────────────────────┘
+                               ↓
+                         db/ (SQLite via SQLAlchemy)
+```
 
-- Should `is_self_component` get a direct scoring bonus?
-- Should ATTENTION frame exclude self-tagged blocks?
-- What's the right idle_factor for dual-rate decay?
-- Does incremental assembly work better than top-K?
-- Can we measure self-alignment empirically?
+**Four layers with clear boundaries:**
+
+| Layer | Responsibility |
+|-------|---------------|
+| `db/` | Tables, queries, async engine — all DB writes |
+| `memory/` | Blocks, dedup, graph, retrieval — pure functions |
+| `context/` | Frames, rendering, contradictions — pure functions |
+| `operations/` | Orchestration, lifecycle — all side effects |
 
 ---
 
-## How to Use Going Forward
+## Design Decisions (Locked)
 
-### To Learn About a Topic
+These emerged from 26 mathematical explorations before implementation:
 
-Find it in EXPLORATIONS.md. Example:
-```
-"What's the decay situation?" → 001 + 005
-"How does scoring work?" → 002 + 003
-"What about self?" → 004
-```
-
-### To Test a Variation
-
-Ask for a specific change:
-```
-"Run variation: what if decay_lambda was 0.05 instead of 0.01?"
-"What if we raise ATTENTION similarity weight to 0.50?"
-"Can you test the incremental assembly idea from variation 2 of 002?"
-```
-
-### To Create a New Exploration
-
-Ask a question:
-```
-"Create an exploration: what happens if self-aligned blocks use durable decay automatically?"
-"Explore: can we measure how much reinforcement is enough to prevent pruning?"
-"Test the idea from open question 1: should is_self_component get a scoring bonus?"
-```
+1. **Soft bias for identity, not hard gates** — Nothing is blocked from learning; self-aligned blocks just survive longer and surface more.
+2. **Reinforcement is mandatory** — Standard knowledge dies in ~12.5 days without use. Retrieval automatically reinforces.
+3. **Session-aware decay** — The clock only ticks during active sessions. Memory survives weekends.
+4. **Retrieval is pure; reinforcement is a separate operation** — Clean separation of read path from side effects.
+5. **SQLite, not a vector database** — Zero infrastructure; embeddings stored as BLOBs; one file, fully portable.
+6. **LiteLLM as unified backend** — One adapter for 100+ providers. Switch with a config change.
 
 ---
 
-## The Three Phases
-
-### Phase 1: Explorations ✓ DONE
-- [x] 5 complete explorations
-- [x] Design decisions locked
-- [x] Open questions identified
-- [x] Mathematical validation
-
-### Phase 2: Playgrounds (NEXT)
-- [ ] Organize by subsystem (decay, scoring, frames, graph, lifecycle)
-- [ ] Add test case assertions
-- [ ] Run empirical variations
-- [ ] Fine-tune weights
-- [ ] **Output:** Test suite specifications
-
-### Phase 3: Executable Specs (THEN)
-- [ ] Write code generation source (one spec per module)
-- [ ] Include type definitions, algorithms, test cases
-- [ ] **Output:** Code + tests generated directly from specs
-
----
-
-## Next Steps This Week
-
-**Option A: Understand the Design**
-1. Read QUICKSTART.md
-2. Read explorations 001 and 004
-3. Skim EXPLORATIONS.md
-**Time:** 30 minutes
-
-**Option B: Deep Understanding**
-1. Read all of QUICKSTART.md, SIMULATION_OVERVIEW.md
-2. Read all 5 explorations
-3. Review open questions in EXPLORATIONS.md
-**Time:** 1 hour
-
-**Option C: Start Exploring**
-1. Read QUICKSTART.md
-2. Pick one exploration
-3. Run 2-3 variations
-4. Ask about design implications
-**Time:** 1-2 hours
-
-**Recommended:** Option B (1 hour investment for complete confidence in the design)
-
----
-
-## File Locations
+## How to Navigate This Repository
 
 ```
-/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/
-├── START_HERE.md ← YOU ARE HERE
-├── QUICKSTART.md ← READ THIS NEXT
-├── SIMULATION_OVERVIEW.md
-├── sim/
-│   ├── README.md
-│   ├── EXPLORATIONS.md
-│   └── explorations/
-│       ├── _template.md
-│       ├── 001_basic_decay.md
-│       ├── 002_confidence_trap.md
-│       ├── 003_scoring_walkthrough.md
-│       ├── 004_self_interest_model.md
-│       └── 005_decay_sophistication.md
+elfmem/
+├── START_HERE.md            ← YOU ARE HERE
+├── QUICKSTART.md            ← Read next (install + first 5 minutes)
+├── README.md                ← Full reference (API, config, architecture)
+├── SIMULATION_OVERVIEW.md   ← Design philosophy
+├── src/elfmem/
+│   ├── api.py               ← MemorySystem (public API)
+│   ├── smart.py             ← SmartMemory (MCP + CLI facade)
+│   ├── mcp.py               ← FastMCP server (6 tools)
+│   ├── cli.py               ← Typer CLI (7 commands)
+│   └── ...                  ← Core layers
+├── tests/                   ← 400+ tests, mock-first (no API keys needed)
+├── docs/
+│   ├── elfmem_tool.md       ← MCP + CLI reference
+│   └── amgs_architecture.md ← Technical deep dive
+└── sim/
+    ├── EXPLORATIONS.md      ← Index of 26 design explorations
+    └── explorations/        ← Mathematical proofs for every design decision
 ```
 
 ---
 
 ## Ready?
 
-Pick an option above and ask me any questions as they come up. The simulation is ready to explore.
+```bash
+cat QUICKSTART.md   # installation + first steps
+elfmem guide        # discover all operations
+elfmem status       # check memory health at any time
+```

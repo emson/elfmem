@@ -1,0 +1,124 @@
+"""elfmem MCP server — adaptive memory as agent tools.
+
+Start:  elfmem serve --db agent.db
+        elfmem serve --db agent.db --config elfmem.yaml
+"""
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Any
+
+from fastmcp import FastMCP
+
+from elfmem.smart import SmartMemory, format_recall_response
+
+_memory: SmartMemory | None = None
+_db_path: str = ""
+_config_path: str | None = None
+
+
+@asynccontextmanager
+async def _lifespan(server: FastMCP) -> AsyncIterator[None]:  # type: ignore[type-arg]
+    global _memory
+    _memory = await SmartMemory.open(_db_path, config=_config_path)
+    try:
+        yield
+    finally:
+        await _memory.close()
+        _memory = None
+
+
+mcp = FastMCP("elfmem", lifespan=_lifespan)
+
+
+def _mem() -> SmartMemory:
+    """Return active SmartMemory. Fails fast if server not initialised."""
+    if _memory is None:
+        raise RuntimeError("elfmem MCP server not initialised.")
+    return _memory
+
+
+@mcp.tool()
+async def elfmem_remember(
+    content: str,
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    """Store knowledge for future retrieval.
+
+    Call when the agent discovers a fact, preference, decision, or observation
+    worth keeping across sessions. Sessions and consolidation are automatic.
+    Returns: block_id, status ("created"|"duplicate_rejected"|"near_duplicate_superseded").
+    """
+    result = await _mem().remember(content, tags=tags)
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_recall(
+    query: str,
+    top_k: int = 5,
+    frame: str = "attention",
+) -> dict[str, Any]:
+    """Retrieve relevant knowledge, rendered for prompt injection.
+
+    Use result.text directly in your LLM prompt. Block IDs in result.blocks
+    can be passed to elfmem_outcome to record outcome feedback later.
+    frame: "attention" (query-driven, default) | "self" (identity) | "task" (goals).
+    """
+    result = await _mem().recall(query, top_k=top_k, frame=frame)
+    return format_recall_response(result)
+
+
+@mcp.tool()
+async def elfmem_status() -> dict[str, Any]:
+    """Memory health snapshot. Check the suggestion field for recommended action."""
+    result = await _mem().status()
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_outcome(
+    block_ids: list[str],
+    signal: float,
+    weight: float = 1.0,
+    source: str = "",
+) -> dict[str, Any]:
+    """Update block confidence from a domain outcome signal.
+
+    signal: 0.0-1.0. Use block IDs from a previous elfmem_recall response.
+    0.8-1.0 reinforces (decay resets). 0.2-0.8 neutral. 0.0-0.2 penalises.
+    """
+    result = await _mem().outcome(block_ids, signal, weight=weight, source=source)
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_curate() -> dict[str, Any]:
+    """Archive decayed blocks, prune weak edges, reinforce top knowledge.
+
+    Runs automatically on schedule after consolidation.
+    Call manually only if retrieval quality visibly degrades.
+    """
+    result = await _mem().curate()
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_guide(method: str | None = None) -> str:
+    """Detailed documentation for a specific operation, or the full overview.
+
+    method: e.g. "remember", "recall", "outcome". None returns overview table.
+    """
+    return _mem().guide(method)
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+
+def main(db_path: str, config_path: str | None = None) -> None:
+    """Start the MCP server. Called by `elfmem serve`."""
+    global _db_path, _config_path
+    _db_path = db_path
+    _config_path = config_path
+    mcp.run()

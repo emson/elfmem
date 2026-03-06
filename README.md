@@ -41,19 +41,69 @@ asyncio.run(main())
 - **Zero infrastructure** — SQLite backend. No Redis, no Postgres, no vector database. One file, fully portable.
 - **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to local Ollama with a config change.
 
+## For AI Agents
+
+elfmem exposes three interfaces. Pick the one that fits your environment.
+
+### MCP (Recommended — agents with MCP support)
+
+Works with Claude Desktop, Claude Code, Cursor, VS Code + Cline, any MCP host.
+
+```bash
+elfmem serve --db agent.db
+```
+
+Add to your MCP host config (e.g. Claude Desktop `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "elfmem",
+      "args": ["serve", "--db", "/absolute/path/to/agent.db"],
+      "env": {"ANTHROPIC_API_KEY": "sk-ant-..."}
+    }
+  }
+}
+```
+
+Six tools are available: `elfmem_remember`, `elfmem_recall`, `elfmem_status`, `elfmem_outcome`, `elfmem_curate`, `elfmem_guide`. The agent calls them directly — sessions and consolidation are automatic.
+
+### CLI (Shell access only)
+
+```bash
+export ELFMEM_DB=agent.db
+elfmem remember "User prefers dark mode" --tags ui,preference
+elfmem recall "code style preferences" --json
+elfmem status
+elfmem guide recall
+```
+
+### Python Library (Full control)
+
+See the code example at the top of this file.
+
 ## Installation
 
 ```bash
-uv add elfmem
+uv add elfmem                # Python library only
+uv add 'elfmem[cli]'        # + CLI commands
+uv add 'elfmem[tools]'      # + CLI + MCP server (recommended)
 ```
 
 Or with pip:
 
 ```bash
 pip install elfmem
+pip install 'elfmem[tools]'
 ```
 
-Requires Python 3.11+.
+Requires Python 3.11+. Set your API key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default)
+export OPENAI_API_KEY=sk-...          # for OpenAI models
+```
 
 ## How It Works
 
@@ -219,7 +269,10 @@ result = await system.learn(content, tags=None, category="knowledge")
 
 # Read
 frame_result = await system.frame(name, query=None, top_k=5)
-blocks = await system.recall(name, query=None, top_k=5)  # raw, no side effects
+blocks = await system.recall(query=None, top_k=5, frame="attention")  # raw, no side effects
+
+# Outcome feedback
+result = await system.outcome(block_ids, signal, weight=1.0, source="")
 
 # Maintenance (usually automatic)
 await system.consolidate()  # process inbox → active
@@ -229,10 +282,12 @@ await system.curate()       # archive decayed, prune edges, reinforce top-N
 ### Return Types
 
 ```python
-LearnResult(block_id, status)           # "created" | "duplicate_rejected"
+LearnResult(block_id, status)           # "created" | "duplicate_rejected" | "near_duplicate_superseded"
 FrameResult(text, blocks, frame_name)   # rendered text + scored blocks
 ConsolidateResult(processed, promoted, deduplicated, edges_created)
 CurateResult(archived, edges_pruned, reinforced)
+OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized)
+SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, ...)
 ```
 
 ### Custom Prompts
@@ -274,10 +329,16 @@ system = MemorySystem(engine, llm_service=MyLLMService(), embedding_service=MyEm
 src/elfmem/
 ├── api.py                  # MemorySystem — public API
 ├── config.py               # ElfmemConfig — Pydantic configuration
+├── smart.py                # SmartMemory — auto-managed facade (MCP + CLI)
+├── mcp.py                  # FastMCP server — 6 agent tools
+├── cli.py                  # Typer CLI — 7 commands
 ├── scoring.py              # Composite scoring formula (frozen)
 ├── types.py                # Domain types — shared vocabulary
+├── guide.py                # AgentGuide — runtime documentation
+├── exceptions.py           # ElfmemError hierarchy with recovery hints
 ├── prompts.py              # LLM prompt templates
 ├── session.py              # Session lifecycle, active hours tracking
+├── token_counter.py        # Token usage accumulator
 ├── ports/
 │   └── services.py         # LLMService + EmbeddingService protocols
 ├── adapters/

@@ -43,12 +43,12 @@ The key design principle: **elfmem knows nothing about trading**. It stores and 
 │  ┌───────────────────────────────────────┐              │
 │  │              elfmem                   │              │
 │  │                                       │              │
-│  │  learn()       — store observations  │              │
-│  │  consolidate() — merge inbox blocks  │              │
-│  │  frame()       — get forecast context│              │
-│  │  outcome()     — Bayesian update     │              │
-│  │  penalize()    — accelerate decay    │  ← gap today  │
-│  │  SELF frame    — identity + bias     │              │
+│  │  learn()       — store observations   │              │
+│  │  consolidate() — merge inbox blocks   │              │
+│  │  frame()       — get forecast context │              │
+│  │  outcome()     — Bayesian update      │              │
+│  │  penalize()    — accelerate decay     │  ← gap today │
+│  │  SELF frame    — identity + bias      │              │
 │  └───────────────────────────────────────┘              │
 └─────────────────────────────────────────────────────────┘
 ```

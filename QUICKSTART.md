@@ -1,229 +1,305 @@
-# Quick Start: elfmem Simulation
+# Quick Start — elfmem
 
-**elfmem** (ELF Memory) is a Python library for adaptive, self-aware memory systems in LLM agents.
-
-This document-driven simulation uses markdown files where Claude reasons through the system's behavior
-with worked mathematical examples. Every computation is explicit and editable — this is the **whiteboard**
-for building confidence that the architecture works before implementation.
-
-**Goal:** Understand the elfmem design through 26 structured explorations covering architecture, integration, and refinement.
+Get adaptive memory into your agent in under 5 minutes.
 
 ---
 
-## The Three Phases
+## Install
 
-### Phase 1: Explorations (Now)
-
-Micro-scenarios in `sim/explorations/`. Each file is self-contained:
-- Small setup (3-5 blocks, minimal state)
-- Worked computation (step-by-step math)
-- Result and insight
-- Variations for next questions
-
-**Status:** 5 explorations complete, covering decay, scoring, self, and interest.
-
-### Phase 2: Playgrounds (Later)
-
-Once patterns emerge, organize explorations into playgrounds by subsystem:
-- `playgrounds/decay/` — decay mechanics
-- `playgrounds/scoring/` — frame assembly and scoring
-- `playgrounds/frames/` — context frame composition
-- `playgrounds/graph/` — graph structure and centrality
-- `playgrounds/lifecycle/` — ingestion to pruning
-
-### Phase 3: Executable Specs (When Stable)
-
-Turn solidified playgrounds into code-generation source:
-- `specs/01_data_model.md` → `models.py` + DDL + tests
-- `specs/02_scoring.md` → `scoring.py` + tests
-- etc.
-
----
-
-## How to Use It
-
-### To Read an Exploration
-
-```
-Open: sim/explorations/001_basic_decay.md
-Follow: Setup → Computation → Result → Insight
+```bash
+uv add 'elfmem[tools]'      # recommended: CLI + MCP server + library
+uv add 'elfmem[cli]'        # CLI + library only
+uv add elfmem               # Python library only
 ```
 
-Learn what it teaches. Check the Variations section for follow-up questions.
+Set your API key:
 
-### To Run a Variation
-
-Variations are small tweaks to existing explorations. Run them by:
-
-```
-"Run variation 2 from exploration 001: what if prune threshold is 0.10?"
-```
-
-I'll:
-1. Create `001_variation_prune_threshold.md` (or inline)
-2. Update the Setup
-3. Recompute all math
-4. Compare results to baseline
-5. Record insights
-
-### To Create a New Exploration
-
-Ask a question:
-
-```
-"Create an exploration: what happens if we add reinforcement to Block B from 001?"
-```
-
-I'll:
-1. Create `00X_your_question.md` using the template
-2. Set up the blocks and state
-3. Compute the math
-4. Analyze results
-5. Suggest variations
-
-### To Inspect an Exploration
-
-Ask for details about any file:
-
-```
-"Walk me through the scoring computation in 003. Why does K1 beat S2?"
-```
-
-I'll trace through the math and explain each component.
-
----
-
-## The 26 Explorations
-
-**By category:**
-- **001–022:** Core architecture (memory blocks, decay, scoring, frames, graph, storage, retrieval, layers)
-- **023:** Agent usage patterns — LLM agents using elfmem across sessions
-- **024:** System refinement — comprehensive audit and unified design
-- **025–026:** External integrations — LLM gateway (LiteLLM + instructor) and prompt customisation
-
-**Key explorations to start with:**
-- **001:** Basic decay — Standard knowledge dies in 12.5 days without reinforcement
-- **004:** Self interest model — Soft bias (not hard gates); identity grows with usage
-- **015:** Context frames — SELF, ATTENTION, TASK frames, scoring weights
-- **023:** Agent usage — How agents use elfmem across sessions
-- **024:** System refinement — Comprehensive audit and design decisions
-- **025–026:** LLM integration — Provider switching, prompt customisation
-
-**Full index:** See `sim/EXPLORATIONS.md` for all 26 explorations with links and summaries.
-
----
-
-## Key Formulas (You'll See These Repeatedly)
-
-### Decay
-```
-decay_weight = e^(-λ × t)
-half_life = 0.693 / λ
-```
-
-### Composite Score
-```
-Score = w1×Recency + w2×Centrality + w3×Confidence + w4×Similarity + w5×Reinforcement
-```
-
-### Reinforcement (normalized)
-```
-reinforcement_score = log(1 + count) / log(1 + max_count)
-```
-
-### SELF Frame Weights
-```
-Recency=0.05, Centrality=0.25, Confidence=0.30, Similarity=0.10, Reinforcement=0.30
-```
-
-### ATTENTION Frame Weights
-```
-Recency=0.25, Centrality=0.15, Confidence=0.15, Similarity=0.35, Reinforcement=0.10
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default model: claude-sonnet-4-6)
+# or
+export OPENAI_API_KEY=sk-...          # for OpenAI models
 ```
 
 ---
 
-## Design Decisions Made
+## Pick Your Interface
 
-These are locked in based on the explorations:
+### Option A: MCP Server (Recommended — agents with MCP support)
 
-1. **Reinforcement is mandatory.** Knowledge dies without it.
-2. **Weights are correctly tuned.** ATTENTION correctly surfaces query-relevant blocks.
-3. **Self uses soft bias.** No hard filtering. Everything is learned, but self-aligned knowledge survives longer.
-4. **Decay is multi-factor.** Session-aware in Phase 1, then split staleness/interference/disuse in later phases.
-5. **Nothing is gatekept.** Interest influences decay and retrieval, not ingestion.
+Works with Claude Desktop, Claude Code, Cursor, VS Code + Cline, any MCP host.
+
+```bash
+elfmem serve --db agent.db
+```
+
+Add to your MCP host config (e.g. Claude Desktop `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "elfmem",
+      "args": ["serve", "--db", "/absolute/path/to/agent.db"],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+Six tools become available: `elfmem_remember`, `elfmem_recall`, `elfmem_status`, `elfmem_outcome`, `elfmem_curate`, `elfmem_guide`. Sessions and consolidation are handled automatically.
+
+### Option B: CLI (Shell access, no MCP needed)
+
+```bash
+# Set the database path once
+export ELFMEM_DB=agent.db
+
+# Store knowledge (instant — no LLM calls)
+elfmem remember "User prefers explicit error handling"
+elfmem remember "User uses Python over JavaScript" --tags language,preference
+
+# Retrieve context (ready for prompt injection)
+elfmem recall "code style preferences"
+
+# Check memory health
+elfmem status
+
+# Get help
+elfmem guide
+elfmem guide recall
+```
+
+### Option C: Python Library (Full control)
+
+```python
+import asyncio
+from elfmem import MemorySystem
+
+async def main():
+    system = await MemorySystem.from_config("agent.db", {
+        "llm": {"model": "claude-sonnet-4-6"},
+        "embeddings": {"model": "text-embedding-3-small"},
+    })
+
+    async with system.session():
+        # Store knowledge
+        await system.learn("User prefers explicit error handling", tags=["code_style"])
+
+        # Retrieve context — text is ready for prompt injection
+        result = await system.frame("attention", query="error handling preferences")
+        prompt = f"{result.text}\n\nUser: How should I handle errors here?"
+
+asyncio.run(main())
+```
 
 ---
 
-## Open Questions (For Phase 2)
+## Your First 5 Minutes (CLI walkthrough)
 
-These are worth exploring as variations or new explorations:
+### 1. Store some knowledge
 
-- Should `is_self_component` get a direct scoring bonus?
-- Should ATTENTION frame exclude self-tagged blocks?
-- What's the right idle_factor for dual-rate decay?
-- Does incremental assembly (quality threshold) work better than top-K?
-- Can we measure self-alignment empirically?
+```bash
+export ELFMEM_DB=./my_memory.db
+
+elfmem remember "User prefers explicit error handling with try/except"
+elfmem remember "User prefers Python over JavaScript"
+elfmem remember "User works in a large Django monorepo"
+```
+
+Each call is instant — no LLM calls yet. Blocks queue in the inbox.
+
+### 2. Retrieve context
+
+```bash
+elfmem recall "coding preferences"
+```
+
+Returns rendered markdown ready for prompt injection:
+
+```
+## Relevant Context
+
+User prefers explicit error handling with try/except
+User prefers Python over JavaScript
+User works in a large Django monorepo
+```
+
+### 3. Check status
+
+```bash
+elfmem status
+```
+
+```
+Session: inactive | Inbox: 3/10 | Active: 0 blocks | Health: good
+Tokens this session: no token usage recorded
+Suggestion: Memory is empty. Call learn() to add knowledge.
+```
+
+The inbox has 3 blocks pending consolidation. Blocks become fully searchable after consolidation runs (automatic when inbox reaches threshold, or when an MCP session ends).
+
+### 4. Learn more and let consolidation run
+
+```bash
+# Add more blocks to trigger consolidation (default threshold: 10)
+for i in $(seq 1 7); do
+  elfmem remember "Additional fact number $i"
+done
+
+# Or trigger explicitly via the Python API
+# await system.consolidate()
+```
+
+### 5. Get help from within elfmem
+
+```bash
+elfmem guide              # overview of all operations
+elfmem guide recall       # detailed guide for recall
+elfmem guide outcome      # how to record outcome feedback
+```
 
 ---
 
-## File Structure
+## Configuration
+
+### YAML Config File
+
+Create `elfmem.yaml` for custom settings:
+
+```yaml
+llm:
+  model: "claude-sonnet-4-6"
+  # Per-call overrides (None = use model above)
+  alignment_model: null
+  tags_model: null
+  contradiction_model: null
+
+embeddings:
+  model: "text-embedding-3-small"
+  dimensions: 1536
+
+memory:
+  inbox_threshold: 10       # consolidate when inbox hits this
+  curate_interval_hours: 40 # auto-curate after this many active hours
+  top_k: 5                  # default blocks returned
+  self_alignment_threshold: 0.70
+```
+
+Use the config file:
+
+```bash
+elfmem serve --db agent.db --config elfmem.yaml
+# or set env var
+export ELFMEM_CONFIG=elfmem.yaml
+elfmem status
+```
+
+### Local Models (No API Key)
+
+```yaml
+# elfmem-local.yaml
+llm:
+  model: "ollama/llama3.2"
+  base_url: "http://localhost:11434"
+
+embeddings:
+  model: "ollama/nomic-embed-text"
+  dimensions: 768
+  base_url: "http://localhost:11434"
+```
+
+---
+
+## Key Concepts
+
+### Knowledge Lifecycle
 
 ```
-sim/
-├── README.md                    # Detailed guide, formulas, conventions
-├── EXPLORATIONS.md              # Index and navigation
-├── explorations/
-│   ├── _template.md             # Blank template
-│   ├── 001_basic_decay.md
-│   ├── 002_confidence_trap.md
-│   ├── 003_scoring_walkthrough.md
-│   ├── 004_self_interest_model.md
-│   └── 005_decay_sophistication.md
-├── playgrounds/                 # Phase 2 (not yet started)
-└── specs/                       # Phase 3 (not yet started)
+learn()  →  inbox  →  consolidate()  →  active (graph)  →  recall()
+                                              ↓
+                                           decay
+                                              ↓
+                                           archive
 ```
+
+- **learn/remember**: instant, no LLM — blocks queue in inbox
+- **consolidate**: LLM calls per block — scores alignment, embeds, deduplicates, builds graph
+- **recall/frame**: fast — 4-stage hybrid retrieval (pre-filter + vector + graph + composite score)
+- **curate**: fast, DB only — archives stale blocks, prunes weak edges
+
+### Session-Aware Decay
+
+Blocks decay during active sessions only. Memory survives weekends and restarts. Knowledge fades from *lack of use*, not from wall-clock time.
+
+| Decay Tier | Rate (λ) | Half-life | Use Case |
+|-----------|---------|---------|----------|
+| permanent | 0.00001 | ~80,000h | Core identity, constitutional constraints |
+| durable   | 0.001   | ~693h   | Stable preferences, learned values |
+| standard  | 0.010   | ~69h    | General knowledge (default) |
+| ephemeral | 0.050   | ~14h    | Session observations, temporary facts |
+
+### Three Frames
+
+| Frame | Purpose | When to Use |
+|-------|---------|-------------|
+| `attention` | Query-driven retrieval (default) | RAG, current task |
+| `self` | Agent identity and values | System prompt injection |
+| `task` | Goal-oriented context | Task planning, constraints |
+
+### Outcome Feedback
+
+Record real-world signals to improve memory quality:
+
+```python
+# After tests pass: reinforce knowledge
+signal = 1.0 if tests_passed else 0.0
+await system.outcome(block_ids, signal=signal, source="test_suite")
+
+# Signal spectrum:
+# 0.8–1.0 → confidence UP + decay resets
+# 0.2–0.8 → neutral (confidence adjusts, no other effect)
+# 0.0–0.2 → confidence DOWN + decay accelerated
+```
+
+After ~10 outcomes, evidence dominates the LLM alignment prior. Your memory learns what actually works.
+
+---
+
+## MCP Tool Quick Reference
+
+| Tool | Purpose | Cost |
+|------|---------|------|
+| `elfmem_remember` | Store knowledge | Instant |
+| `elfmem_recall` | Retrieve context for prompt injection | Fast (embed) |
+| `elfmem_status` | Memory health + suggestion | Fast (DB) |
+| `elfmem_outcome` | Record outcome signal to update confidence | Fast (DB) |
+| `elfmem_curate` | Archive stale blocks, prune weak edges | Fast (DB) |
+| `elfmem_guide` | Runtime documentation for any operation | Instant |
+
+---
+
+## CLI Quick Reference
+
+```bash
+elfmem remember CONTENT [--tags t1,t2] [--category C] [--db PATH] [--json]
+elfmem recall QUERY [--top-k N] [--frame attention|self|task] [--db PATH] [--json]
+elfmem status [--db PATH] [--json]
+elfmem outcome BLOCK_IDS SIGNAL [--weight N] [--source LABEL] [--db PATH] [--json]
+elfmem curate [--db PATH] [--json]
+elfmem guide [METHOD]
+elfmem serve --db PATH [--config PATH]
+```
+
+Database: `--db PATH` or `ELFMEM_DB` env var.
+Config: `--config PATH` or `ELFMEM_CONFIG` env var.
 
 ---
 
 ## Next Steps
 
-**Option A: Deep Dive**
-Read all 5 explorations in order (30-60 min), understand the design decisions.
-
-**Option B: Quick Tour**
-Read just 001 and 004. Understand decay and self-interest. Skip the detailed math.
-
-**Option C: Explore Variations**
-Pick one exploration, run 2-3 variations, see how changing parameters affects results.
-
-**Option D: Design Discussion**
-Pick a design question from the explorations, brainstorm new approaches, create a new exploration.
-
----
-
-## What Next?
-
-After exploring, the workflow is:
-
-1. **Solidify:** Extract patterns from Phase 1 into Phase 2 playgrounds
-2. **Formalize:** Write assertion-based test cases for each subsystem
-3. **Codify:** Turn playgrounds into executable specs
-4. **Implement:** Generate Python code directly from specs
-
-But we're not there yet. Phase 1 is about building confidence in the design.
-
----
-
-## Questions?
-
-Ask me anything about an exploration, and I'll explain the math, compute a variation,
-or help you create a new one.
-
-**Examples:**
-- "Why does Block B survive but not Block C in 001?"
-- "What if we added a graph edge between blocks in 003?"
-- "Can you run variation 1 from 005?"
-- "Create an exploration: what happens if..."
-
-Go explore.
+- **Full reference**: `docs/elfmem_tool.md` — comprehensive MCP + CLI documentation
+- **Design philosophy**: `SIMULATION_OVERVIEW.md` — what elfmem solves and why
+- **Architecture**: `docs/amgs_architecture.md` — technical deep dive
+- **Python API**: `system.guide()` inside Python, or `src/elfmem/api.py`
