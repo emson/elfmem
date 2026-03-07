@@ -216,6 +216,17 @@ class MockEmbeddingService:
         self._cache[text] = vec
         return vec
 
+    async def embed_batch(self, texts: list[str]) -> list[np.ndarray]:
+        """Embed multiple texts in a batch, returning normalised vectors.
+
+        Same texts produce identical vectors. Similarity overrides are applied.
+        Uses internal cache for efficiency (repeated texts in the batch
+        are only computed once).
+        """
+        if not texts:
+            return []
+        return [await self.embed(text) for text in texts]
+
 
 def make_mock_llm(**kwargs: object) -> MockLLMService:
     """Create a MockLLMService with optional overrides.

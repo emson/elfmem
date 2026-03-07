@@ -479,3 +479,87 @@ class TestMockServiceIntegration:
 
         assert abs(match_sim - 0.9) < 0.01
         assert abs(unmatch_sim - 0.1) < 0.01
+
+
+class TestMockEmbeddingServiceBatch:
+    """Batch embedding functionality."""
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_returns_list_of_vectors(self) -> None:
+        """embed_batch returns list of normalized vectors."""
+        mock = MockEmbeddingService()
+        texts = ["text1", "text2", "text3"]
+        vecs = await mock.embed_batch(texts)
+
+        assert len(vecs) == 3
+        assert all(isinstance(v, np.ndarray) for v in vecs)
+        assert all(v.shape == (64,) for v in vecs)
+        assert all(abs(np.linalg.norm(v) - 1.0) < 0.001 for v in vecs)
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_empty_list(self) -> None:
+        """embed_batch returns empty list for empty input."""
+        mock = MockEmbeddingService()
+        vecs = await mock.embed_batch([])
+        assert vecs == []
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_matches_individual_embeds(self) -> None:
+        """Batch embedding produces identical results to individual calls."""
+        mock = MockEmbeddingService()
+        texts = ["apple", "banana", "cherry"]
+
+        # Individual embeds
+        individual_vecs = [await mock.embed(text) for text in texts]
+
+        # Reset for batch test (clear cache)
+        mock2 = MockEmbeddingService()
+        batch_vecs = await mock2.embed_batch(texts)
+
+        # Results should be identical
+        for ind, batch in zip(individual_vecs, batch_vecs):
+            assert np.allclose(ind, batch, atol=0.001)
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_uses_cache(self) -> None:
+        """Batch embedding returns same vector for repeated texts from cache."""
+        mock = MockEmbeddingService()
+        texts = ["repeated", "repeated", "unique"]
+
+        # Pre-cache one text
+        await mock.embed("repeated")
+
+        # Batch embed with repeated text
+        vecs = await mock.embed_batch(texts)
+
+        # First two vectors should be identical (from cache)
+        assert np.allclose(vecs[0], vecs[1], atol=0.001)
+        # Third vector should be different
+        assert not np.allclose(vecs[0], vecs[2], atol=0.1)
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_with_similarity_overrides(self) -> None:
+        """Batch embedding applies similarity overrides correctly."""
+        mock = MockEmbeddingService(
+            similarity_overrides={
+                frozenset({"text1", "text2"}): 0.9,
+            }
+        )
+
+        # Embed in order: text1 first, then text2 should use override
+        vecs = await mock.embed_batch(["text1", "text2"])
+
+        sim = float(np.dot(vecs[0], vecs[1]))
+        assert abs(sim - 0.9) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_with_large_batch(self) -> None:
+        """Batch embedding handles large batches efficiently."""
+        mock = MockEmbeddingService()
+        texts = [f"text_{i}" for i in range(100)]
+
+        vecs = await mock.embed_batch(texts)
+
+        assert len(vecs) == 100
+        assert all(v.shape == (64,) for v in vecs)
+        assert mock.embed_calls == 100
