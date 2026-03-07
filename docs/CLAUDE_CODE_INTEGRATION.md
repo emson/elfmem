@@ -1,16 +1,16 @@
-# Claude Code + elfmem Integration Guide
+# Claude Code + elf Integration Guide
 
 ## Overview
 
-Claude Code now has direct access to elfmem's SELF frame via MCP. This means Claude can:
-- Query SELF identity before major decisions
+Claude Code now has direct access to elf's identity via MCP. This means Claude can:
+- Query elf's identity before major decisions
 - Learn new concepts by remembering them
 - Access the full 100+ concept library (agent patterns, cognitive loops, etc.)
-- Make decisions guided by the agent's constitutional principles
+- Make decisions guided by elf's constitutional principles
 
 ## Setup
 
-### 1. Install elfmem with MCP support
+### 1. Install elf with MCP support
 
 ```bash
 cd ~/Dropbox/devel/projects/ai/elf0_mem_sim
@@ -25,17 +25,17 @@ The MCP configuration is at:
 ```
 
 This system prompt tells Claude to:
-- Use `elfmem_recall(query, frame="self")` to access SELF context
-- Respect the project's constitutional principles
-- Guide all decisions through the SELF frame
+- Use `elfmem_recall(query, frame="self")` to access elf's identity
+- Respect elf's constitutional principles
+- Guide all decisions through elf's identity
 
-### 3. Create an elfmem database (first time)
+### 3. Create an elf database (first time)
 
 ```bash
 # Initialize the memory database
 elfmem init ~/.elfmem/default.db
 
-# Populate with SELF/constitutional knowledge (optional but recommended)
+# Populate with elf's constitutional knowledge (optional but recommended)
 elfmem init --seed ~/.elfmem/default.db
 ```
 
@@ -43,13 +43,13 @@ elfmem init --seed ~/.elfmem/default.db
 
 ### When Claude Encounters a Design Decision
 
-Claude's system prompt tells it to ask: **"What does SELF say about this?"**
+Claude's system prompt tells it to ask: **"What does elf say about this?"**
 
 Example workflow:
 
 1. **You:** "Implement ConsolidationPolicy"
 
-2. **Claude thinks:** "This is about consolidation timing. Let me query SELF for guidance."
+2. **Claude thinks:** "This is about consolidation timing. Let me query elf's identity for guidance."
 
 3. **Claude (via MCP):**
    ```
@@ -60,8 +60,8 @@ Example workflow:
    )
    ```
 
-4. **elfmem responds** with the agent's identity blocks about consolidation:
-   - "Consolidation should be SELF-driven, not manual"
+4. **elf responds** with identity blocks about consolidation:
+   - "Consolidation should be self-driven, not manual"
    - "Pre-filter contradictions by similarity to save LLM calls"
    - "Consolidation is the 'dream' phase: deep processing, bounded time"
 
@@ -89,9 +89,9 @@ elfmem_recall("agent patterns for handling contradictions", frame="self")
 elfmem_recall("how should I decide when to curate", frame="self")
 ```
 
-## What's Stored in SELF
+## What's Stored in elf's Identity
 
-The SELF frame contains:
+The "self" frame (elf's identity) contains:
 
 ### 1. Constitutional Principles (10 blocks)
 - Purpose and values
@@ -117,37 +117,37 @@ The SELF frame contains:
 
 When you ask Claude to implement ConsolidationPolicy:
 
-1. **Claude queries SELF:**
+1. **Claude queries elf:**
    ```
    "timing heuristics for consolidation, what triggers dream phase"
    ```
 
-2. **elfmem returns blocks like:**
+2. **elf returns blocks like:**
    - "Consolidation is bounded—should complete in minutes, not hours"
    - "Pre-filter reduces LLM calls by 95%, enabling more frequent consolidation"
-   - "SELF-driven timing means learning from success/failure metrics"
+   - "Self-driven timing means learning from success/failure metrics"
 
-3. **Claude implements with SELF guidance:**
+3. **Claude implements with elf's guidance:**
    ```python
    class ConsolidationPolicy:
        async def should_consolidate(self) -> bool:
-           # Query SELF for timing principles
-           self_context = await recall("consolidation timing", frame="self")
-           # Make decision informed by SELF + metrics
+           # Query elf for timing principles
+           elf_context = await recall("consolidation timing", frame="self")
+           # Make decision informed by elf + metrics
    ```
 
-## Viewing SELF Context Manually
+## Viewing elf's Identity Manually
 
-You can inspect SELF directly:
+You can inspect elf's identity directly:
 
 ```bash
-# Recall SELF context for a topic
+# Recall elf's identity for a topic
 elfmem recall "my identity and values" --frame self
 
 # See what's in the database
 elfmem status
 
-# Remember something back into SELF
+# Remember something into elf's identity
 elfmem remember "New principle: X" --tag self/principle
 ```
 
@@ -162,16 +162,16 @@ elfmem remember "New principle: X" --tag self/principle
 - `frame="attention"` → Ask about specific problems, patterns
 - `frame="task"` → Ask about goals and task-specific knowledge
 
-### 3. Reference Your SELF Queries in Commits
-If you implement something guided by SELF, mention it:
+### 3. Reference Your elf Queries in Commits
+If you implement something guided by elf, mention it:
 ```
 feat: Implement ConsolidationPolicy
 
-Queried SELF for: "consolidation timing principles"
+Queried elf for: "consolidation timing principles"
 Decision: Self-tune prefilter threshold based on success rate
 ```
 
-### 4. Keep SELF Fresh
+### 4. Keep elf's Identity Fresh
 When you discover a pattern, have Claude remember it:
 ```
 elfmem_remember(
@@ -191,9 +191,9 @@ uv sync --extra mcp --extra cli --all-extras
 python -m elfmem.mcp --help
 ```
 
-### SELF queries returning empty
+### Identity queries returning empty
 ```bash
-# Initialize the database with SELF blocks
+# Initialize the database with elf's identity blocks
 elfmem init --seed ~/.elfmem/default.db
 
 # Verify blocks are there
@@ -209,20 +209,20 @@ elfmem status
 
 ```
 Claude Code (System Prompt)
-       ↓ (asks "What does SELF say?")
+       ↓ (asks "What does elf say?")
        ↓
 MCP Protocol
        ↓
-elfmem MCP Server
+elf MCP Server
        ↓
-elfmem Recall (SELF frame)
+elf Recall (identity frame)
        ↓
 SQLite DB (Constitutional blocks)
        ↓
 Result → Claude's Decision-Making
 ```
 
-The SELF context flows into Claude's reasoning without requiring project changes or hardcoded prompts.
+elf's identity flows into Claude's reasoning without requiring project changes or hardcoded prompts.
 
 ---
 
@@ -230,6 +230,6 @@ The SELF context flows into Claude's reasoning without requiring project changes
 
 1. ✅ System prompt is in place
 2. ✅ MCP server is configured
-3. ⏳ Start using it: Ask Claude to query SELF for guidance on ConsolidationPolicy
-4. ⏳ Monitor which SELF queries are most useful
-5. ⏳ Expand SELF with new concepts as they emerge
+3. ⏳ Start using it: Ask Claude to query elf for guidance on ConsolidationPolicy
+4. ⏳ Monitor which queries to elf are most useful
+5. ⏳ Expand elf's identity with new concepts as they emerge
