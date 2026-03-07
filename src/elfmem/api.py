@@ -482,6 +482,7 @@ class MemorySystem:
                 self_alignment_threshold=mem.self_alignment_threshold,
                 similarity_edge_threshold=mem.similarity_edge_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
+                contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
             )
 
             if await should_curate(

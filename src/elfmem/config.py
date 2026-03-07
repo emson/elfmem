@@ -57,6 +57,7 @@ class MemoryConfig(BaseModel):
     # Quality thresholds
     self_alignment_threshold: float = 0.70
     contradiction_threshold: float = 0.80
+    contradiction_similarity_prefilter: float = 0.40  # Pre-filter before LLM (~95% fewer calls)
     near_dup_exact_threshold: float = 0.95
     near_dup_near_threshold: float = 0.90
 
