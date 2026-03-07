@@ -194,3 +194,18 @@ def main(db_path: str, config_path: str | None = None) -> None:
     _db_path = db_path
     _config_path = config_path
     mcp.run()
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    db_path = os.path.expanduser(os.getenv("ELFMEM_DB_PATH", "~/.elfmem/default.db"))
+    config_path = os.getenv("ELFMEM_CONFIG_PATH")
+    if config_path:
+        config_path = os.path.expanduser(config_path)
+
+    try:
+        main(db_path, config_path)
+    except KeyboardInterrupt:
+        sys.exit(0)
