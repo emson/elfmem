@@ -97,19 +97,19 @@ class TestRemember:
         result = await smart_memory.remember("same content")
         assert result.status == "duplicate_rejected"
 
-    async def test_remember_consolidates_when_threshold_reached(
+    async def test_remember_does_not_consolidate_at_threshold(
         self, smart_memory: SmartMemory
     ) -> None:
-        # threshold is 3 — learn 3 unique blocks to trigger consolidation
+        # NEW: remember() never consolidates. Learn 3 blocks (threshold=3) — inbox stays full.
         for i in range(3):
             await smart_memory.remember(f"unique fact number {i}")
         result = await smart_memory.status()
-        assert result.inbox_count == 0
+        assert result.inbox_count == 3
 
-    async def test_remember_does_not_consolidate_below_threshold(
+    async def test_remember_accumulates_blocks(
         self, smart_memory: SmartMemory
     ) -> None:
-        # Learn 2 blocks (threshold=3), inbox should still have 2
+        # Learn 2 blocks (threshold=3), inbox should have 2
         for i in range(2):
             await smart_memory.remember(f"fact below threshold {i}")
         result = await smart_memory.status()

@@ -10,6 +10,7 @@ from elfmem.adapters.mock import (
 )
 from elfmem.db.engine import create_test_engine
 from elfmem.db.queries import seed_builtin_data
+from elfmem.smart import SmartMemory
 
 
 @pytest.fixture
@@ -42,3 +43,17 @@ async def db_conn(test_engine):
     """An async connection to the test database within a transaction."""
     async with test_engine.begin() as conn:
         yield conn
+
+
+@pytest.fixture
+def db_path_str(tmp_path):
+    """A temporary database file path as a string."""
+    return str(tmp_path / "test.db")
+
+
+@pytest.fixture
+async def memory(db_path_str):
+    """A SmartMemory instance for testing. Auto-opens and closes."""
+    mem = await SmartMemory.open(db_path_str)
+    yield mem
+    await mem.close()

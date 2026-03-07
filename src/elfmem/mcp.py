@@ -47,11 +47,16 @@ async def elfmem_remember(
     """Store knowledge for future retrieval.
 
     Call when the agent discovers a fact, preference, decision, or observation
-    worth keeping across sessions. Sessions and consolidation are automatic.
-    Returns: block_id, status ("created"|"duplicate_rejected"|"near_duplicate_superseded").
+    worth keeping across sessions. Pure learn, no blocking.
+
+    Returns: block_id, status, and should_dream advisory.
+    If should_dream is True, consolidation (embedding, alignment, contradictions)
+    will benefit from running soon via elfmem_dream.
     """
     result = await _mem().remember(content, tags=tags)
-    return result.to_dict()
+    response = result.to_dict()
+    response["should_dream"] = _mem().should_dream
+    return response
 
 
 @mcp.tool()
@@ -101,6 +106,22 @@ async def elfmem_curate() -> dict[str, Any]:
     Call manually only if retrieval quality visibly degrades.
     """
     result = await _mem().curate()
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_dream() -> dict[str, Any]:
+    """Deep consolidation: embed, align, detect contradictions, build graph.
+
+    Call when elfmem_remember indicates should_dream=True, or when you want
+    to consolidate pending knowledge. Safe at natural pause points.
+
+    Embedding & LLM calls per pending block. Slow if many pending.
+    Returns: blocks processed, promoted, dedup'd, edges created.
+    """
+    result = await _mem().dream()
+    if result is None:
+        return {"message": "No pending blocks to consolidate", "status": "idle"}
     return result.to_dict()
 
 

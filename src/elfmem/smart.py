@@ -1,7 +1,11 @@
-"""SmartMemory — auto-managed MemorySystem for MCP and CLI interfaces.
+"""SmartMemory — agent-friendly wrapper for MemorySystem with explicit dreaming.
 
 Internal to elfmem. Not part of the public API.
-Session management and inbox consolidation are handled automatically.
+
+Three rhythms:
+    HEARTBEAT (ms):   remember() — fast learn to inbox
+    BREATHING (s):    dream() — deep consolidation
+    SLEEP (min):      curate() — maintenance
 """
 from __future__ import annotations
 
@@ -12,6 +16,7 @@ from typing import Any
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig
 from elfmem.types import (
+    ConsolidateResult,
     CurateResult,
     FrameResult,
     LearnResult,
@@ -22,7 +27,9 @@ from elfmem.types import (
 
 
 class SmartMemory:
-    """MemorySystem with lazy session start and auto-consolidation.
+    """MemorySystem with lazy session start and explicit dreaming (consolidation).
+
+    Learn fast (remember) → Dream deep (consolidate) → Curate (maintain).
 
     For tool interfaces only. Not for library users.
     """
@@ -55,11 +62,17 @@ class SmartMemory:
         db_path: str,
         config: ElfmemConfig | str | dict[str, Any] | None = None,
     ) -> AsyncIterator[SmartMemory]:
-        """Open → yield → close. For short-lived CLI invocations."""
+        """Open → yield → close. Safety net: dreams on exit if pending.
+
+        Ensures consolidation happens even if agent forgot to call dream().
+        """
         mem = await cls.open(db_path, config=config)
         try:
             yield mem
         finally:
+            # Safety net: consolidate any pending blocks before session closes.
+            if mem.should_dream:
+                await mem.dream()
             await mem.close()
 
     async def close(self) -> None:
@@ -67,20 +80,46 @@ class SmartMemory:
         await self._system.end_session()
         await self._system.close()
 
+    @property
+    def should_dream(self) -> bool:
+        """Check if consolidation is needed.
+
+        True when inbox has accumulated to or beyond the threshold.
+        Call dream() when True, or let the session context manager handle it.
+        """
+        return self._pending >= self._threshold
+
     async def remember(
         self,
         content: str,
         tags: list[str] | None = None,
         category: str = "knowledge",
     ) -> LearnResult:
-        """learn() + auto-session + auto-consolidate when inbox fills."""
+        """Fast-path learn: store in inbox without blocking on consolidation.
+
+        Cost: Instant (zero LLM calls, pure DB insert).
+        After creation, check should_dream to see if consolidation is needed.
+        """
         await self._system.begin_session()
         result = await self._system.learn(content, tags=tags, category=category)
         if result.status == "created":
             self._pending += 1
-        if self._pending >= self._threshold:
-            await self._system.consolidate()
-            self._pending = 0
+        return result
+
+    async def dream(self) -> ConsolidateResult | None:
+        """Deep consolidation: embed, align, detect contradictions, build graph.
+
+        Cost: LLM call per inbox block. Slow if many pending blocks.
+        Safe to call when should_dream is True, or at natural pause points.
+        Idempotent: safe to call multiple times (returns None if no pending).
+
+        Returns: ConsolidateResult with counts (processed, promoted, etc.), or None
+                if no blocks were pending.
+        """
+        if self._pending == 0:
+            return None
+        result = await self._system.consolidate()
+        self._pending = 0
         return result
 
     async def recall(

@@ -336,6 +336,27 @@ def outcome(
 
 
 @app.command()
+def dream(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Consolidate pending knowledge: embed, align, detect contradictions.
+
+    Call when elfmem_remember indicates should_dream=True, or at natural pause
+    points during a session. Automatically triggered on session exit if pending.
+    """
+    result = _run(_dream(_resolve_db(db), _resolve_config(config)))
+    if result is None:
+        msg = "No pending blocks — nothing to consolidate."
+        _json({"message": msg, "status": "idle"}) if json_output else typer.echo(msg)
+    else:
+        _json(result.to_dict()) if json_output else typer.echo(str(result))
+
+
+@app.command()
 def curate(
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[
@@ -427,6 +448,12 @@ async def _outcome(
 ) -> OutcomeResult:
     async with SmartMemory.managed(db_path, config=config) as mem:
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
+
+
+async def _dream(db_path: str, config: str | None) -> Any:
+    """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
+    async with SmartMemory.managed(db_path, config=config) as mem:
+        return await mem.dream()
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:
