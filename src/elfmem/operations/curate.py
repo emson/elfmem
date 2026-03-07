@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db.queries import (
     get_active_blocks,
+    get_blocks_by_tag_pattern,
     get_config,
     get_weighted_degree,
     prune_weak_edges,
@@ -68,11 +69,17 @@ async def curate(
     """
     archived = await _archive_decayed_blocks(conn, current_active_hours, prune_threshold)
     edges_pruned = await prune_weak_edges(conn, edge_prune_threshold)
+    constitutional_reinforced = await _reinforce_constitutional(conn, current_active_hours)
     reinforced = await _reinforce_top_blocks(conn, current_active_hours, reinforce_top_n)
 
     await set_config(conn, "last_curate_at", str(current_active_hours))
 
-    return CurateResult(archived=archived, edges_pruned=edges_pruned, reinforced=reinforced)
+    return CurateResult(
+        archived=archived,
+        edges_pruned=edges_pruned,
+        reinforced=reinforced,
+        constitutional_reinforced=constitutional_reinforced,
+    )
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -122,6 +129,22 @@ async def _archive_decayed_blocks(
             await update_block_status(conn, block["id"], "archived", archive_reason="decayed")
             archived += 1
     return archived
+
+
+async def _reinforce_constitutional(
+    conn: AsyncConnection,
+    current_active_hours: float,
+) -> int:
+    """Auto-reinforce all active constitutional blocks regardless of score.
+
+    Belt-and-suspenders: constitutional blocks are already near-immortal through
+    PERMANENT decay + guarantee enforcement + retrieval reinforcement. This ensures
+    they stay reinforced even when the agent never retrieves the SELF frame.
+    """
+    ids = await get_blocks_by_tag_pattern(conn, "self/constitutional")
+    if ids:
+        await reinforce_blocks(conn, ids, current_active_hours)
+    return len(ids)
 
 
 async def _get_tags_fast(conn: AsyncConnection, block_id: str) -> list[str]:

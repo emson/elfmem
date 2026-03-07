@@ -162,10 +162,11 @@ class CurateResult:
     archived: int
     edges_pruned: int
     reinforced: int
+    constitutional_reinforced: int = 0
 
     @property
     def summary(self) -> str:
-        if not any([self.archived, self.edges_pruned, self.reinforced]):
+        if not any([self.archived, self.edges_pruned, self.reinforced, self.constitutional_reinforced]):
             return "Curated: nothing required."
         parts: list[str] = []
         if self.archived:
@@ -174,6 +175,8 @@ class CurateResult:
             parts.append(f"{self.edges_pruned} edges pruned")
         if self.reinforced:
             parts.append(f"{self.reinforced} reinforced")
+        if self.constitutional_reinforced:
+            parts.append(f"{self.constitutional_reinforced} constitutional reinforced")
         return f"Curated: {', '.join(parts)}."
 
     def __str__(self) -> str:
@@ -184,6 +187,7 @@ class CurateResult:
             "archived": self.archived,
             "edges_pruned": self.edges_pruned,
             "reinforced": self.reinforced,
+            "constitutional_reinforced": self.constitutional_reinforced,
         }
 
 

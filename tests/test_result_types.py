@@ -169,7 +169,7 @@ class TestCurateResult:
 
     def test_to_dict_keys(self):
         r = CurateResult(archived=1, edges_pruned=2, reinforced=3)
-        assert set(r.to_dict().keys()) == {"archived", "edges_pruned", "reinforced"}
+        assert set(r.to_dict().keys()) == {"archived", "edges_pruned", "reinforced", "constitutional_reinforced"}
 
 
 # ── ScoredBlock ───────────────────────────────────────────────────────────────

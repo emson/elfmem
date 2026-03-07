@@ -106,24 +106,41 @@ async def elfmem_curate() -> dict[str, Any]:
 
 @mcp.tool()
 async def elfmem_setup(
-    identity: str,
+    identity: str | None = None,
     values: list[str] | None = None,
+    seed: bool = True,
 ) -> dict[str, Any]:
     """Bootstrap agent identity in the SELF frame.
 
-    Call this on first use to establish who you are. Creates SELF-tagged blocks
-    from a natural language description. Safe to call multiple times — exact
-    duplicate content is silently rejected, so re-running is harmless.
+    Call this on first use to establish who you are. Seeds 10 constitutional
+    blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
+    then adds any identity description and values you provide.
 
-    identity: Natural language description of agent role, personality, constraints.
-    values:   Optional list of core values or principles (each stored separately).
+    Safe to call multiple times — exact duplicate content is silently rejected,
+    so re-running is harmless. Constitutional blocks are created once, then
+    skipped on subsequent calls.
+
+    seed:     Seed the 10 constitutional blocks (default True). Pass False to
+              skip constitutional seeding and only add identity/values.
+    identity: Optional natural language description of agent role and constraints.
+    values:   Optional list of domain-specific principles (each stored separately).
 
     Returns blocks_created count and per-block status dicts.
     """
     results = []
 
-    identity_result = await _mem().remember(identity, tags=["self/context"])
-    results.append(identity_result.to_dict())
+    if seed:
+        from elfmem.seed import CONSTITUTIONAL_SEED
+        for block in CONSTITUTIONAL_SEED:
+            r = await _mem().remember(
+                block["content"],  # type: ignore[arg-type]
+                tags=block["tags"],  # type: ignore[arg-type]
+            )
+            results.append(r.to_dict())
+
+    if identity:
+        r = await _mem().remember(identity, tags=["self/context"])
+        results.append(r.to_dict())
 
     if values:
         for value in values:

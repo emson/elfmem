@@ -95,12 +95,19 @@ def init(
         bool,
         typer.Option("--force", help="Overwrite existing config (never overwrites DB)"),
     ] = False,
+    seed: Annotated[
+        bool,
+        typer.Option("--seed/--no-seed", help="Seed constitutional cognitive loop blocks"),
+    ] = True,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Initialise elfmem: create config directory, generate config, and optionally seed SELF.
+    """Initialise elfmem: create config directory, generate config, and seed the cognitive loop.
 
     Safe to re-run: existing config is preserved unless --force is given.
-    Existing SELF blocks are never duplicated (duplicate content is silently skipped).
+    Constitutional and SELF blocks are never duplicated (duplicate content is silently skipped).
+
+    By default, seeds 10 constitutional blocks that form the cognitive loop
+    (curiosity, feedback, balance, etc.). Use --no-seed to skip this.
     """
     from elfmem.config import render_default_config
 
@@ -116,11 +123,14 @@ def init(
         config_action = "exists (skipped)"
     else:
         config_file.write_text(render_default_config(), encoding="utf-8")
-        config_action = "created" if not config_file.exists() else "created"
-        # Re-check: write_text succeeded
         config_action = "created"
 
-    # Step 3: seed SELF block if --self provided
+    # Step 3: seed constitutional blocks (default: on)
+    seed_results: list[dict[str, str]] = []
+    if seed:
+        seed_results = _run(_init_seed(db_expanded, config_expanded))
+
+    # Step 4: seed SELF block if --self provided
     self_result: dict[str, str] | None = None
     if self_description:
         learn_result: LearnResult = _run(
@@ -134,12 +144,22 @@ def init(
             "config_action": config_action,
             "db_path": db_expanded,
         }
+        if seed_results:
+            created = sum(1 for r in seed_results if r["status"] == "created")
+            out["constitutional_blocks"] = {"created": created, "total": len(seed_results)}
         if self_result is not None:
             out["self_block"] = self_result
         _json(out)
     else:
         typer.echo(f"✓  Config:   {config_expanded} ({config_action})")
         typer.echo(f"✓  Database: {db_expanded} (ready)")
+        if seed_results:
+            created = sum(1 for r in seed_results if r["status"] == "created")
+            skipped = len(seed_results) - created
+            if created > 0:
+                typer.echo(f"✓  Seed:     {created} constitutional blocks created.")
+            else:
+                typer.echo(f"✓  Seed:     Constitutional blocks already present ({skipped} skipped).")
         if self_result is not None:
             status_msg = self_result["status"]
             if status_msg == "created":
@@ -150,8 +170,8 @@ def init(
                 typer.echo(f"✓  SELF:     {self_result['block_id'][:8]}. Status: {status_msg}.")
         if not self_description:
             typer.echo(
-                "\n  Tip: seed your identity with:\n"
-                f"  elfmem init --self 'Describe your agent here'"
+                "\n  Tip: personalise your identity with:\n"
+                "  elfmem init --self 'Describe your agent here'"
             )
 
 
@@ -412,6 +432,20 @@ async def _outcome(
 async def _curate(db_path: str, config: str | None) -> CurateResult:
     async with SmartMemory.managed(db_path, config=config) as mem:
         return await mem.curate()
+
+
+async def _init_seed(db_path: str, config: str) -> list[dict[str, str]]:
+    """Store all 10 constitutional seed blocks. Idempotent — duplicates are silently skipped."""
+    from elfmem.seed import CONSTITUTIONAL_SEED
+    async with SmartMemory.managed(db_path, config=config) as mem:
+        results = []
+        for block in CONSTITUTIONAL_SEED:
+            r = await mem.remember(
+                block["content"],  # type: ignore[arg-type]
+                tags=block["tags"],  # type: ignore[arg-type]
+            )
+            results.append(r.to_dict())
+        return results
 
 
 async def _init_self(db_path: str, config: str, content: str) -> LearnResult:

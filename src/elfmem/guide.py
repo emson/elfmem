@@ -285,30 +285,46 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "setup": AgentGuide(
         name="setup",
-        what="Bootstrap agent identity by seeding the SELF frame with core identity blocks.",
+        what=(
+            "Bootstrap the cognitive loop: seeds 10 constitutional blocks, then adds optional "
+            "identity description and domain values to the SELF frame."
+        ),
         when=(
-            "First use — before any other operations. "
-            "Also when the agent's role, values, or constraints change significantly."
+            "First use — before any other operations. Also when the agent's role, values, or "
+            "constraints change significantly. Constitutional blocks ship with every instance."
         ),
         when_not=(
-            "Every session — SELF blocks persist and decay slowly. "
-            "Don't re-seed unchanged identity on every run; duplicates are rejected automatically."
+            "Every session — SELF blocks persist across restarts. Duplicates are rejected "
+            "automatically so re-running is safe but unnecessary. Don't call on every turn."
         ),
-        cost="Fast per block. Each block requires one LLM call during consolidate().",
+        cost=(
+            "Fast per block. Each block queues in inbox; one LLM call per block during "
+            "consolidate() (auto on session close)."
+        ),
         returns=(
             "dict with status='setup_complete', blocks_created (int), and blocks (list of "
-            "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe."
+            "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe. "
+            "Constitutional blocks are tagged self/constitutional (PERMANENT decay, ~34yr half-life)."
         ),
         next=(
             "SELF blocks sit in inbox until consolidate() runs (auto on session close). "
-            "After consolidation, elfmem_recall(frame='self') returns your identity context. "
-            "Check status with elfmem_status() or 'elfmem doctor' CLI."
+            "After consolidation, recall(frame='self') always includes constitutional blocks "
+            "(guaranteed slots) plus any domain values you added. "
+            "Check status with elfmem_status() or 'elfmem doctor' CLI. "
+            "Three tiers: constitutional (PERMANENT) → values (DURABLE, ~29d) → context (STANDARD, ~3d)."
         ),
         example=(
+            "# Minimal: seeds 10 constitutional blocks only\n"
+            "elfmem_setup()\n"
+            "\n"
+            "# With identity: constitutional + custom identity block\n"
             "elfmem_setup(\n"
-            "    identity='I am Claude Code, an AI-powered software engineering assistant.',\n"
-            "    values=['write minimal clean code', 'confirm before destructive operations']\n"
-            ")"
+            "    identity='I am a trading assistant focused on risk-adjusted returns.',\n"
+            "    values=['cut losing positions early', 'size positions to max 2% risk']\n"
+            ")\n"
+            "\n"
+            "# Skip constitutional seeding (advanced: manual control)\n"
+            "elfmem_setup(seed=False, identity='Custom agent without default seed')"
         ),
     ),
     "guide": AgentGuide(
