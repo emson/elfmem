@@ -15,6 +15,7 @@ from typing import Any
 
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig
+from elfmem.policy import ConsolidationPolicy
 from elfmem.types import (
     ConsolidateResult,
     CurateResult,
@@ -39,21 +40,24 @@ class SmartMemory:
         system: MemorySystem,
         threshold: int,
         pending: int = 0,
+        policy: ConsolidationPolicy | None = None,
     ) -> None:
         self._system = system
         self._threshold = threshold
         self._pending = pending
+        self._policy = policy
 
     @classmethod
     async def open(
         cls,
         db_path: str,
         config: ElfmemConfig | str | dict[str, Any] | None = None,
+        policy: ConsolidationPolicy | None = None,
     ) -> SmartMemory:
         """Open a database and seed inbox count from current state."""
         system = await MemorySystem.from_config(db_path, config)
         status = await system.status()
-        return cls(system, status.inbox_threshold, status.inbox_count)
+        return cls(system, status.inbox_threshold, status.inbox_count, policy=policy)
 
     @classmethod
     @asynccontextmanager
@@ -61,12 +65,13 @@ class SmartMemory:
         cls,
         db_path: str,
         config: ElfmemConfig | str | dict[str, Any] | None = None,
+        policy: ConsolidationPolicy | None = None,
     ) -> AsyncIterator[SmartMemory]:
         """Open → yield → close. Safety net: dreams on exit if pending.
 
         Ensures consolidation happens even if agent forgot to call dream().
         """
-        mem = await cls.open(db_path, config=config)
+        mem = await cls.open(db_path, config=config, policy=policy)
         try:
             yield mem
         finally:
@@ -84,9 +89,13 @@ class SmartMemory:
     def should_dream(self) -> bool:
         """Check if consolidation is needed.
 
-        True when inbox has accumulated to or beyond the threshold.
+        True when inbox has accumulated to or beyond the threshold (or policy threshold if set).
         Call dream() when True, or let the session context manager handle it.
         """
+        if self._policy is not None:
+            # Delegate to policy for adaptive threshold
+            return self._policy.should_consolidate(self._pending)
+        # Fallback: simple count-based
         return self._pending >= self._threshold
 
     async def remember(
@@ -120,6 +129,11 @@ class SmartMemory:
             return None
         result = await self._system.consolidate()
         self._pending = 0
+
+        # Feed result back to policy for adaptive learning
+        if self._policy is not None and result is not None:
+            self._policy.record_result(result)
+
         return result
 
     async def recall(
