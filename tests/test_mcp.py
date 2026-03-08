@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 from elfmem.types import (
     CurateResult,
     FrameResult,
@@ -55,11 +55,12 @@ def _make_system_status(health: str = "good") -> SystemStatus:
 
 @pytest.fixture
 def mock_mem(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
-    """Inject a mock SmartMemory into the mcp module."""
+    """Inject a mock MemorySystem into the mcp module."""
     import elfmem.mcp as mcp_module
 
-    mem: AsyncMock = AsyncMock(spec=SmartMemory)
+    mem: AsyncMock = AsyncMock(spec=MemorySystem)
     mem.guide = MagicMock(return_value="guide text")
+    mem.should_dream = False  # synchronous property — set as plain attribute on mock
     monkeypatch.setattr(mcp_module, "_memory", mem)
     return mem
 
@@ -83,9 +84,10 @@ class TestMcpTools:
         assert result["status"] == "created"
 
     async def test_recall_returns_dict_with_text(self, mock_mem: AsyncMock) -> None:
+        # MCP elfmem_recall now calls frame() on MemorySystem (not recall()).
         from elfmem.mcp import elfmem_recall
 
-        mock_mem.recall.return_value = FrameResult(
+        mock_mem.frame.return_value = FrameResult(
             text="context text", blocks=[], frame_name="attention"
         )
         result = await elfmem_recall(query="test")
@@ -94,7 +96,7 @@ class TestMcpTools:
     async def test_recall_includes_blocks_key(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import elfmem_recall
 
-        mock_mem.recall.return_value = FrameResult(
+        mock_mem.frame.return_value = FrameResult(
             text="text", blocks=[], frame_name="attention"
         )
         result = await elfmem_recall(query="test")
@@ -104,7 +106,7 @@ class TestMcpTools:
         from elfmem.mcp import elfmem_recall
 
         block = _make_scored_block(id="xyz789")
-        mock_mem.recall.return_value = FrameResult(
+        mock_mem.frame.return_value = FrameResult(
             text="text", blocks=[block], frame_name="attention"
         )
         result = await elfmem_recall(query="test")

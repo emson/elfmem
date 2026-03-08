@@ -155,6 +155,15 @@ class MemorySystem:
             # Seed _pending from DB so the advisory is accurate on restart.
             # Blocks that survived a crash or process restart are counted.
             initial_pending = await get_inbox_count(conn)
+            # Restore persisted policy threshold so adaptive learning continues
+            # across restarts. Clamped to [min, max] by restore_threshold().
+            if policy is not None:
+                stored = await get_config(conn, "consolidation_policy_threshold")
+                if stored is not None:
+                    try:
+                        policy.restore_threshold(int(stored))
+                    except (ValueError, TypeError):
+                        pass  # Corrupted value; policy starts from base_threshold
 
         # Shared counter: both adapters record to the same object.
         # MemorySystem reads it in status() and manages its lifecycle.
@@ -619,9 +628,19 @@ class MemorySystem:
         if self._pending == 0:
             return None
         result = await self.consolidate()
-        # Feed policy so it can adapt the threshold for the next cycle.
+        # Feed policy so it can adapt the threshold for the next cycle,
+        # then persist the new threshold so it survives process restarts.
+        # Persistence is best-effort: a DB failure here is non-fatal —
+        # the adapted threshold is still in memory for this session,
+        # and the next restart will use whatever was last successfully saved.
         if self._policy is not None:
             self._policy.record_result(result)
+            async with self._engine.begin() as conn:
+                await set_config(
+                    conn,
+                    "consolidation_policy_threshold",
+                    str(self._policy.effective_threshold),
+                )
         return result
 
     @property

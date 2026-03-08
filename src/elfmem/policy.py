@@ -128,6 +128,19 @@ class ConsolidationPolicy:
             self._current = max(self._min, self._current - self._step)
         # else: in dead-band (acceptable range) → no change
 
+    def restore_threshold(self, threshold: int) -> None:
+        """Restore a previously persisted effective threshold.
+
+        Called by MemorySystem during startup to resume adaptive learning
+        from where it left off. Clamps to [min_threshold, max_threshold]
+        so corrupted or out-of-range values degrade gracefully.
+
+        Args:
+            threshold: Previously saved effective_threshold value, typically
+                loaded from the system_config database table.
+        """
+        self._current = max(self._min, min(self._max, threshold))
+
     @property
     def effective_threshold(self) -> int:
         """Current adaptive threshold for consolidation."""

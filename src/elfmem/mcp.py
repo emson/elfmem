@@ -2,6 +2,7 @@
 
 Start:  elfmem serve --db agent.db
         elfmem serve --db agent.db --config elfmem.yaml
+        elfmem serve --db agent.db --adaptive-policy
 """
 from __future__ import annotations
 
@@ -11,20 +12,25 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from elfmem.smart import SmartMemory, format_recall_response
+from elfmem.api import MemorySystem
+from elfmem.policy import ConsolidationPolicy
+from elfmem.smart import format_recall_response
 
-_memory: SmartMemory | None = None
+_memory: MemorySystem | None = None
 _db_path: str = ""
 _config_path: str | None = None
+_use_adaptive_policy: bool = False
 
 
 @asynccontextmanager
 async def _lifespan(server: FastMCP) -> AsyncIterator[None]:  # type: ignore[type-arg]
     global _memory
-    _memory = await SmartMemory.open(_db_path, config=_config_path)
+    policy = ConsolidationPolicy() if _use_adaptive_policy else None
+    _memory = await MemorySystem.from_config(_db_path, config=_config_path, policy=policy)
     try:
         yield
     finally:
+        await _memory.end_session()
         await _memory.close()
         _memory = None
 
@@ -32,8 +38,8 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[None]:  # type: ignore[typ
 mcp = FastMCP("elfmem", lifespan=_lifespan)
 
 
-def _mem() -> SmartMemory:
-    """Return active SmartMemory. Fails fast if server not initialised."""
+def _mem() -> MemorySystem:
+    """Return active MemorySystem. Fails fast if server not initialised."""
     if _memory is None:
         raise RuntimeError("elfmem MCP server not initialised.")
     return _memory
@@ -53,9 +59,10 @@ async def elfmem_remember(
     If should_dream is True, consolidation (embedding, alignment, contradictions)
     will benefit from running soon via elfmem_dream.
     """
-    result = await _mem().remember(content, tags=tags)
+    mem = _mem()
+    result = await mem.remember(content, tags=tags)
     response = result.to_dict()
-    response["should_dream"] = _mem().should_dream
+    response["should_dream"] = mem.should_dream
     return response
 
 
@@ -71,7 +78,9 @@ async def elfmem_recall(
     can be passed to elfmem_outcome to record outcome feedback later.
     frame: "attention" (query-driven, default) | "self" (identity) | "task" (goals).
     """
-    result = await _mem().recall(query, top_k=top_k, frame=frame)
+    mem = _mem()
+    await mem.begin_session()  # idempotent — no-op if session already active
+    result = await mem.frame(frame, query=query or None, top_k=top_k)
     return format_recall_response(result)
 
 
@@ -148,24 +157,25 @@ async def elfmem_setup(
 
     Returns blocks_created count and per-block status dicts.
     """
+    mem = _mem()
     results = []
 
     if seed:
         from elfmem.seed import CONSTITUTIONAL_SEED
         for block in CONSTITUTIONAL_SEED:
-            r = await _mem().remember(
+            r = await mem.remember(
                 block["content"],  # type: ignore[arg-type]
                 tags=block["tags"],  # type: ignore[arg-type]
             )
             results.append(r.to_dict())
 
     if identity:
-        r = await _mem().remember(identity, tags=["self/context"])
+        r = await mem.remember(identity, tags=["self/context"])
         results.append(r.to_dict())
 
     if values:
         for value in values:
-            r = await _mem().remember(value, tags=["self/value"])
+            r = await mem.remember(value, tags=["self/value"])
             results.append(r.to_dict())
 
     created = sum(1 for r in results if r["status"] == "created")
@@ -188,11 +198,25 @@ async def elfmem_guide(method: str | None = None) -> str:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 
-def main(db_path: str, config_path: str | None = None) -> None:
-    """Start the MCP server. Called by `elfmem serve`."""
-    global _db_path, _config_path
+def main(
+    db_path: str,
+    config_path: str | None = None,
+    *,
+    use_adaptive_policy: bool = False,
+) -> None:
+    """Start the MCP server. Called by ``elfmem serve``.
+
+    Args:
+        db_path: Path to SQLite database file.
+        config_path: Optional path to elfmem.yaml config file.
+        use_adaptive_policy: When True, enables ConsolidationPolicy so the
+            server self-tunes its consolidation threshold based on promotion
+            rate feedback. The learned threshold persists across restarts.
+    """
+    global _db_path, _config_path, _use_adaptive_policy
     _db_path = db_path
     _config_path = config_path
+    _use_adaptive_policy = use_adaptive_policy
     mcp.run()
 
 
@@ -204,8 +228,9 @@ if __name__ == "__main__":
     config_path = os.getenv("ELFMEM_CONFIG_PATH")
     if config_path:
         config_path = os.path.expanduser(config_path)
+    adaptive = os.getenv("ELFMEM_ADAPTIVE_POLICY", "").lower() in ("1", "true", "yes")
 
     try:
-        main(db_path, config_path)
+        main(db_path, config_path, use_adaptive_policy=adaptive)
     except KeyboardInterrupt:
         sys.exit(0)
