@@ -37,15 +37,7 @@ from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome as _record_outcome
 from elfmem.operations.recall import recall as _recall
 from elfmem.ports.services import EmbeddingService, LLMService
-from elfmem.session import (
-    begin_session as _begin_session,
-)
-from elfmem.session import (
-    compute_current_active_hours,
-)
-from elfmem.session import (
-    end_session as _end_session,
-)
+from elfmem.session import begin_session as _begin_session, end_session as _end_session
 from elfmem.types import (
     ConsolidateResult,
     CurateResult,
@@ -94,6 +86,7 @@ class MemorySystem:
         self._frame_cache = FrameCache()
         self._session_id: str | None = None
         self._session_started_at: float | None = None  # monotonic seconds
+        self._session_base_hours: float = 0.0  # total_active_hours at session start
         self._history: deque[OperationRecord] = deque(maxlen=100)
         self._token_counter = token_counter
 
@@ -364,9 +357,11 @@ class MemorySystem:
             return self._session_id
 
         async with self._engine.begin() as conn:
+            base_hours = await get_total_active_hours(conn)
             session_id = await _begin_session(conn, task_type=task_type)
         self._session_id = session_id
         self._session_started_at = time.monotonic()
+        self._session_base_hours = base_hours
         # Fresh token slate for every new session
         if self._token_counter is not None:
             self._token_counter.reset()
@@ -388,13 +383,18 @@ class MemorySystem:
         """
         if self._session_id is None:
             return 0.0
-        # Capture and zero the counter before the DB transaction — prevents
-        # any tokens from being double-counted if begin_session follows soon.
+        # Snapshot (not reset) before the DB transaction. Reset only after
+        # the transaction succeeds — prevents token data loss on DB failure.
         session_usage = (
-            self._token_counter.reset() if self._token_counter is not None else None
+            self._token_counter.snapshot() if self._token_counter is not None else None
         )
         async with self._engine.begin() as conn:
-            duration = await _end_session(conn, self._session_id)
+            duration = await _end_session(
+                conn,
+                self._session_id,
+                wall_start=self._session_started_at,
+                base_hours=self._session_base_hours,
+            )
             if session_usage is not None:
                 raw = await get_config(conn, "lifetime_token_usage")
                 lifetime = _parse_token_usage(raw)
@@ -402,8 +402,12 @@ class MemorySystem:
                 await set_config(
                     conn, "lifetime_token_usage", json.dumps(updated.to_dict())
                 )
+        # Reset counter only after successful DB persist
+        if self._token_counter is not None:
+            self._token_counter.reset()
         self._session_id = None
         self._session_started_at = None
+        self._session_base_hours = 0.0
         self._record_op("end_session", f"Session ended ({duration:.2f}h active).")
         return duration
 
@@ -470,7 +474,7 @@ class MemorySystem:
         NEXT: Promoted blocks are now searchable via frame() and recall().
         Also triggers curate() automatically if curate_interval has elapsed.
         """
-        current_hours = compute_current_active_hours()
+        current_hours = self._current_active_hours()
         mem = self._config.memory
 
         async with self._engine.begin() as conn:
@@ -545,7 +549,7 @@ class MemorySystem:
             ) from exc
 
         k = top_k if top_k is not None else self._config.memory.top_k
-        current_hours = compute_current_active_hours()
+        current_hours = self._current_active_hours()
 
         async with self._engine.begin() as conn:
             result = await _recall(
@@ -599,7 +603,7 @@ class MemorySystem:
             ) from exc
 
         k = top_k if top_k is not None else self._config.memory.top_k
-        current_hours = compute_current_active_hours()
+        current_hours = self._current_active_hours()
 
         if query is None:
             weights = frame_def.weights.renormalized_without_similarity()
@@ -690,7 +694,7 @@ class MemorySystem:
             result = await system.outcome(block_ids, signal=signal, source="brier")
             print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced.
         """
-        current_hours = compute_current_active_hours()
+        current_hours = self._current_active_hours()
         mem = self._config.memory
         async with self._engine.begin() as conn:
             result = await _record_outcome(
@@ -727,7 +731,7 @@ class MemorySystem:
 
         NEXT: Memory is cleaner. Retrieval quality may improve.
         """
-        current_hours = compute_current_active_hours()
+        current_hours = self._current_active_hours()
         mem = self._config.memory
         async with self._engine.begin() as conn:
             result = await _curate(
@@ -750,6 +754,16 @@ class MemorySystem:
         await self._engine.dispose()
 
     # ── Private helpers ──────────────────────────────────────────────────────
+
+    def _current_active_hours(self) -> float:
+        """Total active hours including the current in-progress session.
+
+        Thread-safe: reads only instance fields owned by this MemorySystem.
+        """
+        if self._session_started_at is None:
+            return self._session_base_hours
+        elapsed = (time.monotonic() - self._session_started_at) / 3600.0
+        return self._session_base_hours + elapsed
 
     def _record_op(self, operation: str, summary: str) -> None:
         """Append an operation record to the in-memory history deque."""

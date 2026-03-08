@@ -16,11 +16,6 @@ from elfmem.db.queries import (
     start_session,
 )
 
-# Wall-clock start time for the current in-memory session (seconds since epoch).
-# Set by begin_session(), used by compute_current_active_hours().
-_session_wall_start: float | None = None
-_session_base_hours: float = 0.0
-
 
 def _new_session_id() -> str:
     return uuid.uuid4().hex[:16]
@@ -33,11 +28,11 @@ async def begin_session(
 ) -> str:
     """Start a new session. Returns session_id.
 
-    Snapshots total_active_hours from the DB, records session start,
-    and initialises the in-memory wall-clock.
+    Records session start in the database. Timing state (wall_start, base_hours)
+    is returned implicitly through the session_id — callers that need active-hours
+    tracking should record time.monotonic() and call get_total_active_hours()
+    themselves (MemorySystem stores these as instance fields).
     """
-    global _session_wall_start, _session_base_hours
-
     session_id = _new_session_id()
     total_hours = await get_total_active_hours(conn)
 
@@ -48,40 +43,35 @@ async def begin_session(
         start_active_hours=total_hours,
     )
 
-    _session_wall_start = time.monotonic()
-    _session_base_hours = total_hours
-
     return session_id
 
 
 async def end_session(
     conn: AsyncConnection,
     session_id: str,
+    *,
+    wall_start: float | None = None,
+    base_hours: float = 0.0,
 ) -> float:
     """End a session. Returns session duration in active hours.
 
     Updates total_active_hours in the DB.
-    """
-    global _session_wall_start, _session_base_hours
 
-    duration_hours = _elapsed_hours()
-    new_total = _session_base_hours + duration_hours
+    Args:
+        wall_start: time.monotonic() value from session start. None → duration=0.0.
+        base_hours: total_active_hours snapshot taken at session start.
+    """
+    duration_hours = _elapsed_hours(wall_start)
+    new_total = base_hours + duration_hours
 
     await set_total_active_hours(conn, new_total)
     await _db_end_session(conn, session_id)
 
-    _session_wall_start = None
     return duration_hours
 
 
-def compute_current_active_hours() -> float:
-    """Return total active hours including the current in-progress session."""
-    return _session_base_hours + _elapsed_hours()
-
-
-def _elapsed_hours() -> float:
-    """Seconds elapsed since session start, converted to hours."""
-    if _session_wall_start is None:
+def _elapsed_hours(wall_start: float | None) -> float:
+    """Seconds elapsed since wall_start, converted to hours."""
+    if wall_start is None:
         return 0.0
-    elapsed_sec = time.monotonic() - _session_wall_start
-    return elapsed_sec / 3600.0
+    return (time.monotonic() - wall_start) / 3600.0
