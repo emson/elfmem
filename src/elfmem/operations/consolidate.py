@@ -201,11 +201,8 @@ async def consolidate(
         candidates.sort(key=lambda x: x[1], reverse=True)
         for other_id, sim in candidates[:edge_degree_cap]:
             from_id, to_id = Edge.canonical(block_id, other_id)
-            try:
-                await insert_edge(conn, from_id=from_id, to_id=to_id, weight=sim)
-                edges_created += 1
-            except Exception:
-                pass
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=sim)
+            edges_created += 1
 
     return ConsolidateResult(
         processed=processed,

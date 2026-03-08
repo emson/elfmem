@@ -373,9 +373,9 @@ async def insert_edge(
     to_id: str,
     weight: float,
 ) -> None:
-    """Insert an edge. from_id < to_id must be enforced by caller (canonical order)."""
+    """Insert a similarity edge idempotently. from_id < to_id enforced by caller."""
     await conn.execute(
-        insert(edges).values(
+        insert(edges).prefix_with("OR IGNORE").values(
             from_id=from_id,
             to_id=to_id,
             weight=weight,
