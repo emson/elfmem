@@ -304,11 +304,48 @@ class TokenUsage:
 
 
 @dataclass
+class SetupResult:
+    """Result of MemorySystem.setup() — identity bootstrapping.
+
+    ``blocks_created`` counts blocks that were new (status='created').
+    ``total_attempted`` counts all remember() calls made (including duplicates).
+    Re-running setup() is always safe — duplicates are silently skipped.
+    """
+
+    blocks_created: int
+    total_attempted: int
+
+    @property
+    def summary(self) -> str:
+        if self.total_attempted == 0:
+            return "Setup: nothing to do."
+        if self.blocks_created == 0:
+            return f"Setup: all {self.total_attempted} blocks already present (skipped)."
+        return (
+            f"Setup complete: {self.blocks_created}/{self.total_attempted} "
+            "new blocks created."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "blocks_created": self.blocks_created,
+            "total_attempted": self.total_attempted,
+        }
+
+
+@dataclass
 class SystemStatus:
     """Snapshot of system state returned by MemorySystem.status().
 
     Use ``health`` and ``suggestion`` to decide on next actions.
-    Use ``__str__`` for a compact one-line summary suitable for agent context.
+    Use ``__str__`` for a compact summary suitable for agent context.
+
+    Always-on agent fields (advisory — may differ from DB-accurate inbox_count):
+        pending_count:      in-memory advisory count (from _pending counter)
+        effective_threshold: current consolidation threshold (policy or config)
     """
 
     session_active: bool
@@ -323,6 +360,9 @@ class SystemStatus:
     suggestion: str               # one actionable sentence
     session_tokens: TokenUsage = field(default_factory=TokenUsage)
     lifetime_tokens: TokenUsage = field(default_factory=TokenUsage)
+    # Always-on advisory fields — populated by status(), default 0 for compat.
+    pending_count: int = 0
+    effective_threshold: int = 0
 
     @property
     def summary(self) -> str:
@@ -340,11 +380,16 @@ class SystemStatus:
         )
 
     def __str__(self) -> str:
-        return (
-            f"{self.summary}\n"
-            f"Tokens this session: {self.session_tokens}\n"
-            f"Suggestion: {self.suggestion}"
-        )
+        lines = [self.summary]
+        # Show advisory pending count when it's non-zero and a threshold is set —
+        # useful for always-on agents that track pending separately from DB inbox.
+        if self.pending_count > 0 and self.effective_threshold > 0:
+            lines.append(
+                f"Pending (advisory): {self.pending_count}/{self.effective_threshold}"
+            )
+        lines.append(f"Tokens this session: {self.session_tokens}")
+        lines.append(f"Suggestion: {self.suggestion}")
+        return "\n".join(lines)
 
     def to_dict(self) -> dict:
         return {
@@ -360,6 +405,8 @@ class SystemStatus:
             "suggestion": self.suggestion,
             "session_tokens": self.session_tokens.to_dict(),
             "lifetime_tokens": self.lifetime_tokens.to_dict(),
+            "pending_count": self.pending_count,
+            "effective_threshold": self.effective_threshold,
         }
 
 

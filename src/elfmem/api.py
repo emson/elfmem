@@ -47,6 +47,7 @@ from elfmem.types import (
     OperationRecord,
     OutcomeResult,
     ScoredBlock,
+    SetupResult,
     SystemStatus,
     TokenUsage,
 )
@@ -216,6 +217,50 @@ class MemorySystem:
         cfg = ElfmemConfig.from_env()
         return await cls.from_config(db_path, cfg, policy=policy)
 
+    @classmethod
+    @asynccontextmanager
+    async def managed(
+        cls,
+        db_path: str,
+        config: ElfmemConfig | str | dict[str, Any] | None = None,
+        *,
+        policy: ConsolidationPolicy | None = None,
+    ) -> AsyncIterator[MemorySystem]:
+        """Full lifecycle context manager: open → session → yield → dream → close.
+
+        USE WHEN: Scripts, CLI commands, and short-lived agents that need a
+        complete open-and-close lifecycle in one block. Starts a session on
+        entry so active-hours tracking and frame scoring are always correct.
+        Consolidates any pending blocks before closing (safety net).
+
+        DON'T USE WHEN: Long-running processes that reuse the same
+        MemorySystem across many requests — call from_config() once, then
+        use begin_session()/end_session() or session() as needed.
+
+        COST: from_config() on entry (fast). dream() on exit only if pending.
+
+        NEXT: After the block exits, the engine is disposed and all DB
+        connections are closed.
+
+        Example::
+
+            async with MemorySystem.managed("agent.db") as mem:
+                result = await mem.remember("User prefers dark mode")
+                if mem.should_dream:
+                    await mem.dream()
+                ctx = await mem.frame("attention", query="preferences")
+        """
+        mem = await cls.from_config(db_path, config, policy=policy)
+        await mem.begin_session()
+        try:
+            yield mem
+        finally:
+            # Safety net: consolidate any pending blocks before closing.
+            if mem.should_dream:
+                await mem.dream()
+            await mem.end_session()
+            await mem.close()
+
     # ── Agent-friendly introspection ─────────────────────────────────────────
 
     def guide(self, method_name: str | None = None) -> str:
@@ -306,6 +351,9 @@ class MemorySystem:
             suggestion=suggestion,
             session_tokens=session_tokens,
             lifetime_tokens=lifetime_tokens,
+            # Always-on advisory fields: in-memory state, may differ from DB.
+            pending_count=self._pending,
+            effective_threshold=self._effective_threshold(),
         )
 
     def history(self, last_n: int = 10) -> list[OperationRecord]:
@@ -668,6 +716,78 @@ class MemorySystem:
         if self._policy is not None:
             return self._policy.effective_threshold
         return self._config.memory.inbox_threshold
+
+    async def setup(
+        self,
+        identity: str | None = None,
+        values: list[str] | None = None,
+        *,
+        seed: bool = True,
+    ) -> SetupResult:
+        """Bootstrap agent identity: seed constitutional blocks and optional identity.
+
+        USE WHEN: First use — before any other operations. Seeds 10 constitutional
+        blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
+        then adds any identity description and domain values you provide.
+
+        DON'T USE WHEN: Every session — SELF blocks persist across restarts.
+        Duplicate content is silently rejected, so re-running is safe but
+        unnecessary. Call once, then use remember() for new knowledge.
+
+        COST: Fast per block (pure DB insert, no LLM). Each block queues in
+        inbox; one LLM call per block during dream()/consolidate().
+
+        RETURNS: SetupResult with blocks_created (new) and total_attempted.
+        blocks_created=0 means all were already present — safe, not an error.
+
+        NEXT: SELF blocks sit in inbox until dream() or consolidate() runs.
+        After consolidation, frame('self') returns constitutional blocks as
+        guaranteed slots. Call dream() or let the session context manager
+        handle consolidation automatically.
+
+        Args:
+            identity: Optional identity description stored as a self/context block.
+            values:   Optional list of domain-specific principles, each stored
+                      as a separate self/value block.
+            seed:     Seed the 10 constitutional blocks (default True). Pass
+                      False to skip constitutional seeding and only add
+                      identity/values — useful for custom bootstrapping.
+
+        Example::
+
+            result = await system.setup(
+                identity="I am a trading assistant focused on risk-adjusted returns.",
+                values=["cut losing positions early", "size positions to max 2% risk"],
+            )
+            print(result)  # Setup complete: 12/12 new blocks created.
+        """
+        results: list[LearnResult] = []
+
+        if seed:
+            from elfmem.seed import CONSTITUTIONAL_SEED
+            for block in CONSTITUTIONAL_SEED:
+                r = await self.remember(
+                    block["content"],  # type: ignore[arg-type]
+                    tags=block["tags"],  # type: ignore[arg-type]
+                )
+                results.append(r)
+
+        if identity:
+            r = await self.remember(identity, tags=["self/context"])
+            results.append(r)
+
+        if values:
+            for value in values:
+                r = await self.remember(value, tags=["self/value"])
+                results.append(r)
+
+        blocks_created = sum(1 for r in results if r.status == "created")
+        result = SetupResult(
+            blocks_created=blocks_created,
+            total_attempted=len(results),
+        )
+        self._record_op("setup", result.summary)
+        return result
 
     async def frame(
         self,

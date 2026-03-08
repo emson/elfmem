@@ -1,16 +1,21 @@
 """SmartMemory — thin compatibility shim over MemorySystem.
 
+.. deprecated::
+    SmartMemory is deprecated. Use MemorySystem directly — it now includes
+    remember(), dream(), should_dream, managed(), setup(), and policy support.
+    SmartMemory will be removed in a future version.
+
 MemorySystem now owns the full "three rhythms" API:
     HEARTBEAT (ms):   remember() — fast learn to inbox
     BREATHING (s):    dream() — deep consolidation
     SLEEP (min):      curate() — maintenance
 
 SmartMemory delegates all operations to an inner MemorySystem.
-Prefer MemorySystem.from_config() directly in new code. SmartMemory
-remains for backwards compatibility and MCP tool wrappers.
+Prefer MemorySystem.from_config() directly in new code.
 """
 from __future__ import annotations
 
+import warnings
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -25,6 +30,7 @@ from elfmem.types import (
     LearnResult,
     OutcomeResult,
     ScoredBlock,
+    SetupResult,
     SystemStatus,
 )
 
@@ -44,6 +50,13 @@ class SmartMemory:
     """
 
     def __init__(self, system: MemorySystem) -> None:
+        warnings.warn(
+            "SmartMemory is deprecated. Use MemorySystem directly — it now includes "
+            "remember(), dream(), should_dream, managed(), setup(), and policy support. "
+            "SmartMemory will be removed in a future version.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self._system = system
 
     @classmethod
@@ -123,6 +136,16 @@ class SmartMemory:
 
     async def curate(self) -> CurateResult:
         return await self._system.curate()
+
+    async def setup(
+        self,
+        identity: str | None = None,
+        values: list[str] | None = None,
+        *,
+        seed: bool = True,
+    ) -> SetupResult:
+        """Bootstrap agent identity. Delegates to inner MemorySystem.setup()."""
+        return await self._system.setup(identity=identity, values=values, seed=seed)
 
     def guide(self, method: str | None = None) -> str:
         return self._system.guide(method)

@@ -35,6 +35,7 @@ from elfmem.types import (
     OperationRecord,
     OutcomeResult,
     ScoredBlock,
+    SetupResult,
     SystemStatus,
     TokenUsage,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "FrameResult",
     "CurateResult",
     "OutcomeResult",
+    "SetupResult",
     "ScoredBlock",
     "SystemStatus",
     "OperationRecord",

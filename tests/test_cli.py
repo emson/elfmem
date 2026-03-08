@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock
 import pytest
 from typer.testing import CliRunner
 
+from elfmem.api import MemorySystem
 from elfmem.cli import app
-from elfmem.smart import SmartMemory
 from elfmem.types import (
     CurateResult,
     FrameResult,
@@ -47,10 +47,10 @@ def _make_system_status(health: str = "good") -> SystemStatus:
 
 @pytest.fixture
 def mock_managed(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
-    """Mock SmartMemory.managed() to yield a pre-configured mock."""
-    mem: AsyncMock = AsyncMock(spec=SmartMemory)
+    """Mock MemorySystem.managed() to yield a pre-configured mock."""
+    mem: AsyncMock = AsyncMock(spec=MemorySystem)
     mem.remember.return_value = LearnResult(block_id="abc12345", status="created")
-    mem.recall.return_value = FrameResult(
+    mem.frame.return_value = FrameResult(
         text="recalled context", blocks=[], frame_name="attention"
     )
     mem.status.return_value = _make_system_status(health="good")
@@ -61,12 +61,14 @@ def mock_managed(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         edges_reinforced=0,
         blocks_penalized=0,
     )
+    mem.dream.return_value = None
+    mem.should_dream = False
 
     @asynccontextmanager
     async def _managed(*args: object, **kwargs: object) -> object:
         yield mem
 
-    monkeypatch.setattr(SmartMemory, "managed", _managed)
+    monkeypatch.setattr(MemorySystem, "managed", _managed)
     return mem
 
 
@@ -189,11 +191,11 @@ class TestErrorHandling:
 
         @asynccontextmanager
         async def _bad_managed(*args: object, **kwargs: object) -> object:
-            mem: AsyncMock = AsyncMock(spec=SmartMemory)
+            mem: AsyncMock = AsyncMock(spec=MemorySystem)
             mem.remember.side_effect = ElfmemError("bad frame", recovery="try again")
             yield mem
 
-        monkeypatch.setattr(SmartMemory, "managed", _bad_managed)
+        monkeypatch.setattr(MemorySystem, "managed", _bad_managed)
         result = runner.invoke(app, ["remember", "x", "--db", "test.db"])
         assert result.exit_code != 0
         assert "Recovery:" in result.output

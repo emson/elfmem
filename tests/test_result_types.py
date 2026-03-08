@@ -265,6 +265,7 @@ class TestSystemStatus:
             "active_count", "archived_count", "total_active_hours",
             "last_consolidated", "health", "suggestion",
             "session_tokens", "lifetime_tokens",
+            "pending_count", "effective_threshold",
         }
         assert set(d.keys()) == expected
 

@@ -31,9 +31,10 @@ except ImportError:
         "  pip install 'elfmem[cli]'  or  uv add 'elfmem[cli]'"
     )
 
+from elfmem.api import MemorySystem
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
-from elfmem.smart import SmartMemory, format_recall_response
+from elfmem.smart import format_recall_response
 from elfmem.types import CurateResult, FrameResult, LearnResult, OutcomeResult, SystemStatus
 
 app = typer.Typer(
@@ -451,6 +452,15 @@ def serve(
     config: Annotated[
         str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
     ] = None,
+    adaptive_policy: Annotated[
+        bool,
+        typer.Option(
+            "--adaptive-policy/--no-adaptive-policy",
+            help="Enable self-tuning consolidation policy. The server learns the "
+            "optimal consolidation threshold from promotion-rate feedback and "
+            "persists it across restarts.",
+        ),
+    ] = False,
 ) -> None:
     """Start the elfmem MCP server for agent tool integration."""
     try:
@@ -462,7 +472,7 @@ def serve(
             err=True,
         )
         raise typer.Exit(1)
-    mcp_main(db_path=db, config_path=config)
+    mcp_main(db_path=db, config_path=config, use_adaptive_policy=adaptive_policy)
 
 
 def main() -> None:
@@ -480,7 +490,7 @@ async def _remember(
     tags: list[str] | None,
     category: str,
 ) -> LearnResult:
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.remember(content, tags=tags, category=category)
 
 
@@ -491,12 +501,12 @@ async def _recall(
     top_k: int,
     frame: str,
 ) -> FrameResult:
-    async with SmartMemory.managed(db_path, config=config) as mem:
-        return await mem.recall(query, top_k=top_k, frame=frame)
+    async with MemorySystem.managed(db_path, config=config) as mem:
+        return await mem.frame(frame, query=query or None, top_k=top_k)
 
 
 async def _status(db_path: str, config: str | None) -> SystemStatus:
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.status()
 
 
@@ -508,18 +518,18 @@ async def _outcome(
     weight: float,
     source: str,
 ) -> OutcomeResult:
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
 
 
 async def _dream(db_path: str, config: str | None) -> Any:
     """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.dream()
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.curate()
 
 
@@ -536,7 +546,7 @@ async def _init_seed(
     if template:
         blocks = blocks + get_template(template)
 
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         results = []
         for block in blocks:
             r = await mem.remember(
@@ -549,7 +559,7 @@ async def _init_seed(
 
 async def _init_self(db_path: str, config: str, content: str) -> LearnResult:
     """Store an identity block tagged self/context. Used by elfmem init --self."""
-    async with SmartMemory.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config) as mem:
         return await mem.remember(content, tags=["self/context"])
 
 

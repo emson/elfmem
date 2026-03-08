@@ -155,35 +155,10 @@ async def elfmem_setup(
     identity: Optional natural language description of agent role and constraints.
     values:   Optional list of domain-specific principles (each stored separately).
 
-    Returns blocks_created count and per-block status dicts.
+    Returns blocks_created and total_attempted counts.
     """
-    mem = _mem()
-    results = []
-
-    if seed:
-        from elfmem.seed import CONSTITUTIONAL_SEED
-        for block in CONSTITUTIONAL_SEED:
-            r = await mem.remember(
-                block["content"],  # type: ignore[arg-type]
-                tags=block["tags"],  # type: ignore[arg-type]
-            )
-            results.append(r.to_dict())
-
-    if identity:
-        r = await mem.remember(identity, tags=["self/context"])
-        results.append(r.to_dict())
-
-    if values:
-        for value in values:
-            r = await mem.remember(value, tags=["self/value"])
-            results.append(r.to_dict())
-
-    created = sum(1 for r in results if r["status"] == "created")
-    return {
-        "status": "setup_complete",
-        "blocks_created": created,
-        "blocks": results,
-    }
+    result = await _mem().setup(identity=identity, values=values, seed=seed)
+    return result.to_dict()
 
 
 @mcp.tool()
