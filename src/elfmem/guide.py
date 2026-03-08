@@ -51,6 +51,72 @@ class AgentGuide:
 # ── Static guide data ─────────────────────────────────────────────────────────
 
 GUIDES: dict[str, AgentGuide] = {
+    "remember": AgentGuide(
+        name="remember",
+        what="Store knowledge and auto-start a session. Agent-friendly variant of learn().",
+        when=(
+            "Building always-on agents, MCP tools, or any context where you don't want "
+            "to manage session lifecycle explicitly. Prefer this over learn() for agent code."
+        ),
+        when_not=(
+            "You're using the session() context manager — either works, but session() is "
+            "cleaner for scripted use. Never call in a tight loop; one call per new observation."
+        ),
+        cost="Instant. No LLM calls. Auto-starts session if none active (idempotent).",
+        returns=(
+            "LearnResult. Same status values as learn(): "
+            "'created' — new block stored; "
+            "'duplicate_rejected' — exact content already exists; "
+            "'near_duplicate_superseded' — similar block replaced. "
+            "Check system.should_dream after this call."
+        ),
+        next=(
+            "After calling remember(), check system.should_dream. "
+            "When True, call dream() at the next natural pause (not in a tight loop)."
+        ),
+        example=(
+            "result = await system.remember('EUR/USD breaks 1.10 resistance')\n"
+            "if system.should_dream:\n"
+            "    dream_result = await system.dream()\n"
+            "    if dream_result:\n"
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
+        ),
+    ),
+    "dream": AgentGuide(
+        name="dream",
+        what="Consolidate pending inbox blocks at a natural pause point.",
+        when=(
+            "system.should_dream is True — or at any natural pause in agent execution: "
+            "end of a reasoning step, waiting for user input, between tasks. "
+            "Safe to call speculatively — returns None instantly if nothing is pending."
+        ),
+        when_not=(
+            "In a tight loop. One call processes ALL pending blocks. "
+            "Don't call before remember() — blocks need to queue first."
+        ),
+        cost=(
+            "LLM call per pending block (alignment scoring + tag inference). "
+            "Returns None immediately (zero cost) if inbox is empty."
+        ),
+        returns=(
+            "ConsolidateResult if blocks were processed — includes processed, promoted, "
+            "deduplicated, edges_created counts. "
+            "None if inbox was empty. None is not an error."
+        ),
+        next=(
+            "After dream(), newly consolidated blocks are searchable via frame() and recall(). "
+            "Frame cache is cleared automatically. "
+            "If policy is set, adaptive threshold adjusts based on promotion rate."
+        ),
+        example=(
+            "# Always-on agent pattern\n"
+            "result = await system.remember('new observation')\n"
+            "if system.should_dream:\n"
+            "    dream_result = await system.dream()\n"
+            "    if dream_result:\n"
+            "        print(dream_result)  # Consolidated 10: 9 promoted, 16 edges."
+        ),
+    ),
     "learn": AgentGuide(
         name="learn",
         what="Store a knowledge block for future retrieval.",
@@ -359,18 +425,22 @@ OVERVIEW: str = "\n".join([
     "  Operation              Cost         Description",
     "  ─────────────────────────────────────────────────────────────────────",
     "  setup(identity, ...)   Fast         Seed SELF frame with agent identity (first use)",
-    "  learn(content, ...)    Instant      Store knowledge for later retrieval",
+    "  remember(content, ...) Instant      Store knowledge + auto-start session (agent-friendly)",
+    "  learn(content, ...)    Instant      Store knowledge for later retrieval (explicit sessions)",
+    "  dream()                LLM call     Consolidate pending blocks at a natural pause",
     "  recall(query, ...)     Fast         Raw retrieval — list of scored blocks",
     "  frame(name, ...)       Fast         Retrieve + render a named context frame",
-    "  consolidate()          LLM call     Process inbox: score, embed, promote",
+    "  consolidate()          LLM call     Process inbox: score, embed, promote (explicit)",
     "  outcome(ids, signal)   Fast         Bayesian confidence update from domain result",
     "  curate()               Fast         Archive stale blocks, prune weak edges",
     "  status()               Fast         System health snapshot + suggested action",
     "  history(last_n=10)     Instant      Recent operations in this process session",
     "  guide(method?)         Instant      This help",
     "",
-    "Lifecycle:  setup() → session() → learn() → [consolidate()] → frame() / recall() → outcome()",
-    "Quick start: elfmem_setup(identity='...') | system.status() | system.guide('learn')",
+    "Three rhythms:  remember() [heartbeat] → dream() [breathing] → curate() [sleep]",
+    "Always-on:      remember() → check should_dream → dream() when True",
+    "Session-based:  async with system.session(): learn() → frame() → outcome()",
+    "Quick start:    elfmem_setup(identity='...') | system.status() | system.guide('remember')",
 ])
 
 

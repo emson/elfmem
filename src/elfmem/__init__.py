@@ -19,6 +19,7 @@ Agent self-documentation::
 
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig
+from elfmem.policy import ConsolidationPolicy
 from elfmem.exceptions import (
     ConfigError,
     ElfmemError,
@@ -42,6 +43,7 @@ __all__ = [
     # Core
     "MemorySystem",
     "ElfmemConfig",
+    "ConsolidationPolicy",
     # Result types
     "LearnResult",
     "ConsolidateResult",

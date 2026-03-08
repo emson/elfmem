@@ -4,6 +4,7 @@ from __future__ import annotations
 import pytest
 
 from elfmem.api import MemorySystem
+from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.smart import SmartMemory, _format_block, format_recall_response
 from elfmem.types import (
     FrameResult,
@@ -52,13 +53,15 @@ def _make_frame_result(
 
 @pytest.fixture
 async def smart_memory(test_engine, mock_llm, mock_embedding) -> SmartMemory:  # type: ignore[misc]
-    """SmartMemory backed by in-memory test engine. threshold=3 for fast consolidation."""
+    """SmartMemory backed by in-memory test engine. inbox_threshold=3 for fast consolidation."""
+    cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
     system = MemorySystem(
         engine=test_engine,
         llm_service=mock_llm,
         embedding_service=mock_embedding,
+        config=cfg,
     )
-    mem = SmartMemory(system, threshold=3, pending=0)
+    mem = SmartMemory(system)
     yield mem  # type: ignore[misc]
     await mem.close()
 

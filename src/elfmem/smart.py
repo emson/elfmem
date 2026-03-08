@@ -1,11 +1,13 @@
-"""SmartMemory — agent-friendly wrapper for MemorySystem with explicit dreaming.
+"""SmartMemory — thin compatibility shim over MemorySystem.
 
-Internal to elfmem. Not part of the public API.
-
-Three rhythms:
+MemorySystem now owns the full "three rhythms" API:
     HEARTBEAT (ms):   remember() — fast learn to inbox
     BREATHING (s):    dream() — deep consolidation
     SLEEP (min):      curate() — maintenance
+
+SmartMemory delegates all operations to an inner MemorySystem.
+Prefer MemorySystem.from_config() directly in new code. SmartMemory
+remains for backwards compatibility and MCP tool wrappers.
 """
 from __future__ import annotations
 
@@ -28,24 +30,21 @@ from elfmem.types import (
 
 
 class SmartMemory:
-    """MemorySystem with lazy session start and explicit dreaming (consolidation).
+    """Compatibility shim: delegates all operations to an inner MemorySystem.
 
-    Learn fast (remember) → Dream deep (consolidate) → Curate (maintain).
+    All state (pending counter, session lifecycle, policy) lives in the
+    wrapped MemorySystem. This class adds no behaviour of its own.
 
-    For tool interfaces only. Not for library users.
+    Prefer MemorySystem directly for new code::
+
+        system = await MemorySystem.from_config("agent.db", policy=policy)
+        result = await system.remember("...")
+        if system.should_dream:
+            await system.dream()
     """
 
-    def __init__(
-        self,
-        system: MemorySystem,
-        threshold: int,
-        pending: int = 0,
-        policy: ConsolidationPolicy | None = None,
-    ) -> None:
+    def __init__(self, system: MemorySystem) -> None:
         self._system = system
-        self._threshold = threshold
-        self._pending = pending
-        self._policy = policy
 
     @classmethod
     async def open(
@@ -54,10 +53,9 @@ class SmartMemory:
         config: ElfmemConfig | str | dict[str, Any] | None = None,
         policy: ConsolidationPolicy | None = None,
     ) -> SmartMemory:
-        """Open a database and seed inbox count from current state."""
-        system = await MemorySystem.from_config(db_path, config)
-        status = await system.status()
-        return cls(system, status.inbox_threshold, status.inbox_count, policy=policy)
+        """Open a database and return a SmartMemory wrapping a MemorySystem."""
+        system = await MemorySystem.from_config(db_path, config, policy=policy)
+        return cls(system)
 
     @classmethod
     @asynccontextmanager
@@ -67,15 +65,11 @@ class SmartMemory:
         config: ElfmemConfig | str | dict[str, Any] | None = None,
         policy: ConsolidationPolicy | None = None,
     ) -> AsyncIterator[SmartMemory]:
-        """Open → yield → close. Safety net: dreams on exit if pending.
-
-        Ensures consolidation happens even if agent forgot to call dream().
-        """
+        """Open → yield → close. Safety net: dreams on exit if pending."""
         mem = await cls.open(db_path, config=config, policy=policy)
         try:
             yield mem
         finally:
-            # Safety net: consolidate any pending blocks before session closes.
             if mem.should_dream:
                 await mem.dream()
             await mem.close()
@@ -87,16 +81,8 @@ class SmartMemory:
 
     @property
     def should_dream(self) -> bool:
-        """Check if consolidation is needed.
-
-        True when inbox has accumulated to or beyond the threshold (or policy threshold if set).
-        Call dream() when True, or let the session context manager handle it.
-        """
-        if self._policy is not None:
-            # Delegate to policy for adaptive threshold
-            return self._policy.should_consolidate(self._pending)
-        # Fallback: simple count-based
-        return self._pending >= self._threshold
+        """True when pending blocks have reached the consolidation threshold."""
+        return self._system.should_dream
 
     async def remember(
         self,
@@ -104,37 +90,12 @@ class SmartMemory:
         tags: list[str] | None = None,
         category: str = "knowledge",
     ) -> LearnResult:
-        """Fast-path learn: store in inbox without blocking on consolidation.
-
-        Cost: Instant (zero LLM calls, pure DB insert).
-        After creation, check should_dream to see if consolidation is needed.
-        """
-        await self._system.begin_session()
-        result = await self._system.learn(content, tags=tags, category=category)
-        if result.status == "created":
-            self._pending += 1
-        return result
+        """Fast-path learn: auto-starts session, stores in inbox without blocking."""
+        return await self._system.remember(content, tags=tags, category=category)
 
     async def dream(self) -> ConsolidateResult | None:
-        """Deep consolidation: embed, align, detect contradictions, build graph.
-
-        Cost: LLM call per inbox block. Slow if many pending blocks.
-        Safe to call when should_dream is True, or at natural pause points.
-        Idempotent: safe to call multiple times (returns None if no pending).
-
-        Returns: ConsolidateResult with counts (processed, promoted, etc.), or None
-                if no blocks were pending.
-        """
-        if self._pending == 0:
-            return None
-        result = await self._system.consolidate()
-        self._pending = 0
-
-        # Feed result back to policy for adaptive learning
-        if self._policy is not None and result is not None:
-            self._policy.record_result(result)
-
-        return result
+        """Deep consolidation at a natural pause point. Returns None if nothing pending."""
+        return await self._system.dream()
 
     async def recall(
         self,
@@ -142,7 +103,7 @@ class SmartMemory:
         top_k: int = 5,
         frame: str = "attention",
     ) -> FrameResult:
-        """frame() + auto-session. text field is ready for prompt injection."""
+        """frame() + auto-session. result.text is ready for prompt injection."""
         await self._system.begin_session()
         return await self._system.frame(frame, query=query or None, top_k=top_k)
 

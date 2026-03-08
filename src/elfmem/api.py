@@ -36,6 +36,7 @@ from elfmem.operations.curate import should_curate
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome as _record_outcome
 from elfmem.operations.recall import recall as _recall
+from elfmem.policy import ConsolidationPolicy
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.session import begin_session as _begin_session, end_session as _end_session
 from elfmem.types import (
@@ -78,6 +79,8 @@ class MemorySystem:
         embedding_service: EmbeddingService,
         config: ElfmemConfig | None = None,
         token_counter: TokenCounter | None = None,
+        policy: ConsolidationPolicy | None = None,
+        initial_pending: int = 0,
     ) -> None:
         self._engine = engine
         self._llm = llm_service
@@ -89,6 +92,11 @@ class MemorySystem:
         self._session_base_hours: float = 0.0  # total_active_hours at session start
         self._history: deque[OperationRecord] = deque(maxlen=100)
         self._token_counter = token_counter
+        self._policy: ConsolidationPolicy | None = policy
+        # In-memory advisory counter: blocks currently awaiting consolidation.
+        # Seeded from DB inbox_count in from_config(); incremented by learn()/remember().
+        # Reset to 0 by consolidate()/dream(). Advisory only — use status() for DB accuracy.
+        self._pending: int = max(0, initial_pending)
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -97,6 +105,8 @@ class MemorySystem:
         cls,
         db_path: str,
         config: ElfmemConfig | str | dict[str, Any] | None = None,
+        *,
+        policy: ConsolidationPolicy | None = None,
     ) -> MemorySystem:
         """Create a MemorySystem from configuration.
 
@@ -111,6 +121,7 @@ class MemorySystem:
         RETURNS: Fully configured MemorySystem, ready for session().
 
         NEXT: Use ``async with system.session():`` to start interacting.
+        For always-on agents: call remember() and check should_dream.
 
         Args:
             db_path: Path to SQLite database file (created if not exists).
@@ -119,6 +130,9 @@ class MemorySystem:
                 - str: path to YAML config file
                 - dict: inline configuration values (validated by Pydantic)
                 - ElfmemConfig: pre-built config object
+            policy: Optional ConsolidationPolicy for adaptive consolidation
+                timing. When set, should_dream and dream() defer to the policy
+                rather than the fixed inbox_threshold.
 
         Example::
 
@@ -128,6 +142,9 @@ class MemorySystem:
                 "agent.db",
                 {"llm": {"model": "ollama/llama3.2", "base_url": "http://localhost:11434"}}
             )
+            # With adaptive consolidation policy:
+            from elfmem import ConsolidationPolicy
+            system = await MemorySystem.from_config("agent.db", policy=ConsolidationPolicy())
         """
         cfg = _resolve_config(config)
 
@@ -135,6 +152,9 @@ class MemorySystem:
         async with engine.begin() as conn:
             await conn.run_sync(metadata.create_all)
             await seed_builtin_data(conn)
+            # Seed _pending from DB so the advisory is accurate on restart.
+            # Blocks that survived a crash or process restart are counted.
+            initial_pending = await get_inbox_count(conn)
 
         # Shared counter: both adapters record to the same object.
         # MemorySystem reads it in status() and manages its lifecycle.
@@ -169,10 +189,12 @@ class MemorySystem:
             embedding_service=embedding_svc,
             config=cfg,
             token_counter=counter,
+            policy=policy,
+            initial_pending=initial_pending,
         )
 
     @classmethod
-    async def from_env(cls, db_path: str) -> MemorySystem:
+    async def from_env(cls, db_path: str, *, policy: ConsolidationPolicy | None = None) -> MemorySystem:
         """Create a MemorySystem from ELFMEM_ environment variables.
 
         USE WHEN: Deploying in environments where YAML config files are
@@ -183,7 +205,7 @@ class MemorySystem:
         RETURNS: Fully configured MemorySystem.
         """
         cfg = ElfmemConfig.from_env()
-        return await cls.from_config(db_path, cfg)
+        return await cls.from_config(db_path, cfg, policy=policy)
 
     # ── Agent-friendly introspection ─────────────────────────────────────────
 
@@ -332,10 +354,14 @@ class MemorySystem:
         try:
             yield self
         finally:
-            async with self._engine.begin() as conn:
-                count = await get_inbox_count(conn)
-                if count >= self._config.memory.inbox_threshold:
-                    await self.consolidate()
+            # Sync _pending from DB: ensures accuracy regardless of how blocks
+            # were added (learn, remember, or external writes). Separate read
+            # connection closes before dream() opens its write connection.
+            async with self._engine.connect() as conn:
+                self._pending = await get_inbox_count(conn)
+            # Respect policy threshold if set; fall back to config threshold.
+            if self.should_dream:
+                await self.dream()
             await self.end_session()
             self._frame_cache.clear()
 
@@ -437,7 +463,8 @@ class MemorySystem:
           'near_duplicate_superseded' — similar block replaced
 
         NEXT: Blocks queue in inbox until consolidate() runs. The session()
-        context manager auto-consolidates on exit when inbox >= threshold.
+        context manager auto-consolidates on exit when should_dream is True.
+        Check system.should_dream after calling; call dream() when True.
 
         Args:
             content: Text content to store. Be specific and self-contained —
@@ -452,6 +479,10 @@ class MemorySystem:
             result = await _learn(
                 conn, content=content, tags=tags, category=category, source=source
             )
+        # Track pending count for should_dream advisory.
+        # Both "created" and "near_duplicate_superseded" add a block to inbox.
+        if result.status in ("created", "near_duplicate_superseded"):
+            self._pending += 1
         self._record_op("learn", result.summary)
         return result
 
@@ -505,8 +536,119 @@ class MemorySystem:
             # Record consolidation timestamp for status() reporting
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
+        # Transaction committed: inbox is empty, active memory changed.
+        self._pending = 0
+        self._frame_cache.clear()
         self._record_op("consolidate", result.summary)
         return result
+
+    async def remember(
+        self,
+        content: str,
+        tags: list[str] | None = None,
+        *,
+        category: str = "knowledge",
+        source: str = "api",
+    ) -> LearnResult:
+        """Store knowledge and auto-start a session. Agent-friendly variant of learn().
+
+        USE WHEN: Building always-on agents, MCP tools, or any context where
+        you don't want to manage session lifecycle explicitly. Prefer this
+        over learn() for agent code.
+
+        DIFFERENCE FROM learn():
+          - Auto-starts a session if none is active (idempotent — safe to call
+            inside ``async with system.session():`` too).
+          - Same result type, same cost, same semantics.
+
+        DON'T USE WHEN: You're using the session() context manager and want
+        explicit control over when sessions start. Either works; session() is
+        cleaner for scripted use.
+
+        COST: Instant. No LLM calls.
+
+        RETURNS: LearnResult. Same as learn(). Check system.should_dream after
+        this call — call dream() when True to process pending blocks.
+
+        NEXT: After calling remember(), check should_dream. When True, call
+        dream() at the next natural pause point (not in a tight loop).
+
+        Example::
+
+            result = await system.remember("EUR/USD breaks 1.10 resistance")
+            if system.should_dream:
+                await system.dream()
+        """
+        # Idempotent session start: no-op if session already active.
+        await self.begin_session()
+        return await self.learn(content, tags=tags, category=category, source=source)
+
+    async def dream(self) -> ConsolidateResult | None:
+        """Consolidate pending blocks at a natural pause point.
+
+        The breathing rhythm: learn fast (remember), process deliberately (dream).
+
+        USE WHEN: system.should_dream is True, or at any natural pause in agent
+        execution (end of a reasoning step, waiting for user input, between tasks).
+        Safe to call speculatively — returns None instantly if nothing is pending.
+
+        DON'T USE WHEN: In a tight loop. One call processes all pending blocks.
+
+        COST: LLM call per pending block. Returns None immediately (zero cost)
+        if inbox is empty.
+
+        RETURNS: ConsolidateResult if blocks were processed; None if inbox was
+        empty. None is not an error — it means "nothing needed doing."
+
+        NEXT: After dream(), newly consolidated blocks are searchable via frame()
+        and recall(). The frame cache is cleared automatically.
+
+        Note: _pending is an advisory counter. If blocks were added externally
+        (e.g., another process), dream() may return None despite inbox having
+        items. Call status() for DB-accurate inbox_count.
+
+        Example::
+
+            # Always-on agent loop
+            result = await system.remember("new fact")
+            if system.should_dream:
+                dream_result = await system.dream()
+                if dream_result:
+                    print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.
+        """
+        if self._pending == 0:
+            return None
+        result = await self.consolidate()
+        # Feed policy so it can adapt the threshold for the next cycle.
+        if self._policy is not None:
+            self._policy.record_result(result)
+        return result
+
+    @property
+    def should_dream(self) -> bool:
+        """True when pending blocks have reached the consolidation threshold.
+
+        Uses ConsolidationPolicy if set; otherwise uses config.memory.inbox_threshold.
+
+        This is a synchronous advisory based on the in-memory _pending counter.
+        It is fast (no DB access) but can drift if blocks are added externally.
+        For DB-accurate state, check status().inbox_count >= status().inbox_threshold.
+
+        Example::
+
+            result = await system.remember("fact")
+            if system.should_dream:
+                await system.dream()
+        """
+        if self._policy is not None:
+            return self._policy.should_consolidate(self._pending)
+        return self._pending >= self._config.memory.inbox_threshold
+
+    def _effective_threshold(self) -> int:
+        """Current consolidation threshold: policy-driven or config default."""
+        if self._policy is not None:
+            return self._policy.effective_threshold
+        return self._config.memory.inbox_threshold
 
     async def frame(
         self,

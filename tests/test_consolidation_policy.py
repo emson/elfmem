@@ -219,7 +219,7 @@ class TestSmartMemoryWithPolicy:
         """SmartMemory.open() accepts optional policy parameter."""
         policy = ConsolidationPolicy(base_threshold=8)
         mem = await SmartMemory.open(db_path_str, policy=policy)
-        assert mem._policy is policy
+        assert mem._system._policy is policy
         await mem.close()
 
     @pytest.mark.asyncio
@@ -243,7 +243,7 @@ class TestSmartMemoryWithPolicy:
         mem = await SmartMemory.open(db_path_str, policy=policy)
 
         # Learn blocks to trigger consolidation
-        threshold = mem._threshold
+        threshold = mem._system._config.memory.inbox_threshold
         for i in range(threshold):
             await mem.remember(f"Block {i}")
 
@@ -262,10 +262,10 @@ class TestSmartMemoryWithPolicy:
     async def test_smart_memory_without_policy_uses_simple_threshold(self, db_path_str) -> None:
         """SmartMemory without policy falls back to simple count-based threshold."""
         mem = await SmartMemory.open(db_path_str, policy=None)
-        assert mem._policy is None
+        assert mem._system._policy is None
 
         # Learn blocks
-        threshold = mem._threshold
+        threshold = mem._system._config.memory.inbox_threshold
         for i in range(threshold):
             await mem.remember(f"Block {i}")
 
@@ -278,7 +278,7 @@ class TestSmartMemoryWithPolicy:
         """SmartMemory.managed() accepts optional policy parameter."""
         policy = ConsolidationPolicy(base_threshold=5)
         async with SmartMemory.managed(db_path_str, policy=policy) as mem:
-            assert mem._policy is policy
+            assert mem._system._policy is policy
             # Learn some blocks
             for i in range(5):
                 await mem.remember(f"Block {i}")
@@ -293,7 +293,7 @@ class TestPolicyFullCycle:
         policy = ConsolidationPolicy(base_threshold=10, adjustment_step=2)
         mem = await SmartMemory.open(db_path_str, policy=policy)
 
-        threshold = mem._threshold
+        threshold = mem._system._config.memory.inbox_threshold
 
         # Cycle 1: Learn blocks and consolidate
         for i in range(threshold):

@@ -5,14 +5,24 @@ from elfmem.smart import SmartMemory
 from elfmem.types import ConsolidateResult
 
 
+def _pending(mem: SmartMemory) -> int:
+    """Access _pending counter via the wrapped MemorySystem."""
+    return mem._system._pending
+
+
+def _threshold(mem: SmartMemory) -> int:
+    """Access inbox_threshold via the wrapped MemorySystem's config."""
+    return mem._system._config.memory.inbox_threshold
+
+
 class TestSmartMemoryDecoupling:
     """remember() should not trigger consolidation; dream() should."""
 
     @pytest.mark.asyncio
     async def test_remember_no_consolidation_on_threshold(self, memory: SmartMemory):
         """remember() increments _pending but never calls consolidate()."""
-        initial_pending = memory._pending
-        threshold = memory._threshold
+        initial_pending = _pending(memory)
+        threshold = _threshold(memory)
 
         # Learn up to threshold
         for i in range(threshold):
@@ -20,7 +30,7 @@ class TestSmartMemoryDecoupling:
             assert result.status == "created"
 
         # Pending should be at threshold, but consolidation didn't happen
-        assert memory._pending == initial_pending + threshold
+        assert _pending(memory) == initial_pending + threshold
         # Verify inbox still has the blocks
         status = await memory.status()
         assert status.inbox_count >= threshold
@@ -29,8 +39,8 @@ class TestSmartMemoryDecoupling:
     async def test_should_dream_property(self, memory: SmartMemory):
         """should_dream is True when _pending >= _threshold."""
         # Initial state
-        initial_pending = memory._pending
-        threshold = memory._threshold
+        initial_pending = _pending(memory)
+        threshold = _threshold(memory)
 
         # Learn up to threshold - 1
         for i in range(threshold - 1):
@@ -38,14 +48,14 @@ class TestSmartMemoryDecoupling:
 
         # Should not dream yet
         assert not memory.should_dream
-        assert memory._pending == initial_pending + threshold - 1
+        assert _pending(memory) == initial_pending + threshold - 1
 
         # Learn one more
         await memory.remember("Final block")
 
         # Now should dream
         assert memory.should_dream
-        assert memory._pending >= memory._threshold
+        assert _pending(memory) >= _threshold(memory)
 
     @pytest.mark.asyncio
     async def test_dream_returns_consolidate_result(self, memory: SmartMemory):
@@ -58,7 +68,7 @@ class TestSmartMemoryDecoupling:
         result = await memory.dream()
         assert isinstance(result, ConsolidateResult) or result is None
         # If there were blocks, result should be ConsolidateResult
-        if memory._pending == 0:
+        if _pending(memory) == 0:
             # Dream was called and blocks were processed
             assert result is None or isinstance(result, ConsolidateResult)
 
@@ -69,17 +79,17 @@ class TestSmartMemoryDecoupling:
         for i in range(3):
             await memory.remember(f"Block {i}")
 
-        assert memory._pending > 0
+        assert _pending(memory) > 0
         await memory.dream()
-        assert memory._pending == 0
+        assert _pending(memory) == 0
 
     @pytest.mark.asyncio
     async def test_dream_idempotent_with_no_pending(self, memory: SmartMemory):
         """dream() with no pending returns None safely."""
-        assert memory._pending == 0
+        assert _pending(memory) == 0
         result = await memory.dream()
         assert result is None
-        assert memory._pending == 0
+        assert _pending(memory) == 0
 
     @pytest.mark.asyncio
     async def test_dream_multiple_calls(self, memory: SmartMemory):
@@ -88,30 +98,30 @@ class TestSmartMemoryDecoupling:
         for i in range(3):
             await memory.remember(f"Block {i}")
 
-        pending_before = memory._pending
+        pending_before = _pending(memory)
         assert pending_before > 0
 
         # First dream
         result1 = await memory.dream()
-        assert memory._pending == 0
+        assert _pending(memory) == 0
 
         # Second dream (no pending)
         result2 = await memory.dream()
         assert result2 is None
-        assert memory._pending == 0
+        assert _pending(memory) == 0
 
     @pytest.mark.asyncio
     async def test_remember_returns_fast(self, memory: SmartMemory):
         """remember() returns immediately; never blocks on consolidation."""
         # This test is implicit: if remember() blocked, it would timeout
         # We learn up to and beyond threshold without hanging
-        threshold = memory._threshold
+        threshold = _threshold(memory)
         for i in range(threshold + 1):
             result = await memory.remember(f"Block {i}")
             assert result.status in ["created", "duplicate_rejected"]
 
         # All blocks are pending; none were consolidated
-        assert memory._pending == threshold + 1
+        assert _pending(memory) == threshold + 1
 
 
 class TestSessionContextManager:
@@ -122,12 +132,12 @@ class TestSessionContextManager:
         """Exiting managed() context should consolidate pending blocks."""
         async with SmartMemory.managed(db_path_str) as mem:
             # Learn enough blocks to exceed threshold (default is 10)
-            threshold = mem._threshold
+            threshold = _threshold(mem)
             for i in range(threshold):
                 await mem.remember(f"Block {i}")
 
             assert mem.should_dream
-            pending_at_exit = mem._pending
+            pending_at_exit = _pending(mem)
 
         # After exit, dream() should have been called
         # (We can't easily verify this without inspecting internal state,
@@ -138,7 +148,7 @@ class TestSessionContextManager:
         """Exiting managed() is safe even if nothing is pending."""
         async with SmartMemory.managed(db_path_str) as mem:
             # Don't learn anything
-            assert mem._pending == 0
+            assert _pending(mem) == 0
 
         # Should exit cleanly
 
@@ -163,7 +173,7 @@ class TestFullDreamingCycle:
     @pytest.mark.asyncio
     async def test_full_cycle(self, memory: SmartMemory):
         """Complete cycle: learn blocks → check should_dream → consolidate."""
-        threshold = memory._threshold
+        threshold = _threshold(memory)
 
         # Heartbeat: learn blocks
         for i in range(threshold):
@@ -176,13 +186,13 @@ class TestFullDreamingCycle:
         # Breathing: consolidate
         result = await memory.dream()
         assert result is not None or result is None  # Either is valid
-        assert memory._pending == 0
+        assert _pending(memory) == 0
         assert not memory.should_dream
 
     @pytest.mark.asyncio
     async def test_cycle_repeats(self, memory: SmartMemory):
         """Multiple cycles in one session."""
-        threshold = memory._threshold
+        threshold = _threshold(memory)
 
         # Cycle 1
         for i in range(threshold):
