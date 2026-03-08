@@ -99,6 +99,14 @@ def init(
         bool,
         typer.Option("--seed/--no-seed", help="Seed constitutional cognitive loop blocks"),
     ] = True,
+    template: Annotated[
+        str | None,
+        typer.Option(
+            "--template",
+            help="Add domain-specific blocks on top of the constitutional seed. "
+            "Run 'elfmem templates' to list available options.",
+        ),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Initialise elfmem: create config directory, generate config, and seed the cognitive loop.
@@ -108,8 +116,28 @@ def init(
 
     By default, seeds 10 constitutional blocks that form the cognitive loop
     (curiosity, feedback, balance, etc.). Use --no-seed to skip this.
+
+    Use --template to add domain-specific principles on top of the constitutional base:
+
+        elfmem init --template coding      # software engineering principles
+        elfmem init --template research    # research and analysis principles
+        elfmem init --template assistant   # conversational assistant principles
+
+    Run 'elfmem templates' to see all available templates with descriptions.
     """
     from elfmem.config import render_default_config
+    from elfmem.seed import get_template, list_templates
+
+    # Validate template name early, before touching the filesystem
+    if template is not None:
+        try:
+            get_template(template)
+        except ValueError as e:
+            typer.echo(f"Error: {e}", err=True)
+            typer.echo(
+                "Run 'elfmem templates' to see available templates.", err=True
+            )
+            raise typer.Exit(code=1) from e
 
     db_expanded = os.path.expanduser(db)
     config_expanded = os.path.expanduser(config_path)
@@ -128,7 +156,7 @@ def init(
     # Step 3: seed constitutional blocks (default: on)
     seed_results: list[dict[str, str]] = []
     if seed:
-        seed_results = _run(_init_seed(db_expanded, config_expanded))
+        seed_results = _run(_init_seed(db_expanded, config_expanded, template=template))
 
     # Step 4: seed SELF block if --self provided
     self_result: dict[str, str] | None = None
@@ -144,6 +172,8 @@ def init(
             "config_action": config_action,
             "db_path": db_expanded,
         }
+        if template:
+            out["template"] = template
         if seed_results:
             created = sum(1 for r in seed_results if r["status"] == "created")
             out["constitutional_blocks"] = {"created": created, "total": len(seed_results)}
@@ -156,10 +186,13 @@ def init(
         if seed_results:
             created = sum(1 for r in seed_results if r["status"] == "created")
             skipped = len(seed_results) - created
+            label = f" + {template}" if template else ""
             if created > 0:
-                typer.echo(f"✓  Seed:     {created} constitutional blocks created.")
+                typer.echo(f"✓  Seed:     {created} blocks created (constitutional{label}).")
             else:
-                typer.echo(f"✓  Seed:     Constitutional blocks already present ({skipped} skipped).")
+                typer.echo(
+                    f"✓  Seed:     Blocks already present ({skipped} skipped, constitutional{label})."
+                )
         if self_result is not None:
             status_msg = self_result["status"]
             if status_msg == "created":
@@ -171,8 +204,37 @@ def init(
         if not self_description:
             typer.echo(
                 "\n  Tip: personalise your identity with:\n"
-                "  elfmem init --self 'Describe your agent here'"
+                "  elfmem init --self 'Describe your agent here'\n"
+                "  elfmem templates    # see available domain templates"
             )
+
+
+@app.command()
+def templates(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List available seed templates for 'elfmem init --template <name>'.
+
+    Templates add domain-specific principles on top of the constitutional base.
+    They are additive — the 10 constitutional blocks are always included.
+
+    Example:
+
+        elfmem init --template coding
+    """
+    from elfmem.seed import list_templates
+
+    available = list_templates()
+    if json_output:
+        _json({"templates": [{"name": k, "description": v} for k, v in available.items()]})
+    else:
+        typer.echo("Available seed templates:\n")
+        for name, description in available.items():
+            typer.echo(f"  {name:<12}  {description}")
+        typer.echo(
+            "\nUsage: elfmem init --template <name>\n"
+            "       Templates are added on top of the 10 constitutional blocks."
+        )
 
 
 @app.command()
@@ -461,12 +523,22 @@ async def _curate(db_path: str, config: str | None) -> CurateResult:
         return await mem.curate()
 
 
-async def _init_seed(db_path: str, config: str) -> list[dict[str, str]]:
-    """Store all 10 constitutional seed blocks. Idempotent — duplicates are silently skipped."""
-    from elfmem.seed import CONSTITUTIONAL_SEED
+async def _init_seed(
+    db_path: str, config: str, template: str | None = None
+) -> list[dict[str, str]]:
+    """Store constitutional seed blocks plus optional template blocks.
+
+    Idempotent — duplicate content is silently skipped.
+    """
+    from elfmem.seed import CONSTITUTIONAL_SEED, get_template
+
+    blocks = CONSTITUTIONAL_SEED[:]
+    if template:
+        blocks = blocks + get_template(template)
+
     async with SmartMemory.managed(db_path, config=config) as mem:
         results = []
-        for block in CONSTITUTIONAL_SEED:
+        for block in blocks:
             r = await mem.remember(
                 block["content"],  # type: ignore[arg-type]
                 tags=block["tags"],  # type: ignore[arg-type]

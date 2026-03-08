@@ -208,3 +208,31 @@ class TestHelp:
         assert result.exit_code == 0
         for cmd in ("remember", "recall", "status", "outcome", "curate", "guide", "serve"):
             assert cmd in result.output
+
+
+# ── Seed templates ─────────────────────────────────────────────────────────────
+
+
+class TestTemplatesCommand:
+    def test_templates_lists_available(self) -> None:
+        result = runner.invoke(app, ["templates"])
+        assert result.exit_code == 0
+        assert "coding" in result.output
+        assert "research" in result.output
+        assert "assistant" in result.output
+
+    def test_templates_json(self) -> None:
+        result = runner.invoke(app, ["templates", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        names = [t["name"] for t in data["templates"]]
+        assert "coding" in names
+        assert "research" in names
+        assert "assistant" in names
+
+    def test_templates_json_has_description(self) -> None:
+        result = runner.invoke(app, ["templates", "--json"])
+        data = json.loads(result.output)
+        for t in data["templates"]:
+            assert "description" in t
+            assert len(t["description"]) > 0

@@ -1,19 +1,22 @@
-"""ElfDecisionMaker — autonomous decision-making and calibration using elfmem.
+"""Example: Agent decision-making loop built on top of elfmem.
 
-elf uses its own memory system to:
-1. Make decisions using multi-frame recall (self + task + attention + world)
-2. Execute actions (delegating to Claude Code tools)
-3. Calibrate performance by signalling outcome back to the blocks that informed decisions
-4. Learn by reinforcing good patterns and letting bad ones decay
+This is a REFERENCE IMPLEMENTATION showing how an agent can use elfmem's
+memory primitives to make decisions, calibrate outcomes, and learn over time.
 
-The loop:
-    PERCEIVE (multi-frame recall)
-    → DECIDE (synthesize across frames, SELF veto)
-    → EXECUTE (Claude Code tools or MCP)
-    → OBSERVE (tests, regressions, goal advancement)
-    → CALIBRATE (outcome() with block_ids)
-    → CONSOLIDATE (dream() when pending)
-    → REFLECT (periodic curate + SELF update)
+This code lives in examples/ — it is NOT part of the elfmem library.
+elfmem provides memory primitives; the agent provides decision intelligence.
+
+The pattern:
+    PERCEIVE  → recall(frame="self/task/attention") — retrieve relevant context
+    DECIDE    → synthesize across frames, pick best option
+    EXECUTE   → agent acts (Claude Code tools, MCP, etc.)
+    OBSERVE   → measure outcome (tests pass? goal advanced?)
+    CALIBRATE → outcome(block_ids, signal) — reinforce what worked
+    DREAM     → dream() at natural pause points
+    REFLECT   → curate() + recall(frame="self") periodically
+
+elfmem's role: remember(), recall(), outcome(), dream(), curate().
+Agent's role: everything else — synthesis, execution, observation, judgement.
 """
 
 from __future__ import annotations

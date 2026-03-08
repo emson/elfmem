@@ -1,8 +1,16 @@
-"""Tests for ElfDecisionMaker — autonomous decisions and outcome calibration."""
+"""Tests for ElfDecisionMaker — example of agent decision-making on top of elfmem.
+
+Run from project root: pytest examples/test_decision_maker.py
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
 
 import pytest
 
-from elfmem.decisions import (
+from decision_maker import (
     CalibrationResult,
     Decision,
     ElfDecisionMaker,
