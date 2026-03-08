@@ -469,3 +469,65 @@ class TestEdgeReinforcement:
 
             # Centrality = weighted_degree / max_weighted_degree
             # Hub has higher centrality than spokes
+
+
+# ── TestReinforcedEdgeCentrality ───────────────────────────────────────────────
+
+
+class TestReinforcedEdgeCentrality:
+    """Co-retrieval reinforcement on edges lifts centrality in composite scoring."""
+
+    async def test_reinforced_edge_increases_effective_degree(self, system_setup) -> None:
+        """Block with a reinforced edge has higher weighted degree than same block unreinforced."""
+        from elfmem.db.queries import get_weighted_degree
+        from elfmem.db.queries import insert_edge
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            r_hub = await learn(conn, content="hub block", category="knowledge", source="api")
+            r_spoke_reinforced = await learn(conn, content="spoke reinforced", category="knowledge", source="api")
+            r_spoke_plain = await learn(conn, content="spoke plain", category="knowledge", source="api")
+
+            await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+
+            hub_id = r_hub.block_id
+            spoke_r_id = r_spoke_reinforced.block_id
+            spoke_p_id = r_spoke_plain.block_id
+
+            # Create two edges of identical initial weight
+            from_r, to_r = Edge.canonical(hub_id, spoke_r_id)
+            from_p, to_p = Edge.canonical(hub_id, spoke_p_id)
+            await insert_edge(conn, from_id=from_r, to_id=to_r, weight=0.70)
+            await insert_edge(conn, from_id=from_p, to_id=to_p, weight=0.70)
+
+            # Reinforce only the first edge (simulates repeated co-retrieval)
+            from elfmem.db.queries import reinforce_edges
+            for _ in range(5):
+                await reinforce_edges(conn, [(from_r, to_r)])
+
+            degrees = await get_weighted_degree(conn, [spoke_r_id, spoke_p_id])
+
+        # The reinforced spoke has higher effective degree than the plain spoke
+        assert degrees[spoke_r_id] > degrees[spoke_p_id]
+
+    async def test_unreinforced_edge_degree_matches_raw_weight(self, system_setup) -> None:
+        """Block with zero-reinforcement edge has effective degree == raw weight."""
+        from elfmem.db.queries import get_weighted_degree, insert_edge
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            r1 = await learn(conn, content="node alpha", category="knowledge", source="api")
+            r2 = await learn(conn, content="node beta", category="knowledge", source="api")
+            await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+
+            from_id, to_id = Edge.canonical(r1.block_id, r2.block_id)
+            weight = 0.75
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=weight)
+
+            degrees = await get_weighted_degree(conn, [r1.block_id, r2.block_id])
+
+        # reinforcement_count=0 → log1p(0)*BONUS = 0 → effective == raw weight
+        assert abs(degrees[r1.block_id] - weight) < 0.001
+        assert abs(degrees[r2.block_id] - weight) < 0.001

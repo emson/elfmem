@@ -206,6 +206,8 @@ class OutcomeResult:
     mean_confidence_delta: float
     edges_reinforced: int
     blocks_penalized: int = 0
+    outcome_edges_created: int = 0
+    """New edges created by outcome() between non-similar but co-used blocks."""
 
     @property
     def summary(self) -> str:
@@ -214,6 +216,8 @@ class OutcomeResult:
         noun = "block" if self.blocks_updated == 1 else "blocks"
         delta_str = f"{self.mean_confidence_delta:+.3f}"
         parts = [f"{self.blocks_updated} {noun} updated ({delta_str} avg confidence)"]
+        if self.outcome_edges_created:
+            parts.append(f"{self.outcome_edges_created} outcome edges created")
         if self.edges_reinforced:
             parts.append(f"{self.edges_reinforced} edges reinforced")
         if self.blocks_penalized:
@@ -230,6 +234,7 @@ class OutcomeResult:
             "mean_confidence_delta": self.mean_confidence_delta,
             "edges_reinforced": self.edges_reinforced,
             "blocks_penalized": self.blocks_penalized,
+            "outcome_edges_created": self.outcome_edges_created,
         }
 
 

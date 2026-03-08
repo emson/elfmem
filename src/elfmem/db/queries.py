@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -384,6 +385,44 @@ async def insert_edge(
     )
 
 
+async def upsert_outcome_edge(
+    conn: AsyncConnection,
+    *,
+    from_id: str,
+    to_id: str,
+    weight: float,
+) -> bool:
+    """Create an outcome-driven edge, or reinforce it if one already exists.
+
+    Uses SQLite INSERT OR IGNORE so no exception handling is needed.
+    Enforces canonical ordering (from_id < to_id) — callers must guarantee this.
+
+    Returns True if a new edge was created, False if an existing edge was reinforced.
+    """
+    if from_id == to_id:
+        return False  # No self-loops
+
+    result = await conn.execute(
+        insert(edges).prefix_with("OR IGNORE").values(
+            from_id=from_id,
+            to_id=to_id,
+            weight=weight,
+            reinforcement_count=0,
+            created_at=_now_iso(),
+        )
+    )
+    if result.rowcount == 1:
+        return True  # new edge created
+
+    # Edge already exists — reinforce it (increment co-retrieval count)
+    await conn.execute(
+        update(edges)
+        .where(and_(edges.c.from_id == from_id, edges.c.to_id == to_id))
+        .values(reinforcement_count=edges.c.reinforcement_count + 1)
+    )
+    return False
+
+
 async def get_edges_for_block(conn: AsyncConnection, block_id: str) -> list[dict[str, Any]]:
     """Get all edges where block_id is either endpoint."""
     result = await conn.execute(
@@ -406,9 +445,20 @@ async def get_archived_blocks(conn: AsyncConnection) -> list[dict[str, Any]]:
 
 
 async def prune_weak_edges(conn: AsyncConnection, threshold: float) -> int:
-    """Delete edges with weight < threshold. Returns number of edges deleted."""
+    """Delete edges that are both geometrically weak AND never co-retrieved.
+
+    An edge with reinforcement_count > 0 has proven real-world value and is
+    spared regardless of its initial similarity weight. This protects outcome-
+    driven edges (which start with lower weight than similarity-based ones) from
+    being pruned before they accumulate evidence of usefulness.
+    """
     result = await conn.execute(
-        delete(edges).where(edges.c.weight < threshold)
+        delete(edges).where(
+            and_(
+                edges.c.weight < threshold,
+                edges.c.reinforcement_count == 0,
+            )
+        )
     )
     return result.rowcount or 0
 
@@ -439,29 +489,50 @@ async def reinforce_edges(
         )
 
 
+# Reinforcement bonus per log unit of co-retrieval count.
+# Effective weight = weight + log(1 + reinforcement_count) × BONUS
+# Rationale: edges proven useful through repeated co-retrieval should
+# contribute more to centrality than edges never used after creation.
+# At reinforcement_count=10: bonus ≈ 0.24. At count=100: bonus ≈ 0.46.
+_REINFORCE_WEIGHT_BONUS = 0.10
+
+
 async def get_weighted_degree(
     conn: AsyncConnection,
     block_ids: list[str],
 ) -> dict[str, float]:
-    """Compute weighted degree (sum of edge weights) for a set of blocks.
+    """Compute effective weighted degree for a set of blocks.
 
-    Returns {block_id: total_weight}. Blocks with no edges return 0.0.
+    effective_weight(edge) = weight + log(1 + reinforcement_count) × BONUS
+
+    Edges frequently co-retrieved contribute more to centrality, making
+    graph expansion prefer blocks with proven real-world connectivity over
+    blocks with only geometric (similarity-based) connections.
+
+    Returns {block_id: total_effective_weight}. Blocks with no edges return 0.0.
     """
+    if not block_ids:
+        return {}
+
     degrees: dict[str, float] = {bid: 0.0 for bid in block_ids}
-    from_result = await conn.execute(
-        select(edges.c.from_id.label("bid"), func.sum(edges.c.weight).label("total"))
-        .where(edges.c.from_id.in_(block_ids))
-        .group_by(edges.c.from_id)
+    id_set = set(block_ids)
+
+    result = await conn.execute(
+        select(
+            edges.c.from_id,
+            edges.c.to_id,
+            edges.c.weight,
+            edges.c.reinforcement_count,
+        ).where(
+            or_(edges.c.from_id.in_(block_ids), edges.c.to_id.in_(block_ids))
+        )
     )
-    for row in from_result.mappings():
-        degrees[row["bid"]] += float(row["total"])
-    to_result = await conn.execute(
-        select(edges.c.to_id.label("bid"), func.sum(edges.c.weight).label("total"))
-        .where(edges.c.to_id.in_(block_ids))
-        .group_by(edges.c.to_id)
-    )
-    for row in to_result.mappings():
-        degrees[row["bid"]] += float(row["total"])
+    for row in result.mappings():
+        eff = float(row["weight"]) + math.log1p(row["reinforcement_count"]) * _REINFORCE_WEIGHT_BONUS
+        if row["from_id"] in id_set:
+            degrees[row["from_id"]] += eff
+        if row["to_id"] in id_set:
+            degrees[row["to_id"]] += eff
     return degrees
 
 

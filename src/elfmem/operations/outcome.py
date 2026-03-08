@@ -9,10 +9,16 @@ from elfmem.db.queries import (
     get_block,
     insert_block_outcome,
     reinforce_blocks,
-    reinforce_edges,
     update_block_outcome,
+    upsert_outcome_edge,
 )
 from elfmem.types import OutcomeResult
+
+# Initial weight for edges created by outcome().
+# Lower than similarity-based edges (≥0.60) because outcome edges are
+# provisional — they earn centrality through reinforcement_count, not
+# geometric similarity. signal=PERFECT → 0.50, signal=GOOD → 0.375.
+OUTCOME_EDGE_WEIGHT_SCALE = 0.5
 
 
 def _validate_signal(signal: float) -> None:
@@ -126,13 +132,20 @@ async def record_outcome(
         confidence_deltas.append(confidence_after - confidence_before)
 
     edges_reinforced = 0
+    outcome_edges_created = 0
     if updated_ids and signal > reinforce_threshold:
         await reinforce_blocks(conn, updated_ids, current_active_hours)
 
         if len(updated_ids) > 1:
-            pairs = _canonical_pairs(updated_ids)
-            await reinforce_edges(conn, pairs)
-            edges_reinforced = len(pairs)
+            outcome_weight = signal * OUTCOME_EDGE_WEIGHT_SCALE
+            for from_id, to_id in _canonical_pairs(updated_ids):
+                created = await upsert_outcome_edge(
+                    conn, from_id=from_id, to_id=to_id, weight=outcome_weight
+                )
+                if created:
+                    outcome_edges_created += 1
+                else:
+                    edges_reinforced += 1
 
     blocks_penalized = 0
     if updated_ids and signal < penalize_threshold:
@@ -151,6 +164,7 @@ async def record_outcome(
         mean_confidence_delta=mean_delta,
         edges_reinforced=edges_reinforced,
         blocks_penalized=blocks_penalized,
+        outcome_edges_created=outcome_edges_created,
     )
 
 

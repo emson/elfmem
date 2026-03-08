@@ -8,6 +8,8 @@ from elfmem.db.queries import (
     get_active_blocks,
     get_block,
     get_edges,
+    prune_weak_edges,
+    reinforce_edges,
     seed_builtin_data,
     update_block_status,
 )
@@ -468,3 +470,104 @@ class TestLastCurateAt:
         # First run: no last_curate_at in config
         # should_curate() returns True
         pass
+
+
+# ── TestEdgePruneProtection ────────────────────────────────────────────────────
+
+
+class TestEdgePruneProtection:
+    """prune_weak_edges() spares edges with reinforcement_count > 0."""
+
+    async def _make_active_pair(self, conn, mock_llm, mock_embedding, content_a, content_b):
+        """Create two active blocks and return their IDs."""
+        r1 = await learn(conn, content=content_a, category="knowledge", source="api")
+        r2 = await learn(conn, content=content_b, category="knowledge", source="api")
+        await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+        return r1.block_id, r2.block_id
+
+    async def test_weak_unreinforced_edge_is_pruned(self, system_setup) -> None:
+        """Edge with weight < threshold and reinforcement_count=0 is deleted."""
+        from elfmem.db.queries import insert_edge, prune_weak_edges
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "prune me alpha", "prune me beta"
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.05)
+
+            pruned = await prune_weak_edges(conn, threshold=0.10)
+            remaining = await get_edges(conn, b1)
+
+        assert pruned >= 1
+        assert len(remaining) == 0
+
+    async def test_weak_reinforced_edge_survives_prune(self, system_setup) -> None:
+        """Edge with weight < threshold but reinforcement_count > 0 is kept."""
+        from elfmem.db.queries import insert_edge, prune_weak_edges, reinforce_edges
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "keep me alpha", "keep me beta"
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.05)
+
+            # Simulate co-retrieval — marks edge as useful
+            await reinforce_edges(conn, [(from_id, to_id)])
+
+            pruned = await prune_weak_edges(conn, threshold=0.10)
+            remaining = await get_edges(conn, b1)
+
+        assert pruned == 0
+        assert len(remaining) == 1
+
+    async def test_strong_unreinforced_edge_survives_prune(self, system_setup) -> None:
+        """Edge with weight >= threshold survives regardless of reinforcement_count."""
+        from elfmem.db.queries import insert_edge, prune_weak_edges
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "strong edge alpha", "strong edge beta"
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.80)
+
+            pruned = await prune_weak_edges(conn, threshold=0.10)
+            remaining = await get_edges(conn, b1)
+
+        assert pruned == 0
+        assert len(remaining) == 1
+
+    async def test_prune_does_not_affect_reinforced_outcome_edges(self, system_setup) -> None:
+        """A low-weight outcome edge that has been co-retrieved survives curate()."""
+        from elfmem.db.queries import insert_edge, reinforce_edges
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "outcome node one", "outcome node two"
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            # Outcome edge: weight=0.45 (signal=0.9 × 0.5), below default EDGE_PRUNE_THRESHOLD=0.10
+            # Wait — 0.45 > 0.10, so actually it won't be pruned even without reinforcement.
+            # Use a really low weight to simulate a low-signal outcome edge.
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.05)
+            await reinforce_edges(conn, [(from_id, to_id)])
+
+            result = await curate(
+                conn,
+                current_active_hours=10.0,
+                edge_prune_threshold=0.10,
+            )
+            remaining = await get_edges(conn, b1)
+
+        assert len(remaining) == 1, "Reinforced outcome edge must survive curate()"

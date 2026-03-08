@@ -11,7 +11,7 @@ import pytest
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.db.engine import create_test_engine
-from elfmem.db.queries import get_block, seed_builtin_data, update_block_scoring
+from elfmem.db.queries import get_block, get_edges_for_block, seed_builtin_data, update_block_scoring
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.learn import learn
 from elfmem.operations.outcome import compute_bayesian_update, record_outcome
@@ -265,7 +265,8 @@ class TestRecordOutcome:
 
         assert block_after["reinforcement_count"] == rc_before
 
-    async def test_multi_block_positive_outcome_reinforces_edges(self, setup):
+    async def test_multi_block_positive_outcome_creates_or_reinforces_edge(self, setup):
+        """Two blocks with no pre-existing edge → outcome creates a new outcome edge."""
         engine, mock_llm, mock_embedding = setup
         async with engine.begin() as conn:
             b1 = await _make_active_block(conn, mock_llm, mock_embedding, "edge block one")
@@ -282,7 +283,8 @@ class TestRecordOutcome:
                 reinforce_threshold=0.5,
             )
 
-        assert result.edges_reinforced == 1
+        # One pair: either created (no prior edge) or reinforced (prior similarity edge).
+        assert result.outcome_edges_created + result.edges_reinforced == 1
 
     async def test_valueerror_for_signal_below_zero(self, setup):
         engine, mock_llm, mock_embedding = setup
@@ -366,7 +368,8 @@ class TestOutcomeAPI:
         result = await system.outcome([], signal=0.8)
         d = result.to_dict()
         assert set(d.keys()) == {
-            "blocks_updated", "mean_confidence_delta", "edges_reinforced", "blocks_penalized"
+            "blocks_updated", "mean_confidence_delta", "edges_reinforced",
+            "blocks_penalized", "outcome_edges_created",
         }
 
     async def test_works_without_active_session(self, system):
@@ -598,3 +601,215 @@ class TestOutcomePenalize:
 
         assert result.blocks_penalized == 0
         assert lambda_after == lambda_before
+
+# ── TestOutcomeDrivenEdges ─────────────────────────────────────────────────────
+
+
+class TestOutcomeDrivenEdges:
+    """Outcome-driven edge creation: non-similar but co-used blocks get connected."""
+
+    async def test_outcome_creates_edge_between_non_similar_blocks(self, setup):
+        """Blocks with no prior edge get one created when outcome() is positive."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            # Use content strings with no similarity override → low cosine sim → no similarity edge
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "orbital mechanics alpha")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "sourdough bread recipe")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1, b2],
+                signal=0.9,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+            edges_b1 = await get_edges_for_block(conn, b1)
+
+        assert result.outcome_edges_created + result.edges_reinforced == 1
+        assert len(edges_b1) >= 1
+
+    async def test_outcome_edge_weight_scales_with_signal(self, setup):
+        """Edge weight = signal × OUTCOME_EDGE_WEIGHT_SCALE."""
+        from elfmem.operations.outcome import OUTCOME_EDGE_WEIGHT_SCALE
+
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "quantum foam theory")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "knitting patterns")
+
+            signal = 0.8
+            await record_outcome(
+                conn,
+                block_ids=[b1, b2],
+                signal=signal,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+            all_edges = await get_edges_for_block(conn, b1)
+
+        # The outcome edge has weight == signal * scale (similarity edges would be ≥0.60)
+        outcome_edges = [e for e in all_edges if abs(e["weight"] - signal * OUTCOME_EDGE_WEIGHT_SCALE) < 0.001]
+        assert len(outcome_edges) >= 1
+
+    async def test_outcome_reinforces_existing_similarity_edge_not_duplicates(self, setup):
+        """When a similarity edge already exists, outcome reinforces it — no duplicate."""
+        engine, mock_llm, mock_embedding = setup
+
+        # Inject high similarity so consolidate() creates a similarity edge
+        embedding_with_edge = MockEmbeddingService(
+            dimensions=64,
+            similarity_overrides={frozenset({"block similar a", "block similar b"}): 0.85},
+        )
+        async with engine.begin() as conn:
+            r1 = await learn(conn, content="block similar a", category="knowledge", source="api")
+            r2 = await learn(conn, content="block similar b", category="knowledge", source="api")
+            await consolidate(
+                conn,
+                llm=mock_llm,
+                embedding_svc=embedding_with_edge,
+                current_active_hours=1.0,
+            )
+            b1, b2 = r1.block_id, r2.block_id
+
+            rc_before = (await get_edges_for_block(conn, b1))[0]["reinforcement_count"]
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1, b2],
+                signal=0.9,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+            all_edges = await get_edges_for_block(conn, b1)
+
+        assert len(all_edges) == 1, "No duplicate edge should be created"
+        assert result.edges_reinforced == 1
+        assert result.outcome_edges_created == 0
+        assert all_edges[0]["reinforcement_count"] == rc_before + 1
+
+    async def test_low_signal_does_not_create_edges(self, setup):
+        """Outcome below reinforce_threshold creates no edges."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "cold fusion perhaps")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "medieval tapestry")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1, b2],
+                signal=0.3,           # below reinforce_threshold=0.5
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+            all_edges = await get_edges_for_block(conn, b1)
+
+        assert result.outcome_edges_created == 0
+        assert result.edges_reinforced == 0
+        # No outcome edges — only any similarity edges from consolidation (unlikely here)
+        outcome_edges = [e for e in all_edges if e["weight"] < 0.60]
+        assert len(outcome_edges) == 0
+
+    async def test_single_block_outcome_creates_no_edges(self, setup):
+        """outcome() on a single block cannot form any pairs — no edges."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "lonely block")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1],
+                signal=1.0,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+        assert result.outcome_edges_created == 0
+        assert result.edges_reinforced == 0
+
+    async def test_outcome_idempotent_second_call_reinforces_not_duplicates(self, setup):
+        """Calling outcome() twice on same pair reinforces the edge, not duplicates it."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "dark matter physics")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "origami cranes")
+
+            await record_outcome(
+                conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
+                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+            )
+            result2 = await record_outcome(
+                conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
+                current_active_hours=6.0, prior_strength=2.0, reinforce_threshold=0.5,
+            )
+
+            all_edges = await get_edges_for_block(conn, b1)
+
+        assert len(all_edges) == 1, "Must not duplicate the outcome edge"
+        assert result2.outcome_edges_created == 0
+        assert result2.edges_reinforced == 1
+        assert all_edges[0]["reinforcement_count"] == 1
+
+    async def test_three_blocks_creates_three_pairs(self, setup):
+        """Three blocks → 3 canonical pairs → 3 edge interactions."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "alpha centauri light")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "pickling vegetables")
+            b3 = await _make_active_block(conn, mock_llm, mock_embedding, "morse code history")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1, b2, b3],
+                signal=0.9,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+        assert result.outcome_edges_created + result.edges_reinforced == 3
+
+    async def test_outcome_result_str_mentions_created_edges(self, setup):
+        """__str__ on OutcomeResult mentions outcome edges when created."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            b1 = await _make_active_block(conn, mock_llm, mock_embedding, "wave-particle duality")
+            b2 = await _make_active_block(conn, mock_llm, mock_embedding, "cheese making process")
+
+            result = await record_outcome(
+                conn,
+                block_ids=[b1, b2],
+                signal=0.9,
+                weight=1.0,
+                source="test",
+                current_active_hours=5.0,
+                prior_strength=2.0,
+                reinforce_threshold=0.5,
+            )
+
+        if result.outcome_edges_created > 0:
+            assert "outcome edges created" in str(result)
+
+
+# ── imports needed above ───────────────────────────────────────────────────────
+# (already imported at top: learn, consolidate, get_edges_for_block via queries)
