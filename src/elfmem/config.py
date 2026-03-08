@@ -176,13 +176,21 @@ class ElfmemConfig(BaseModel):
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:
-        """Load config from a YAML file. All sections are optional."""
+        """Load config from a YAML file. All sections are optional.
+
+        Raises:
+            ValueError: If any custom prompt template is missing required variables.
+            FileNotFoundError: If a prompt file path in the config does not exist.
+        """
         with open(Path(path).expanduser()) as f:
             data = yaml.safe_load(f)
         # Remove None values so empty sections (e.g., "prompts:" with only comments)
         # trigger default_factory instead of validation error.
         data = {k: v for k, v in (data or {}).items() if v is not None}
-        return cls.model_validate(data)
+        cfg = cls.model_validate(data)
+        # Validate prompt templates early — fail fast before any LLM calls.
+        cfg.prompts.validate_templates()
+        return cfg
 
     @classmethod
     def from_env(cls) -> ElfmemConfig:
