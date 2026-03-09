@@ -409,9 +409,11 @@ class SystemStatus:
                 f"Pending (advisory): {self.pending_count}/{self.effective_threshold}"
             )
         if self.co_retrieval_staging_count > 0:
-            lines.append(
-                f"Hebbian staging: {self.co_retrieval_staging_count} pairs building toward co_retrieval edges."
+            msg = (
+                f"Hebbian staging: {self.co_retrieval_staging_count} pairs "
+                "building toward co_retrieval edges."
             )
+            lines.append(msg)
         lines.append(f"Tokens this session: {self.session_tokens}")
         lines.append(f"Suggestion: {self.suggestion}")
         return "\n".join(lines)
