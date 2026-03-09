@@ -52,11 +52,12 @@ async def expand_1hop(
 async def reinforce_co_retrieved_edges(
     conn: AsyncConnection,
     block_ids: list[str],
+    current_active_hours: float | None = None,
 ) -> int:
     """Reinforce edges between co-retrieved blocks.
 
-    For each pair of block_ids that share an edge, increments reinforcement_count.
-    Returns count of edges reinforced.
+    For each pair of block_ids that share an edge, increments reinforcement_count
+    and updates last_active_hours. Returns count of edges reinforced.
     """
     if len(block_ids) < 2:
         return 0
@@ -81,5 +82,44 @@ async def reinforce_co_retrieved_edges(
 
     to_reinforce = [p for p in canonical_pairs if p in existing]
     if to_reinforce:
-        await queries.reinforce_edges(conn, to_reinforce)
+        await queries.reinforce_edges(conn, to_reinforce, current_active_hours)
     return len(to_reinforce)
+
+
+# Displacement priority for degree-cap enforcement.
+# Evict auto-created edges first; never evict agent-asserted or outcome-confirmed.
+_EVICTION_ORDER: list[str] = ["similar", "co_occurs"]
+_PROTECTED_RELATIONS: frozenset[str] = frozenset(
+    {"elaborates", "supports", "contradicts", "outcome"}
+)
+
+
+async def find_displaceable_edge(
+    conn: AsyncConnection,
+    block_id: str,
+) -> dict | None:
+    """Find the lowest-priority displaceable edge connected to block_id.
+
+    Returns the edge row dict to displace, or None if all edges are protected.
+    Eviction order: similar → co_occurs (weakest weight first within tier).
+    Never displaces: elaborates, supports, contradicts, outcome, or agent-origin edges.
+    """
+    block_edges = await queries.get_edges_for_block(conn, block_id)
+    if not block_edges:
+        return None
+
+    candidates = [
+        e for e in block_edges
+        if e.get("relation_type", "similar") in _EVICTION_ORDER
+        and e.get("origin", "similarity") != "agent"
+    ]
+    if not candidates:
+        return None
+
+    def eviction_key(e: dict) -> tuple[int, float]:
+        relation = e.get("relation_type", "similar")
+        order_idx = _EVICTION_ORDER.index(relation) if relation in _EVICTION_ORDER else 99
+        return (order_idx, e["weight"])
+
+    candidates.sort(key=eviction_key)
+    return candidates[0]

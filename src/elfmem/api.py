@@ -9,7 +9,7 @@ from collections import deque
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -27,6 +27,7 @@ from elfmem.db.queries import (
     set_config,
 )
 from elfmem.exceptions import FrameError
+from elfmem.operations.connect import do_connect, do_disconnect
 from elfmem.guide import get_guide
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.token_counter import TokenCounter
@@ -40,8 +41,13 @@ from elfmem.policy import ConsolidationPolicy
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.session import begin_session as _begin_session, end_session as _end_session
 from elfmem.types import (
+    ConnectByQueryResult,
+    ConnectResult,
+    ConnectsResult,
+    ConnectSpec,
     ConsolidateResult,
     CurateResult,
+    DisconnectResult,
     FrameResult,
     LearnResult,
     OperationRecord,
@@ -98,6 +104,10 @@ class MemorySystem:
         # Seeded from DB inbox_count in from_config(); incremented by learn()/remember().
         # Reset to 0 by consolidate()/dream(). Advisory only — use status() for DB accuracy.
         self._pending: int = max(0, initial_pending)
+        # Session breadcrumbs — in-memory only, reset on genuinely new begin_session().
+        self._last_learned_block_id: str | None = None
+        self._last_recall_block_ids: list[str] = []
+        self._session_block_ids: list[str] = []
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -260,6 +270,23 @@ class MemorySystem:
                 await mem.dream()
             await mem.end_session()
             await mem.close()
+
+    # ── Session breadcrumbs ──────────────────────────────────────────────────
+
+    @property
+    def last_learned_block_id(self) -> str | None:
+        """Block ID from the most recent learn() or remember() call that created a new block."""
+        return self._last_learned_block_id
+
+    @property
+    def last_recall_block_ids(self) -> list[str]:
+        """Block IDs from the most recent recall() or frame() call."""
+        return list(self._last_recall_block_ids)
+
+    @property
+    def session_block_ids(self) -> list[str]:
+        """All block IDs touched (learned or recalled) during the current session."""
+        return list(self._session_block_ids)
 
     # ── Agent-friendly introspection ─────────────────────────────────────────
 
@@ -448,6 +475,10 @@ class MemorySystem:
         # Fresh token slate for every new session
         if self._token_counter is not None:
             self._token_counter.reset()
+        # Reset breadcrumbs: new session = fresh ID context
+        self._last_learned_block_id = None
+        self._last_recall_block_ids = []
+        self._session_block_ids = []
         self._record_op("begin_session", f"Session {session_id[:8]} started.")
         return session_id
 
@@ -540,6 +571,11 @@ class MemorySystem:
         # Both "created" and "near_duplicate_superseded" add a block to inbox.
         if result.status in ("created", "near_duplicate_superseded"):
             self._pending += 1
+        # Breadcrumbs: only created blocks get a usable ID for connect()
+        if result.status == "created":
+            self._last_learned_block_id = result.block_id
+            if result.block_id not in self._session_block_ids:
+                self._session_block_ids.append(result.block_id)
         self._record_op("learn", result.summary)
         return result
 
@@ -842,6 +878,11 @@ class MemorySystem:
                 top_k=k,
                 cache=self._frame_cache,
             )
+        recalled_ids = [b.id for b in result.blocks]
+        self._last_recall_block_ids = recalled_ids
+        for bid in recalled_ids:
+            if bid not in self._session_block_ids:
+                self._session_block_ids.append(bid)
         self._record_op("frame", result.summary)
         return result
 
@@ -907,6 +948,11 @@ class MemorySystem:
                 search_window_hours=frame_def.filters.search_window_hours,
             )
 
+        recalled_ids = [b.id for b in blocks]
+        self._last_recall_block_ids = recalled_ids
+        for bid in recalled_ids:
+            if bid not in self._session_block_ids:
+                self._session_block_ids.append(bid)
         count = len(blocks)
         noun = "block" if count == 1 else "blocks"
         self._record_op("recall", f"recall({frame!r}) → {count} {noun} returned.")
@@ -987,12 +1033,257 @@ class MemorySystem:
                 current_active_hours=current_hours,
                 prior_strength=mem.outcome_prior_strength,
                 reinforce_threshold=mem.outcome_reinforce_threshold,
+                edge_reinforce_delta=mem.edge_reinforce_delta,
                 penalize_threshold=mem.penalize_threshold,
                 penalty_factor=mem.penalty_factor,
                 lambda_ceiling=mem.lambda_ceiling,
             )
         self._record_op("outcome", result.summary)
         return result
+
+    async def connect(
+        self,
+        source: str,
+        target: str,
+        relation: str = "similar",
+        *,
+        weight: float | None = None,
+        note: str | None = None,
+        if_exists: Literal["reinforce", "update", "skip", "error"] = "reinforce",
+    ) -> ConnectResult:
+        """Create or update a semantic edge between two knowledge blocks.
+
+        USE WHEN: The agent observes a meaningful relationship between two blocks
+        and wants to encode it explicitly. Best called immediately after recall(),
+        learn(), or outcome() when block IDs are available.
+
+        DON'T USE WHEN: You don't have block IDs — use connect_by_query() instead.
+        Don't connect blocks the agent hasn't read; unverified connections add noise.
+
+        COST: Instant. No LLM calls. Pure database write.
+
+        RETURNS: ConnectResult. action values:
+          'created'    — new edge stored.
+          'reinforced' — existing edge weight boosted; count incremented.
+          'updated'    — relation type or note changed on existing edge.
+          'skipped'    — edge exists and if_exists='skip'; no change.
+        If a lower-priority auto-edge was displaced, displaced_edge is set in result.
+
+        NEXT: To undo, call disconnect(). Block IDs are available via
+        system.last_recall_block_ids and system.last_learned_block_id.
+
+        Args:
+            source: Block ID. Available from recall(), learn(), and outcome() results.
+            target: Block ID. Edges are undirected; source/target order does not matter.
+            relation: Semantic type. Core types: 'similar' (default), 'supports',
+                'contradicts', 'elaborates', 'co_occurs', 'outcome'. Any other
+                string is stored as a custom type.
+            weight: Edge strength [0.0, 1.0]. None uses the relation-type default.
+            note: Optional description of why this connection exists.
+            if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'.
+
+        Raises:
+            SelfLoopError: source == target.
+            BlockNotActiveError: block not found or not active.
+            DegreeLimitError: degree cap full with only protected edges.
+            ConnectError: if_exists='error' and edge already exists.
+        """
+        async with self._engine.begin() as conn:
+            result = await do_connect(
+                conn,
+                source=source,
+                target=target,
+                relation=relation,
+                weight=weight,
+                note=note,
+                if_exists=if_exists,
+                edge_degree_cap=self._config.memory.edge_degree_cap,
+                edge_reinforce_delta=self._config.memory.edge_reinforce_delta,
+                current_active_hours=self._current_active_hours(),
+            )
+        self._record_op("connect", result.summary)
+        return result
+
+    async def disconnect(
+        self,
+        source: str,
+        target: str,
+        *,
+        guard_relation: str | None = None,
+        reason: str | None = None,
+    ) -> DisconnectResult:
+        """Remove the edge between two knowledge blocks.
+
+        USE WHEN: An agent-created edge was incorrect. Also use to override
+        automatic edges that cause retrieval noise (textually similar but
+        contextually unrelated blocks).
+
+        DON'T USE WHEN: The edge is correct but weak — decay and pruning remove
+        it naturally. Only use disconnect() for deliberate correction.
+
+        COST: Instant. No LLM calls.
+
+        RETURNS: DisconnectResult. action values:
+          'removed'   — edge deleted.
+          'not_found' — no edge exists between the pair; no action taken.
+          'guarded'   — edge exists but relation type did not match guard_relation.
+
+        NEXT: No follow-up required. The edge is immediately gone from graph expansion.
+
+        Args:
+            source: Block ID.
+            target: Block ID.
+            guard_relation: Only remove if current relation type matches this value.
+                Safety check — prevents accidentally removing agent-typed edges
+                when intending to remove auto-created ones.
+            reason: Optional reason stored in operation history.
+        """
+        async with self._engine.begin() as conn:
+            result = await do_disconnect(
+                conn,
+                source=source,
+                target=target,
+                guard_relation=guard_relation,
+            )
+        note = f" reason={reason!r}" if reason else ""
+        self._record_op("disconnect", result.summary + note)
+        return result
+
+    async def connect_by_query(
+        self,
+        source_query: str,
+        target_query: str,
+        relation: str = "similar",
+        *,
+        note: str | None = None,
+        min_confidence: float = 0.70,
+        if_exists: Literal["reinforce", "update", "skip", "error"] = "reinforce",
+        dry_run: bool = False,
+    ) -> ConnectByQueryResult:
+        """Find two blocks by semantic query and connect them.
+
+        USE WHEN: The agent has a clear conceptual relationship in mind but
+        doesn't have block IDs available. Internally runs two recall() calls.
+
+        DON'T USE WHEN: You have block IDs — use connect() for precision.
+        Vague queries may match the wrong blocks.
+
+        COST: Two embedding calls (fast). No LLM calls.
+
+        RETURNS: ConnectByQueryResult. ALWAYS verify source_content and
+        target_content to confirm the correct blocks were matched. Use
+        dry_run=True to preview without writing.
+
+        Args:
+            source_query: Natural language description of the source block.
+            target_query: Natural language description of the target block.
+            relation: Semantic type — same as connect().
+            note: Optional description of the relationship.
+            min_confidence: Minimum score for a match to be accepted. Default: 0.70.
+            if_exists: Same as connect().
+            dry_run: Preview matches without writing the edge.
+        """
+        src_blocks = await self.recall(source_query, top_k=1)
+        tgt_blocks = await self.recall(target_query, top_k=1)
+
+        src_block = src_blocks[0] if src_blocks else None
+        tgt_block = tgt_blocks[0] if tgt_blocks else None
+        src_conf = src_block.score if src_block else 0.0
+        tgt_conf = tgt_block.score if tgt_block else 0.0
+
+        if src_block is None or tgt_block is None or src_conf < min_confidence or tgt_conf < min_confidence:
+            return ConnectByQueryResult(
+                source_query=source_query,
+                target_query=target_query,
+                source_id=src_block.id if src_block else None,
+                target_id=tgt_block.id if tgt_block else None,
+                source_content=src_block.content if src_block else None,
+                target_content=tgt_block.content if tgt_block else None,
+                source_confidence=src_conf,
+                target_confidence=tgt_conf,
+                action="insufficient_confidence",
+            )
+
+        if dry_run:
+            return ConnectByQueryResult(
+                source_query=source_query,
+                target_query=target_query,
+                source_id=src_block.id,
+                target_id=tgt_block.id,
+                source_content=src_block.content,
+                target_content=tgt_block.content,
+                source_confidence=src_conf,
+                target_confidence=tgt_conf,
+                action="dry_run_preview",
+            )
+
+        connect_result = await self.connect(
+            src_block.id, tgt_block.id,
+            relation=relation, note=note, if_exists=if_exists,
+        )
+        return ConnectByQueryResult(
+            source_query=source_query,
+            target_query=target_query,
+            source_id=src_block.id,
+            target_id=tgt_block.id,
+            source_content=src_block.content,
+            target_content=tgt_block.content,
+            source_confidence=src_conf,
+            target_confidence=tgt_conf,
+            action="connected",
+            connect_result=connect_result,
+        )
+
+    async def connects(
+        self,
+        edges: list[ConnectSpec],
+    ) -> ConnectsResult:
+        """Create or update multiple edges in a single operation.
+
+        USE WHEN: End-of-session reflection — the agent has identified several
+        relationships to encode at once.
+
+        COST: Instant per edge. One DB call per spec. No LLM calls.
+
+        RETURNS: ConnectsResult with per-edge results and aggregate counts.
+        Per-edge errors are collected (not raised) so a single failure does not
+        abort the batch.
+
+        Args:
+            edges: List of ConnectSpec(source, target, relation, weight, note, if_exists).
+        """
+        results: list[ConnectResult] = []
+        counts: dict[str, int] = {
+            "created": 0, "reinforced": 0, "updated": 0, "skipped": 0, "deferred": 0,
+        }
+        errors: list[str] = []
+
+        for spec in edges:
+            try:
+                r = await self.connect(
+                    spec.source,
+                    spec.target,
+                    spec.relation,
+                    weight=spec.weight,
+                    note=spec.note,
+                    if_exists=spec.if_exists,  # type: ignore[arg-type]
+                )
+                results.append(r)
+                counts[r.action] = counts.get(r.action, 0) + 1
+            except Exception as exc:
+                errors.append(f"{spec.source[:8]}→{spec.target[:8]}: {exc}")
+
+        batch_result = ConnectsResult(
+            results=results,
+            created=counts["created"],
+            reinforced=counts["reinforced"],
+            updated=counts["updated"],
+            skipped=counts["skipped"],
+            deferred=counts.get("deferred", 0),
+            errors=errors,
+        )
+        self._record_op("connects", batch_result.summary)
+        return batch_result
 
     async def curate(self) -> CurateResult:
         """Archive decayed blocks, prune weak edges, reinforce top-N knowledge.

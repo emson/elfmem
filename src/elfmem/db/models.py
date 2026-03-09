@@ -56,6 +56,10 @@ edges = Table(
     Column("weight", Float, nullable=False),
     Column("reinforcement_count", Integer, nullable=False, default=0),
     Column("created_at", Text, nullable=False),
+    Column("relation_type", Text, nullable=False, server_default="similar"),
+    Column("origin", Text, nullable=False, server_default="similarity"),
+    Column("last_active_hours", Float),          # None until first reinforcement
+    Column("note", Text),                        # optional agent/LLM description
     UniqueConstraint("from_id", "to_id", name="uq_edge"),
 )
 

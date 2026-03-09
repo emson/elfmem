@@ -162,6 +162,47 @@ async def elfmem_setup(
 
 
 @mcp.tool()
+async def elfmem_connect(
+    source: str,
+    target: str,
+    relation: str = "similar",
+    note: str | None = None,
+    if_exists: str = "reinforce",
+) -> dict[str, Any]:
+    """Create or strengthen a semantic edge between two knowledge blocks.
+
+    Use block IDs from elfmem_recall or elfmem_remember responses.
+    Block IDs are also available via system.last_recall_block_ids and
+    system.last_learned_block_id after calling those tools.
+
+    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates' | 'co_occurs' | 'outcome' | <custom>
+    if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'
+    """
+    result = await _mem().connect(
+        source, target, relation=relation, note=note, if_exists=if_exists  # type: ignore[arg-type]
+    )
+    return result.to_dict()
+
+
+@mcp.tool()
+async def elfmem_disconnect(
+    source: str,
+    target: str,
+    guard_relation: str | None = None,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    """Remove the edge between two blocks. Use to correct wrong connections.
+
+    guard_relation: Only remove if current relation type matches this value (safety check).
+    Returns action: 'removed' | 'not_found' | 'guarded'.
+    """
+    result = await _mem().disconnect(
+        source, target, guard_relation=guard_relation, reason=reason
+    )
+    return result.to_dict()
+
+
+@mcp.tool()
 async def elfmem_guide(method: str | None = None) -> str:
     """Detailed documentation for a specific operation, or the full overview.
 

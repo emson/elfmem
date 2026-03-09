@@ -21,15 +21,25 @@ from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig
 from elfmem.policy import ConsolidationPolicy
 from elfmem.exceptions import (
+    BlockNotActiveError,
     ConfigError,
+    ConnectError,
+    DegreeLimitError,
     ElfmemError,
     FrameError,
+    SelfLoopError,
     SessionError,
     StorageError,
 )
 from elfmem.types import (
+    ConnectByQueryResult,
+    ConnectResult,
+    ConnectsResult,
+    ConnectSpec,
     ConsolidateResult,
     CurateResult,
+    DisconnectResult,
+    DisplacedEdge,
     FrameResult,
     LearnResult,
     OperationRecord,
@@ -56,10 +66,20 @@ __all__ = [
     "SystemStatus",
     "OperationRecord",
     "TokenUsage",
+    "ConnectResult",
+    "ConnectByQueryResult",
+    "ConnectsResult",
+    "ConnectSpec",
+    "DisconnectResult",
+    "DisplacedEdge",
     # Exceptions
     "ElfmemError",
     "SessionError",
     "ConfigError",
     "StorageError",
     "FrameError",
+    "ConnectError",
+    "SelfLoopError",
+    "BlockNotActiveError",
+    "DegreeLimitError",
 ]

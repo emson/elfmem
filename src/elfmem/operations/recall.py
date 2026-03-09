@@ -100,7 +100,7 @@ async def recall(
     if final_blocks:
         returned_ids = [b.id for b in final_blocks]
         await queries.reinforce_blocks(conn, returned_ids, current_active_hours)
-        await reinforce_co_retrieved_edges(conn, returned_ids)
+        await reinforce_co_retrieved_edges(conn, returned_ids, current_active_hours)
 
     # 10. Cache
     if cache is not None and frame_def.cache is not None:

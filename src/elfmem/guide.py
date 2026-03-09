@@ -393,6 +393,80 @@ GUIDES: dict[str, AgentGuide] = {
             "elfmem_setup(seed=False, identity='Custom agent without default seed')"
         ),
     ),
+    "connect": AgentGuide(
+        name="connect",
+        what="Create or strengthen a semantic edge between two knowledge blocks.",
+        when=(
+            "The agent observes a relationship between two recalled blocks that the system "
+            "has not captured, or has captured with the wrong semantic type. "
+            "Best called immediately after recall() or learn() when block IDs are available."
+        ),
+        when_not=(
+            "You don't have block IDs — use connect_by_query() instead. "
+            "Don't connect blocks the agent hasn't read; unverified connections add noise. "
+            "Don't call for blocks that will decay soon — weak connections fade on their own."
+        ),
+        cost="Instant. No LLM calls. Pure database write.",
+        returns=(
+            "ConnectResult. action: 'created' (new edge), 'reinforced' (existing edge boosted), "
+            "'updated' (relation/note changed), 'skipped' (edge exists, if_exists=skip). "
+            "If a lower-priority auto-edge was displaced, displaced_edge is set in result."
+        ),
+        next=(
+            "No follow-up required. To undo, call disconnect(). "
+            "Block IDs are in system.last_recall_block_ids and system.last_learned_block_id."
+        ),
+        example=(
+            "# After recall — agent notices an unlabelled relationship\n"
+            "results = await system.recall('frame selection heuristics')\n"
+            "await system.connect(\n"
+            "    source=results[0].id,\n"
+            "    target=results[1].id,\n"
+            "    relation='supports',\n"
+            "    note='B gives the mechanism behind A'\n"
+            ")\n"
+            "# Using breadcrumb shortcut\n"
+            "await system.learn('New insight about X')\n"
+            "await system.recall('related concept Y')\n"
+            "await system.connect(\n"
+            "    source=system.last_learned_block_id,\n"
+            "    target=system.last_recall_block_ids[0],\n"
+            "    relation='elaborates'\n"
+            ")"
+        ),
+    ),
+    "disconnect": AgentGuide(
+        name="disconnect",
+        what="Remove the edge between two knowledge blocks.",
+        when=(
+            "An agent-created edge was incorrect and should not persist. "
+            "Also use to override automatic edges that cause retrieval noise "
+            "(e.g., two blocks that are textually similar but contextually unrelated)."
+        ),
+        when_not=(
+            "The edge is correct but weak — decay and pruning remove it naturally over time. "
+            "Only use disconnect() for deliberate correction of wrong connections."
+        ),
+        cost="Instant. No LLM calls.",
+        returns=(
+            "DisconnectResult. action: 'removed' (edge deleted), "
+            "'not_found' (no edge exists between the pair), "
+            "'guarded' (edge exists but relation did not match guard_relation)."
+        ),
+        next="No follow-up required. Edge is immediately gone from graph expansion.",
+        example=(
+            "# Remove a wrong connection\n"
+            "result = await system.disconnect(source_id, target_id)\n"
+            "print(result)  # Removed similar edge: abc12345…→def67890… (was weight=0.63).\n"
+            "\n"
+            "# Safe removal with guard (only remove if it's a 'similar' auto-edge)\n"
+            "result = await system.disconnect(\n"
+            "    source_id, target_id,\n"
+            "    guard_relation='similar'\n"
+            ")\n"
+            "# → 'guarded' if the edge is actually 'supports' (won't remove)"
+        ),
+    ),
     "guide": AgentGuide(
         name="guide",
         what="Return agent-friendly documentation for a specific method or all methods.",
@@ -432,6 +506,8 @@ OVERVIEW: str = "\n".join([
     "  frame(name, ...)       Fast         Retrieve + render a named context frame",
     "  consolidate()          LLM call     Process inbox: score, embed, promote (explicit)",
     "  outcome(ids, signal)   Fast         Bayesian confidence update from domain result",
+    "  connect(src, tgt, ...) Instant      Assert a semantic edge between two blocks",
+    "  disconnect(src, tgt)   Instant      Remove a wrong or unwanted edge",
     "  curate()               Fast         Archive stale blocks, prune weak edges",
     "  status()               Fast         System health snapshot + suggested action",
     "  history(last_n=10)     Instant      Recent operations in this process session",

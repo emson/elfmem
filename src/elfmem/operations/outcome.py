@@ -10,15 +10,15 @@ from elfmem.db.queries import (
     insert_block_outcome,
     reinforce_blocks,
     update_block_outcome,
+    update_edge,
     upsert_outcome_edge,
 )
 from elfmem.types import OutcomeResult
 
-# Initial weight for edges created by outcome().
-# Lower than similarity-based edges (≥0.60) because outcome edges are
-# provisional — they earn centrality through reinforcement_count, not
-# geometric similarity. signal=PERFECT → 0.50, signal=GOOD → 0.375.
-OUTCOME_EDGE_WEIGHT_SCALE = 0.5
+# Weight scale for outcome-confirmed edges.
+# Outcome confirmation is stronger evidence than geometric similarity —
+# these blocks co-produced a real-world result. signal=PERFECT → 0.80, signal=GOOD → 0.60.
+OUTCOME_EDGE_WEIGHT_SCALE = 0.8
 
 
 def _validate_signal(signal: float) -> None:
@@ -63,6 +63,7 @@ async def record_outcome(
     current_active_hours: float,
     prior_strength: float,
     reinforce_threshold: float,
+    edge_reinforce_delta: float = 0.10,
     penalize_threshold: float = 0.20,
     penalty_factor: float = 2.0,
     lambda_ceiling: float = 0.050,
@@ -146,6 +147,13 @@ async def record_outcome(
                     outcome_edges_created += 1
                 else:
                     edges_reinforced += 1
+                    await update_edge(
+                        conn,
+                        from_id=from_id,
+                        to_id=to_id,
+                        reinforce_delta=signal * edge_reinforce_delta,
+                        current_active_hours=current_active_hours,
+                    )
 
     blocks_penalized = 0
     if updated_ids and signal < penalize_threshold:

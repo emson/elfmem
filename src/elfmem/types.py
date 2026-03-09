@@ -453,10 +453,212 @@ class Edge:
     from_id: str  # canonical: min(A, B)
     to_id: str  # canonical: max(A, B)
     weight: float
+    relation_type: str = "similar"
+    origin: str = "similarity"
+    note: str | None = None
 
     @staticmethod
     def canonical(id_a: str, id_b: str) -> tuple[str, str]:
         return (min(id_a, id_b), max(id_a, id_b))
+
+
+@dataclass
+class DisplacedEdge:
+    """An edge that was displaced to make room for a new agent-asserted edge."""
+
+    from_id: str
+    to_id: str
+    relation_type: str
+    weight: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "from_id": self.from_id,
+            "to_id": self.to_id,
+            "relation_type": self.relation_type,
+            "weight": self.weight,
+        }
+
+
+@dataclass
+class ConnectResult:
+    """Result of connect() — create or update a semantic edge between two blocks."""
+
+    source_id: str
+    target_id: str
+    relation: str
+    weight: float
+    action: str              # "created" | "reinforced" | "updated" | "skipped" | "deferred"
+    note: str | None = None
+    displaced_edge: DisplacedEdge | None = None
+
+    @property
+    def summary(self) -> str:
+        short_src = self.source_id[:8]
+        short_tgt = self.target_id[:8]
+        base = (
+            f"{self.action.title()} {self.relation} edge: "
+            f"{short_src}…→{short_tgt}… (weight={self.weight:.2f})."
+        )
+        if self.displaced_edge:
+            base += (
+                f" Displaced auto-{self.displaced_edge.relation_type} edge "
+                f"(weight={self.displaced_edge.weight:.2f}) to fit degree cap."
+            )
+        return base
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_id": self.source_id,
+            "target_id": self.target_id,
+            "relation": self.relation,
+            "weight": self.weight,
+            "action": self.action,
+            "note": self.note,
+            "displaced_edge": self.displaced_edge.to_dict() if self.displaced_edge else None,
+        }
+
+
+@dataclass
+class DisconnectResult:
+    """Result of disconnect() — remove an edge between two blocks."""
+
+    source_id: str
+    target_id: str
+    action: str              # "removed" | "not_found" | "guarded"
+    removed_relation: str | None = None
+    removed_weight: float | None = None
+
+    @property
+    def summary(self) -> str:
+        short_src = self.source_id[:8]
+        short_tgt = self.target_id[:8]
+        if self.action == "removed":
+            return (
+                f"Removed {self.removed_relation} edge: "
+                f"{short_src}…→{short_tgt}… (was weight={self.removed_weight:.2f})."
+            )
+        if self.action == "not_found":
+            return f"No edge found between {short_src}… and {short_tgt}…"
+        if self.action == "guarded":
+            return "Edge not removed — relation type did not match guard_relation."
+        return f"Disconnect {self.action}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_id": self.source_id,
+            "target_id": self.target_id,
+            "action": self.action,
+            "removed_relation": self.removed_relation,
+            "removed_weight": self.removed_weight,
+        }
+
+
+@dataclass
+class ConnectByQueryResult:
+    """Result of connect_by_query() — find two blocks by query and connect them."""
+
+    source_query: str
+    target_query: str
+    source_id: str | None
+    target_id: str | None
+    source_content: str | None   # full content — agent must verify this is the right block
+    target_content: str | None
+    source_confidence: float
+    target_confidence: float
+    action: str                  # "connected" | "insufficient_confidence" | "dry_run_preview"
+    connect_result: ConnectResult | None = None
+
+    @property
+    def summary(self) -> str:
+        if self.action == "insufficient_confidence":
+            return (
+                f"connect_by_query: confidence too low "
+                f"(source={self.source_confidence:.2f}, target={self.target_confidence:.2f}). "
+                "Use connect() with explicit IDs."
+            )
+        if self.action == "dry_run_preview":
+            s = (self.source_content[:60] + "…") if self.source_content else "?"
+            t = (self.target_content[:60] + "…") if self.target_content else "?"
+            return f"dry_run: source='{s}' | target='{t}'. Call again without dry_run=True to connect."
+        if self.connect_result:
+            return self.connect_result.summary
+        return f"connect_by_query: {self.action}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_query": self.source_query,
+            "target_query": self.target_query,
+            "source_id": self.source_id,
+            "target_id": self.target_id,
+            "source_content": self.source_content,
+            "target_content": self.target_content,
+            "source_confidence": self.source_confidence,
+            "target_confidence": self.target_confidence,
+            "action": self.action,
+            "connect_result": self.connect_result.to_dict() if self.connect_result else None,
+        }
+
+
+@dataclass
+class ConnectSpec:
+    """Specification for a single edge in a connects() batch call."""
+
+    source: str
+    target: str
+    relation: str = "similar"
+    weight: float | None = None
+    note: str | None = None
+    if_exists: str = "reinforce"
+
+
+@dataclass
+class ConnectsResult:
+    """Result of connects() — batch edge creation."""
+
+    results: list[ConnectResult]
+    created: int
+    reinforced: int
+    updated: int
+    skipped: int
+    deferred: int
+    errors: list[str]       # non-fatal per-edge error messages
+
+    @property
+    def summary(self) -> str:
+        parts = [f"{self.created} created"]
+        if self.reinforced:
+            parts.append(f"{self.reinforced} reinforced")
+        if self.updated:
+            parts.append(f"{self.updated} updated")
+        if self.deferred:
+            parts.append(f"{self.deferred} deferred")
+        if self.errors:
+            parts.append(f"{len(self.errors)} errors")
+        return f"Edges: {', '.join(parts)}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "results": [r.to_dict() for r in self.results],
+            "created": self.created,
+            "reinforced": self.reinforced,
+            "updated": self.updated,
+            "skipped": self.skipped,
+            "deferred": self.deferred,
+            "errors": self.errors,
+        }
 
 
 @dataclass

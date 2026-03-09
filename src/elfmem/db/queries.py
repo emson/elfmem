@@ -372,6 +372,9 @@ async def insert_edge(
     from_id: str,
     to_id: str,
     weight: float,
+    relation_type: str = "similar",
+    origin: str = "similarity",
+    note: str | None = None,
 ) -> None:
     """Insert a similarity edge idempotently. from_id < to_id enforced by caller."""
     await conn.execute(
@@ -381,6 +384,10 @@ async def insert_edge(
             weight=weight,
             reinforcement_count=0,
             created_at=_now_iso(),
+            relation_type=relation_type,
+            origin=origin,
+            last_active_hours=None,
+            note=note,
         )
     )
 
@@ -391,6 +398,7 @@ async def upsert_outcome_edge(
     from_id: str,
     to_id: str,
     weight: float,
+    note: str | None = None,
 ) -> bool:
     """Create an outcome-driven edge, or reinforce it if one already exists.
 
@@ -409,6 +417,10 @@ async def upsert_outcome_edge(
             weight=weight,
             reinforcement_count=0,
             created_at=_now_iso(),
+            relation_type="outcome",
+            origin="outcome",
+            last_active_hours=None,
+            note=note,
         )
     )
     if result.rowcount == 1:
@@ -479,14 +491,121 @@ async def get_neighbours(conn: AsyncConnection, block_ids: list[str]) -> list[st
 async def reinforce_edges(
     conn: AsyncConnection,
     edge_pairs: list[tuple[str, str]],
+    current_active_hours: float | None = None,
 ) -> None:
-    """Reinforce co-retrieval edges: increment reinforcement_count."""
+    """Reinforce co-retrieval edges: increment reinforcement_count and update last_active_hours."""
     for from_id, to_id in edge_pairs:
+        values: dict[str, Any] = {"reinforcement_count": edges.c.reinforcement_count + 1}
+        if current_active_hours is not None:
+            values["last_active_hours"] = current_active_hours
         await conn.execute(
             update(edges)
             .where(and_(edges.c.from_id == from_id, edges.c.to_id == to_id))
-            .values(reinforcement_count=edges.c.reinforcement_count + 1)
+            .values(**values)
         )
+
+
+async def get_edge(
+    conn: AsyncConnection,
+    from_id: str,
+    to_id: str,
+) -> dict[str, Any] | None:
+    """Fetch a single edge by canonical pair. Returns None if not found."""
+    result = await conn.execute(
+        select(edges).where(
+            and_(edges.c.from_id == from_id, edges.c.to_id == to_id)
+        )
+    )
+    row = result.mappings().first()
+    return dict(row) if row else None
+
+
+async def insert_agent_edge(
+    conn: AsyncConnection,
+    *,
+    from_id: str,
+    to_id: str,
+    weight: float,
+    relation_type: str,
+    note: str | None,
+    current_active_hours: float | None,
+) -> None:
+    """Insert an agent-asserted edge. from_id < to_id enforced by caller.
+
+    Always inserts — caller must check existence and handle if_exists logic first.
+    """
+    await conn.execute(
+        insert(edges).values(
+            from_id=from_id,
+            to_id=to_id,
+            weight=weight,
+            reinforcement_count=0,
+            created_at=_now_iso(),
+            relation_type=relation_type,
+            origin="agent",
+            last_active_hours=current_active_hours,
+            note=note,
+        )
+    )
+
+
+async def update_edge(
+    conn: AsyncConnection,
+    *,
+    from_id: str,
+    to_id: str,
+    relation_type: str | None = None,
+    weight: float | None = None,
+    note: str | None = None,
+    reinforce_delta: float | None = None,
+    current_active_hours: float | None = None,
+) -> None:
+    """Update fields on an existing edge. Only non-None fields are changed.
+
+    When reinforce_delta is provided, fetches the current weight and applies
+    asymptotic capping (never exceeds 1.0). This is mutually exclusive with
+    weight — set one or the other.
+    """
+    values: dict[str, Any] = {}
+    if relation_type is not None:
+        values["relation_type"] = relation_type
+    if note is not None:
+        values["note"] = note
+    if weight is not None:
+        values["weight"] = weight
+    if reinforce_delta is not None:
+        # Python-side asymptotic cap: fetch current weight, clamp to 1.0
+        row = await conn.execute(
+            select(edges.c.weight).where(
+                and_(edges.c.from_id == from_id, edges.c.to_id == to_id)
+            )
+        )
+        current = row.scalar()
+        if current is not None:
+            values["weight"] = min(float(current) + reinforce_delta, 1.0)
+    if current_active_hours is not None:
+        values["last_active_hours"] = current_active_hours
+    if not values:
+        return
+    await conn.execute(
+        update(edges)
+        .where(and_(edges.c.from_id == from_id, edges.c.to_id == to_id))
+        .values(**values)
+    )
+
+
+async def delete_edge(
+    conn: AsyncConnection,
+    from_id: str,
+    to_id: str,
+) -> bool:
+    """Delete an edge by canonical pair. Returns True if deleted, False if not found."""
+    result = await conn.execute(
+        delete(edges).where(
+            and_(edges.c.from_id == from_id, edges.c.to_id == to_id)
+        )
+    )
+    return (result.rowcount or 0) > 0
 
 
 # Reinforcement bonus per log unit of co-retrieval count.

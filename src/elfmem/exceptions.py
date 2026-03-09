@@ -53,3 +53,44 @@ class StorageError(ElfmemError):
 
 class FrameError(ElfmemError):
     """Raised when an unknown frame name is passed to frame() or recall()."""
+
+
+class ConnectError(ElfmemError):
+    """Raised when a connect() or disconnect() operation cannot complete."""
+
+
+class SelfLoopError(ConnectError):
+    """source and target are the same block ID."""
+
+    def __init__(self, block_id: str) -> None:
+        super().__init__(
+            f"Cannot connect block '{block_id[:8]}' to itself.",
+            recovery="source and target must be different block IDs.",
+        )
+
+
+class BlockNotActiveError(ConnectError):
+    """A block ID was not found in active memory."""
+
+    def __init__(self, block_id: str) -> None:
+        super().__init__(
+            f"Block '{block_id[:8]}…' not found in active memory.",
+            recovery=(
+                "Use system.recall() to find active block IDs. "
+                "If the block was archived, re-learn its content to reactivate."
+            ),
+        )
+
+
+class DegreeLimitError(ConnectError):
+    """All existing edges for a block are protected; new edge cannot be placed."""
+
+    def __init__(self, block_id: str, cap: int) -> None:
+        super().__init__(
+            f"Block '{block_id[:8]}…' has {cap} protected edges; no auto-edges to displace.",
+            recovery=(
+                "Run system.curate() to prune stale edges, or "
+                "increase edge_degree_cap in config, or "
+                "call system.disconnect() to manually remove an edge."
+            ),
+        )
