@@ -1,7 +1,8 @@
 # Graph Edge Improvement Research
 
-**Status:** Research complete — ready for planning
+**Status:** Research complete; C1–C2 implementation COMPLETE with refinements ✅
 **Date:** 2026-03-09
+**Implementation:** See `docs/plans/plan_graph_hebbian.md` (C1 plan + addendum) and `docs/plans/hebbian_agent_simulation.md` (simulation analysis + 4 critical fixes)
 **Purpose:** Evaluate current edge limitations, survey external systems, and recommend prioritised improvements to elfmem's knowledge graph edge creation and retrieval.
 
 ---

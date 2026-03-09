@@ -92,6 +92,19 @@ class MemoryConfig(BaseModel):
     lambda_ceiling: float = 0.050
     # Maximum decay_lambda after penalization. Equals EPHEMERAL tier (0.050).
 
+    # Hebbian co-retrieval edge creation
+    co_retrieval_edge_threshold: int = 3
+    # Minimum co-retrievals for a pair to be promoted to a co_occurs edge.
+    # "Once is coincidence, twice is pattern, three times is signal."
+
+    co_retrieval_edge_weight: float = 0.55
+    # Weight for Hebbian-promoted co_retrieval edges.
+    # Above similarity floor (0.40), below outcome-confirmed (0.80).
+
+    co_retrieval_staging_max: int = 1000
+    # Maximum staging dict entries. Evicts lowest-count pairs when exceeded.
+    # Defensive cap — Phase 1 usage (50–500 blocks, top_k≤20) stays well below.
+
 
 class PromptsConfig(BaseModel):
     """Configuration for LLM prompt templates.

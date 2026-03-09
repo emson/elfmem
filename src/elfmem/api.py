@@ -19,6 +19,7 @@ from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
 from elfmem.db.models import metadata
 from elfmem.db.queries import (
+    get_active_blocks,
     get_block_counts,
     get_config,
     get_inbox_count,
@@ -29,6 +30,7 @@ from elfmem.db.queries import (
 from elfmem.exceptions import FrameError
 from elfmem.operations.connect import do_connect, do_disconnect
 from elfmem.guide import get_guide
+from elfmem.memory.graph import stage_and_promote_co_retrievals
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.token_counter import TokenCounter
 from elfmem.operations.consolidate import consolidate
@@ -108,6 +110,15 @@ class MemorySystem:
         self._last_learned_block_id: str | None = None
         self._last_recall_block_ids: list[str] = []
         self._session_block_ids: list[str] = []
+        # Hebbian co-retrieval staging — accumulates across sessions, never reset.
+        # Maps canonical (from_id, to_id) → co-retrieval count without existing edge.
+        # Promotes to permanent co_occurs edge at co_retrieval_edge_threshold.
+        # In-memory only; resets on process restart (Phase 1 acceptable).
+        self._co_retrieval_staging: dict[tuple[str, str], int] = {}
+        # Per-session dedup set — cleared on begin_session() so each pair
+        # contributes at most 1 count per session. Makes threshold semantically
+        # mean "N distinct sessions" not "N calls in one session."
+        self._co_retrieval_session_seen: set[tuple[str, str]] = set()
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -381,6 +392,7 @@ class MemorySystem:
             # Always-on advisory fields: in-memory state, may differ from DB.
             pending_count=self._pending,
             effective_threshold=self._effective_threshold(),
+            co_retrieval_staging_count=len(self._co_retrieval_staging),
         )
 
     def history(self, last_n: int = 10) -> list[OperationRecord]:
@@ -479,6 +491,8 @@ class MemorySystem:
         self._last_learned_block_id = None
         self._last_recall_block_ids = []
         self._session_block_ids = []
+        # Per-session Hebbian dedup: reset so each new session contributes fresh counts
+        self._co_retrieval_session_seen.clear()
         self._record_op("begin_session", f"Session {session_id[:8]} started.")
         return session_id
 
@@ -867,6 +881,7 @@ class MemorySystem:
 
         k = top_k if top_k is not None else self._config.memory.top_k
         current_hours = self._current_active_hours()
+        mem = self._config.memory
 
         async with self._engine.begin() as conn:
             result = await _recall(
@@ -878,7 +893,26 @@ class MemorySystem:
                 top_k=k,
                 cache=self._frame_cache,
             )
-        recalled_ids = [b.id for b in result.blocks]
+            # Hebbian staging — fires on genuine frame() retrievals only.
+            # Skipped on cache hits: a cached result carries no new retrieval signal.
+            # Paired with reinforce_co_retrieved_edges() in recall.py (runs first,
+            # handling existing edges). We stage NEW pairs without existing edges.
+            # session_seen enforces per-session dedup: each pair counts once per
+            # begin_session() cycle so threshold means "N distinct sessions."
+            recalled_ids = [b.id for b in result.blocks]
+            promoted_count = 0
+            if recalled_ids and not result.cached:
+                promoted_count = await stage_and_promote_co_retrievals(
+                    conn,
+                    recalled_ids,
+                    self._co_retrieval_staging,
+                    threshold=mem.co_retrieval_edge_threshold,
+                    edge_weight=mem.co_retrieval_edge_weight,
+                    current_active_hours=current_hours,
+                    staging_max=mem.co_retrieval_staging_max,
+                    session_seen=self._co_retrieval_session_seen,
+                )
+            result.edges_promoted = promoted_count
         self._last_recall_block_ids = recalled_ids
         for bid in recalled_ids:
             if bid not in self._session_block_ids:
@@ -1313,6 +1347,18 @@ class MemorySystem:
                 edge_prune_threshold=mem.edge_prune_threshold,
                 reinforce_top_n=mem.curate_reinforce_top_n,
             )
+        # Zombie staging cleanup: remove pairs where either block was archived.
+        # Archived blocks can't be retrieved, so their staged pairs never promote.
+        # Runs after _curate() so archival decisions are already committed.
+        if self._co_retrieval_staging:
+            async with self._engine.connect() as conn:
+                active = await get_active_blocks(conn)
+            active_ids = {b["id"] for b in active}
+            self._co_retrieval_staging = {
+                pair: count
+                for pair, count in self._co_retrieval_staging.items()
+                if pair[0] in active_ids and pair[1] in active_ids
+            }
         self._record_op("curate", result.summary)
         return result
 

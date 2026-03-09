@@ -82,6 +82,7 @@ class FrameResult:
     blocks: list[ScoredBlock]
     frame_name: str
     cached: bool = False
+    edges_promoted: int = 0  # co_retrieval edges promoted during this frame() call
 
     @property
     def summary(self) -> str:
@@ -100,6 +101,7 @@ class FrameResult:
             "frame_name": self.frame_name,
             "block_count": len(self.blocks),
             "cached": self.cached,
+            "edges_promoted": self.edges_promoted,
             "text": self.text,
         }
 
@@ -379,6 +381,9 @@ class SystemStatus:
     # Always-on advisory fields — populated by status(), default 0 for compat.
     pending_count: int = 0
     effective_threshold: int = 0
+    co_retrieval_staging_count: int = 0
+    # Pairs building toward Hebbian co_retrieval edges.
+    # Non-zero means the agent's frame() usage is forming new graph connections.
 
     @property
     def summary(self) -> str:
@@ -403,6 +408,10 @@ class SystemStatus:
             lines.append(
                 f"Pending (advisory): {self.pending_count}/{self.effective_threshold}"
             )
+        if self.co_retrieval_staging_count > 0:
+            lines.append(
+                f"Hebbian staging: {self.co_retrieval_staging_count} pairs building toward co_retrieval edges."
+            )
         lines.append(f"Tokens this session: {self.session_tokens}")
         lines.append(f"Suggestion: {self.suggestion}")
         return "\n".join(lines)
@@ -423,6 +432,7 @@ class SystemStatus:
             "lifetime_tokens": self.lifetime_tokens.to_dict(),
             "pending_count": self.pending_count,
             "effective_threshold": self.effective_threshold,
+            "co_retrieval_staging_count": self.co_retrieval_staging_count,
         }
 
 
