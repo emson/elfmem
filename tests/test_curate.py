@@ -160,7 +160,7 @@ class TestPruneWeakEdges:
                 llm=mock_llm,
                 embedding_svc=embedding_with_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Verify edge exists with initial weight
@@ -191,7 +191,7 @@ class TestPruneWeakEdges:
                 llm=mock_llm,
                 embedding_svc=embedding_with_strong_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Edge should exist and have weight >= 0.10
@@ -217,7 +217,7 @@ class TestPruneWeakEdges:
                 llm=mock_llm,
                 embedding_svc=embedding_with_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Verify edge exists

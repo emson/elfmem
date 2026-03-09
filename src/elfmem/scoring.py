@@ -143,3 +143,58 @@ def compute_lambda_edge(tier_a: DecayTier, tier_b: DecayTier) -> float:
     The edge inherits durability from the more stable block.
     """
     return min(LAMBDA[tier_a], LAMBDA[tier_b]) * 0.5
+
+
+# ── Edge scoring helpers ───────────────────────────────────────────────────────
+
+# Gaussian half-width for temporal proximity (in active hours).
+# At TEMPORAL_SIGMA_HOURS apart: proximity = exp(-0.5) ≈ 0.61.
+# At 3× sigma apart: proximity < 0.01 — effectively different sessions.
+TEMPORAL_SIGMA_HOURS: float = 8.0
+
+# Category-match score when blocks belong to *different* categories.
+# 0.30 gives cross-category pairs a baseline relationship potential
+# rather than zero (which would make category unfairly dominating).
+CROSS_CATEGORY_SCORE: float = 0.30
+
+# Hard minimum cosine before composite scoring is attempted.
+# Same-session + same-category context contributes a fixed non-cosine
+# floor of ≥0.25 (temporal=1.0 × 0.10 + category=1.0 × 0.15 = 0.25).
+# Without this guard, blocks at cosine ≈ 0.27 would form edges purely
+# from shared session context — causing recall poisoning via spurious
+# graph expansion. 0.30 is the semantic floor for "might be related".
+MINIMUM_COSINE_FOR_EDGE: float = 0.30
+
+
+def jaccard_similarity(tags_a: list[str], tags_b: list[str]) -> float:
+    """Jaccard similarity between two tag lists: |A ∩ B| / |A ∪ B|.
+
+    Returns 0.0 when both lists are empty (no categorical signal).
+    Returns 0.0 when one list is empty (no shared categories).
+    Returns 1.0 for identical non-empty lists.
+    Symmetric: jaccard_similarity(a, b) == jaccard_similarity(b, a).
+    """
+    set_a = set(tags_a)
+    set_b = set(tags_b)
+    union = set_a | set_b
+    if not union:
+        return 0.0
+    return len(set_a & set_b) / len(union)
+
+
+def temporal_proximity(
+    hours_a: float,
+    hours_b: float,
+    *,
+    sigma: float = TEMPORAL_SIGMA_HOURS,
+) -> float:
+    """Gaussian proximity between two active-hour timestamps.
+
+    Returns exp(−Δh² / 2σ²) ∈ (0.0, 1.0].
+    Same hours → 1.0. sigma hours apart → ≈ 0.61. 3×sigma → < 0.01.
+
+    Uses active hours (session-aware clock), not wall-clock time.
+    Symmetric: temporal_proximity(a, b) == temporal_proximity(b, a).
+    """
+    delta = hours_a - hours_b
+    return math.exp(-(delta * delta) / (2.0 * sigma * sigma))

@@ -13,6 +13,7 @@ from elfmem.db.queries import (
     get_active_blocks,
     get_inbox_blocks,
     get_tags,
+    get_tags_batch,
     insert_contradiction,
     insert_edge,
     reinforce_blocks,
@@ -26,16 +27,54 @@ from elfmem.memory.dedup import (
     cosine_similarity,
     resolve_near_duplicate,
 )
+from elfmem.scoring import (
+    CROSS_CATEGORY_SCORE,
+    MINIMUM_COSINE_FOR_EDGE,
+    jaccard_similarity,
+    temporal_proximity,
+)
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.types import ConsolidateResult, Edge
 
 SELF_ALIGNMENT_THRESHOLD = 0.70
-SIMILARITY_EDGE_THRESHOLD = 0.60
+EDGE_SCORE_THRESHOLD = 0.40
 EDGE_DEGREE_CAP = 10
 CONTRADICTION_THRESHOLD = 0.80
 NEAR_DUP_EXACT_THRESHOLD = 0.95  # similarity ≥ this → silent reject
 NEAR_DUP_NEAR_THRESHOLD = 0.90   # similarity ≥ this → supersede existing
 CONTRADICTION_SIMILARITY_PREFILTER = 0.40  # Only check contradictions for similar pairs
+
+
+def _composite_edge_score(
+    vec_a: np.ndarray,
+    vec_b: np.ndarray,
+    tags_a: list[str],
+    tags_b: list[str],
+    hours_a: float,
+    hours_b: float,
+    category_a: str,
+    category_b: str,
+) -> float:
+    """Multi-signal edge quality score for similarity-origin edges.
+
+    Formula: cosine×0.55 + tag_jaccard×0.20 + category_match×0.15 + temporal×0.10
+
+    Cosine is clamped to [0.0, 1.0] — negative cosine contributes 0 rather
+    than penalising contextually related blocks.
+
+    Hard guard: returns 0.0 if cosine < MINIMUM_COSINE_FOR_EDGE.
+    Without this guard, same-session + same-category context (non-cosine floor
+    ≈ 0.25) would allow cosine ≈ 0.27 to form edges — below the semantic floor
+    for meaningful relatedness. Spurious edges corrupt recall via graph expansion.
+    """
+    w_cos, w_tag, w_cat, w_temp = 0.55, 0.20, 0.15, 0.10
+    cos = max(0.0, cosine_similarity(vec_a, vec_b))
+    if cos < MINIMUM_COSINE_FOR_EDGE:
+        return 0.0
+    tag  = jaccard_similarity(tags_a, tags_b)
+    cat  = 1.0 if category_a == category_b else CROSS_CATEGORY_SCORE
+    temp = temporal_proximity(hours_a, hours_b)
+    return w_cos * cos + w_tag * tag + w_cat * cat + w_temp * temp
 
 
 async def consolidate(
@@ -48,7 +87,7 @@ async def consolidate(
     contradiction_threshold: float = CONTRADICTION_THRESHOLD,
     near_dup_exact_threshold: float = NEAR_DUP_EXACT_THRESHOLD,
     near_dup_near_threshold: float = NEAR_DUP_NEAR_THRESHOLD,
-    similarity_edge_threshold: float = SIMILARITY_EDGE_THRESHOLD,
+    edge_score_threshold: float = EDGE_SCORE_THRESHOLD,
     edge_degree_cap: int = EDGE_DEGREE_CAP,
     contradiction_similarity_prefilter: float = CONTRADICTION_SIMILARITY_PREFILTER,
 ) -> ConsolidateResult:
@@ -185,27 +224,44 @@ async def consolidate(
     # ── Phase 3: edge creation ────────────────────────────────────────────────
     # Done after all blocks are promoted so that edges between batch members
     # are created correctly (hub↔satellite edges require both to be in active).
+    # Composite score: cosine×0.55 + tag_jaccard×0.20 + category×0.15 + temporal×0.10
     edges_created = 0
     all_active_items = list(active_vecs.values())
 
+    # One batch tag query for all active blocks — avoids N per-block queries.
+    all_block_ids = [b["id"] for b, _ in all_active_items]
+    tags_cache: dict[str, list[str]] = await get_tags_batch(conn, all_block_ids)
+
     for block, vec in newly_promoted:
         block_id = block["id"]
+        # Use current_active_hours for newly promoted blocks: the block dict
+        # is from Phase 0 (last_reinforced_at=0.0 at inbox insert time).
+        # Phase 2 updated the DB via reinforce_blocks() but not the dict.
+        block_hours = current_active_hours
+        block_category = block["category"]
+        tags = tags_cache.get(block_id, [])
         candidates = []
+
         for a_block, a_vec in all_active_items:
             if a_block["id"] == block_id:
                 continue
-            sim = cosine_similarity(vec, a_vec)
-            if sim >= similarity_edge_threshold:
-                candidates.append((a_block["id"], sim))
+            score = _composite_edge_score(
+                vec, a_vec,
+                tags, tags_cache.get(a_block["id"], []),
+                block_hours, float(a_block.get("last_reinforced_at") or 0.0),
+                block_category, a_block["category"],
+            )
+            if score >= edge_score_threshold:
+                candidates.append((a_block["id"], score))
 
         candidates.sort(key=lambda x: x[1], reverse=True)
-        for other_id, sim in candidates[:edge_degree_cap]:
+        for other_id, score in candidates[:edge_degree_cap]:
             from_id, to_id = Edge.canonical(block_id, other_id)
             await insert_edge(
                 conn,
                 from_id=from_id,
                 to_id=to_id,
-                weight=sim,
+                weight=score,
                 relation_type="similar",
                 origin="similarity",
             )

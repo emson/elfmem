@@ -62,7 +62,7 @@ class MemoryConfig(BaseModel):
     near_dup_near_threshold: float = 0.90
 
     # Graph
-    similarity_edge_threshold: float = 0.60
+    edge_score_threshold: float = 0.40
     edge_degree_cap: int = 10
     edge_prune_threshold: float = 0.10
     edge_reinforce_delta: float = 0.10
@@ -243,7 +243,7 @@ def render_default_config() -> str:
           contradiction_threshold: {d.memory.contradiction_threshold}
           near_dup_exact_threshold: {d.memory.near_dup_exact_threshold}
           near_dup_near_threshold: {d.memory.near_dup_near_threshold}
-          similarity_edge_threshold: {d.memory.similarity_edge_threshold}
+          edge_score_threshold: {d.memory.edge_score_threshold}
           edge_degree_cap: {d.memory.edge_degree_cap}
           top_k: {d.memory.top_k}
           search_window_hours: {d.memory.search_window_hours}

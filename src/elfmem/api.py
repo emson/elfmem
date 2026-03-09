@@ -608,7 +608,7 @@ class MemorySystem:
                 embedding_svc=self._embedding,
                 current_active_hours=current_hours,
                 self_alignment_threshold=mem.self_alignment_threshold,
-                similarity_edge_threshold=mem.similarity_edge_threshold,
+                edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
                 contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
             )

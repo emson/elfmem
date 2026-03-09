@@ -337,6 +337,28 @@ async def get_tags(conn: AsyncConnection, block_id: str) -> list[str]:
     return [row[0] for row in result]
 
 
+async def get_tags_batch(
+    conn: AsyncConnection,
+    block_ids: list[str],
+) -> dict[str, list[str]]:
+    """Fetch tags for multiple blocks in a single query.
+
+    Returns {block_id: [tags_sorted_alphabetically]}.
+    Block IDs with no tags map to []. Safe with empty input.
+    """
+    if not block_ids:
+        return {}
+    result = await conn.execute(
+        select(block_tags.c.block_id, block_tags.c.tag)
+        .where(block_tags.c.block_id.in_(block_ids))
+        .order_by(block_tags.c.block_id, block_tags.c.tag)
+    )
+    tags_map: dict[str, list[str]] = {bid: [] for bid in block_ids}
+    for row in result.mappings():
+        tags_map[row["block_id"]].append(row["tag"])
+    return tags_map
+
+
 async def get_blocks_by_tag_pattern(
     conn: AsyncConnection,
     pattern: str,

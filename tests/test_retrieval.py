@@ -133,7 +133,7 @@ class TestGraphExpansion:
                 llm=mock_llm,
                 embedding_svc=embedding_with_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Verify edge was created
@@ -172,7 +172,7 @@ class TestGraphExpansion:
                 llm=mock_llm,
                 embedding_svc=embedding_with_spokes,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Hub should have high centrality from 5 edges
@@ -400,7 +400,7 @@ class TestEdgeReinforcement:
                 llm=mock_llm,
                 embedding_svc=embedding_with_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Verify edge exists
@@ -430,7 +430,7 @@ class TestEdgeReinforcement:
                 llm=mock_llm,
                 embedding_svc=embedding_with_edge,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Only block 1 returned (high score), block 2 filtered out (low score)
@@ -460,7 +460,7 @@ class TestEdgeReinforcement:
                 llm=mock_llm,
                 embedding_svc=embedding_with_spokes,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Hub should have high centrality from 3 edges

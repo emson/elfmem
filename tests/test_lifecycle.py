@@ -352,7 +352,7 @@ class TestEdgeCreationDuringConsolidate:
                 llm=mock_llm,
                 embedding_svc=embedding_service,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Should have created edges
@@ -391,7 +391,7 @@ class TestEdgeCreationDuringConsolidate:
                 llm=mock_llm,
                 embedding_svc=mock_embedding,
                 current_active_hours=10.0,
-                similarity_edge_threshold=0.60,
+                edge_score_threshold=0.40,
             )
 
             # Low similarity should result in no edges

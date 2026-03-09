@@ -106,7 +106,9 @@ GUIDES: dict[str, AgentGuide] = {
         next=(
             "After dream(), newly consolidated blocks are searchable via frame() and recall(). "
             "Frame cache is cleared automatically. "
-            "If policy is set, adaptive threshold adjusts based on promotion rate."
+            "If policy is set, adaptive threshold adjusts based on promotion rate. "
+            "Tip: blocks with shared tags form graph edges at lower cosine similarity — "
+            "richer tags mean a better-connected knowledge graph."
         ),
         example=(
             "# Always-on agent pattern\n"
