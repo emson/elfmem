@@ -141,7 +141,8 @@ async def record_outcome(
             outcome_weight = signal * OUTCOME_EDGE_WEIGHT_SCALE
             for from_id, to_id in _canonical_pairs(updated_ids):
                 created = await upsert_outcome_edge(
-                    conn, from_id=from_id, to_id=to_id, weight=outcome_weight
+                    conn, from_id=from_id, to_id=to_id, weight=outcome_weight,
+                    last_active_hours=current_active_hours,
                 )
                 if created:
                     outcome_edges_created += 1

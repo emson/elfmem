@@ -136,13 +136,34 @@ def log_normalise_reinforcement(count: int, max_count: int) -> float:
     return math.log(1 + count) / math.log(1 + max_count)
 
 
-def compute_lambda_edge(tier_a: DecayTier, tier_b: DecayTier) -> float:
-    """Compute edge decay rate from the two endpoint block tiers.
+# Reinforcement count above which edge λ is halved (established relationship bonus).
+# Mirrors Long-Term Depression protection: well-proven edges decay at 1/4 the base rate.
+# An edge co-retrieved ≥10 times has genuine, tested utility — LTD should not erase it.
+ESTABLISHED_EDGE_THRESHOLD: int = 10
+
+
+def compute_lambda_edge(
+    tier_a: DecayTier,
+    tier_b: DecayTier,
+    *,
+    reinforcement_count: int = 0,
+) -> float:
+    """Compute edge decay rate from endpoint block tiers and reinforcement history.
 
     λ_edge = min(λ_a, λ_b) × 0.5
-    The edge inherits durability from the more stable block.
+
+    The edge inherits durability from the more stable block. Halving gives edges
+    more longevity than their weakest-endpoint block — relationships outlast memories.
+
+    Established edges (reinforcement_count ≥ ESTABLISHED_EDGE_THRESHOLD) have λ
+    halved again: they decay at one-quarter the base rate (LTD protection).
+
+    Backward compatible: default reinforcement_count=0 preserves existing output.
     """
-    return min(LAMBDA[tier_a], LAMBDA[tier_b]) * 0.5
+    lam = min(LAMBDA[tier_a], LAMBDA[tier_b]) * 0.5
+    if reinforcement_count >= ESTABLISHED_EDGE_THRESHOLD:
+        lam *= 0.5
+    return lam
 
 
 # ── Edge scoring helpers ───────────────────────────────────────────────────────

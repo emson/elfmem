@@ -264,6 +264,7 @@ async def consolidate(
                 weight=score,
                 relation_type="similar",
                 origin="similarity",
+                last_active_hours=current_active_hours,
             )
             edges_created += 1
 

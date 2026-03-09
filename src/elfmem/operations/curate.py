@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import math
+
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db.queries import (
+    count_edges,
+    delete_edges_bulk,
     get_active_blocks,
+    get_all_edges,
     get_blocks_by_tag_pattern,
     get_config,
+    get_tags_batch,
     get_weighted_degree,
     prune_weak_edges,
     reinforce_blocks,
@@ -17,11 +23,12 @@ from elfmem.db.queries import (
 from elfmem.memory.blocks import determine_decay_tier
 from elfmem.scoring import (
     SELF_WEIGHTS,
+    compute_lambda_edge,
     compute_recency,
     compute_score,
     log_normalise_reinforcement,
 )
-from elfmem.types import CurateResult
+from elfmem.types import CurateResult, DecayTier
 
 PRUNE_THRESHOLD = 0.05
 EDGE_PRUNE_THRESHOLD = 0.10
@@ -69,8 +76,10 @@ async def curate(
     """
     archived = await _archive_decayed_blocks(conn, current_active_hours, prune_threshold)
     edges_pruned = await prune_weak_edges(conn, edge_prune_threshold)
+    edges_decayed = await _prune_decayed_edges(conn, current_active_hours, edge_prune_threshold)
     constitutional_reinforced = await _reinforce_constitutional(conn, current_active_hours)
     reinforced = await _reinforce_top_blocks(conn, current_active_hours, reinforce_top_n)
+    total_edges_after = await count_edges(conn)
 
     await set_config(conn, "last_curate_at", str(current_active_hours))
 
@@ -79,10 +88,62 @@ async def curate(
         edges_pruned=edges_pruned,
         reinforced=reinforced,
         constitutional_reinforced=constitutional_reinforced,
+        edges_decayed=edges_decayed,
+        total_edges_after=total_edges_after,
     )
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
+async def _prune_decayed_edges(
+    conn: AsyncConnection,
+    current_active_hours: float,
+    edge_prune_threshold: float,
+) -> int:
+    """Delete edges whose effective temporal weight has fallen below threshold.
+
+    effective_weight = weight × exp(−λ_edge × hours_since_last_active)
+
+    Skips:
+    - origin == 'agent' edges — deliberate conscious associations, never auto-decayed
+    - edges with NULL last_active_hours — legacy/pre-C2 edges with no session anchor
+
+    λ_edge inherits from the more stable endpoint block tier (min), halved for edge
+    longevity, halved again for established edges (reinforcement_count ≥ 10).
+    """
+    all_edges = await get_all_edges(conn)
+    if not all_edges:
+        return 0
+
+    endpoint_ids = list({e["from_id"] for e in all_edges} | {e["to_id"] for e in all_edges})
+    tags_map = await get_tags_batch(conn, endpoint_ids)
+    active = await get_active_blocks(conn)
+    category_map = {b["id"]: b["category"] for b in active}
+
+    def _tier(block_id: str) -> DecayTier:
+        return determine_decay_tier(
+            tags_map.get(block_id, []),
+            category_map.get(block_id, "knowledge"),
+        )
+
+    to_delete: list[tuple[str, str]] = []
+    for edge in all_edges:
+        if edge.get("origin") == "agent":
+            continue
+        if edge["last_active_hours"] is None:
+            continue
+        hours_since = max(0.0, current_active_hours - float(edge["last_active_hours"]))
+        lam = compute_lambda_edge(
+            _tier(edge["from_id"]),
+            _tier(edge["to_id"]),
+            reinforcement_count=int(edge["reinforcement_count"]),
+        )
+        effective_weight = float(edge["weight"]) * math.exp(-lam * hours_since)
+        if effective_weight < edge_prune_threshold:
+            to_delete.append((edge["from_id"], edge["to_id"]))
+
+    return await delete_edges_bulk(conn, to_delete)
+
 
 async def _archive_decayed_blocks(
     conn: AsyncConnection,

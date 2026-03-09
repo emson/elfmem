@@ -396,6 +396,7 @@ async def insert_edge(
     weight: float,
     relation_type: str = "similar",
     origin: str = "similarity",
+    last_active_hours: float | None = None,
     note: str | None = None,
 ) -> None:
     """Insert a similarity edge idempotently. from_id < to_id enforced by caller."""
@@ -408,7 +409,7 @@ async def insert_edge(
             created_at=_now_iso(),
             relation_type=relation_type,
             origin=origin,
-            last_active_hours=None,
+            last_active_hours=last_active_hours,
             note=note,
         )
     )
@@ -420,6 +421,7 @@ async def upsert_outcome_edge(
     from_id: str,
     to_id: str,
     weight: float,
+    last_active_hours: float | None = None,
     note: str | None = None,
 ) -> bool:
     """Create an outcome-driven edge, or reinforce it if one already exists.
@@ -441,18 +443,23 @@ async def upsert_outcome_edge(
             created_at=_now_iso(),
             relation_type="outcome",
             origin="outcome",
-            last_active_hours=None,
+            last_active_hours=last_active_hours,
             note=note,
         )
     )
     if result.rowcount == 1:
         return True  # new edge created
 
-    # Edge already exists — reinforce it (increment co-retrieval count)
+    # Edge already exists — reinforce it and refresh the activity clock.
+    # Critical: last_active_hours must be updated on re-confirmation so temporal
+    # decay measures from the last outcome signal, not from edge creation.
+    values: dict[str, Any] = {"reinforcement_count": edges.c.reinforcement_count + 1}
+    if last_active_hours is not None:
+        values["last_active_hours"] = last_active_hours
     await conn.execute(
         update(edges)
         .where(and_(edges.c.from_id == from_id, edges.c.to_id == to_id))
-        .values(reinforcement_count=edges.c.reinforcement_count + 1)
+        .values(**values)
     )
     return False
 
@@ -628,6 +635,36 @@ async def delete_edge(
         )
     )
     return (result.rowcount or 0) > 0
+
+
+async def get_all_edges(conn: AsyncConnection) -> list[dict[str, Any]]:
+    """Fetch all edges in the graph. Used by curate() for temporal decay pruning."""
+    result = await conn.execute(select(edges))
+    return [dict(row) for row in result.mappings()]
+
+
+async def count_edges(conn: AsyncConnection) -> int:
+    """Count total edges currently in the graph."""
+    result = await conn.execute(select(func.count()).select_from(edges))
+    return result.scalar() or 0
+
+
+async def delete_edges_bulk(
+    conn: AsyncConnection,
+    pairs: list[tuple[str, str]],
+) -> int:
+    """Delete edges by canonical (from_id, to_id) pairs. Returns count deleted."""
+    if not pairs:
+        return 0
+    count = 0
+    for from_id, to_id in pairs:
+        result = await conn.execute(
+            delete(edges).where(
+                and_(edges.c.from_id == from_id, edges.c.to_id == to_id)
+            )
+        )
+        count += result.rowcount or 0
+    return count
 
 
 # Reinforcement bonus per log unit of co-retrieval count.

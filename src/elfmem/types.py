@@ -163,21 +163,35 @@ class CurateResult:
     edges_pruned: int
     reinforced: int
     constitutional_reinforced: int = 0
+    edges_decayed: int = 0       # edges removed by temporal decay (effective_weight < threshold)
+    total_edges_after: int = 0   # edges remaining — denominator for decay fraction
 
     @property
     def summary(self) -> str:
-        if not any([self.archived, self.edges_pruned, self.reinforced, self.constitutional_reinforced]):
+        if not any([self.archived, self.edges_pruned, self.reinforced,
+                    self.constitutional_reinforced, self.edges_decayed]):
             return "Curated: nothing required."
         parts: list[str] = []
         if self.archived:
             parts.append(f"{self.archived} archived")
         if self.edges_pruned:
             parts.append(f"{self.edges_pruned} edges pruned")
+        if self.edges_decayed:
+            edge_info = f"{self.edges_decayed} edges decayed"
+            if self.total_edges_after > 0:
+                edge_info += f" ({self.total_edges_after} remain)"
+            parts.append(edge_info)
         if self.reinforced:
             parts.append(f"{self.reinforced} reinforced")
         if self.constitutional_reinforced:
             parts.append(f"{self.constitutional_reinforced} constitutional reinforced")
-        return f"Curated: {', '.join(parts)}."
+        result = f"Curated: {', '.join(parts)}."
+        # Tip when >25% of graph decayed in one cycle — agent may want to reactivate clusters
+        if self.edges_decayed > 0 and self.total_edges_after > 0:
+            total_before = self.edges_decayed + self.total_edges_after
+            if self.edges_decayed / total_before > 0.25:
+                result += " Tip: consider recall() to reactivate relevant knowledge clusters."
+        return result
 
     def __str__(self) -> str:
         return self.summary
@@ -188,6 +202,8 @@ class CurateResult:
             "edges_pruned": self.edges_pruned,
             "reinforced": self.reinforced,
             "constitutional_reinforced": self.constitutional_reinforced,
+            "edges_decayed": self.edges_decayed,
+            "total_edges_after": self.total_edges_after,
         }
 
 

@@ -8,6 +8,7 @@ from elfmem.db.queries import (
     get_active_blocks,
     get_block,
     get_edges,
+    insert_agent_edge,
     prune_weak_edges,
     reinforce_edges,
     seed_builtin_data,
@@ -545,7 +546,7 @@ class TestEdgePruneProtection:
         assert pruned == 0
         assert len(remaining) == 1
 
-    async def test_prune_does_not_affect_reinforced_outcome_edges(self, system_setup) -> None:
+    async def test_temporal_decay_does_not_prune_reinforced_outcome_edges(self, system_setup) -> None:
         """A low-weight outcome edge that has been co-retrieved survives curate()."""
         from elfmem.db.queries import insert_edge, reinforce_edges
         from elfmem.operations.curate import curate
@@ -571,3 +572,153 @@ class TestEdgePruneProtection:
             remaining = await get_edges(conn, b1)
 
         assert len(remaining) == 1, "Reinforced outcome edge must survive curate()"
+
+
+# ── TestEdgeTemporalDecay ──────────────────────────────────────────────────────
+
+
+class TestEdgeTemporalDecay:
+    """_prune_decayed_edges() removes edges whose effective weight has decayed below threshold.
+
+    Standard tier λ_edge = min(0.010, 0.010) × 0.5 = 0.005.
+    Established (count≥10) λ_edge = 0.005 × 0.5 = 0.0025.
+    All tests consolidate near the curate time so blocks survive archival;
+    only the edge last_active_hours is set far in the past to simulate staleness.
+    """
+
+    async def _make_active_pair(
+        self, conn, mock_llm, mock_embedding, content_a: str, content_b: str,
+        hours: float = 490.0,
+    ) -> tuple[str, str]:
+        """Consolidate two blocks at `hours` and return their IDs."""
+        r1 = await learn(conn, content=content_a, category="knowledge", source="api")
+        r2 = await learn(conn, content=content_b, category="knowledge", source="api")
+        await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding,
+                          current_active_hours=hours)
+        return r1.block_id, r2.block_id
+
+    async def test_stale_edge_pruned_by_decay(self, system_setup) -> None:
+        """Edge inactive for 500 hours decays below threshold and is pruned.
+
+        λ_edge=0.005, hours_since=500 → effective=0.50×exp(-2.5)≈0.041 < 0.10.
+        """
+        from elfmem.db.queries import insert_edge
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "stale decay alpha", "stale decay beta",
+                hours=490.0,
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.50,
+                              last_active_hours=0.0)
+
+            result = await curate(conn, current_active_hours=500.0, edge_prune_threshold=0.10)
+
+        assert result.edges_decayed >= 1
+
+    async def test_recent_edge_not_pruned_by_decay(self, system_setup) -> None:
+        """Edge active 10 hours ago retains effective weight well above threshold.
+
+        λ_edge=0.005, hours_since=10 → effective=0.50×exp(-0.05)≈0.475 > 0.10.
+        """
+        from elfmem.db.queries import insert_edge
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "recent edge alpha", "recent edge beta",
+                hours=490.0,
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.50,
+                              last_active_hours=490.0)
+
+            result = await curate(conn, current_active_hours=500.0, edge_prune_threshold=0.10)
+
+        assert result.edges_decayed == 0
+
+    async def test_established_edge_decays_slower(self, system_setup) -> None:
+        """Established edge (count≥10) survives where a fresh edge is pruned.
+
+        At hours_since=400 with weight=0.50 and edge_prune_threshold=0.10:
+        - Fresh (count=0):       λ=0.005  → effective=0.50×exp(-2.0)≈0.068 → PRUNED
+        - Established (count=10): λ=0.0025 → effective=0.50×exp(-1.0)≈0.184 → SURVIVES
+        """
+        from elfmem.db.queries import insert_edge, reinforce_edges
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            # Two independent pairs consolidated near hour 390 (blocks survive at 400)
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "fresh edge one", "fresh edge two", hours=390.0,
+            )
+            b3, b4 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "established edge one", "established edge two",
+                hours=390.0,
+            )
+            pair_fresh = Edge.canonical(b1, b2)
+            pair_est = Edge.canonical(b3, b4)
+
+            await insert_edge(conn, from_id=pair_fresh[0], to_id=pair_fresh[1], weight=0.50,
+                              last_active_hours=0.0)
+            await insert_edge(conn, from_id=pair_est[0], to_id=pair_est[1], weight=0.50,
+                              last_active_hours=0.0)
+
+            # Reinforce established edge 10 times without updating last_active_hours
+            for _ in range(10):
+                await reinforce_edges(conn, [pair_est])
+
+            result = await curate(conn, current_active_hours=400.0, edge_prune_threshold=0.10)
+
+        # Fresh edge pruned, established survives → exactly 1 temporal decay
+        assert result.edges_decayed == 1
+
+    async def test_agent_edge_not_decayed(self, system_setup) -> None:
+        """Agent-origin edges are never temporally decayed regardless of staleness."""
+        from elfmem.db.queries import insert_agent_edge
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "agent edge alpha", "agent edge beta",
+                hours=490.0,
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            await insert_agent_edge(
+                conn, from_id=from_id, to_id=to_id, weight=0.50,
+                relation_type="supports", note=None, current_active_hours=0.0,
+            )
+
+            result = await curate(conn, current_active_hours=500.0, edge_prune_threshold=0.10)
+
+        assert result.edges_decayed == 0
+
+    async def test_null_last_active_hours_skips_temporal_decay(self, system_setup) -> None:
+        """Edge with NULL last_active_hours (legacy/pre-C2) is not temporally decayed."""
+        from elfmem.db.queries import insert_edge
+        from elfmem.operations.curate import curate
+        from elfmem.types import Edge
+
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            b1, b2 = await self._make_active_pair(
+                conn, mock_llm, mock_embedding, "null anchor alpha", "null anchor beta",
+                hours=490.0,
+            )
+            from_id, to_id = Edge.canonical(b1, b2)
+            # last_active_hours defaults to None — simulates a pre-C2 edge
+            await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.50)
+
+            result = await curate(conn, current_active_hours=500.0, edge_prune_threshold=0.10)
+
+        assert result.edges_decayed == 0
