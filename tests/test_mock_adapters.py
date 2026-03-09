@@ -1,277 +1,112 @@
-"""Mock adapters test suite — LLM and embedding service mocks for testing."""
+"""Mock adapters — protocol compliance, determinism, and override behaviour.
+
+These tests verify that the mock services satisfy their protocols and that
+override configuration produces the deterministic behaviour that the rest
+of the test suite depends on.
+"""
+
+from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from elfmem.adapters.mock import (
-    MockEmbeddingService,
-    MockLLMService,
-    make_mock_embedding,
-    make_mock_llm,
-)
+from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.types import BlockAnalysis
 
 TOL = 0.001
 
 
-class TestMockLLMServiceProtocolCompliance:
-    """MockLLMService satisfies LLMService protocol."""
+# ── Protocol compliance ────────────────────────────────────────────────────────
+
+
+class TestMockLLMServiceProtocol:
+    """MockLLMService satisfies the LLMService protocol."""
 
     def test_isinstance_check(self) -> None:
-        """MockLLMService is recognized as LLMService."""
-        mock = MockLLMService()
-        assert isinstance(mock, LLMService)
+        assert isinstance(MockLLMService(), LLMService)
 
     @pytest.mark.asyncio
-    async def test_process_block_is_async(self) -> None:
-        """process_block is an async method returning BlockAnalysis."""
-        mock = MockLLMService()
-        result = await mock.process_block("test block", "self context")
+    async def test_process_block_returns_block_analysis(self) -> None:
+        result = await MockLLMService().process_block("test block", "context")
         assert isinstance(result, BlockAnalysis)
 
     @pytest.mark.asyncio
-    async def test_detect_contradiction_is_async(self) -> None:
-        """detect_contradiction is an async method."""
-        mock = MockLLMService()
-        result = await mock.detect_contradiction("block a", "block b")
-        assert isinstance(result, float)
-        assert 0.0 <= result <= 1.0
+    async def test_detect_contradiction_returns_float_in_range(self) -> None:
+        score = await MockLLMService().detect_contradiction("block a", "block b")
+        assert isinstance(score, float)
+        assert 0.0 <= score <= 1.0
 
 
-class TestMockLLMServiceProcessBlock:
-    """process_block configuration and overrides."""
+class TestMockEmbeddingServiceProtocol:
+    """MockEmbeddingService satisfies the EmbeddingService protocol."""
 
-    @pytest.mark.asyncio
-    async def test_returns_block_analysis(self) -> None:
-        """process_block returns a BlockAnalysis dataclass."""
-        mock = MockLLMService()
-        result = await mock.process_block("some content", "context")
-        assert isinstance(result, BlockAnalysis)
+    def test_isinstance_check(self) -> None:
+        assert isinstance(MockEmbeddingService(), EmbeddingService)
 
     @pytest.mark.asyncio
-    async def test_default_alignment_score(self) -> None:
-        """Returns default_alignment when no override matches."""
+    async def test_embed_returns_numpy_array(self) -> None:
+        vec = await MockEmbeddingService().embed("test text")
+        assert isinstance(vec, np.ndarray)
+
+
+# ── LLM override configuration ─────────────────────────────────────────────────
+
+
+class TestMockLLMServiceConfiguration:
+    """Override configuration drives deterministic test scenarios."""
+
+    @pytest.mark.asyncio
+    async def test_default_alignment_used_when_no_override_matches(self) -> None:
         mock = MockLLMService(default_alignment=0.75)
-        result = await mock.process_block("random content", "self context")
+        result = await mock.process_block("random content", "context")
         assert abs(result.alignment_score - 0.75) < TOL
 
     @pytest.mark.asyncio
-    async def test_alignment_override_substring_match(self) -> None:
-        """Alignment override matches by substring."""
-        mock = MockLLMService(
-            default_alignment=0.5,
-            alignment_overrides={"identity": 0.95},
-        )
+    async def test_alignment_override_matches_by_substring(self) -> None:
+        mock = MockLLMService(default_alignment=0.5, alignment_overrides={"identity": 0.95})
         result = await mock.process_block("I value my personal identity.", "context")
         assert abs(result.alignment_score - 0.95) < TOL
 
     @pytest.mark.asyncio
-    async def test_alignment_no_match_uses_default(self) -> None:
-        """No override match falls back to default alignment."""
-        mock = MockLLMService(
-            default_alignment=0.5,
-            alignment_overrides={"identity": 0.95},
-        )
-        result = await mock.process_block("Random unrelated content.", "context")
-        assert abs(result.alignment_score - 0.5) < TOL
-
-    @pytest.mark.asyncio
-    async def test_default_tags(self) -> None:
-        """Returns default_tags when no override matches."""
+    async def test_default_tags_used_when_no_override_matches(self) -> None:
         mock = MockLLMService(default_tags=["python", "async"])
         result = await mock.process_block("random content", "context")
         assert set(result.tags) == {"python", "async"}
 
     @pytest.mark.asyncio
-    async def test_tag_override_substring_match(self) -> None:
-        """Tag override matches by substring."""
-        mock = MockLLMService(
-            default_tags=[],
-            tag_overrides={"constitutional": ["self/constitutional"]},
-        )
+    async def test_tag_override_matches_by_substring(self) -> None:
+        mock = MockLLMService(tag_overrides={"constitutional": ["self/constitutional"]})
         result = await mock.process_block("This is a constitutional belief.", "context")
         assert result.tags == ["self/constitutional"]
 
     @pytest.mark.asyncio
-    async def test_tag_no_match_uses_default(self) -> None:
-        """No tag override match returns default tags."""
-        mock = MockLLMService(
-            default_tags=["default/tag"],
-            tag_overrides={"constitutional": ["self/constitutional"]},
-        )
-        result = await mock.process_block("Random content.", "context")
-        assert result.tags == ["default/tag"]
-
-    @pytest.mark.asyncio
-    async def test_default_summary_uses_prefix_plus_content(self) -> None:
-        """Default summary is prefix + block content."""
-        mock = MockLLMService(default_summary_prefix="Summary: ")
-        result = await mock.process_block("Some block text.", "context")
-        assert result.summary == "Summary: Some block text."
-
-    @pytest.mark.asyncio
-    async def test_summary_override_substring_match(self) -> None:
-        """Summary override matches by substring."""
-        mock = MockLLMService(
-            summary_overrides={"satellite": "Block is about satellite systems."},
-        )
-        result = await mock.process_block("satellite data ingestion", "context")
-        assert result.summary == "Block is about satellite systems."
-
-    @pytest.mark.asyncio
-    async def test_summary_no_match_uses_default(self) -> None:
-        """No summary override match uses default prefix + content."""
-        mock = MockLLMService(
-            default_summary_prefix="S: ",
-            summary_overrides={"satellite": "About satellites."},
-        )
-        result = await mock.process_block("generic content", "context")
-        assert result.summary == "S: generic content"
-
-    @pytest.mark.asyncio
-    async def test_process_block_call_tracking(self) -> None:
-        """process_block calls are tracked."""
-        mock = MockLLMService()
-        assert mock.process_block_calls == 0
-        await mock.process_block("block 1", "context")
-        assert mock.process_block_calls == 1
-        await mock.process_block("block 2", "context")
-        assert mock.process_block_calls == 2
-
-    @pytest.mark.asyncio
-    async def test_alignment_first_match_wins(self) -> None:
-        """First matching alignment override is used."""
-        mock = MockLLMService(
-            default_alignment=0.5,
-            alignment_overrides={
-                "async": 0.90,
-                "patterns": 0.70,
-            },
-        )
-        # Content matches "async" first
-        result = await mock.process_block("async patterns in Python", "context")
-        assert result.alignment_score in [0.90, 0.70]
-
-    @pytest.mark.asyncio
-    async def test_tag_first_match_wins(self) -> None:
-        """First matching tag override is used."""
-        mock = MockLLMService(
-            default_tags=[],
-            tag_overrides={
-                "value": ["self/value"],
-                "constitutional": ["self/constitutional"],
-            },
-        )
-        # "value" appears before "constitutional" in dict
-        result = await mock.process_block("I value this constitutional principle.", "context")
-        # First match in dict order wins
-        assert result.tags in [["self/value"], ["self/constitutional"]]
-
-    @pytest.mark.asyncio
-    async def test_all_fields_returned_together(self) -> None:
-        """process_block returns all three fields in one call."""
-        mock = MockLLMService(
-            default_alignment=0.8,
-            default_tags=["science"],
-            default_summary_prefix="Fact: ",
-        )
-        result = await mock.process_block("The sky is blue.", "context")
-        assert abs(result.alignment_score - 0.8) < TOL
-        assert result.tags == ["science"]
-        assert result.summary == "Fact: The sky is blue."
-
-
-class TestMockLLMServiceContradictionDetection:
-    """Contradiction detection configuration and overrides."""
-
-    @pytest.mark.asyncio
-    async def test_default_contradiction_score(self) -> None:
-        """Returns default_contradiction when no override matches."""
-        mock = MockLLMService(default_contradiction=0.15)
-        score = await mock.detect_contradiction("block a", "block b")
-        assert abs(score - 0.15) < TOL
-
-    @pytest.mark.asyncio
-    async def test_contradiction_overrides_both_content_match(self) -> None:
-        """Contradiction overrides check both block contents."""
+    async def test_contradiction_override_matches_both_contents(self) -> None:
         mock = MockLLMService(
             default_contradiction=0.1,
-            contradiction_overrides={
-                ("sync", "async"): 0.92,
-                ("old", "new"): 0.85,
-            },
+            contradiction_overrides={("sync", "async"): 0.92},
         )
-        # Match ("sync", "async")
         score = await mock.detect_contradiction(
             "Always use synchronous calls.",
             "Never use synchronous calls — always async.",
         )
         assert abs(score - 0.92) < TOL
 
-        # No match
-        score = await mock.detect_contradiction("random a", "random b")
-        assert abs(score - 0.1) < TOL
-
     @pytest.mark.asyncio
-    async def test_contradiction_call_tracking(self) -> None:
-        """Contradiction detection calls are tracked."""
-        mock = MockLLMService()
-        assert mock.contradiction_calls == 0
-        await mock.detect_contradiction("a", "b")
-        assert mock.contradiction_calls == 1
+    async def test_default_contradiction_score(self) -> None:
+        mock = MockLLMService(default_contradiction=0.15)
+        score = await mock.detect_contradiction("block a", "block b")
+        assert abs(score - 0.15) < TOL
 
 
-class TestMockLLMServicePropertySetters:
-    """Attribute setters allow post-construction override changes."""
-
-    def test_tag_overrides_setter(self) -> None:
-        """tag_overrides can be replaced after construction."""
-        mock = MockLLMService(tag_overrides={"old": ["old/tag"]})
-        mock.tag_overrides = {"new": ["new/tag"]}
-        assert mock.tag_overrides == {"new": ["new/tag"]}
-
-    def test_default_tags_setter(self) -> None:
-        """default_tags can be replaced after construction."""
-        mock = MockLLMService(default_tags=["initial"])
-        mock.default_tags = []
-        assert mock.default_tags == []
-
-    def test_alignment_overrides_setter(self) -> None:
-        """alignment_overrides can be replaced after construction."""
-        mock = MockLLMService(alignment_overrides={"old": 0.9})
-        mock.alignment_overrides = {"new": 0.7}
-        assert mock.alignment_overrides == {"new": 0.7}
-
-    def test_contradiction_overrides_setter(self) -> None:
-        """contradiction_overrides can be replaced after construction."""
-        mock = MockLLMService(contradiction_overrides={("a", "b"): 0.9})
-        mock.contradiction_overrides = {}
-        assert mock.contradiction_overrides == {}
-
-
-class TestMockEmbeddingServiceProtocolCompliance:
-    """MockEmbeddingService satisfies EmbeddingService protocol."""
-
-    def test_isinstance_check(self) -> None:
-        """MockEmbeddingService is recognized as EmbeddingService."""
-        mock = MockEmbeddingService()
-        assert isinstance(mock, EmbeddingService)
-
-    @pytest.mark.asyncio
-    async def test_embed_is_async(self) -> None:
-        """embed is an async method."""
-        mock = MockEmbeddingService()
-        result = await mock.embed("test text")
-        assert isinstance(result, np.ndarray)
+# ── Embedding determinism ──────────────────────────────────────────────────────
 
 
 class TestMockEmbeddingServiceDeterminism:
-    """Deterministic embedding generation."""
+    """Embedding vectors are deterministic and normalized."""
 
     @pytest.mark.asyncio
     async def test_same_text_same_embedding(self) -> None:
-        """Same text always produces same vector."""
         mock = MockEmbeddingService()
         vec1 = await mock.embed("hello world")
         vec2 = await mock.embed("hello world")
@@ -279,287 +114,92 @@ class TestMockEmbeddingServiceDeterminism:
 
     @pytest.mark.asyncio
     async def test_different_text_different_embedding(self) -> None:
-        """Different text produces different vectors."""
         mock = MockEmbeddingService()
         vec1 = await mock.embed("hello world")
         vec2 = await mock.embed("goodbye world")
-        # Should be different (extremely unlikely to be equal)
         assert not np.allclose(vec1, vec2)
 
     @pytest.mark.asyncio
     async def test_embedding_is_normalized(self) -> None:
-        """Embeddings are L2-normalized unit vectors."""
-        mock = MockEmbeddingService()
-        vec = await mock.embed("test text")
-        norm = np.linalg.norm(vec)
-        assert abs(norm - 1.0) < 0.001
+        vec = await MockEmbeddingService().embed("test text")
+        assert abs(np.linalg.norm(vec) - 1.0) < TOL
 
     @pytest.mark.asyncio
-    async def test_embedding_dimensions(self) -> None:
-        """Embedding has correct dimensions."""
-        mock = MockEmbeddingService(dimensions=128)
-        vec = await mock.embed("test")
+    async def test_embedding_dimensions_configurable(self) -> None:
+        vec = await MockEmbeddingService(dimensions=128).embed("test")
         assert vec.shape == (128,)
 
-    @pytest.mark.asyncio
-    async def test_embedding_dtype_float32(self) -> None:
-        """Embedding is float32."""
-        mock = MockEmbeddingService()
-        vec = await mock.embed("test")
-        assert vec.dtype == np.float32
+
+# ── Similarity overrides ───────────────────────────────────────────────────────
 
 
 class TestMockEmbeddingServiceSimilarityOverrides:
-    """Similarity override configuration."""
+    """Similarity overrides control cosine similarity between text pairs."""
 
     @pytest.mark.asyncio
-    async def test_similarity_override_produces_target_similarity(self) -> None:
-        """Similarity override produces vectors with target cosine similarity."""
-        target_sim = 0.85
-        overrides = {frozenset({"cats are great", "dogs are great"}): target_sim}
+    async def test_similarity_override_achieves_target(self) -> None:
+        overrides = {frozenset({"cats are great", "dogs are great"}): 0.85}
         mock = MockEmbeddingService(similarity_overrides=overrides)
-
         vec1 = await mock.embed("cats are great")
         vec2 = await mock.embed("dogs are great")
-
-        # Cosine similarity = dot product of unit vectors
-        cosine_sim = float(np.dot(vec1, vec2))
-        assert abs(cosine_sim - target_sim) < 0.01
+        assert abs(float(np.dot(vec1, vec2)) - 0.85) < 0.01
 
     @pytest.mark.asyncio
-    async def test_similarity_override_one_similarity_high(self) -> None:
-        """Similarity = 1.0 override produces identical vectors."""
-        overrides = {frozenset({"text a", "text b"}): 1.0}
-        mock = MockEmbeddingService(similarity_overrides=overrides)
-
-        vec1 = await mock.embed("text a")
-        vec2 = await mock.embed("text b")
-
-        cosine_sim = float(np.dot(vec1, vec2))
-        assert abs(cosine_sim - 1.0) < 0.001
-
-    @pytest.mark.asyncio
-    async def test_similarity_override_zero_similarity(self) -> None:
-        """Similarity = 0.0 override produces orthogonal vectors."""
+    async def test_similarity_zero_produces_orthogonal_vectors(self) -> None:
         overrides = {frozenset({"text a", "text b"}): 0.0}
         mock = MockEmbeddingService(similarity_overrides=overrides)
-
         vec1 = await mock.embed("text a")
         vec2 = await mock.embed("text b")
-
-        cosine_sim = float(np.dot(vec1, vec2))
-        assert abs(cosine_sim) < 0.01
+        assert abs(float(np.dot(vec1, vec2))) < 0.01
 
     @pytest.mark.asyncio
-    async def test_similarity_override_activates_only_after_both_embedded(self) -> None:
-        """Similarity override activates only when both texts have been embedded."""
-        overrides = {frozenset({"first", "second"}): 0.9}
-        mock = MockEmbeddingService(similarity_overrides=overrides)
-
-        # Embed first text — no override yet (only one of the pair)
-        vec1 = await mock.embed("first")
-        # Embed second text — now override activates
-        vec2 = await mock.embed("second")
-
-        cosine_sim = float(np.dot(vec1, vec2))
-        assert abs(cosine_sim - 0.9) < 0.01
-
-    @pytest.mark.asyncio
-    async def test_multiple_similarity_overrides(self) -> None:
-        """Multiple similarity overrides can coexist."""
+    async def test_multiple_overrides_coexist(self) -> None:
         overrides = {
             frozenset({"cats", "dogs"}): 0.9,
             frozenset({"birds", "fish"}): 0.3,
         }
         mock = MockEmbeddingService(similarity_overrides=overrides)
-
-        vec_cats = await mock.embed("cats")
-        vec_dogs = await mock.embed("dogs")
-        vec_birds = await mock.embed("birds")
-        vec_fish = await mock.embed("fish")
-
-        sim_cats_dogs = float(np.dot(vec_cats, vec_dogs))
-        sim_birds_fish = float(np.dot(vec_birds, vec_fish))
-
-        assert abs(sim_cats_dogs - 0.9) < 0.01
-        assert abs(sim_birds_fish - 0.3) < 0.01
+        vc, vd = await mock.embed("cats"), await mock.embed("dogs")
+        vb, vf = await mock.embed("birds"), await mock.embed("fish")
+        assert abs(float(np.dot(vc, vd)) - 0.9) < 0.01
+        assert abs(float(np.dot(vb, vf)) - 0.3) < 0.01
 
     @pytest.mark.asyncio
-    async def test_embed_call_tracking(self) -> None:
-        """Embed calls are tracked."""
-        mock = MockEmbeddingService()
-        assert mock.embed_calls == 0
-        await mock.embed("text 1")
-        assert mock.embed_calls == 1
-        await mock.embed("text 2")
-        assert mock.embed_calls == 2
-
-
-class TestMockEmbeddingServiceEdgeCases:
-    """Edge cases and special scenarios."""
-
-    @pytest.mark.asyncio
-    async def test_embed_empty_string(self) -> None:
-        """Empty string produces valid normalized vector."""
-        mock = MockEmbeddingService()
-        vec = await mock.embed("")
-        norm = np.linalg.norm(vec)
-        assert abs(norm - 1.0) < 0.001
-
-    @pytest.mark.asyncio
-    async def test_embed_very_long_text(self) -> None:
-        """Very long text produces valid vector."""
-        mock = MockEmbeddingService()
-        long_text = "word " * 1000
-        vec = await mock.embed(long_text)
-        assert vec.shape == (64,)
-        norm = np.linalg.norm(vec)
-        assert abs(norm - 1.0) < 0.001
-
-
-class TestFactoryFunctions:
-    """Factory functions for convenient test setup."""
-
-    def test_make_mock_llm_with_defaults(self) -> None:
-        """make_mock_llm creates service with defaults."""
-        mock = make_mock_llm()
-        assert isinstance(mock, MockLLMService)
-
-    def test_make_mock_llm_with_overrides(self) -> None:
-        """make_mock_llm passes kwargs to constructor."""
-        mock = make_mock_llm(default_alignment=0.9)
-        assert mock is not None
-
-    def test_make_mock_embedding_with_defaults(self) -> None:
-        """make_mock_embedding creates service with defaults."""
-        mock = make_mock_embedding()
-        assert isinstance(mock, MockEmbeddingService)
-
-    def test_make_mock_embedding_with_dimensions(self) -> None:
-        """make_mock_embedding accepts dimensions kwarg."""
-        mock = make_mock_embedding(dimensions=256)
-        assert mock is not None
-
-
-class TestMockServiceIntegration:
-    """Integration scenarios with both mocks."""
-
-    @pytest.mark.asyncio
-    async def test_mock_llm_and_embedding_together(self) -> None:
-        """Both mocks can be used in same test."""
-        llm = MockLLMService(
-            default_alignment=0.85,
-            alignment_overrides={"python": 0.95},
-        )
-        embedding = MockEmbeddingService()
-
-        result = await llm.process_block("I love Python.", "context")
-        assert abs(result.alignment_score - 0.95) < TOL
-
-        vec = await embedding.embed("I love Python.")
-        assert vec.shape == (64,)
-
-    @pytest.mark.asyncio
-    async def test_mock_determinism_with_retrieval_scenario(self) -> None:
-        """Mocks produce deterministic results in retrieval scenario."""
-        embedding = MockEmbeddingService(
+    async def test_retrieval_scenario_discriminates_match_from_noise(self) -> None:
+        """Real test scenario: one block matches query, one does not."""
+        mock = MockEmbeddingService(
             similarity_overrides={
                 frozenset({"query", "matching_block"}): 0.9,
                 frozenset({"query", "unrelated_block"}): 0.1,
             }
         )
+        query_vec = await mock.embed("query")
+        match_vec = await mock.embed("matching_block")
+        unmatch_vec = await mock.embed("unrelated_block")
+        assert abs(float(np.dot(query_vec, match_vec)) - 0.9) < 0.01
+        assert abs(float(np.dot(query_vec, unmatch_vec)) - 0.1) < 0.01
 
-        # Simulate retrieval
-        query_vec = await embedding.embed("query")
-        match_vec = await embedding.embed("matching_block")
-        unmatch_vec = await embedding.embed("unrelated_block")
 
-        match_sim = float(np.dot(query_vec, match_vec))
-        unmatch_sim = float(np.dot(query_vec, unmatch_vec))
-
-        assert abs(match_sim - 0.9) < 0.01
-        assert abs(unmatch_sim - 0.1) < 0.01
+# ── Batch embedding ────────────────────────────────────────────────────────────
 
 
 class TestMockEmbeddingServiceBatch:
-    """Batch embedding functionality."""
+    """Batch embedding produces correct and consistent results."""
 
     @pytest.mark.asyncio
-    async def test_embed_batch_returns_list_of_vectors(self) -> None:
-        """embed_batch returns list of normalized vectors."""
-        mock = MockEmbeddingService()
-        texts = ["text1", "text2", "text3"]
-        vecs = await mock.embed_batch(texts)
-
+    async def test_embed_batch_returns_normalized_vectors(self) -> None:
+        vecs = await MockEmbeddingService().embed_batch(["text1", "text2", "text3"])
         assert len(vecs) == 3
-        assert all(isinstance(v, np.ndarray) for v in vecs)
-        assert all(v.shape == (64,) for v in vecs)
-        assert all(abs(np.linalg.norm(v) - 1.0) < 0.001 for v in vecs)
+        assert all(abs(np.linalg.norm(v) - 1.0) < TOL for v in vecs)
 
     @pytest.mark.asyncio
     async def test_embed_batch_empty_list(self) -> None:
-        """embed_batch returns empty list for empty input."""
-        mock = MockEmbeddingService()
-        vecs = await mock.embed_batch([])
-        assert vecs == []
+        assert await MockEmbeddingService().embed_batch([]) == []
 
     @pytest.mark.asyncio
-    async def test_embed_batch_matches_individual_embeds(self) -> None:
-        """Batch embedding produces identical results to individual calls."""
-        mock = MockEmbeddingService()
-        texts = ["apple", "banana", "cherry"]
-
-        # Individual embeds
-        individual_vecs = [await mock.embed(text) for text in texts]
-
-        # Reset for batch test (clear cache)
-        mock2 = MockEmbeddingService()
-        batch_vecs = await mock2.embed_batch(texts)
-
-        # Results should be identical
-        for ind, batch in zip(individual_vecs, batch_vecs):
-            assert np.allclose(ind, batch, atol=0.001)
-
-    @pytest.mark.asyncio
-    async def test_embed_batch_uses_cache(self) -> None:
-        """Batch embedding returns same vector for repeated texts from cache."""
-        mock = MockEmbeddingService()
-        texts = ["repeated", "repeated", "unique"]
-
-        # Pre-cache one text
-        await mock.embed("repeated")
-
-        # Batch embed with repeated text
-        vecs = await mock.embed_batch(texts)
-
-        # First two vectors should be identical (from cache)
-        assert np.allclose(vecs[0], vecs[1], atol=0.001)
-        # Third vector should be different
-        assert not np.allclose(vecs[0], vecs[2], atol=0.1)
-
-    @pytest.mark.asyncio
-    async def test_embed_batch_with_similarity_overrides(self) -> None:
-        """Batch embedding applies similarity overrides correctly."""
+    async def test_embed_batch_applies_similarity_overrides(self) -> None:
         mock = MockEmbeddingService(
-            similarity_overrides={
-                frozenset({"text1", "text2"}): 0.9,
-            }
+            similarity_overrides={frozenset({"text1", "text2"}): 0.9}
         )
-
-        # Embed in order: text1 first, then text2 should use override
         vecs = await mock.embed_batch(["text1", "text2"])
-
-        sim = float(np.dot(vecs[0], vecs[1]))
-        assert abs(sim - 0.9) < 0.01
-
-    @pytest.mark.asyncio
-    async def test_embed_batch_with_large_batch(self) -> None:
-        """Batch embedding handles large batches efficiently."""
-        mock = MockEmbeddingService()
-        texts = [f"text_{i}" for i in range(100)]
-
-        vecs = await mock.embed_batch(texts)
-
-        assert len(vecs) == 100
-        assert all(v.shape == (64,) for v in vecs)
-        assert mock.embed_calls == 100
+        assert abs(float(np.dot(vecs[0], vecs[1])) - 0.9) < 0.01

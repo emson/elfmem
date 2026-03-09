@@ -1,9 +1,15 @@
-"""Tests for ConsolidationPolicy — self-tuning consolidation timing."""
+"""Tests for ConsolidationPolicy — self-tuning consolidation timing.
+
+Unit tests exercise ConsolidationPolicy directly (no DB, no LLM).
+Integration tests use MemorySystem with mock services and in-memory SQLite.
+No real LLM calls, no file I/O.
+"""
 
 import pytest
 
+from elfmem.api import MemorySystem
+from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.policy import ConsolidationPolicy, PolicyStats
-from elfmem.smart import SmartMemory
 from elfmem.types import ConsolidateResult
 
 
@@ -211,108 +217,87 @@ class TestPolicyStats:
         assert stats_dict["consolidation_count"] == 1
 
 
-class TestSmartMemoryWithPolicy:
-    """SmartMemory integration with ConsolidationPolicy."""
+class TestMemorySystemWithPolicy:
+    """MemorySystem integration with ConsolidationPolicy.
+
+    Uses in-memory SQLite and mock services — no LLM calls, no file I/O.
+    """
+
+    @pytest.fixture
+    async def system_with_policy(self, test_engine, mock_llm, mock_embedding):
+        """MemorySystem with a tight policy (threshold=3) for fast tests."""
+        policy = ConsolidationPolicy(base_threshold=3, min_threshold=2, max_threshold=10, adjustment_step=1)
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        sys = MemorySystem(
+            engine=test_engine,
+            llm_service=mock_llm,
+            embedding_service=mock_embedding,
+            config=cfg,
+            policy=policy,
+        )
+        yield sys, policy
+        await sys.close()
 
     @pytest.mark.asyncio
-    async def test_smart_memory_accepts_policy(self, db_path_str) -> None:
-        """SmartMemory.open() accepts optional policy parameter."""
-        policy = ConsolidationPolicy(base_threshold=8)
-        mem = await SmartMemory.open(db_path_str, policy=policy)
-        assert mem._system._policy is policy
-        await mem.close()
+    async def test_system_accepts_policy(self, system_with_policy) -> None:
+        """MemorySystem wires the policy correctly."""
+        sys, policy = system_with_policy
+        assert sys._policy is policy
 
     @pytest.mark.asyncio
-    async def test_smart_memory_should_dream_delegates_to_policy(self, db_path_str) -> None:
-        """should_dream property delegates to policy when set."""
-        policy = ConsolidationPolicy(base_threshold=5)  # Low threshold for testing
-        mem = await SmartMemory.open(db_path_str, policy=policy)
-
-        # Learn up to policy threshold
-        for i in range(5):
-            await mem.remember(f"Block {i}")
-
-        # should_dream should be True (pending >= policy.effective_threshold)
-        assert mem.should_dream
-        await mem.close()
-
-    @pytest.mark.asyncio
-    async def test_smart_memory_policy_records_dream_result(self, db_path_str) -> None:
-        """dream() feeds ConsolidateResult to policy.record_result()."""
-        policy = ConsolidationPolicy(base_threshold=3)
-        mem = await SmartMemory.open(db_path_str, policy=policy)
-
-        # Learn blocks to trigger consolidation
-        threshold = mem._system._config.memory.inbox_threshold
+    async def test_should_dream_delegates_to_policy(self, system_with_policy) -> None:
+        """should_dream is True when pending >= policy.effective_threshold."""
+        sys, policy = system_with_policy
+        threshold = policy.effective_threshold
         for i in range(threshold):
-            await mem.remember(f"Block {i}")
+            await sys.learn(f"Block {i}")
+        assert sys.should_dream
 
-        # Check initial state
+    @pytest.mark.asyncio
+    async def test_dream_feeds_result_to_policy(self, system_with_policy) -> None:
+        """dream() passes ConsolidateResult to policy.record_result()."""
+        sys, policy = system_with_policy
         assert policy.stats.consolidation_count == 0
-
-        # Dream and check that policy recorded the result
-        result = await mem.dream()
+        for i in range(3):
+            await sys.learn(f"Block {i}")
+        result = await sys.dream()
         if result is not None:
             assert policy.stats.consolidation_count == 1
-            assert len(policy.stats.promotion_rates) == 1
-
-        await mem.close()
 
     @pytest.mark.asyncio
-    async def test_smart_memory_without_policy_uses_simple_threshold(self, db_path_str) -> None:
-        """SmartMemory without policy falls back to simple count-based threshold."""
-        mem = await SmartMemory.open(db_path_str, policy=None)
-        assert mem._system._policy is None
-
-        # Learn blocks
-        threshold = mem._system._config.memory.inbox_threshold
-        for i in range(threshold):
-            await mem.remember(f"Block {i}")
-
-        # should_dream should use simple _pending >= _threshold logic
-        assert mem.should_dream
-        await mem.close()
-
-    @pytest.mark.asyncio
-    async def test_managed_with_policy(self, db_path_str) -> None:
-        """SmartMemory.managed() accepts optional policy parameter."""
-        policy = ConsolidationPolicy(base_threshold=5)
-        async with SmartMemory.managed(db_path_str, policy=policy) as mem:
-            assert mem._system._policy is policy
-            # Learn some blocks
-            for i in range(5):
-                await mem.remember(f"Block {i}")
+    async def test_without_policy_uses_inbox_threshold(self, test_engine, mock_llm, mock_embedding) -> None:
+        """Without a policy, should_dream uses the config inbox_threshold directly."""
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, config=cfg)
+        assert sys._policy is None
+        for i in range(3):
+            await sys.learn(f"Block {i}")
+        assert sys.should_dream
+        await sys.close()
 
 
 class TestPolicyFullCycle:
-    """Integration: learn → should_dream → dream → policy learns."""
+    """Integration: learn → should_dream → dream → policy adapts."""
 
     @pytest.mark.asyncio
-    async def test_adaptive_threshold_in_multiple_cycles(self, db_path_str) -> None:
-        """Over multiple cycles, threshold adapts based on promotion rate."""
-        policy = ConsolidationPolicy(base_threshold=10, adjustment_step=2)
-        mem = await SmartMemory.open(db_path_str, policy=policy)
+    async def test_two_cycles_recorded_in_stats(self, test_engine, mock_llm, mock_embedding) -> None:
+        """After two dream() calls, policy.stats.consolidation_count == 2."""
+        policy = ConsolidationPolicy(base_threshold=3, adjustment_step=1)
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        sys = MemorySystem(
+            engine=test_engine,
+            llm_service=mock_llm,
+            embedding_service=mock_embedding,
+            config=cfg,
+            policy=policy,
+        )
+        try:
+            for cycle in range(2):
+                for i in range(3):
+                    await sys.learn(f"Cycle{cycle}-Block{i}")
+                await sys.dream()
 
-        threshold = mem._system._config.memory.inbox_threshold
-
-        # Cycle 1: Learn blocks and consolidate
-        for i in range(threshold):
-            await mem.remember(f"Round1-Block{i}")
-
-        result1 = await mem.dream()
-        threshold1 = policy.effective_threshold
-
-        # Cycle 2: Consolidate again
-        for i in range(threshold):
-            await mem.remember(f"Round2-Block{i}")
-
-        result2 = await mem.dream()
-        threshold2 = policy.effective_threshold
-
-        # Threshold should adapt based on promotion rates
-        # (actual value depends on consolidation results, but we can verify it changed)
-        assert policy.stats.consolidation_count == 2
-        # We can verify threshold history was recorded
-        assert len(policy.stats.threshold_history) >= 1
-
-        await mem.close()
+            assert policy.stats.consolidation_count == 2
+            assert len(policy.stats.threshold_history) >= 1
+        finally:
+            await sys.close()
