@@ -602,6 +602,21 @@ The 10 constitutional blocks define *principles*. These usage patterns define *h
 
 ---
 
+## Agent Discipline: Making Patterns Automatic
+
+These 20 patterns describe *what* to do. **Agent discipline** makes them
+automatic by embedding them into prompt instructions that agents follow every
+cycle. The discipline loop ensures agents calibrate their own memory through
+use — good patterns get reinforced, noise decays, and the system self-improves.
+
+**See:**
+- `examples/agent_discipline.md` — Copy-pasteable prompt instructions (3 tiers)
+- `examples/calibrating_agent.py` — Python reference implementation with 36 tests
+- `examples/simulation_calibration.md` — Proactive calibration via scenario simulation
+- `docs/CLAUDE_CODE_INTEGRATION.md` — How to use discipline with Claude Code teams
+
+---
+
 ## Next: Operationalizing the Cognitive Loop
 
 These patterns tell agents *how to use elfmem*. Next, we'll operationalize the 10 constitutional blocks to tell agents *why* and *when* to use these patterns.

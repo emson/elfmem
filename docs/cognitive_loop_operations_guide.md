@@ -508,3 +508,15 @@ Update identity
 
 **Result:** Adaptive learning system that improves indefinitely.
 
+---
+
+## Implementation: Agent Discipline
+
+This framework describes the theory. **Agent discipline** is the practical
+implementation — copy-pasteable prompt instructions that embed these loops
+into any agent's behavior, plus a Python reference implementation with tests.
+
+- `examples/agent_discipline.md` — Prompt instructions (3 tiers: basic → full)
+- `examples/calibrating_agent.py` — Self-calibrating agent with session metrics
+- `docs/agent_usage_patterns_guide.md` — The 20 core patterns this framework builds on
+

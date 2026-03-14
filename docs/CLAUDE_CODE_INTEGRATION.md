@@ -226,10 +226,92 @@ elf's identity flows into Claude's reasoning without requiring project changes o
 
 ---
 
+## Agent Discipline: Self-Calibrating Memory
+
+Static prompts tell agents what to do. **Agent discipline** teaches agents to
+improve their own memory through use. The discipline loop:
+
+```
+RECALL → EXPECT → ACT → OBSERVE → CALIBRATE → ENCODE
+```
+
+The critical step most agents skip is **calibration** — telling elfmem which
+recalled blocks actually helped (`outcome(signal=0.85)`), which were noise
+(`signal=0.45`), and which misled (`signal=0.15`). Without this, all knowledge
+decays equally and memory never improves.
+
+### Three Tiers
+
+| Tier | Instructions | Best for |
+|------|-------------|----------|
+| Basic (2 instructions) | Recall before acting, remember surprises | Simple agents, quick tasks |
+| Standard (6 instructions) | + frame selection + inline calibration | Team agents, recurring tasks |
+| Full (12 instructions) | + session metrics + reflection + meta-learning | Long-running agents |
+
+### Resources
+
+- **`examples/agent_discipline.md`** — Copy-pasteable prompt instructions for all three tiers
+- **`examples/calibrating_agent.py`** — Python reference implementation (36 tests)
+- **`examples/decision_maker.py`** — Simpler example focused on multi-frame decisions
+- **`scripts/seed_team_memory.py`** — Seed elfmem with project conventions for team agents
+
+### Quick Start: Add Discipline to a Team Agent
+
+Add this to any team agent's system prompt (Tier 2 — standard discipline):
+
+```
+Before each task:
+  1. Select frame: novel→attention, execution→task, identity→self
+  2. elfmem_recall("<task description>", frame=<selected>)
+  3. Set expectation: "I expect <prediction>."
+
+After each task:
+  4. For each recalled block: elfmem_outcome([id], signal based on usefulness)
+  5. If surprised: elfmem_remember("Expected X, observed Y. Pattern: Z")
+  6. At pauses: elfmem_dream()
+```
+
+Over cycles, useful blocks rise in confidence. Noise decays. The memory
+self-tunes toward what actually works for your team.
+
+---
+
+## Simulation-Based Calibration: The Fourth Rhythm
+
+For high-stakes or novel-domain decisions, agents can **simulate** before
+acting — generating scenarios, scoring them against knowledge, and
+pre-calibrating blocks without waiting for reality.
+
+elfmem's four rhythms:
+
+| Rhythm | Direction | What it does |
+|--------|-----------|--------------|
+| Heartbeat (learn) | Past → Memory | Fast ingestion |
+| Breathing (dream) | Memory → Structure | Deep consolidation |
+| Sleep (curate) | Structure → Health | Maintenance |
+| **Imagination (simulate)** | **Memory → Future** | **Proactive calibration** |
+
+Key concepts:
+- **Brier scores** track prediction accuracy over time
+- **Fragility scores** reveal when predictions rest on too few blocks
+- **Adversarial scenarios** prevent echo chambers
+- **Wildcard tracking** detects when the simulation framework is too narrow
+- **Tiered simulation** matches depth to decision stakes (1-10 LLM calls)
+
+See `examples/simulation_calibration.md` for the full design, edge cases,
+global politics worked example, and implementation outline.
+
+---
+
 ## Next Steps
 
 1. ✅ System prompt is in place
 2. ✅ MCP server is configured
-3. ⏳ Start using it: Ask Claude to query elf for guidance on ConsolidationPolicy
-4. ⏳ Monitor which queries to elf are most useful
-5. ⏳ Expand elf's identity with new concepts as they emerge
+3. ✅ Agent discipline documented (`examples/agent_discipline.md`)
+4. ✅ Self-calibrating agent example (`examples/calibrating_agent.py`)
+5. ✅ Team memory seeding script (`scripts/seed_team_memory.py`)
+6. ✅ Simulation calibration designed (`examples/simulation_calibration.md`)
+7. ⏳ Add discipline instructions to team agent prompts
+8. ⏳ Implement SimulatingAgent (extends CalibratingAgent)
+9. ⏳ Monitor calibration metrics and Brier scores across sessions
+10. ⏳ Expand knowledge base as patterns emerge from use
