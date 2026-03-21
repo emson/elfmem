@@ -147,6 +147,21 @@
       color: var(--muted);
       margin-right: 4px;
     }
+    button.tag {
+      background: none;
+      font: inherit;
+      cursor: pointer;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    button.tag:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+    button.tag.tag-active {
+      color: var(--text);
+      border-color: var(--text);
+      background: var(--rule);
+    }
 
     /* ── Empty state ── */
     .empty {
@@ -204,6 +219,39 @@
     /* ── At-risk notice ── */
     .at-risk { color: var(--warn); font-size: var(--text-sm); margin-top: var(--s2); }
 
+    /* ── Graph filter pills ── */
+    #graph-filters {
+      display: flex;
+      gap: var(--s2);
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: var(--s2);
+    }
+    #graph-filters .filter-group {
+      display: flex;
+      gap: var(--s1);
+      align-items: center;
+    }
+    #graph-filters .filter-sep {
+      width: 1px;
+      height: 14px;
+      background: var(--rule);
+    }
+    .node-filter {
+      background: none;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      padding: 1px 8px;
+      font: inherit;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s;
+    }
+    .node-filter.off {
+      opacity: 0.25;
+    }
+
     /* ── Scoring last-retrieval empty ── */
     .retrieval-note { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s3); }
   </style>
@@ -232,6 +280,7 @@
   <!-- ── Graph tab ── -->
   <section id="tab-graph">
     <p class="suggestion" id="suggestion-text"></p>
+    <div id="graph-filters"></div>
     <div id="graph-container"></div>
     <p class="notice" id="graph-notice" hidden></p>
     <div id="detail-panel" hidden></div>
@@ -388,12 +437,15 @@ function initGraph() {
     notice.hidden = false;
   }
 
-  // Store full content separately for zoom-dependent label visibility
+  // Store full content + filter metadata on each vis node
   const visNodes = nodes.map(n => ({
     id: n.id,
     label: '',   // no labels by default — shape carries meaning
     title: escapeHtml(n.label),  // shown on hover by vis-network
     fullLabel: escapeHtml(smartTruncate(n.label, 15)),  // revealed on zoom
+    decayTier: n.decay_tier,   // used by tier filter
+    nodeStatus: n.status,      // used by status filter
+    nodeTags: n.tags,          // used by tag filter
     color: {
       background: TIER_COLOURS[n.decay_tier] || '#444444',
       border: 'transparent',
@@ -453,24 +505,125 @@ function initGraph() {
     nodeDataSet.update(updates);
   });
 
+  // ── Node-type filter pills ──
+  const hiddenGroups = new Set();  // tier/status values that are hidden
+  const activeTags   = new Set();  // tags being filtered (OR: show nodes with ANY active tag)
+  let currentDetailNode = null;
+
+  function applyFilters() {
+    const updates = nodeDataSet.get().map(node => {
+      const byGroup = hiddenGroups.has(node.decayTier) || hiddenGroups.has(node.nodeStatus);
+      const byTag   = activeTags.size > 0 && !node.nodeTags.some(t => activeTags.has(t));
+      return { ...node, hidden: byGroup || byTag };
+    });
+    nodeDataSet.update(updates);
+  }
+
+  function makeFilterBtn(key, label, color, startOff = false) {
+    const btn = document.createElement('button');
+    btn.className = 'node-filter' + (startOff ? ' off' : '');
+    btn.textContent = label;
+    btn.style.color = color;
+    btn.title = 'Click to toggle ' + label + ' nodes';
+    btn.addEventListener('click', () => {
+      if (hiddenGroups.has(key)) {
+        hiddenGroups.delete(key);
+        btn.classList.remove('off');
+      } else {
+        hiddenGroups.add(key);
+        btn.classList.add('off');
+      }
+      applyFilters();
+    });
+    return btn;
+  }
+
+  const filterContainer = document.getElementById('graph-filters');
+
+  // Tier filters — only show tiers present in the data
+  const tiersPresent = [...new Set(nodes.map(n => n.decay_tier))];
+  const tierOrder = ['permanent', 'durable', 'standard', 'ephemeral'];
+  const presentInOrder = tierOrder.filter(t => tiersPresent.includes(t));
+
+  if (presentInOrder.length > 0) {
+    const tierGroup = document.createElement('div');
+    tierGroup.className = 'filter-group';
+    presentInOrder.forEach(tier => {
+      tierGroup.appendChild(makeFilterBtn(tier, tier, TIER_COLOURS[tier]));
+    });
+    filterContainer.appendChild(tierGroup);
+  }
+
+  // Status filter — only show if archived nodes are present; archived starts hidden
+  const statusesPresent = [...new Set(nodes.map(n => n.status))];
+  if (statusesPresent.includes('archived')) {
+    hiddenGroups.add('archived');  // off by default
+
+    const statusSep = document.createElement('div');
+    statusSep.className = 'filter-sep';
+    filterContainer.appendChild(statusSep);
+
+    const statusGroup = document.createElement('div');
+    statusGroup.className = 'filter-group';
+    ['active', 'archived'].filter(s => statusesPresent.includes(s)).forEach(status => {
+      const colour = status === 'active' ? 'var(--good)' : 'var(--muted)';
+      statusGroup.appendChild(makeFilterBtn(status, status, colour, status === 'archived'));
+    });
+    filterContainer.appendChild(statusGroup);
+
+    applyFilters();  // apply initial hidden state for archived nodes
+  }
+
+  // Tag filter group — populated dynamically when tags are clicked in the detail panel
+  const tagSep = document.createElement('div');
+  tagSep.className = 'filter-sep';
+  tagSep.hidden = true;
+  const tagGroup = document.createElement('div');
+  tagGroup.className = 'filter-group';
+  tagGroup.hidden = true;
+  filterContainer.appendChild(tagSep);
+  filterContainer.appendChild(tagGroup);
+
+  function toggleTagFilter(tag) {
+    if (activeTags.has(tag)) {
+      activeTags.delete(tag);
+      Array.from(tagGroup.children)
+        .find(el => el.dataset.tagKey === tag)
+        ?.remove();
+    } else {
+      activeTags.add(tag);
+      const pill = document.createElement('button');
+      pill.className = 'node-filter';
+      pill.style.color = 'var(--text)';
+      pill.dataset.tagKey = tag;
+      pill.textContent = tag;
+      pill.title = 'Click to remove tag filter';
+      pill.addEventListener('click', () => toggleTagFilter(tag));
+      tagGroup.appendChild(pill);
+    }
+    tagSep.hidden = tagGroup.hidden = activeTags.size === 0;
+    applyFilters();
+    // Re-render detail panel so tag active states stay in sync
+    if (currentDetailNode) showDetailPanel(currentDetailNode, edges, activeTags, toggleTagFilter);
+  }
+
   network.on('click', params => {
     if (params.nodes.length === 0) return;
     const nodeId = params.nodes[0];
-    const node   = nodes.find(n => n.id === nodeId);
-    if (node) showDetailPanel(node, edges);
+    currentDetailNode = nodes.find(n => n.id === nodeId) || null;
+    if (currentDetailNode) showDetailPanel(currentDetailNode, edges, activeTags, toggleTagFilter);
   });
 }
 
-function showDetailPanel(node, edges) {
+function showDetailPanel(node, edges, activeTags = new Set(), onTagClick = null) {
   const connected = edges.filter(e => e.from_id === node.id || e.to_id === node.id);
   const edgeStr = connected.length
     ? connected.map(e => escapeHtml(e.relation_type) + ' (' + e.weight.toFixed(2) + ')').join(' · ')
     : '—';
-  const tagStr = node.tags.length
-    ? node.tags.map(t => '<span class="tag">' + escapeHtml(t) + '</span>').join(' ')
-    : '—';
 
   const panel = document.getElementById('detail-panel');
+
+  // Render static content via innerHTML
   panel.innerHTML =
     '<p>' + escapeHtml(node.content || node.label) + '</p>' +
     '<dl>' +
@@ -481,9 +634,27 @@ function showDetailPanel(node, edges) {
     '<dt>Reinforced</dt><dd>' + node.reinforcement_count + '×'           + '</dd>' +
     '<dt>Alignment</dt><dd>'  + node.self_alignment.toFixed(3)           + '</dd>' +
     '<dt>Category</dt><dd>'   + escapeHtml(node.category)                + '</dd>' +
-    '<dt>Tags</dt><dd>'       + tagStr                                   + '</dd>' +
+    '<dt>Tags</dt><dd id="detail-tags"></dd>' +
     '<dt>Edges</dt><dd>'      + edgeStr                                  + '</dd>' +
     '</dl>';
+
+  // Build tags — interactive buttons if tag filter is available, spans otherwise
+  const tagsEl = panel.querySelector('#detail-tags');
+  if (node.tags.length === 0) {
+    tagsEl.textContent = '—';
+  } else if (onTagClick) {
+    node.tags.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.className = 'tag' + (activeTags.has(tag) ? ' tag-active' : '');
+      btn.textContent = tag;
+      btn.title = activeTags.has(tag) ? 'Remove tag filter' : 'Filter by this tag';
+      btn.addEventListener('click', () => onTagClick(tag));
+      tagsEl.appendChild(btn);
+    });
+  } else {
+    tagsEl.innerHTML = node.tags.map(t => '<span class="tag">' + escapeHtml(t) + '</span>').join(' ');
+  }
+
   panel.hidden = false;
 }
 
