@@ -14,12 +14,16 @@ import pytest
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.db.engine import create_test_engine
-from elfmem.db.queries import get_block, get_edges_for_block, seed_builtin_data, update_block_scoring
+from elfmem.db.queries import (
+    get_block,
+    get_edges_for_block,
+    seed_builtin_data,
+    update_block_scoring,
+)
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.learn import learn
 from elfmem.operations.outcome import compute_bayesian_update, record_outcome
 from elfmem.types import OutcomeResult
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -50,30 +54,43 @@ class TestComputeBayesianUpdate:
     """Unit tests for compute_bayesian_update() — no DB required."""
 
     def test_good_outcome_increases_confidence(self):
-        result = compute_bayesian_update(confidence=0.5, outcome_evidence=0.0, signal=1.0, weight=1.0, prior_strength=2.0)
+        result = compute_bayesian_update(
+            confidence=0.5, outcome_evidence=0.0, signal=1.0, weight=1.0, prior_strength=2.0
+        )
         assert result > 0.5
 
     def test_bad_outcome_decreases_confidence(self):
-        result = compute_bayesian_update(confidence=0.5, outcome_evidence=0.0, signal=0.0, weight=1.0, prior_strength=2.0)
+        result = compute_bayesian_update(
+            confidence=0.5, outcome_evidence=0.0, signal=0.0, weight=1.0, prior_strength=2.0
+        )
         assert result < 0.5
 
     def test_converges_toward_1_after_many_good_outcomes(self):
         confidence, evidence = 0.5, 0.0
         for _ in range(20):
-            confidence = compute_bayesian_update(confidence=confidence, outcome_evidence=evidence, signal=1.0, weight=1.0, prior_strength=2.0)
+            confidence = compute_bayesian_update(
+                confidence=confidence, outcome_evidence=evidence,
+                signal=1.0, weight=1.0, prior_strength=2.0,
+            )
             evidence += 1.0
         assert confidence > 0.90
 
     def test_converges_toward_0_after_many_bad_outcomes(self):
         confidence, evidence = 0.5, 0.0
         for _ in range(20):
-            confidence = compute_bayesian_update(confidence=confidence, outcome_evidence=evidence, signal=0.0, weight=1.0, prior_strength=2.0)
+            confidence = compute_bayesian_update(
+                confidence=confidence, outcome_evidence=evidence,
+                signal=0.0, weight=1.0, prior_strength=2.0,
+            )
             evidence += 1.0
         assert confidence < 0.10
 
     def test_output_always_in_range(self):
         for signal in [0.0, 0.25, 0.5, 0.75, 1.0]:
-            result = compute_bayesian_update(confidence=0.3, outcome_evidence=10.0, signal=signal, weight=2.0, prior_strength=2.0)
+            result = compute_bayesian_update(
+                confidence=0.3, outcome_evidence=10.0, signal=signal,
+                weight=2.0, prior_strength=2.0,
+            )
             assert 0.0 <= result <= 1.0
 
 
@@ -350,7 +367,9 @@ class TestOutcomeDrivenEdges:
         async with engine.begin() as conn:
             r1 = await learn(conn, content="block similar a", category="knowledge", source="api")
             r2 = await learn(conn, content="block similar b", category="knowledge", source="api")
-            await consolidate(conn, llm=mock_llm, embedding_svc=embedding_with_edge, current_active_hours=1.0)
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=embedding_with_edge, current_active_hours=1.0
+            )
             b1, b2 = r1.block_id, r2.block_id
             rc_before = (await get_edges_for_block(conn, b1))[0]["reinforcement_count"]
             result = await record_outcome(

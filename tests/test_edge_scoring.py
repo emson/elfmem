@@ -126,7 +126,9 @@ class TestCompositeEdgeIntegration:
         )
         llm = MockLLMService(default_tags=[])
         async with db.begin() as conn:
-            result = await learn(conn, content="python async patterns", category="knowledge", source="api")
+            result = await learn(
+                conn, content="python async patterns", category="knowledge", source="api"
+            )
             await learn(conn, content="sql query optimization", category="knowledge", source="api")
             await consolidate(
                 conn, llm=llm, embedding_svc=embedding, current_active_hours=5.0

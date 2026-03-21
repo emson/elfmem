@@ -22,7 +22,6 @@ from elfmem.api import MemorySystem
 from elfmem.token_counter import TokenCounter
 from elfmem.types import TokenUsage
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 
@@ -52,8 +51,14 @@ class TestTokenUsage:
         assert u.total_tokens == 170
 
     def test_add_combines_all_fields(self):
-        a = TokenUsage(llm_input_tokens=100, llm_output_tokens=20, embedding_tokens=50, llm_calls=2, embedding_calls=3)
-        b = TokenUsage(llm_input_tokens=200, llm_output_tokens=40, embedding_tokens=100, llm_calls=1, embedding_calls=2)
+        a = TokenUsage(
+            llm_input_tokens=100, llm_output_tokens=20, embedding_tokens=50,
+            llm_calls=2, embedding_calls=3,
+        )
+        b = TokenUsage(
+            llm_input_tokens=200, llm_output_tokens=40, embedding_tokens=100,
+            llm_calls=1, embedding_calls=2,
+        )
         c = a + b
         assert c.llm_input_tokens == 300
         assert c.llm_output_tokens == 60
@@ -72,7 +77,10 @@ class TestTokenUsage:
             u.llm_calls = 2  # type: ignore[misc]
 
     def test_to_dict_round_trips_via_constructor(self):
-        u = TokenUsage(llm_input_tokens=100, llm_output_tokens=20, embedding_tokens=50, llm_calls=2, embedding_calls=3)
+        u = TokenUsage(
+            llm_input_tokens=100, llm_output_tokens=20, embedding_tokens=50,
+            llm_calls=2, embedding_calls=3,
+        )
         assert TokenUsage(**u.to_dict()) == u
 
 
@@ -127,9 +135,14 @@ class TestStatusTokenFields:
         assert result.lifetime_tokens == TokenUsage()
 
     @pytest.mark.asyncio
-    async def test_status_reads_session_tokens_from_counter(self, test_engine, mock_llm, mock_embedding):
+    async def test_status_reads_session_tokens_from_counter(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         counter.record_llm(input_tokens=100, output_tokens=20)
         counter.record_embedding(tokens=50)
         result = await sys.status()
@@ -138,9 +151,14 @@ class TestStatusTokenFields:
         assert result.session_tokens.embedding_tokens == 50
 
     @pytest.mark.asyncio
-    async def test_status_snapshot_does_not_alter_counter(self, test_engine, mock_llm, mock_embedding):
+    async def test_status_snapshot_does_not_alter_counter(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         counter.record_llm(input_tokens=100, output_tokens=10)
         await sys.status()
         assert counter.snapshot().llm_calls == 1  # not reset by status()
@@ -151,9 +169,14 @@ class TestStatusTokenFields:
 
 class TestTokenPersistence:
     @pytest.mark.asyncio
-    async def test_end_session_persists_lifetime_tokens_to_db(self, test_engine, mock_llm, mock_embedding):
+    async def test_end_session_persists_lifetime_tokens_to_db(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         await sys.begin_session()
         counter.record_llm(input_tokens=200, output_tokens=30)
         counter.record_embedding(tokens=80)
@@ -165,9 +188,14 @@ class TestTokenPersistence:
         assert result.lifetime_tokens.llm_calls == 1
 
     @pytest.mark.asyncio
-    async def test_lifetime_tokens_accumulate_across_sessions(self, test_engine, mock_llm, mock_embedding):
+    async def test_lifetime_tokens_accumulate_across_sessions(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         await sys.begin_session()
         counter.record_llm(input_tokens=100, output_tokens=10)
         await sys.end_session()
@@ -181,9 +209,14 @@ class TestTokenPersistence:
         assert result.lifetime_tokens.llm_calls == 2
 
     @pytest.mark.asyncio
-    async def test_begin_session_resets_session_counter(self, test_engine, mock_llm, mock_embedding):
+    async def test_begin_session_resets_session_counter(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         await sys.begin_session()
         counter.record_llm(input_tokens=100, output_tokens=10)
         await sys.end_session()
@@ -194,9 +227,14 @@ class TestTokenPersistence:
         await sys.end_session()
 
     @pytest.mark.asyncio
-    async def test_idempotent_begin_session_does_not_reset_counter(self, test_engine, mock_llm, mock_embedding):
+    async def test_idempotent_begin_session_does_not_reset_counter(
+        self, test_engine, mock_llm, mock_embedding
+    ):
         counter = TokenCounter()
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, token_counter=counter)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            token_counter=counter,
+        )
         await sys.begin_session()
         counter.record_llm(input_tokens=100, output_tokens=10)
         await sys.begin_session()  # idempotent — must not reset
@@ -219,7 +257,10 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion.usage.prompt_tokens = 100
         mock_completion.usage.completion_tokens = 20
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
 
         await adapter.process_block("block content", "self context")
@@ -235,7 +276,10 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion.usage.prompt_tokens = 100
         mock_completion.usage.completion_tokens = 20
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
         await adapter.process_block("block content", "self context")  # must not raise
 
@@ -246,7 +290,10 @@ class TestLiteLLMAdapterTokenRecording:
         mock_completion = MagicMock()
         mock_completion.usage = None
         adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"), mock_completion)
+            return_value=(
+                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
+                mock_completion,
+            )
         )
         await adapter.process_block("block content", "self context")
         assert counter.snapshot() == TokenUsage()  # nothing recorded
@@ -263,7 +310,10 @@ class TestLiteLLMEmbeddingAdapterTokenRecording:
         mock_response = MagicMock()
         mock_response.usage.prompt_tokens = 15
         mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch("elfmem.adapters.litellm.litellm.aembedding", new=AsyncMock(return_value=mock_response)):
+        with patch(
+            "elfmem.adapters.litellm.litellm.aembedding",
+            new=AsyncMock(return_value=mock_response),
+        ):
             await adapter.embed("test text")
         snap = counter.snapshot()
         assert snap.embedding_tokens == 15
@@ -275,7 +325,10 @@ class TestLiteLLMEmbeddingAdapterTokenRecording:
         mock_response = MagicMock()
         mock_response.usage.prompt_tokens = 15
         mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch("elfmem.adapters.litellm.litellm.aembedding", new=AsyncMock(return_value=mock_response)):
+        with patch(
+            "elfmem.adapters.litellm.litellm.aembedding",
+            new=AsyncMock(return_value=mock_response),
+        ):
             await adapter.embed("test text")  # must not raise
 
     @pytest.mark.asyncio
@@ -285,6 +338,9 @@ class TestLiteLLMEmbeddingAdapterTokenRecording:
         mock_response = MagicMock()
         mock_response.usage = None
         mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch("elfmem.adapters.litellm.litellm.aembedding", new=AsyncMock(return_value=mock_response)):
+        with patch(
+            "elfmem.adapters.litellm.litellm.aembedding",
+            new=AsyncMock(return_value=mock_response),
+        ):
             await adapter.embed("test text")
         assert counter.snapshot() == TokenUsage()  # nothing recorded

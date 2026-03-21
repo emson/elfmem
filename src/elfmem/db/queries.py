@@ -706,7 +706,10 @@ async def get_weighted_degree(
         )
     )
     for row in result.mappings():
-        eff = float(row["weight"]) + math.log1p(row["reinforcement_count"]) * _REINFORCE_WEIGHT_BONUS
+        eff = (
+            float(row["weight"])
+            + math.log1p(row["reinforcement_count"]) * _REINFORCE_WEIGHT_BONUS
+        )
         if row["from_id"] in id_set:
             degrees[row["from_id"]] += eff
         if row["to_id"] in id_set:

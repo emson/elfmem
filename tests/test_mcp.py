@@ -1,8 +1,9 @@
 """Tests for mcp.py — MCP tool functions."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from elfmem.api import MemorySystem
 from elfmem.types import (
@@ -14,7 +15,6 @@ from elfmem.types import (
     SystemStatus,
     TokenUsage,
 )
-
 
 # ── Test helpers ──────────────────────────────────────────────────────────────
 

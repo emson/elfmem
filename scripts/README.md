@@ -1,8 +1,25 @@
 # Utility Scripts
 
-One-time learning scripts for seeding elfmem with domain knowledge. These are **not** part of the main package — they're examples and utilities for knowledge initialization.
+One-time learning scripts for seeding elfmem with domain knowledge, and visualization tools. These are **not** part of the main package — they're examples and utilities for knowledge exploration and initialization.
 
-## Scripts
+## Visualization
+
+### `visualise.py`
+Generate an interactive HTML dashboard of your knowledge graph.
+- **Zoom-dependent labels** — Clean at full zoom, reveal detail when zoomed in
+- **Force-directed graph** — Explore relationships between memory blocks
+- **Decay curves** — Visualize knowledge lifecycle and prune risk
+- **Lifecycle flow** — See blocks move through inbox → active → archived
+- **Token tracking** — Monitor LLM usage across sessions
+- Requires `elfmem[viz]` extra: `uv add 'elfmem[viz]'`
+- Usage:
+  ```bash
+  python scripts/visualise.py                        # temp database
+  python scripts/visualise.py ~/.elfmem/agent.db     # specific database
+  python scripts/visualise.py ~/.elfmem/agent.db --archived  # include archived blocks
+  ```
+
+## Learning Scripts
 
 ### `learn_sim_concepts.py`
 Extract reusable design simulation concepts from the project design methodology.

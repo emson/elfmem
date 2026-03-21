@@ -18,7 +18,6 @@ from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.types import ConsolidateResult
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 

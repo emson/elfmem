@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -29,7 +28,7 @@ except ImportError:
     raise SystemExit(
         "elfmem CLI requires the 'cli' extra:\n"
         "  pip install 'elfmem[cli]'  or  uv add 'elfmem[cli]'"
-    )
+    ) from None
 
 from elfmem.api import MemorySystem
 from elfmem.exceptions import ElfmemError
@@ -67,7 +66,7 @@ def _run(coro: Any) -> Any:
         return asyncio.run(coro)
     except ElfmemError as e:
         typer.echo(f"Error: {e.args[0]}\nRecovery: {e.recovery}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _json(data: Any) -> None:
@@ -127,7 +126,7 @@ def init(
     Run 'elfmem templates' to see all available templates with descriptions.
     """
     from elfmem.config import render_default_config
-    from elfmem.seed import get_template, list_templates
+    from elfmem.seed import get_template
 
     # Validate template name early, before touching the filesystem
     if template is not None:
@@ -192,12 +191,15 @@ def init(
                 typer.echo(f"✓  Seed:     {created} blocks created (constitutional{label}).")
             else:
                 typer.echo(
-                    f"✓  Seed:     Blocks already present ({skipped} skipped, constitutional{label})."
+                    f"✓  Seed:     Blocks already present "
+                    f"({skipped} skipped, constitutional{label})."
                 )
         if self_result is not None:
             status_msg = self_result["status"]
             if status_msg == "created":
-                typer.echo(f"✓  SELF:     Stored block {self_result['block_id'][:8]}. Status: created.")
+                typer.echo(
+                    f"✓  SELF:     Stored block {self_result['block_id'][:8]}. Status: created."
+                )
             elif status_msg == "duplicate_rejected":
                 typer.echo("✓  SELF:     Block already exists (skipped — no duplicate created).")
             else:
@@ -471,7 +473,7 @@ def serve(
             "  pip install 'elfmem[mcp]'  or  uv add 'elfmem[mcp]'",
             err=True,
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     mcp_main(db_path=db, config_path=config, use_adaptive_policy=adaptive_policy)
 
 

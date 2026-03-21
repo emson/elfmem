@@ -60,7 +60,7 @@ class ScoredBlock:
     def __str__(self) -> str:
         return self.summary
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "content": self.content,
@@ -96,7 +96,7 @@ class FrameResult:
     def __str__(self) -> str:
         return self.summary
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "frame_name": self.frame_name,
             "block_count": len(self.blocks),
@@ -126,7 +126,7 @@ class LearnResult:
     def __str__(self) -> str:
         return self.summary
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         return {"block_id": self.block_id, "status": self.status}
 
 
@@ -418,7 +418,7 @@ class SystemStatus:
         lines.append(f"Suggestion: {self.suggestion}")
         return "\n".join(lines)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "session_active": self.session_active,
             "session_hours": self.session_hours,
@@ -614,7 +614,10 @@ class ConnectByQueryResult:
         if self.action == "dry_run_preview":
             s = (self.source_content[:60] + "…") if self.source_content else "?"
             t = (self.target_content[:60] + "…") if self.target_content else "?"
-            return f"dry_run: source='{s}' | target='{t}'. Call again without dry_run=True to connect."
+            return (
+                f"dry_run: source='{s}' | target='{t}'."
+                " Call again without dry_run=True to connect."
+            )
         if self.connect_result:
             return self.connect_result.summary
         return f"connect_by_query: {self.action}."

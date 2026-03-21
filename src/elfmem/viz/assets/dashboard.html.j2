@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>elfmem dashboard</title>
+  <style>
+    /* ── Variables (Dieter Rams: monochrome base + 4 semantic accents) ── */
+    :root {
+      --bg:        #0f0f0f;
+      --surface:   #161616;
+      --rule:      #2a2a2a;
+      --text:      #e0e0e0;
+      --muted:     #606060;
+
+      --good:      #4e9a63;
+      --warn:      #9a7c34;
+      --error:     #9a4a4a;
+
+      --permanent: #8888cc;
+      --durable:   #6688aa;
+      --standard:  #558877;
+      --ephemeral: #886644;
+      --inbox-c:   #444444;
+      --archived-c:#2a2a2a;
+
+      --edge-similar:    #3a3a3a;
+      --edge-co_occurs:  #5577aa;
+      --edge-outcome:    #557755;
+      --edge-agent:      #886633;
+      --edge-contradicts:#993333;
+
+      --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+
+      --text-sm:   11px;
+      --text-base: 13px;
+      --text-lg:   16px;
+
+      --weight-normal: 400;
+      --weight-medium: 500;
+
+      --s1:  8px;
+      --s2: 16px;
+      --s3: 24px;
+      --s4: 32px;
+      --s6: 48px;
+    }
+
+    /* ── Reset + base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--s3);
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: baseline;
+      gap: var(--s3);
+      padding: var(--s2) 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+    .logo { font-size: var(--text-lg); color: var(--text); font-weight: var(--weight-medium); }
+    .health-good      { color: var(--good); }
+    .health-attention { color: var(--warn); }
+    .health-degraded  { color: var(--error); }
+    .spacer { flex: 1; }
+
+    /* ── Navigation ── */
+    nav {
+      display: flex;
+      gap: var(--s3);
+      padding: var(--s2) 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    nav button {
+      background: none;
+      border: none;
+      border-bottom: 1px solid transparent;
+      padding: 0 0 2px 0;
+      font: inherit;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    nav button.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+
+    /* ── Sections ── */
+    section { padding: var(--s4) 0; }
+    h2 { font-size: var(--text-lg); font-weight: var(--weight-medium); margin: 0 0 var(--s3); }
+    h3 { font-size: var(--text-base); font-weight: var(--weight-medium); margin: 0 0 var(--s2); color: var(--muted); }
+
+    /* ── Two-column grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+
+    /* ── Graph canvas ── */
+    #graph-container {
+      height: 500px;
+      border: 1px solid var(--rule);
+      background: var(--surface);
+    }
+
+    /* ── Detail panel ── */
+    #detail-panel {
+      margin-top: var(--s3);
+      padding: var(--s3);
+      border-top: 1px solid var(--rule);
+    }
+    #detail-panel p {
+      margin: 0 0 var(--s2);
+      font-size: var(--text-base);
+    }
+
+    /* ── Definition list ── */
+    dl {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: var(--s1) var(--s3);
+    }
+    dt { color: var(--muted); font-size: var(--text-sm); }
+    dd { margin: 0; font-family: var(--mono); font-size: var(--text-sm); }
+
+    /* ── Tag pills ── */
+    .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      margin-right: 4px;
+    }
+    button.tag {
+      background: none;
+      font: inherit;
+      cursor: pointer;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    button.tag:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+    button.tag.tag-active {
+      color: var(--text);
+      border-color: var(--text);
+      background: var(--rule);
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      padding: var(--s6) 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: var(--text-sm);
+      line-height: 2.2;
+    }
+    .empty code { font-family: var(--mono); color: var(--text); }
+
+    /* ── Suggestion line ── */
+    .suggestion {
+      margin-bottom: var(--s3);
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* ── Notice line (truncation) ── */
+    .notice {
+      margin-top: var(--s2);
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* ── Chart containers ── */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { display: block; }
+
+    /* ── Lifecycle flow ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: var(--s2);
+      margin-top: var(--s4);
+      padding-top: var(--s3);
+      border-top: 1px solid var(--rule);
+    }
+    .flow-box {
+      padding: var(--s1) var(--s2);
+      border: 1px solid var(--rule);
+      text-align: center;
+      font-size: var(--text-sm);
+      min-width: 80px;
+    }
+    .flow-count {
+      display: block;
+      font-family: var(--mono);
+      font-size: var(--text-lg);
+      color: var(--text);
+      margin-top: 2px;
+    }
+    .flow-arrow { color: var(--muted); }
+
+    /* ── At-risk notice ── */
+    .at-risk { color: var(--warn); font-size: var(--text-sm); margin-top: var(--s2); }
+
+    /* ── Graph filter pills ── */
+    #graph-filters {
+      display: flex;
+      gap: var(--s2);
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: var(--s2);
+    }
+    #graph-filters .filter-group {
+      display: flex;
+      gap: var(--s1);
+      align-items: center;
+    }
+    #graph-filters .filter-sep {
+      width: 1px;
+      height: 14px;
+      background: var(--rule);
+    }
+    .node-filter {
+      background: none;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      padding: 1px 8px;
+      font: inherit;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s;
+    }
+    .node-filter.off {
+      opacity: 0.25;
+    }
+
+    /* ── Scoring last-retrieval empty ── */
+    .retrieval-note { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s3); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">elfmem</span>
+  <span id="h-inbox">— inbox</span>
+  <span id="h-active">— active</span>
+  <span id="h-archived">— archived</span>
+  <span id="h-health" class="health-good">—</span>
+  <span class="spacer"></span>
+  <span id="h-generated">—</span>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="graph">Graph</button>
+  <button class="tab" data-tab="lifecycle">Lifecycle</button>
+  <button class="tab" data-tab="decay">Decay</button>
+  <button class="tab" data-tab="scoring">Scoring</button>
+</nav>
+
+<main>
+
+  <!-- ── Graph tab ── -->
+  <section id="tab-graph">
+    <p class="suggestion" id="suggestion-text"></p>
+    <div id="graph-filters"></div>
+    <div id="graph-container"></div>
+    <p class="notice" id="graph-notice" hidden></p>
+    <div id="detail-panel" hidden></div>
+  </section>
+
+  <!-- ── Lifecycle tab ── -->
+  <section id="tab-lifecycle" hidden>
+    <h2>Lifecycle</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Status distribution</h3>
+        <div class="chart-wrap"><canvas id="lifecycle-status-chart" height="220"></canvas></div>
+      </div>
+      <div>
+        <h3>Decay tier distribution</h3>
+        <div class="chart-wrap"><canvas id="lifecycle-tier-chart" height="220"></canvas></div>
+      </div>
+    </div>
+    <div class="flow" id="lifecycle-flow">
+      <div class="flow-box">learn()<br><span class="flow-count" id="flow-inbox">—</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">inbox<br><span class="flow-count" id="flow-inbox-lbl">—</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">active<br><span class="flow-count" id="flow-active">—</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">archived<br><span class="flow-count" id="flow-archived">—</span></div>
+    </div>
+  </section>
+
+  <!-- ── Decay tab ── -->
+  <section id="tab-decay" hidden>
+    <h2>Decay</h2>
+    <div style="margin-bottom:var(--s4)">
+      <h3>Decay curves by tier</h3>
+      <div class="chart-wrap"><canvas id="decay-curves-chart" height="260"></canvas></div>
+    </div>
+    <div>
+      <h3>Live block positions</h3>
+      <div class="chart-wrap"><canvas id="decay-scatter-chart" height="260"></canvas></div>
+      <p class="at-risk" id="at-risk-notice" hidden></p>
+    </div>
+  </section>
+
+  <!-- ── Scoring tab ── -->
+  <section id="tab-scoring" hidden>
+    <h2>Scoring</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Frame weight profiles</h3>
+        <div class="chart-wrap"><canvas id="scoring-radar-chart" height="280"></canvas></div>
+      </div>
+      <div>
+        <h3>Last retrieval</h3>
+        <div id="last-retrieval-container"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Embed all data as a JS constant -->
+<script>const ELFMEM_DATA = {{ data_json | safe }};</script>
+
+{% if offline %}
+<script>{{ vis_network_js | safe }}</script>
+<script>{{ chartjs | safe }}</script>
+{% else %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+{% endif %}
+
+<script>
+'use strict';
+
+// ── Colour constants (mirrors CSS variables) ──────────────────────────────────
+const TIER_COLOURS = {
+  permanent: '#8888cc',
+  durable:   '#6688aa',
+  standard:  '#558877',
+  ephemeral: '#886644',
+  inbox:     '#444444',
+  archived:  '#2a2a2a',
+};
+
+const EDGE_COLOURS = {
+  similar:     '#3a3a3a',
+  co_occurs:   '#5577aa',
+  outcome:     '#557755',
+  agent:       '#886633',
+  contradicts: '#993333',
+};
+
+const FRAME_COLOURS = ['#8888cc', '#6688aa', '#558877', '#886644', '#9a7c34'];
+
+// ── XSS guard ─────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function smartTruncate(text, maxChars) {
+  if (text.length <= maxChars) return text;
+  // Find the end of the word that contains maxChars
+  let truncated = text.substring(0, maxChars);
+  const nextSpaceIdx = text.indexOf(' ', maxChars);
+  if (nextSpaceIdx > -1) {
+    truncated = text.substring(0, nextSpaceIdx);
+  }
+  // Add ellipsis if there's more content after truncated text
+  return truncated + (text.length > truncated.length ? '…' : '');
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('section[id^="tab-"]').forEach(s => { s.hidden = true; });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).hidden = false;
+  });
+});
+
+// ── Header population ─────────────────────────────────────────────────────────
+function populateHeader() {
+  const h = ELFMEM_DATA.health;
+  document.getElementById('h-inbox').textContent    = h.inbox_count + ' inbox';
+  document.getElementById('h-active').textContent   = h.active_count + ' active';
+  document.getElementById('h-archived').textContent = h.archived_count + ' archived';
+
+  const healthEl = document.getElementById('h-health');
+  healthEl.textContent = h.health;
+  healthEl.className   = 'health-' + h.health;
+
+  document.getElementById('h-generated').textContent = h.generated_at.slice(0, 19).replace('T', ' ') + ' UTC';
+  document.getElementById('suggestion-text').textContent = h.suggestion;
+}
+
+// ── Graph (vis-network) ───────────────────────────────────────────────────────
+function initGraph() {
+  const { nodes, edges, truncated, total_blocks } = ELFMEM_DATA.graph;
+  const container = document.getElementById('graph-container');
+
+  if (nodes.length === 0) {
+    container.innerHTML = '<div class="empty">No active blocks yet.<br>Call <code>learn()</code> then <code>dream()</code> to build memory.</div>';
+    return;
+  }
+
+  if (truncated) {
+    const notice = document.getElementById('graph-notice');
+    notice.textContent = 'Showing ' + nodes.length + ' of ' + total_blocks + ' blocks by centrality.';
+    notice.hidden = false;
+  }
+
+  // Store full content + filter metadata on each vis node
+  const visNodes = nodes.map(n => ({
+    id: n.id,
+    label: '',   // no labels by default — shape carries meaning
+    title: escapeHtml(n.label),  // shown on hover by vis-network
+    fullLabel: escapeHtml(smartTruncate(n.label, 15)),  // revealed on zoom
+    decayTier: n.decay_tier,   // used by tier filter
+    nodeStatus: n.status,      // used by status filter
+    nodeTags: n.tags,          // used by tag filter
+    color: {
+      background: TIER_COLOURS[n.decay_tier] || '#444444',
+      border: 'transparent',
+      highlight: { background: TIER_COLOURS[n.decay_tier] || '#444444', border: '#e0e0e0' },
+    },
+    size: Math.max(6, 6 + Math.log1p(n.reinforcement_count) * 4),
+  }));
+
+  const visEdges = edges.map(e => ({
+    from: e.from_id,
+    to:   e.to_id,
+    width: 1 + e.weight * 3,
+    color: {
+      color:   EDGE_COLOURS[e.relation_type] || '#3a3a3a',
+      opacity: 0.25 + e.weight * 0.5,
+    },
+    dashes: e.weight < 0.3,
+  }));
+
+  const nodeDataSet = new vis.DataSet(visNodes);
+  const network = new vis.Network(
+    container,
+    { nodes: nodeDataSet, edges: new vis.DataSet(visEdges) },
+    {
+      physics: {
+        solver: 'forceAtlas2Based',
+        forceAtlas2Based: { gravitationalConstant: -30, springLength: 80 },
+        stabilization: { iterations: 150, fit: true },
+      },
+      interaction: { hover: true, tooltips: false },
+      nodes: {
+        shape: 'dot',
+        borderWidth: 0,
+        borderWidthSelected: 1,
+        font: { size: 11, color: '#606060', face: 'system-ui' },
+      },
+      edges: {
+        smooth: { type: 'continuous', roundness: 0.2 },
+        selectionWidth: 0,
+      },
+    }
+  );
+
+  // ── Zoom-dependent label visibility ──
+  const ZOOM_THRESHOLD = 0.7;
+  let labelsExpanded = false;
+
+  network.on('zoom', event => {
+    const shouldExpand = event.scale >= ZOOM_THRESHOLD;
+    if (shouldExpand === labelsExpanded) return;  // no change, skip update
+
+    labelsExpanded = shouldExpand;
+    const updates = nodeDataSet.get().map(node => ({
+      ...node,
+      label: shouldExpand ? node.fullLabel : '',
+    }));
+    nodeDataSet.update(updates);
+  });
+
+  // ── Node-type filter pills ──
+  const hiddenGroups = new Set();  // tier/status values that are hidden
+  const activeTags   = new Set();  // tags being filtered (OR: show nodes with ANY active tag)
+  let currentDetailNode = null;
+
+  function applyFilters() {
+    const updates = nodeDataSet.get().map(node => {
+      const byGroup = hiddenGroups.has(node.decayTier) || hiddenGroups.has(node.nodeStatus);
+      const byTag   = activeTags.size > 0 && !node.nodeTags.some(t => activeTags.has(t));
+      return { ...node, hidden: byGroup || byTag };
+    });
+    nodeDataSet.update(updates);
+  }
+
+  function makeFilterBtn(key, label, color, startOff = false) {
+    const btn = document.createElement('button');
+    btn.className = 'node-filter' + (startOff ? ' off' : '');
+    btn.textContent = label;
+    btn.style.color = color;
+    btn.title = 'Click to toggle ' + label + ' nodes';
+    btn.addEventListener('click', () => {
+      if (hiddenGroups.has(key)) {
+        hiddenGroups.delete(key);
+        btn.classList.remove('off');
+      } else {
+        hiddenGroups.add(key);
+        btn.classList.add('off');
+      }
+      applyFilters();
+    });
+    return btn;
+  }
+
+  const filterContainer = document.getElementById('graph-filters');
+
+  // Tier filters — only show tiers present in the data
+  const tiersPresent = [...new Set(nodes.map(n => n.decay_tier))];
+  const tierOrder = ['permanent', 'durable', 'standard', 'ephemeral'];
+  const presentInOrder = tierOrder.filter(t => tiersPresent.includes(t));
+
+  if (presentInOrder.length > 0) {
+    const tierGroup = document.createElement('div');
+    tierGroup.className = 'filter-group';
+    presentInOrder.forEach(tier => {
+      tierGroup.appendChild(makeFilterBtn(tier, tier, TIER_COLOURS[tier]));
+    });
+    filterContainer.appendChild(tierGroup);
+  }
+
+  // Status filter — only show if archived nodes are present; archived starts hidden
+  const statusesPresent = [...new Set(nodes.map(n => n.status))];
+  if (statusesPresent.includes('archived')) {
+    hiddenGroups.add('archived');  // off by default
+
+    const statusSep = document.createElement('div');
+    statusSep.className = 'filter-sep';
+    filterContainer.appendChild(statusSep);
+
+    const statusGroup = document.createElement('div');
+    statusGroup.className = 'filter-group';
+    ['active', 'archived'].filter(s => statusesPresent.includes(s)).forEach(status => {
+      const colour = status === 'active' ? 'var(--good)' : 'var(--muted)';
+      statusGroup.appendChild(makeFilterBtn(status, status, colour, status === 'archived'));
+    });
+    filterContainer.appendChild(statusGroup);
+
+    applyFilters();  // apply initial hidden state for archived nodes
+  }
+
+  // Tag filter group — populated dynamically when tags are clicked in the detail panel
+  const tagSep = document.createElement('div');
+  tagSep.className = 'filter-sep';
+  tagSep.hidden = true;
+  const tagGroup = document.createElement('div');
+  tagGroup.className = 'filter-group';
+  tagGroup.hidden = true;
+  filterContainer.appendChild(tagSep);
+  filterContainer.appendChild(tagGroup);
+
+  function toggleTagFilter(tag) {
+    if (activeTags.has(tag)) {
+      activeTags.delete(tag);
+      Array.from(tagGroup.children)
+        .find(el => el.dataset.tagKey === tag)
+        ?.remove();
+    } else {
+      activeTags.add(tag);
+      const pill = document.createElement('button');
+      pill.className = 'node-filter';
+      pill.style.color = 'var(--text)';
+      pill.dataset.tagKey = tag;
+      pill.textContent = tag;
+      pill.title = 'Click to remove tag filter';
+      pill.addEventListener('click', () => toggleTagFilter(tag));
+      tagGroup.appendChild(pill);
+    }
+    tagSep.hidden = tagGroup.hidden = activeTags.size === 0;
+    applyFilters();
+    // Re-render detail panel so tag active states stay in sync
+    if (currentDetailNode) showDetailPanel(currentDetailNode, edges, activeTags, toggleTagFilter);
+  }
+
+  network.on('click', params => {
+    if (params.nodes.length === 0) return;
+    const nodeId = params.nodes[0];
+    currentDetailNode = nodes.find(n => n.id === nodeId) || null;
+    if (currentDetailNode) showDetailPanel(currentDetailNode, edges, activeTags, toggleTagFilter);
+  });
+}
+
+function showDetailPanel(node, edges, activeTags = new Set(), onTagClick = null) {
+  const connected = edges.filter(e => e.from_id === node.id || e.to_id === node.id);
+  const edgeStr = connected.length
+    ? connected.map(e => escapeHtml(e.relation_type) + ' (' + e.weight.toFixed(2) + ')').join(' · ')
+    : '—';
+
+  const panel = document.getElementById('detail-panel');
+
+  // Render static content via innerHTML
+  panel.innerHTML =
+    '<p>' + escapeHtml(node.content || node.label) + '</p>' +
+    '<dl>' +
+    '<dt>Tier</dt><dd>'       + escapeHtml(node.decay_tier)              + '</dd>' +
+    '<dt>Status</dt><dd>'     + escapeHtml(node.status)                  + '</dd>' +
+    '<dt>Confidence</dt><dd>' + node.confidence.toFixed(3)               + '</dd>' +
+    '<dt>Centrality</dt><dd>' + node.centrality.toFixed(3)               + '</dd>' +
+    '<dt>Reinforced</dt><dd>' + node.reinforcement_count + '×'           + '</dd>' +
+    '<dt>Alignment</dt><dd>'  + node.self_alignment.toFixed(3)           + '</dd>' +
+    '<dt>Category</dt><dd>'   + escapeHtml(node.category)                + '</dd>' +
+    '<dt>Tags</dt><dd id="detail-tags"></dd>' +
+    '<dt>Edges</dt><dd>'      + edgeStr                                  + '</dd>' +
+    '</dl>';
+
+  // Build tags — interactive buttons if tag filter is available, spans otherwise
+  const tagsEl = panel.querySelector('#detail-tags');
+  if (node.tags.length === 0) {
+    tagsEl.textContent = '—';
+  } else if (onTagClick) {
+    node.tags.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.className = 'tag' + (activeTags.has(tag) ? ' tag-active' : '');
+      btn.textContent = tag;
+      btn.title = activeTags.has(tag) ? 'Remove tag filter' : 'Filter by this tag';
+      btn.addEventListener('click', () => onTagClick(tag));
+      tagsEl.appendChild(btn);
+    });
+  } else {
+    tagsEl.innerHTML = node.tags.map(t => '<span class="tag">' + escapeHtml(t) + '</span>').join(' ');
+  }
+
+  panel.hidden = false;
+}
+
+// ── Lifecycle charts (Chart.js) ───────────────────────────────────────────────
+function initLifecycle() {
+  const lc = ELFMEM_DATA.lifecycle;
+
+  // Populate flow diagram
+  document.getElementById('flow-inbox').textContent     = lc.inbox;
+  document.getElementById('flow-inbox-lbl').textContent = lc.inbox;
+  document.getElementById('flow-active').textContent    = lc.active;
+  document.getElementById('flow-archived').textContent  = lc.archived;
+
+  // Status doughnut
+  new Chart(document.getElementById('lifecycle-status-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['inbox', 'active', 'archived'],
+      datasets: [{
+        data: [lc.inbox, lc.active, lc.archived],
+        backgroundColor: ['#444444', '#558877', '#2a2a2a'],
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+      cutout: '60%',
+    },
+  });
+
+  // Tier horizontal bar
+  const tierLabels  = ['permanent', 'durable', 'standard', 'ephemeral'];
+  const tierValues  = tierLabels.map(t => lc.tier_counts[t] || 0);
+  const tierColours = tierLabels.map(t => TIER_COLOURS[t]);
+
+  new Chart(document.getElementById('lifecycle-tier-chart'), {
+    type: 'bar',
+    data: {
+      labels: tierLabels,
+      datasets: [{
+        data: tierValues,
+        backgroundColor: tierColours,
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#606060' } },
+        y: { grid: { display: false }, ticks: { color: '#606060' } },
+      },
+    },
+  });
+}
+
+// ── Decay charts (Chart.js) ───────────────────────────────────────────────────
+function initDecay() {
+  const d = ELFMEM_DATA.decay;
+
+  // Decay curves line chart
+  const tierOrder = ['permanent', 'durable', 'standard', 'ephemeral'];
+  const curveDatasets = tierOrder.map(tier => ({
+    label: tier,
+    data: (d.tier_curves[tier] || []).map(pt => ({ x: pt.x, y: pt.y })),
+    borderColor: TIER_COLOURS[tier],
+    borderWidth: 1.5,
+    fill: false,
+    pointRadius: 0,
+    tension: 0,
+  }));
+
+  // Archive threshold annotation (as a dataset)
+  const maxX = Math.max(...tierOrder.map(t => {
+    const pts = d.tier_curves[t] || [];
+    return pts.length ? pts[pts.length - 1].x : 0;
+  }));
+  curveDatasets.push({
+    label: 'archive threshold',
+    data: [{ x: 0, y: d.prune_threshold }, { x: maxX, y: d.prune_threshold }],
+    borderColor: '#9a4a4a',
+    borderWidth: 1,
+    borderDash: [4, 4],
+    fill: false,
+    pointRadius: 0,
+  });
+
+  new Chart(document.getElementById('decay-curves-chart'), {
+    type: 'line',
+    data: { datasets: curveDatasets },
+    options: {
+      parsing: false,
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'active hours', color: '#606060', font: { size: 11 } },
+          grid: { color: '#2a2a2a' },
+          ticks: { color: '#606060' },
+        },
+        y: {
+          min: 0, max: 1,
+          title: { display: true, text: 'recency', color: '#606060', font: { size: 11 } },
+          grid: { color: '#2a2a2a' },
+          ticks: { color: '#606060' },
+        },
+      },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 16, color: '#606060' } } },
+    },
+  });
+
+  // Scatter: live block positions
+  if (d.blocks.length === 0) {
+    document.getElementById('decay-scatter-chart').parentElement.innerHTML =
+      '<div class="empty">No active blocks to show.<br>Call <code>learn()</code> then <code>dream()</code>.</div>';
+  } else {
+    const scatterDatasets = tierOrder.map(tier => ({
+      label: tier,
+      data: d.blocks
+        .filter(b => b.decay_tier === tier)
+        .map(b => ({
+          x: b.hours_since_reinforced,
+          y: b.recency_score,
+          r: Math.max(3, 3 + Math.log1p(b.reinforcement_count) * 1.5),
+          title: b.content_preview,
+        })),
+      backgroundColor: TIER_COLOURS[tier],
+      borderWidth: 0,
+    }));
+
+    new Chart(document.getElementById('decay-scatter-chart'), {
+      type: 'bubble',
+      data: { datasets: scatterDatasets },
+      options: {
+        parsing: false,
+        scales: {
+          x: {
+            title: { display: true, text: 'hours since reinforced', color: '#606060', font: { size: 11 } },
+            grid: { color: '#2a2a2a' },
+            ticks: { color: '#606060' },
+          },
+          y: {
+            min: 0, max: 1,
+            title: { display: true, text: 'recency score', color: '#606060', font: { size: 11 } },
+            grid: { color: '#2a2a2a' },
+            ticks: { color: '#606060' },
+          },
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 16, color: '#606060' } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const pt = ctx.raw;
+                return (pt.title || '') + ' — recency: ' + ctx.parsed.y.toFixed(3);
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (d.at_risk_count > 0) {
+      const el = document.getElementById('at-risk-notice');
+      el.textContent = d.at_risk_count + ' block' + (d.at_risk_count === 1 ? '' : 's') + ' near archival (recency < 0.10). Consider curate() or reinforce them.';
+      el.hidden = false;
+    }
+  }
+}
+
+// ── Scoring charts (Chart.js) ─────────────────────────────────────────────────
+function initScoring() {
+  const s = ELFMEM_DATA.scoring;
+  const axes = ['similarity', 'confidence', 'recency', 'centrality', 'reinforcement'];
+
+  if (s.frames.length === 0) {
+    document.getElementById('scoring-radar-chart').parentElement.innerHTML =
+      '<div class="empty">No frames found in database.</div>';
+  } else {
+    const radarDatasets = s.frames.map((f, i) => ({
+      label: f.name,
+      data: axes.map(a => (f.weights[a] || 0)),
+      borderColor: FRAME_COLOURS[i % FRAME_COLOURS.length],
+      borderWidth: 1,
+      fill: false,
+      pointRadius: 2,
+    }));
+
+    new Chart(document.getElementById('scoring-radar-chart'), {
+      type: 'radar',
+      data: { labels: axes, datasets: radarDatasets },
+      options: {
+        scales: {
+          r: {
+            min: 0, max: 1,
+            ticks: { display: false },
+            grid:       { color: '#2a2a2a' },
+            angleLines:  { color: '#2a2a2a' },
+            pointLabels: { font: { size: 11 }, color: '#606060' },
+          },
+        },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 16, color: '#606060' } } },
+      },
+    });
+  }
+
+  const container = document.getElementById('last-retrieval-container');
+  if (s.last_retrieval.length === 0) {
+    container.innerHTML = '<p class="retrieval-note">' + escapeHtml(s.last_retrieval_note) + '</p>';
+  }
+}
+
+// ── Chart.js global defaults (Rams-aligned) ───────────────────────────────────
+function applyChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color                               = '#606060';
+  Chart.defaults.font.family                         = 'system-ui, sans-serif';
+  Chart.defaults.font.size                           = 11;
+  Chart.defaults.plugins.legend.labels.boxWidth      = 10;
+  Chart.defaults.plugins.legend.labels.padding       = 16;
+  Chart.defaults.elements.line.borderWidth           = 1.5;
+  Chart.defaults.elements.point.borderWidth          = 0;
+}
+
+// ── Initialise on load ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  populateHeader();
+
+  if (typeof vis !== 'undefined') {
+    initGraph();
+  } else {
+    document.getElementById('graph-container').innerHTML =
+      '<div class="empty">vis-network failed to load.<br>Check your network connection or use <code>offline=True</code>.</div>';
+  }
+
+  if (typeof Chart !== 'undefined') {
+    applyChartDefaults();
+    initLifecycle();
+    initDecay();
+    initScoring();
+  } else {
+    ['lifecycle', 'decay', 'scoring'].forEach(tab => {
+      const el = document.getElementById('tab-' + tab);
+      if (el) el.innerHTML = '<div class="empty">Chart.js failed to load.<br>Check your network connection or use <code>offline=True</code>.</div>';
+    });
+  }
+});
+</script>
+
+</body>
+</html>

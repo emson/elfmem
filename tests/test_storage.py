@@ -484,9 +484,14 @@ class TestEdgeQueries:
         assert len(edges) == 0
 
     async def test_insert_edge_stores_default_metadata(self, db_conn: AsyncConnection) -> None:
-        """insert_edge() defaults: relation_type='similar', origin='similarity', last_active_hours=None."""
-        await insert_block(db_conn, block_id="b1", content="one", category="knowledge", source="test")
-        await insert_block(db_conn, block_id="b2", content="two", category="knowledge", source="test")
+        """insert_edge() defaults: relation_type='similar', origin='similarity',
+        last_active_hours=None."""
+        await insert_block(
+            db_conn, block_id="b1", content="one", category="knowledge", source="test"
+        )
+        await insert_block(
+            db_conn, block_id="b2", content="two", category="knowledge", source="test"
+        )
         await insert_edge(db_conn, from_id="b1", to_id="b2", weight=0.5)
 
         edge = await get_edge(db_conn, "b1", "b2")
@@ -495,10 +500,16 @@ class TestEdgeQueries:
         assert edge["origin"] == "similarity"
         assert edge["last_active_hours"] is None
 
-    async def test_upsert_outcome_edge_tags_relation_and_origin(self, db_conn: AsyncConnection) -> None:
+    async def test_upsert_outcome_edge_tags_relation_and_origin(
+        self, db_conn: AsyncConnection
+    ) -> None:
         """upsert_outcome_edge() records relation_type='outcome' and origin='outcome'."""
-        await insert_block(db_conn, block_id="b1", content="one", category="knowledge", source="test")
-        await insert_block(db_conn, block_id="b2", content="two", category="knowledge", source="test")
+        await insert_block(
+            db_conn, block_id="b1", content="one", category="knowledge", source="test"
+        )
+        await insert_block(
+            db_conn, block_id="b2", content="two", category="knowledge", source="test"
+        )
         await upsert_outcome_edge(db_conn, from_id="b1", to_id="b2", weight=0.72)
 
         edge = await get_edge(db_conn, "b1", "b2")
@@ -506,10 +517,16 @@ class TestEdgeQueries:
         assert edge["relation_type"] == "outcome"
         assert edge["origin"] == "outcome"
 
-    async def test_reinforce_edges_sets_last_active_hours(self, db_conn: AsyncConnection) -> None:
+    async def test_reinforce_edges_sets_last_active_hours(
+        self, db_conn: AsyncConnection
+    ) -> None:
         """reinforce_edges() writes last_active_hours from the session clock."""
-        await insert_block(db_conn, block_id="b1", content="one", category="knowledge", source="test")
-        await insert_block(db_conn, block_id="b2", content="two", category="knowledge", source="test")
+        await insert_block(
+            db_conn, block_id="b1", content="one", category="knowledge", source="test"
+        )
+        await insert_block(
+            db_conn, block_id="b2", content="two", category="knowledge", source="test"
+        )
         await insert_edge(db_conn, from_id="b1", to_id="b2", weight=0.5)
 
         await reinforce_edges(db_conn, [("b1", "b2")], current_active_hours=42.0)

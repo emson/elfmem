@@ -479,17 +479,22 @@ class TestReinforcedEdgeCentrality:
 
     async def test_reinforced_edge_increases_effective_degree(self, system_setup) -> None:
         """Block with a reinforced edge has higher weighted degree than same block unreinforced."""
-        from elfmem.db.queries import get_weighted_degree
-        from elfmem.db.queries import insert_edge
+        from elfmem.db.queries import get_weighted_degree, insert_edge
         from elfmem.types import Edge
 
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
             r_hub = await learn(conn, content="hub block", category="knowledge", source="api")
-            r_spoke_reinforced = await learn(conn, content="spoke reinforced", category="knowledge", source="api")
-            r_spoke_plain = await learn(conn, content="spoke plain", category="knowledge", source="api")
+            r_spoke_reinforced = await learn(
+                conn, content="spoke reinforced", category="knowledge", source="api"
+            )
+            r_spoke_plain = await learn(
+                conn, content="spoke plain", category="knowledge", source="api"
+            )
 
-            await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0
+            )
 
             hub_id = r_hub.block_id
             spoke_r_id = r_spoke_reinforced.block_id
@@ -520,7 +525,9 @@ class TestReinforcedEdgeCentrality:
         async with engine.begin() as conn:
             r1 = await learn(conn, content="node alpha", category="knowledge", source="api")
             r2 = await learn(conn, content="node beta", category="knowledge", source="api")
-            await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0
+            )
 
             from_id, to_id = Edge.canonical(r1.block_id, r2.block_id)
             weight = 0.75

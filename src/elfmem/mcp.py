@@ -23,7 +23,7 @@ _use_adaptive_policy: bool = False
 
 
 @asynccontextmanager
-async def _lifespan(server: FastMCP) -> AsyncIterator[None]:  # type: ignore[type-arg]
+async def _lifespan(server: FastMCP) -> AsyncIterator[None]:
     global _memory
     policy = ConsolidationPolicy() if _use_adaptive_policy else None
     _memory = await MemorySystem.from_config(_db_path, config=_config_path, policy=policy)
@@ -175,7 +175,8 @@ async def elfmem_connect(
     Block IDs are also available via system.last_recall_block_ids and
     system.last_learned_block_id after calling those tools.
 
-    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates' | 'co_occurs' | 'outcome' | <custom>
+    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates'
+              | 'co_occurs' | 'outcome' | <custom>
     if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'
     """
     result = await _mem().connect(
