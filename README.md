@@ -228,10 +228,12 @@ API keys are read by LiteLLM from standard environment variables. They never app
 
 ## Visualization
 
+![elfmem knowledge graph dashboard](docs/elfmem-knowledge-visualisation.jpg)
+
 Explore your knowledge graph with an interactive dashboard:
 
 ```bash
-python scripts/visualise.py ~/.elfmem/agent.db
+uv run scripts/visualise.py ~/.elfmem/agent.db
 ```
 
 **What you get:**
@@ -244,13 +246,13 @@ python scripts/visualise.py ~/.elfmem/agent.db
 **Options:**
 ```bash
 # Default: show active blocks only
-python scripts/visualise.py ~/.elfmem/agent.db
+uv run scripts/visualise.py ~/.elfmem/agent.db
 
-# Include archived blocks in graph
-python scripts/visualise.py ~/.elfmem/agent.db --archived
+# Include archived blocks in graph (archived nodes hidden by default, toggle with the filter pill)
+uv run scripts/visualise.py ~/.elfmem/agent.db --archived
 
 # Fresh temp database with demo data
-python scripts/visualise.py
+uv run scripts/visualise.py
 ```
 
 Requires the visualization extra:

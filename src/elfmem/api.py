@@ -7,7 +7,7 @@ import os
 import time
 from collections import deque
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Any, Literal
 
@@ -183,10 +183,8 @@ class MemorySystem:
             if policy is not None:
                 stored = await get_config(conn, "consolidation_policy_threshold")
                 if stored is not None:
-                    try:
+                    with suppress(ValueError, TypeError):
                         policy.restore_threshold(int(stored))
-                    except (ValueError, TypeError):
-                        pass  # Corrupted value; policy starts from base_threshold
 
         # Shared counter: both adapters record to the same object.
         # MemorySystem reads it in status() and manages its lifecycle.
@@ -226,7 +224,9 @@ class MemorySystem:
         )
 
     @classmethod
-    async def from_env(cls, db_path: str, *, policy: ConsolidationPolicy | None = None) -> MemorySystem:
+    async def from_env(
+        cls, db_path: str, *, policy: ConsolidationPolicy | None = None
+    ) -> MemorySystem:
         """Create a MemorySystem from ELFMEM_ environment variables.
 
         USE WHEN: Deploying in environments where YAML config files are
@@ -1121,7 +1121,8 @@ class MemorySystem:
             block_ids = [b.id for b in await system.recall("EUR/USD forecast")]
             signal = 1.0 - brier_score
             result = await system.outcome(block_ids, signal=signal, source="brier")
-            print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced.
+            print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence),
+            #               2 edges reinforced.
         """
         current_hours = self._current_active_hours()
         mem = self._config.memory
@@ -1293,7 +1294,10 @@ class MemorySystem:
         src_conf = src_block.score if src_block else 0.0
         tgt_conf = tgt_block.score if tgt_block else 0.0
 
-        if src_block is None or tgt_block is None or src_conf < min_confidence or tgt_conf < min_confidence:
+        if (
+            src_block is None or tgt_block is None
+            or src_conf < min_confidence or tgt_conf < min_confidence
+        ):
             return ConnectByQueryResult(
                 source_query=source_query,
                 target_query=target_query,

@@ -76,12 +76,15 @@ class ConsolidationPolicy:
         self._current = base_threshold
         self._stats = PolicyStats()
 
-    def should_consolidate(self, pending: int, active_count: int = 0, session_blocks: int = 0) -> bool:
+    def should_consolidate(
+        self, pending: int, active_count: int = 0, session_blocks: int = 0
+    ) -> bool:
         """Decide whether consolidation should happen now.
 
         Args:
             pending: Number of blocks in inbox awaiting consolidation.
-            active_count: Number of active blocks (unused for simple policy, included for future expansion).
+            active_count: Number of active blocks (unused for simple policy,
+                included for future expansion).
             session_blocks: Total blocks learned this session (unused for simple policy).
 
         Returns:

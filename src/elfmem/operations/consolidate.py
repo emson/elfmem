@@ -27,13 +27,13 @@ from elfmem.memory.dedup import (
     cosine_similarity,
     resolve_near_duplicate,
 )
+from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.scoring import (
     CROSS_CATEGORY_SCORE,
     MINIMUM_COSINE_FOR_EDGE,
     jaccard_similarity,
     temporal_proximity,
 )
-from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.types import ConsolidateResult, Edge
 
 SELF_ALIGNMENT_THRESHOLD = 0.70
@@ -121,7 +121,7 @@ async def consolidate(
     active_texts = [a["content"].strip().lower() for a in active_blocks]
     if active_texts:
         active_vecs_list = await embedding_svc.embed_batch(active_texts)
-        for a, vec in zip(active_blocks, active_vecs_list):
+        for a, vec in zip(active_blocks, active_vecs_list, strict=False):
             key = a["content"].strip().lower()
             active_vecs[key] = (a, vec)
 

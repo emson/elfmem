@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from elfmem.adapters.mock import MockEmbeddingService, MockLLMService, make_mock_embedding, make_mock_llm
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
-from elfmem.db.engine import create_test_engine
-from elfmem.db.queries import get_edge, seed_builtin_data
-from elfmem.exceptions import BlockNotActiveError, DegreeLimitError, SelfLoopError
+from elfmem.db.queries import get_edge
+from elfmem.exceptions import BlockNotActiveError, SelfLoopError
 from elfmem.types import ConnectSpec
 
 TOL = 0.001
@@ -35,7 +33,7 @@ async def _two_active_blocks(system: MemorySystem) -> tuple[str, str]:
     """Learn 3 blocks and dream to get 2 known active block IDs."""
     r1 = await system.learn("frame heuristics guide agent context selection")
     r2 = await system.learn("outcome signals confirm which memories are useful")
-    r3 = await system.learn("decay prevents stale knowledge from cluttering retrieval")
+    await system.learn("decay prevents stale knowledge from cluttering retrieval")
     await system.dream()
     return r1.block_id, r2.block_id
 
@@ -64,7 +62,8 @@ class TestEdgeSchemaExtended:
         assert "note" in edges.c
 
     async def test_similarity_edge_sets_correct_metadata(self, system) -> None:
-        """Similarity edges from consolidation have relation_type='similar' and origin='similarity'."""
+        """Similarity edges from consolidation have relation_type='similar' and origin='similarity'.
+        """
         id1, id2 = await _two_active_blocks(system)
         # consolidation (dream) creates similarity edges between active blocks
         async with system._engine.connect() as conn:
@@ -339,7 +338,7 @@ class TestConnectsBatch:
         r2 = await system.learn("concept B for batch")
         r3 = await system.learn("concept C for batch")
         await system.dream()
-        r4_result = await system.learn("concept D for batch")
+        await system.learn("concept D for batch")
         # r4 is in inbox — add a 5th so we can dream again
         await system.learn("concept E for batch")
         await system.learn("concept F for batch")

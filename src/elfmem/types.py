@@ -614,7 +614,10 @@ class ConnectByQueryResult:
         if self.action == "dry_run_preview":
             s = (self.source_content[:60] + "…") if self.source_content else "?"
             t = (self.target_content[:60] + "…") if self.target_content else "?"
-            return f"dry_run: source='{s}' | target='{t}'. Call again without dry_run=True to connect."
+            return (
+                f"dry_run: source='{s}' | target='{t}'."
+                " Call again without dry_run=True to connect."
+            )
         if self.connect_result:
             return self.connect_result.summary
         return f"connect_by_query: {self.action}."

@@ -175,7 +175,8 @@ async def elfmem_connect(
     Block IDs are also available via system.last_recall_block_ids and
     system.last_learned_block_id after calling those tools.
 
-    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates' | 'co_occurs' | 'outcome' | <custom>
+    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates'
+              | 'co_occurs' | 'outcome' | <custom>
     if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'
     """
     result = await _mem().connect(

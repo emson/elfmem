@@ -15,10 +15,7 @@ from elfmem.db import queries
 from elfmem.exceptions import BlockNotActiveError, ConnectError, DegreeLimitError, SelfLoopError
 from elfmem.memory.graph import find_displaceable_edge
 from elfmem.types import (
-    ConnectByQueryResult,
     ConnectResult,
-    ConnectsResult,
-    ConnectSpec,
     DisconnectResult,
     DisplacedEdge,
     Edge,

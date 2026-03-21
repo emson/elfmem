@@ -306,7 +306,9 @@ def _build_graph(
             "confidence": b["confidence"] or 0.0,
             "reinforcement_count": b["reinforcement_count"] or 0,
             "centrality": round(centrality.get(b["id"], 0.0), 4),
-            "self_alignment": (b["self_alignment"] or 0.0) if "self_alignment" in blocks_cols else 0.0,
+            "self_alignment": (
+                (b["self_alignment"] or 0.0) if "self_alignment" in blocks_cols else 0.0
+            ),
             "tags": tags_map.get(b["id"], []),
             "category": b["category"] or "",
         }
@@ -318,7 +320,9 @@ def _build_graph(
             "from_id": e["from_id"],
             "to_id": e["to_id"],
             "weight": e["weight"] or 0.0,
-            "relation_type": (e["relation_type"] or "similar") if "relation_type" in edges_cols else "similar",
+            "relation_type": (
+                (e["relation_type"] or "similar") if "relation_type" in edges_cols else "similar"
+            ),
             "origin": (e["origin"] or "similarity") if "origin" in edges_cols else "similarity",
             "reinforcement_count": e["reinforcement_count"] or 0,
         }

@@ -13,7 +13,6 @@ from elfmem.api import MemorySystem
 from elfmem.exceptions import ElfmemError, FrameError
 from elfmem.types import OperationRecord, SystemStatus
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 

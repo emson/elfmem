@@ -9,7 +9,7 @@ import pytest
 
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
-from elfmem.policy import ConsolidationPolicy, PolicyStats
+from elfmem.policy import ConsolidationPolicy
 from elfmem.types import ConsolidateResult
 
 
@@ -180,9 +180,11 @@ class TestPolicyStats:
         policy = ConsolidationPolicy()
 
         rates = [0.80, 0.60, 0.70]
-        for i, rate in enumerate(rates):
+        for _i, rate in enumerate(rates):
             promoted = int(100 * rate)
-            result = ConsolidateResult(processed=100, promoted=promoted, deduplicated=0, edges_created=10)
+            result = ConsolidateResult(
+                processed=100, promoted=promoted, deduplicated=0, edges_created=10
+            )
             policy.record_result(result)
 
         expected_avg = sum(rates) / len(rates)
@@ -226,7 +228,9 @@ class TestMemorySystemWithPolicy:
     @pytest.fixture
     async def system_with_policy(self, test_engine, mock_llm, mock_embedding):
         """MemorySystem with a tight policy (threshold=3) for fast tests."""
-        policy = ConsolidationPolicy(base_threshold=3, min_threshold=2, max_threshold=10, adjustment_step=1)
+        policy = ConsolidationPolicy(
+            base_threshold=3, min_threshold=2, max_threshold=10, adjustment_step=1
+        )
         cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
         sys = MemorySystem(
             engine=test_engine,
@@ -265,10 +269,14 @@ class TestMemorySystemWithPolicy:
             assert policy.stats.consolidation_count == 1
 
     @pytest.mark.asyncio
-    async def test_without_policy_uses_inbox_threshold(self, test_engine, mock_llm, mock_embedding) -> None:
+    async def test_without_policy_uses_inbox_threshold(
+        self, test_engine, mock_llm, mock_embedding
+    ) -> None:
         """Without a policy, should_dream uses the config inbox_threshold directly."""
         cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
-        sys = MemorySystem(engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, config=cfg)
+        sys = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding, config=cfg
+        )
         assert sys._policy is None
         for i in range(3):
             await sys.learn(f"Block {i}")
@@ -280,7 +288,9 @@ class TestPolicyFullCycle:
     """Integration: learn → should_dream → dream → policy adapts."""
 
     @pytest.mark.asyncio
-    async def test_two_cycles_recorded_in_stats(self, test_engine, mock_llm, mock_embedding) -> None:
+    async def test_two_cycles_recorded_in_stats(
+        self, test_engine, mock_llm, mock_embedding
+    ) -> None:
         """After two dream() calls, policy.stats.consolidation_count == 2."""
         policy = ConsolidationPolicy(base_threshold=3, adjustment_step=1)
         cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))

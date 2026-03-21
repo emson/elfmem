@@ -274,7 +274,8 @@ GUIDES: dict[str, AgentGuide] = {
         example=(
             "s = await system.status()\n"
             "print(s)  # Session: active (0.5h) | Inbox: 8/10 | Active: 42 | Health: good\n"
-            "          # Tokens this session: LLM: 4,820 tokens (9 calls) | Embed: 1,230 tokens (14 calls)\n"
+            "          # Tokens this session: LLM: 4,820 tokens (9 calls)"
+            " | Embed: 1,230 tokens (14 calls)\n"
             "          # Suggestion: Inbox nearly full. Consolidation approaching.\n"
             "if s.health == 'attention':\n"
             "    await system.consolidate()"
@@ -328,7 +329,8 @@ GUIDES: dict[str, AgentGuide] = {
             "Signal spectrum (default thresholds): "
             "0.8–1.0 → confidence UP + reinforce (decay resets). "
             "0.2–0.8 → confidence adjusted only (neutral dead-band). "
-            "0.0–0.2 → confidence DOWN + decay accelerated automatically (no separate call needed). "
+            "0.0–0.2 → confidence DOWN + decay accelerated automatically"
+            " (no separate call needed). "
             "Over ~10 outcomes, evidence dominates the LLM alignment prior. "
             "DURABLE and PERMANENT blocks are never penalized."
         ),
@@ -336,7 +338,8 @@ GUIDES: dict[str, AgentGuide] = {
             "# Trading: Brier score resolved after 30 days\n"
             "signal = 1.0 - brier_score  # 0.85 = good forecast\n"
             "result = await system.outcome(block_ids, signal=signal, source='brier')\n"
-            "print(result)  # Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced.\n"
+            "print(result)  # Outcome recorded: 3 blocks updated"
+            " (+0.042 avg confidence), 2 edges reinforced.\n"
             "\n"
             "# Coding: test suite pass/fail\n"
             "signal = 1.0 if all_tests_passed else 0.0\n"
@@ -372,14 +375,16 @@ GUIDES: dict[str, AgentGuide] = {
         returns=(
             "dict with status='setup_complete', blocks_created (int), and blocks (list of "
             "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe. "
-            "Constitutional blocks are tagged self/constitutional (PERMANENT decay, ~34yr half-life)."
+            "Constitutional blocks are tagged self/constitutional"
+            " (PERMANENT decay, ~34yr half-life)."
         ),
         next=(
             "SELF blocks sit in inbox until consolidate() runs (auto on session close). "
             "After consolidation, recall(frame='self') always includes constitutional blocks "
             "(guaranteed slots) plus any domain values you added. "
             "Check status with elfmem_status() or 'elfmem doctor' CLI. "
-            "Three tiers: constitutional (PERMANENT) → values (DURABLE, ~29d) → context (STANDARD, ~3d)."
+            "Three tiers: constitutional (PERMANENT) → values (DURABLE, ~29d)"
+            " → context (STANDARD, ~3d)."
         ),
         example=(
             "# Minimal: seeds 10 constitutional blocks only\n"

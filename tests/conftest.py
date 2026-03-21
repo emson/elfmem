@@ -4,14 +4,6 @@ import warnings
 
 import pytest
 
-# SmartMemory is deprecated but used in legacy fixtures. Suppress warnings so
-# test output stays clean; the deprecation itself is verified in test_phase3.py.
-warnings.filterwarnings(
-    "ignore",
-    message="SmartMemory is deprecated",
-    category=DeprecationWarning,
-)
-
 from elfmem.adapters.mock import (
     MockEmbeddingService,
     MockLLMService,
@@ -21,6 +13,14 @@ from elfmem.adapters.mock import (
 from elfmem.db.engine import create_test_engine
 from elfmem.db.queries import seed_builtin_data
 from elfmem.smart import SmartMemory
+
+# SmartMemory is deprecated but used in legacy fixtures. Suppress warnings so
+# test output stays clean; the deprecation itself is verified in test_phase3.py.
+warnings.filterwarnings(
+    "ignore",
+    message="SmartMemory is deprecated",
+    category=DeprecationWarning,
+)
 
 
 @pytest.fixture

@@ -19,7 +19,6 @@ Agent self-documentation::
 
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig
-from elfmem.policy import ConsolidationPolicy
 from elfmem.exceptions import (
     BlockNotActiveError,
     ConfigError,
@@ -31,11 +30,12 @@ from elfmem.exceptions import (
     SessionError,
     StorageError,
 )
+from elfmem.policy import ConsolidationPolicy
 from elfmem.types import (
     ConnectByQueryResult,
     ConnectResult,
-    ConnectsResult,
     ConnectSpec,
+    ConnectsResult,
     ConsolidateResult,
     CurateResult,
     DisconnectResult,

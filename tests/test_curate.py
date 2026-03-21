@@ -483,12 +483,14 @@ class TestEdgePruneProtection:
         """Create two active blocks and return their IDs."""
         r1 = await learn(conn, content=content_a, category="knowledge", source="api")
         r2 = await learn(conn, content=content_b, category="knowledge", source="api")
-        await consolidate(conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0)
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=1.0
+        )
         return r1.block_id, r2.block_id
 
     async def test_weak_unreinforced_edge_is_pruned(self, system_setup) -> None:
         """Edge with weight < threshold and reinforcement_count=0 is deleted."""
-        from elfmem.db.queries import insert_edge, prune_weak_edges
+        from elfmem.db.queries import insert_edge
         from elfmem.types import Edge
 
         engine, mock_llm, mock_embedding = system_setup
@@ -507,7 +509,7 @@ class TestEdgePruneProtection:
 
     async def test_weak_reinforced_edge_survives_prune(self, system_setup) -> None:
         """Edge with weight < threshold but reinforcement_count > 0 is kept."""
-        from elfmem.db.queries import insert_edge, prune_weak_edges, reinforce_edges
+        from elfmem.db.queries import insert_edge
         from elfmem.types import Edge
 
         engine, mock_llm, mock_embedding = system_setup
@@ -529,7 +531,7 @@ class TestEdgePruneProtection:
 
     async def test_strong_unreinforced_edge_survives_prune(self, system_setup) -> None:
         """Edge with weight >= threshold survives regardless of reinforcement_count."""
-        from elfmem.db.queries import insert_edge, prune_weak_edges
+        from elfmem.db.queries import insert_edge
         from elfmem.types import Edge
 
         engine, mock_llm, mock_embedding = system_setup
@@ -546,9 +548,11 @@ class TestEdgePruneProtection:
         assert pruned == 0
         assert len(remaining) == 1
 
-    async def test_temporal_decay_does_not_prune_reinforced_outcome_edges(self, system_setup) -> None:
+    async def test_temporal_decay_does_not_prune_reinforced_outcome_edges(
+        self, system_setup
+    ) -> None:
         """A low-weight outcome edge that has been co-retrieved survives curate()."""
-        from elfmem.db.queries import insert_edge, reinforce_edges
+        from elfmem.db.queries import insert_edge
         from elfmem.operations.curate import curate
         from elfmem.types import Edge
 
@@ -564,7 +568,7 @@ class TestEdgePruneProtection:
             await insert_edge(conn, from_id=from_id, to_id=to_id, weight=0.05)
             await reinforce_edges(conn, [(from_id, to_id)])
 
-            result = await curate(
+            await curate(
                 conn,
                 current_active_hours=10.0,
                 edge_prune_threshold=0.10,
@@ -650,7 +654,7 @@ class TestEdgeTemporalDecay:
         - Fresh (count=0):       λ=0.005  → effective=0.50×exp(-2.0)≈0.068 → PRUNED
         - Established (count=10): λ=0.0025 → effective=0.50×exp(-1.0)≈0.184 → SURVIVES
         """
-        from elfmem.db.queries import insert_edge, reinforce_edges
+        from elfmem.db.queries import insert_edge
         from elfmem.operations.curate import curate
         from elfmem.types import Edge
 
@@ -683,7 +687,6 @@ class TestEdgeTemporalDecay:
 
     async def test_agent_edge_not_decayed(self, system_setup) -> None:
         """Agent-origin edges are never temporally decayed regardless of staleness."""
-        from elfmem.db.queries import insert_agent_edge
         from elfmem.operations.curate import curate
         from elfmem.types import Edge
 
