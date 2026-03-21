@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db import queries
@@ -186,7 +188,7 @@ _PROTECTED_RELATIONS: frozenset[str] = frozenset(
 async def find_displaceable_edge(
     conn: AsyncConnection,
     block_id: str,
-) -> dict | None:
+) -> dict[str, Any] | None:
     """Find the lowest-priority displaceable edge connected to block_id.
 
     Returns the edge row dict to displace, or None if all edges are protected.
@@ -205,7 +207,7 @@ async def find_displaceable_edge(
     if not candidates:
         return None
 
-    def eviction_key(e: dict) -> tuple[int, float]:
+    def eviction_key(e: dict[str, Any]) -> tuple[int, float]:
         relation = e.get("relation_type", "similar")
         order_idx = _EVICTION_ORDER.index(relation) if relation in _EVICTION_ORDER else 99
         return (order_idx, e["weight"])

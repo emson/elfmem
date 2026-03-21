@@ -23,7 +23,7 @@ _use_adaptive_policy: bool = False
 
 
 @asynccontextmanager
-async def _lifespan(server: FastMCP) -> AsyncIterator[None]:  # type: ignore[type-arg]
+async def _lifespan(server: FastMCP) -> AsyncIterator[None]:
     global _memory
     policy = ConsolidationPolicy() if _use_adaptive_policy else None
     _memory = await MemorySystem.from_config(_db_path, config=_config_path, policy=policy)

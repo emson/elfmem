@@ -40,3 +40,7 @@ class EmbeddingService(Protocol):
     async def embed(self, text: str) -> np.ndarray:
         """Return a normalised float32 embedding vector for the given text."""
         ...
+
+    async def embed_batch(self, texts: list[str]) -> list[np.ndarray]:
+        """Return normalised float32 embedding vectors for a list of texts."""
+        ...

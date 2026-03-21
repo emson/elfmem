@@ -135,7 +135,7 @@ class LiteLLMAdapter:
             **self._call_kwargs(self._contradiction_model),
         )
         self._record_llm_usage(completion)
-        return result.score
+        return float(result.score)
 
 
 class LiteLLMEmbeddingAdapter:
