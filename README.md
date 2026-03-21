@@ -2,7 +2,7 @@
 
 **Adaptive, self-aware memory for LLM agents.**
 
-elfmem gives your LLM agent a memory that grows, evolves, and forgets — just like a human's. Knowledge that gets used survives; knowledge that doesn't fades away. Identity persists across sessions. Context is always relevant.
+elfmem gives your agent a memory that grows, evolves, and forgets — like a human's. Knowledge that gets used survives. Knowledge that doesn't fades away. Identity persists across sessions. Context is always relevant.
 
 ```python
 import asyncio
@@ -11,17 +11,15 @@ from elfmem import MemorySystem
 async def main():
     system = await MemorySystem.from_config("agent.db", {
         "llm": {"model": "claude-sonnet-4-6"},
-        "embeddings": {"model": "text-embedding-3-small", "dimensions": 1536},
+        "embeddings": {"model": "text-embedding-3-small"},
     })
 
     async with system.session():
-        # Teach the agent something
         await system.learn("Use Celery with Redis for background tasks in Django.")
         await system.learn("I always explain my reasoning before giving recommendations.")
 
-        # Retrieve relevant context for a prompt
-        identity = await system.frame("self")         # Who am I?
-        context  = await system.frame("attention",    # What do I know about this?
+        identity = await system.frame("self")           # Who am I?
+        context  = await system.frame("attention",      # What do I know about this?
                                       query="background job processing")
 
         print(identity.text)   # Agent identity, values, style
@@ -30,31 +28,35 @@ async def main():
 asyncio.run(main())
 ```
 
+---
+
 ## Features
 
 - **Adaptive decay** — Knowledge survives when reinforced through use, fades when ignored. Session-aware clock means your agent's memory doesn't decay over weekends.
 - **SELF frame** — Persistent agent identity. Values, style, and constraints survive across sessions with near-permanent decay rates.
-- **Hybrid retrieval** — 4-stage pipeline: pre-filter, vector search, graph expansion, composite scoring. Finds knowledge that's relevant *and* important.
+- **Hybrid retrieval** — 4-stage pipeline: pre-filter → vector search → graph expansion → composite scoring. Finds knowledge that is relevant *and* important.
 - **Knowledge graph** — Semantic edges between memory blocks. Co-retrieved knowledge strengthens connections. Graph expansion recovers related-but-not-similar context.
 - **Contradiction detection** — LLM-powered detection of conflicting knowledge. Newer, higher-confidence blocks win.
-- **Near-duplicate resolution** — Detects when new knowledge updates existing knowledge. Old block archived, new block inherits history.
+- **Near-duplicate resolution** — Detects when new knowledge supersedes existing knowledge. Old block archived; new block inherits history.
 - **Zero infrastructure** — SQLite backend. No Redis, no Postgres, no vector database. One file, fully portable.
-- **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to local Ollama with a config change.
-- **Interactive visualization** — Explore your knowledge graph with an intuitive dashboard. Zoom-dependent labels, decay curves, and lifecycle flow. Optional `[viz]` extra.
+- **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to Ollama with a config change.
+- **Interactive visualization** — Explore your knowledge graph with a live dashboard. Zoom-dependent labels, decay curves, and lifecycle flow.
 
-## For AI Agents
+---
 
-elfmem exposes three interfaces. Pick the one that fits your environment.
+## Interfaces
 
-### MCP (Recommended — agents with MCP support)
+elfmem exposes three interfaces. Choose the one that fits your environment.
 
-Works with Claude Desktop, Claude Code, Cursor, VS Code + Cline, any MCP host.
+### MCP — for agents with MCP support
+
+The fastest way to give a Claude agent persistent memory. Works with Claude Code, Claude Desktop, Cursor, VS Code + Cline, and any MCP host.
 
 ```bash
 elfmem serve --db agent.db
 ```
 
-Add to your MCP host config (e.g. Claude Desktop `claude_desktop_config.json`):
+Add to your MCP config (e.g. `claude_desktop_config.json` or `~/.claude.json`):
 
 ```json
 {
@@ -62,15 +64,32 @@ Add to your MCP host config (e.g. Claude Desktop `claude_desktop_config.json`):
     "elfmem": {
       "command": "elfmem",
       "args": ["serve", "--db", "/absolute/path/to/agent.db"],
-      "env": {"ANTHROPIC_API_KEY": "sk-ant-..."}
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
     }
   }
 }
 ```
 
-Six tools are available: `elfmem_remember`, `elfmem_recall`, `elfmem_status`, `elfmem_outcome`, `elfmem_curate`, `elfmem_guide`. The agent calls them directly — sessions and consolidation are automatic.
+Ten tools are available to the agent:
 
-### CLI (Shell access only)
+| Tool | Purpose |
+|------|---------|
+| `elfmem_setup` | Bootstrap agent identity (run once) |
+| `elfmem_remember` | Store knowledge for future retrieval |
+| `elfmem_recall` | Retrieve relevant knowledge, rendered for prompt injection |
+| `elfmem_outcome` | Signal how well recalled knowledge helped |
+| `elfmem_dream` | Deep consolidation (embed, dedup, build graph) |
+| `elfmem_curate` | Archive decayed blocks, prune weak edges |
+| `elfmem_status` | Memory health snapshot |
+| `elfmem_connect` | Create or strengthen an edge between two blocks |
+| `elfmem_disconnect` | Remove an edge between two blocks |
+| `elfmem_guide` | Runtime documentation for any tool |
+
+Sessions and consolidation are managed automatically.
+
+### CLI — for shell access
 
 ```bash
 export ELFMEM_DB=agent.db
@@ -80,16 +99,19 @@ elfmem status
 elfmem guide recall
 ```
 
-### Python Library (Full control)
+### Python library — for full control
 
-See the code example at the top of this file.
+See the code example at the top of this file, and the [Custom Agents](#building-custom-agents) section below.
+
+---
 
 ## Installation
 
 ```bash
-uv add elfmem                # Python library only
-uv add 'elfmem[cli]'        # + CLI commands
-uv add 'elfmem[tools]'      # + CLI + MCP server (recommended)
+uv add elfmem                   # Python library only
+uv add 'elfmem[cli]'            # + CLI commands
+uv add 'elfmem[tools]'          # + CLI + MCP server (recommended)
+uv add 'elfmem[viz]'            # + interactive visualization dashboard
 ```
 
 Or with pip:
@@ -106,30 +128,33 @@ export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default)
 export OPENAI_API_KEY=sk-...          # for OpenAI models
 ```
 
+---
+
 ## How It Works
 
-### The Lifecycle
+### Three rhythms
 
-Every piece of knowledge follows the same path:
+Every design decision maps to one of three rhythms:
 
 ```
-learn()        →  Instant ingestion. Content-hash dedup. No API calls.
-consolidate()  →  Batch processing. Embeddings, self-alignment scoring,
-                  tag inference, near-duplicate detection, graph edges.
-recall()       →  4-stage hybrid retrieval. Reinforces returned blocks.
-curate()       →  Maintenance. Archives decayed blocks, prunes weak edges,
-                  reinforces top-scoring knowledge.
+learn()    →  Heartbeat.  Milliseconds. No API calls. Content-hash dedup.
+dream()    →  Breathing.  Seconds.      LLM-powered: embed, dedup, contradiction, graph.
+curate()   →  Sleep.      Minutes.      Archive decayed, prune weak edges, reinforce top-K.
 ```
 
-### Three Frames
+In practice: `learn()` is called constantly; `dream()` runs at natural pause points; `curate()` runs automatically on schedule.
 
-Frames are pre-configured retrieval pipelines optimized for different contexts:
+### Five frames
 
-| Frame | Purpose | Scoring Priority | Use Case |
-|-------|---------|-----------------|----------|
-| **SELF** | Agent identity | Confidence, reinforcement, centrality | System prompt injection |
-| **ATTENTION** | Query-relevant knowledge | Similarity, recency | RAG-style retrieval |
-| **TASK** | Goal-oriented context | Balanced across all signals | Task planning |
+Frames are pre-configured retrieval pipelines optimised for different contexts:
+
+| Frame | Purpose | Scoring Priority |
+|-------|---------|-----------------|
+| `self` | Agent identity, values, style | Confidence, reinforcement, centrality |
+| `attention` | Query-relevant knowledge | Similarity, recency |
+| `task` | Goal-oriented context | Balanced across all signals |
+| `world` | General domain knowledge | Similarity, centrality |
+| `short_term` | Recent observations | Recency |
 
 ```python
 # Identity context — cached, no embedding needed
@@ -142,9 +167,19 @@ attn_ctx = await system.frame("attention", query="async error handling")
 task_ctx = await system.frame("task", query="refactor the API layer")
 ```
 
-### Decay Tiers
+### Knowledge lifecycle
 
-Knowledge decays at different rates based on its nature:
+```
+BIRTH    →  learn(): fast inbox insert, no API
+GROWTH   →  dream(): embedded, scored, deduplicated, graph edges built
+MATURITY →  recall(): reinforced on retrieval, confidence rises
+DECAY    →  session-aware clock ticks; unused knowledge confidence drops
+ARCHIVE  →  curate(): blocks below threshold archived, not deleted
+```
+
+Decay is **session-aware**: the clock only ticks during active use. Knowledge survives holidays and downtime.
+
+### Decay tiers
 
 | Tier | Half-life | Use Case |
 |------|-----------|----------|
@@ -153,9 +188,7 @@ Knowledge decays at different rates based on its nature:
 | Standard | ~69 hours | General knowledge |
 | Ephemeral | ~14 hours | Session observations, temporary facts |
 
-Decay is **session-aware**: the clock only ticks during active use. Your agent's memory doesn't degrade over holidays or downtime.
-
-### Composite Scoring
+### Composite scoring
 
 Every block is scored across five dimensions:
 
@@ -167,16 +200,283 @@ Score = w_similarity    * cosine_similarity(query, block)
       + w_reinforcement * log(1 + count) / log(1 + max_count)
 ```
 
-Each frame uses different weights. SELF emphasizes confidence and reinforcement. ATTENTION emphasizes similarity and recency.
+Each frame uses different weights. SELF emphasises confidence and reinforcement. ATTENTION emphasises similarity and recency.
+
+---
+
+## Building Custom Agents
+
+elfmem is a memory substrate — it provides the primitives; your agent provides the intelligence.
+
+### The discipline loop
+
+The key insight: memory only self-improves if the agent closes the feedback loop.
+
+```
+RECALL → EXPECT → ACT → OBSERVE → CALIBRATE → ENCODE
+```
+
+Without calibration, all knowledge decays equally. With it, blocks that guided good decisions get reinforced; blocks that misled decay faster. After a few sessions, the memory measurably improves its own recall quality.
+
+### Minimal agent
+
+```python
+from elfmem import MemorySystem
+
+async def agent_turn(system: MemorySystem, user_message: str) -> str:
+    async with system.session():
+        context = await system.frame("attention", query=user_message)
+
+        response = await llm.complete(f"{context.text}\n\nUser: {user_message}")
+
+        if worth_remembering(response):
+            await system.learn(extract_knowledge(response))
+
+        return response
+```
+
+### Full discipline loop
+
+```python
+async def agent_turn(system: MemorySystem, user_message: str) -> str:
+    async with system.session():
+        # 1. Recall relevant knowledge
+        result = await system.frame("attention", query=user_message, top_k=5)
+        block_ids = [b.id for b in result.blocks]
+
+        # 2. Generate response
+        response = await llm.complete(f"{result.text}\n\nUser: {user_message}")
+
+        # 3. Calibrate: signal which blocks actually helped
+        await system.outcome(
+            block_ids,
+            signal=0.85,       # 0.0 (harmful) → 1.0 (perfect)
+            source="used_in_response",
+        )
+
+        # 4. Encode surprises
+        if response_surprised_me:
+            await system.learn(
+                "Expected X, observed Y. Pattern: <transferable lesson>",
+                tags=["pattern/discovered"],
+            )
+
+        # 5. Consolidate at natural pauses
+        if system.should_dream:
+            await system.dream()
+
+        return response
+```
+
+### Outcome signals
+
+| Outcome | Signal | When |
+|---------|--------|------|
+| Block guided successful work | 0.80–0.95 | Used it, outcome was good |
+| Block was relevant but not decisive | 0.55–0.70 | Informed thinking, didn't drive action |
+| Block recalled but ignored | 0.40–0.50 | Retrieved, not needed |
+| Block set wrong expectation | 0.10–0.20 | Relied on it, outcome contradicted it |
+| Block caused failure | 0.00–0.10 | Followed its guidance, things broke |
+
+### Frame selection by task type
+
+| Task Type | Frame | top_k | Notes |
+|-----------|-------|-------|-------|
+| Novel problem / exploration | `attention` | 10–20 | Broad, expect some noise |
+| Executing a known pattern | `task` | 5 | Focused, trust results |
+| Identity or values conflict | `self` | 5 | Values-guided |
+| Context building | `attention` | 10 | Moderate breadth |
+| Quick fact lookup | `attention` | 3 | Fast and specific |
+
+### Session lifecycle
+
+```python
+async with system.session():
+    # Session start: ground in identity and recent context
+    status   = await system.status()
+    recent   = await system.frame("attention", query="recent work", top_k=5)
+    identity = await system.frame("self", top_k=3)
+
+    # ... task loop ...
+
+    # Session end: record learning
+    await system.learn(
+        f"Session: {work_summary}. Hit rate: {hit_rate:.0%}. "
+        f"Insight: {insight}. Adjustment: {adjustment}.",
+        tags=["calibration/session", "meta-learning"],
+    )
+    await system.dream()
+```
+
+### Reference implementations
+
+`examples/` contains two complete agent implementations:
+
+**`examples/calibrating_agent.py`** — A self-calibrating agent with session metrics, per-block verdict tracking (used / ignored / misleading), and session reflection. Tracks hit rate, surprise rate, and gap rate.
+
+```python
+from examples.calibrating_agent import CalibratingAgent, TaskType, BlockVerdict
+
+agent = CalibratingAgent(system)
+await agent.start_session()
+
+recall = await agent.before_task("implement pre-filter", TaskType.EXECUTION)
+# ... do the work ...
+await agent.after_task(
+    expectation="Pure function, <= 50 lines",
+    verdicts={recall.blocks[0].id: BlockVerdict.USED},
+    surprise="Empty query + SELF frame still returns constitutional blocks",
+)
+
+reflection = await agent.end_session(
+    work_summary="Implemented recall pre-filter",
+    insight="SELF frame has special empty-query semantics",
+    adjustment="Check frame-specific edge cases earlier",
+)
+print(agent.metrics.summary())  # hit_rate=65%, surprises=1, gaps=1, health=attention
+```
+
+**`examples/decision_maker.py`** — Multi-frame decision maker. Synthesises SELF, TASK, and ATTENTION frames to choose between options, then calibrates from objective outcomes.
+
+```python
+from examples.decision_maker import ElfDecisionMaker, Signal
+
+maker = ElfDecisionMaker(memory)
+decision = await maker.decide(
+    "what should I focus on next?",
+    options=["refactor auth", "add tests", "document API"],
+)
+print(decision.choice)      # "add tests"
+print(decision.rationale)   # "Chose 'add tests' (alignment=0.83) ..."
+
+# After execution, signal the outcome
+await maker.calibrate(decision.pending, Signal.GOOD)
+```
+
+### System prompt instructions
+
+`examples/agent_discipline.md` contains copy-pasteable instructions at three tiers of complexity:
+
+- **Tier 1 (2 rules)** — Recall before acting, remember surprises. Good for simple agents.
+- **Tier 2 (6 rules)** — Adds frame selection, inline calibration, expectation-setting.
+- **Tier 3 (12 rules)** — Adds session lifecycle, metrics tracking, and reflection. For long-running or team agents.
+
+Paste the appropriate tier into your agent's system prompt to get disciplined memory behaviour immediately.
+
+### Seeding agent identity
+
+```python
+await system.setup(
+    identity="I am a software engineering assistant. I write clean, tested code.",
+    values=[
+        "I prefer simple solutions over clever ones.",
+        "I always run tests before claiming something works.",
+        "I explain my reasoning before giving recommendations.",
+    ],
+)
+```
+
+Or from the command line:
+
+```bash
+uv run scripts/seed_self.py agent.db
+```
+
+---
+
+## Claude Code Integration
+
+elfmem is built to work as the memory layer for Claude Code and other Claude-powered coding agents.
+
+### Quick setup
+
+```bash
+# Install
+uv tool install 'elfmem[tools]'
+
+# Seed identity
+elfmem setup --db ~/.elfmem/coding-agent.db
+
+# Start the MCP server
+elfmem serve --db ~/.elfmem/coding-agent.db
+```
+
+Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "elfmem",
+      "args": ["serve", "--db", "/Users/you/.elfmem/coding-agent.db"],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+Claude can now remember what it has learned across sessions, reinforce effective patterns, and surface relevant context before acting — all automatically through tool calls.
+
+### Building a Claude-powered agent with persistent memory
+
+```python
+import anthropic
+from elfmem import MemorySystem
+
+client = anthropic.Anthropic()
+system = await MemorySystem.from_config("agent.db", {
+    "llm": {"model": "claude-sonnet-4-6"},
+    "embeddings": {"model": "text-embedding-3-small"},
+})
+
+async def coding_agent(task: str) -> str:
+    async with system.session():
+        identity = await system.frame("self")
+        context  = await system.frame("attention", query=task, top_k=5)
+        block_ids = [b.id for b in context.blocks]
+
+        system_prompt = f"""You are a software engineering agent with persistent memory.
+
+{identity.text}
+
+Relevant knowledge for this task:
+{context.text}
+"""
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": task}],
+        )
+        result = response.content[0].text
+
+        # Reinforce knowledge that contributed
+        await system.outcome(block_ids, signal=0.85, source="coding_task")
+
+        # Store what was learned
+        await system.learn(
+            f"Task: {task[:80]}. Approach: {result[:200]}",
+            tags=["task/completed"],
+        )
+
+        if system.should_dream:
+            await system.dream()
+
+        return result
+```
+
+---
 
 ## Configuration
 
-### Minimal (defaults)
+### Minimal (zero config)
 
 ```python
 system = await MemorySystem.from_config("agent.db")
 # Uses claude-sonnet-4-6 for LLM, text-embedding-3-small for embeddings
-# Requires ANTHROPIC_API_KEY environment variable
+# Requires ANTHROPIC_API_KEY
 ```
 
 ### YAML config file
@@ -215,6 +515,43 @@ embeddings:
   base_url: "http://localhost:11434"
 ```
 
+### Domain-specific prompts
+
+Override the LLM prompts for specialised agents:
+
+```yaml
+prompts:
+  self_alignment: |
+    You are evaluating a memory block for a medical AI assistant.
+    Only flag blocks as self-aligned if they relate to patient safety,
+    clinical evidence, or regulatory compliance.
+    {self_context}
+    {block}
+
+  valid_self_tags:
+    - "self/constitutional"
+    - "self/domain/oncology"
+    - "self/regulatory/hipaa"
+```
+
+### Custom adapters
+
+Implement the port protocols directly for full control:
+
+```python
+from elfmem.ports.services import LLMService, EmbeddingService
+
+class MyLLMService:
+    async def process_block(self, block: str, self_context: str) -> BlockAnalysis: ...
+    async def detect_contradiction(self, block_a: str, block_b: str) -> float: ...
+
+class MyEmbeddingService:
+    async def embed(self, text: str) -> np.ndarray: ...
+    async def embed_batch(self, texts: list[str]) -> list[np.ndarray]: ...
+
+system = MemorySystem(engine, llm_service=MyLLMService(), embedding_service=MyEmbeddingService())
+```
+
 ### Environment variables
 
 ```bash
@@ -226,6 +563,8 @@ export OPENAI_API_KEY=sk-...
 
 API keys are read by LiteLLM from standard environment variables. They never appear in config files.
 
+---
+
 ## Visualization
 
 ![elfmem knowledge graph dashboard](docs/elfmem-knowledge-visualisation.jpg)
@@ -233,59 +572,30 @@ API keys are read by LiteLLM from standard environment variables. They never app
 Explore your knowledge graph with an interactive dashboard:
 
 ```bash
-uv run scripts/visualise.py ~/.elfmem/agent.db
-```
-
-**What you get:**
-- **Knowledge Graph** — Force-directed visualization of blocks and connections. Zoom in to see labels (smart truncation at word boundaries). Click nodes for detailed information.
-- **Lifecycle Flow** — Track blocks through inbox → active → archived stages.
-- **Decay Curves** — See knowledge half-lives by tier. Scatter plot shows which blocks are at risk of archival.
-- **Scoring Breakdown** — Radar chart of frame weights (similarity, confidence, recency, centrality, reinforcement).
-- **Health Status** — Quick view of memory health and consolidation suggestions.
-
-**Options:**
-```bash
 # Default: show active blocks only
 uv run scripts/visualise.py ~/.elfmem/agent.db
 
-# Include archived blocks in graph (archived nodes hidden by default, toggle with the filter pill)
+# Include archived blocks (hidden by default, toggle with the filter pill)
 uv run scripts/visualise.py ~/.elfmem/agent.db --archived
 
 # Fresh temp database with demo data
 uv run scripts/visualise.py
 ```
 
+**Dashboard panels:**
+- **Knowledge Graph** — Force-directed visualization. Zoom in to reveal labels (smart truncation at word boundaries). Click nodes for detail. Toggle tiers and status with filter pills.
+- **Lifecycle Flow** — Track blocks through inbox → active → archived stages.
+- **Decay Curves** — Knowledge half-lives by tier. Scatter plot shows blocks at risk of archival.
+- **Scoring Breakdown** — Radar chart of frame weights (similarity, confidence, recency, centrality, reinforcement).
+- **Health Status** — Memory health and consolidation suggestions.
+
 Requires the visualization extra:
+
 ```bash
 uv add 'elfmem[viz]'
 ```
 
-## Agent Integration Pattern
-
-```python
-async def run_turn(system, user_message):
-    # 1. Assemble context
-    self_ctx = await system.frame("self")
-    attn_ctx = await system.frame("attention", query=user_message)
-
-    # 2. Build prompt with memory context
-    prompt = f"""
-    {self_ctx.text}
-
-    {attn_ctx.text}
-
-    User: {user_message}
-    """
-
-    # 3. Generate response
-    response = await llm.complete(prompt)
-
-    # 4. Learn from the interaction
-    if worth_remembering(response):
-        await system.learn(extract_knowledge(response))
-
-    return response
-```
+---
 
 ## API Reference
 
@@ -295,77 +605,72 @@ async def run_turn(system, user_message):
 # Factory
 system = await MemorySystem.from_config(db_path, config=None)
 
-# Session management (required)
+# Session management
 async with system.session():
     ...
+# Or explicit lifecycle
+await system.begin_session()
+await system.end_session()
 
 # Write
 result = await system.learn(content, tags=None, category="knowledge")
+result = await system.remember(content, tags=None)   # alias; also checks should_dream
 
 # Read
 frame_result = await system.frame(name, query=None, top_k=5)
-blocks = await system.recall(query=None, top_k=5, frame="attention")  # raw, no side effects
+blocks       = await system.recall(query=None, top_k=5, frame="attention")  # raw, no side effects
 
-# Outcome feedback
+# Feedback
 result = await system.outcome(block_ids, signal, weight=1.0, source="")
 
 # Maintenance (usually automatic)
-await system.consolidate()  # process inbox → active
-await system.curate()       # archive decayed, prune edges, reinforce top-N
+result = await system.dream()    # consolidate inbox → active
+result = await system.curate()   # archive decayed, prune edges, reinforce top-N
+
+# Identity
+result = await system.setup(identity=None, values=None, seed=True)
+
+# Graph
+result = await system.connect(source, target, relation="similar")
+result = await system.disconnect(source, target)
+
+# Introspection
+status = await system.status()       # SystemStatus with health + token usage
+text   = system.guide(method=None)   # runtime documentation
+bool   = system.should_dream         # True when inbox needs consolidation
 ```
 
-### Return Types
+### Return types
 
 ```python
-LearnResult(block_id, status)           # "created" | "duplicate_rejected" | "near_duplicate_superseded"
-FrameResult(text, blocks, frame_name)   # rendered text + scored blocks
+LearnResult(block_id, status)
+# status: "created" | "duplicate_rejected" | "near_duplicate_superseded"
+
+FrameResult(text, blocks, frame_name)
+# text: rendered prompt-ready string; blocks: list[ScoredBlock]
+
+ScoredBlock(id, content, score, confidence, decay_tier, tags, ...)
+
 ConsolidateResult(processed, promoted, deduplicated, edges_created)
 CurateResult(archived, edges_pruned, reinforced)
 OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized)
-SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, ...)
+ConnectResult(action, edge_id, relation, weight)
+SystemStatus(session_active, inbox_count, active_count, health, suggestion,
+             session_tokens, lifetime_tokens)
+TokenUsage(llm_input, llm_output, embedding_tokens)
 ```
 
-### Custom Prompts
+All result types implement `__str__`, `.summary()`, and `.to_dict()`. All exceptions carry a `.recovery` field with the exact command or code to fix the problem.
 
-Override the LLM prompts for domain-specific agents:
-
-```yaml
-prompts:
-  self_alignment: |
-    You are evaluating a memory block for a medical AI assistant...
-    {self_context}
-    {block}
-    Respond: {"score": <float>}
-
-  valid_self_tags:
-    - "self/constitutional"
-    - "self/domain/oncology"
-    - "self/regulatory/hipaa"
-```
-
-### Custom Adapters
-
-For full control, implement the port protocols directly:
-
-```python
-from elfmem.ports.services import LLMService, EmbeddingService
-
-class MyLLMService:
-    async def score_self_alignment(self, block: str, self_context: str) -> float: ...
-    async def infer_self_tags(self, block: str, self_context: str) -> list[str]: ...
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float: ...
-
-system = MemorySystem(engine, llm_service=MyLLMService(), embedding_service=MyEmbedder())
-```
+---
 
 ## Architecture
 
 ```
 src/elfmem/
-├── api.py                  # MemorySystem — public API
+├── api.py                  # MemorySystem — all public operations
 ├── config.py               # ElfmemConfig — Pydantic configuration
-├── smart.py                # SmartMemory — auto-managed facade (MCP + CLI)
-├── mcp.py                  # FastMCP server — 6 agent tools
+├── mcp.py                  # FastMCP server — 10 agent tools
 ├── cli.py                  # Typer CLI — 7 commands
 ├── scoring.py              # Composite scoring formula (frozen)
 ├── types.py                # Domain types — shared vocabulary
@@ -409,6 +714,8 @@ src/elfmem/
 | **Context** (context/) | Frames, rendering, contradictions | None (pure) |
 | **Operations** (operations/) | Orchestration, lifecycle | All side effects |
 
+---
+
 ## Development
 
 ```bash
@@ -429,26 +736,26 @@ uv run mypy --ignore-missing-imports src/elfmem/
 uv run ruff check src/ tests/
 ```
 
-### Testing Philosophy
+### Testing philosophy
 
-All tests run against deterministic mock services. No API keys, no network calls, fully reproducible. The mock embedding service produces hash-seeded vectors — same input always gives the same embedding. The mock LLM service returns configurable scores and tags via substring matching.
+All tests run against deterministic mock services. No API keys, no network calls, fully reproducible. The mock embedding service produces hash-seeded vectors — same input always gives the same embedding. The mock LLM returns configurable scores and tags via substring matching.
 
 ```python
 from elfmem.adapters.mock import make_mock_llm, make_mock_embedding
 
-# Control exactly what the LLM returns
 llm = make_mock_llm(
     alignment_overrides={"identity": 0.95},
     tag_overrides={"identity": ["self/value"]},
 )
 
-# Control similarity between specific texts
 embedding = make_mock_embedding(
     similarity_overrides={
         frozenset({"cats are great", "dogs are great"}): 0.85,
     },
 )
 ```
+
+---
 
 ## Design Decisions
 
@@ -458,12 +765,28 @@ embedding = make_mock_embedding(
 | Session-aware decay, not wall-clock | Knowledge survives holidays and downtime |
 | Soft bias for identity, not hard gates | Everything is learned; self-aligned knowledge just survives longer |
 | Retrieval is pure; reinforcement is separate | Clean separation of read path and side effects |
+| Calibration is opt-in | Useful without it; dramatically better with it |
 | LiteLLM as unified backend | One adapter for 100+ providers; switch with config |
 | Mock-first testing | All logic verified without API keys; adapters are thin wrappers |
+| Exceptions carry `.recovery` | Every error tells the agent exactly what to do next |
+
+---
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR — it covers the design principles, what to discuss first, and the testing requirements.
+
+- **Bug reports / feature requests** — [GitHub Issues](https://github.com/emson/elfmem/issues)
+- **Design questions** — [GitHub Discussions](https://github.com/emson/elfmem/discussions)
+- **Security vulnerabilities** — see [SECURITY.md](SECURITY.md) for private disclosure
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for the full text.
 
 ## Acknowledgements
 
