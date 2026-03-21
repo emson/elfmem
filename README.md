@@ -40,6 +40,7 @@ asyncio.run(main())
 - **Near-duplicate resolution** — Detects when new knowledge updates existing knowledge. Old block archived, new block inherits history.
 - **Zero infrastructure** — SQLite backend. No Redis, no Postgres, no vector database. One file, fully portable.
 - **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to local Ollama with a config change.
+- **Interactive visualization** — Explore your knowledge graph with an intuitive dashboard. Zoom-dependent labels, decay curves, and lifecycle flow. Optional `[viz]` extra.
 
 ## For AI Agents
 
@@ -224,6 +225,38 @@ export OPENAI_API_KEY=sk-...
 ```
 
 API keys are read by LiteLLM from standard environment variables. They never appear in config files.
+
+## Visualization
+
+Explore your knowledge graph with an interactive dashboard:
+
+```bash
+python scripts/visualise.py ~/.elfmem/agent.db
+```
+
+**What you get:**
+- **Knowledge Graph** — Force-directed visualization of blocks and connections. Zoom in to see labels (smart truncation at word boundaries). Click nodes for detailed information.
+- **Lifecycle Flow** — Track blocks through inbox → active → archived stages.
+- **Decay Curves** — See knowledge half-lives by tier. Scatter plot shows which blocks are at risk of archival.
+- **Scoring Breakdown** — Radar chart of frame weights (similarity, confidence, recency, centrality, reinforcement).
+- **Health Status** — Quick view of memory health and consolidation suggestions.
+
+**Options:**
+```bash
+# Default: show active blocks only
+python scripts/visualise.py ~/.elfmem/agent.db
+
+# Include archived blocks in graph
+python scripts/visualise.py ~/.elfmem/agent.db --archived
+
+# Fresh temp database with demo data
+python scripts/visualise.py
+```
+
+Requires the visualization extra:
+```bash
+uv add 'elfmem[viz]'
+```
 
 ## Agent Integration Pattern
 

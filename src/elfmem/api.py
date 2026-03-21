@@ -27,12 +27,11 @@ from elfmem.db.queries import (
     seed_builtin_data,
     set_config,
 )
-from elfmem.exceptions import FrameError
-from elfmem.operations.connect import do_connect, do_disconnect
+from elfmem.exceptions import ElfmemError, FrameError
 from elfmem.guide import get_guide
 from elfmem.memory.graph import stage_and_promote_co_retrievals
 from elfmem.memory.retrieval import hybrid_retrieve
-from elfmem.token_counter import TokenCounter
+from elfmem.operations.connect import do_connect, do_disconnect
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.curate import curate as _curate
 from elfmem.operations.curate import should_curate
@@ -41,12 +40,14 @@ from elfmem.operations.outcome import record_outcome as _record_outcome
 from elfmem.operations.recall import recall as _recall
 from elfmem.policy import ConsolidationPolicy
 from elfmem.ports.services import EmbeddingService, LLMService
-from elfmem.session import begin_session as _begin_session, end_session as _end_session
+from elfmem.session import begin_session as _begin_session
+from elfmem.session import end_session as _end_session
+from elfmem.token_counter import TokenCounter
 from elfmem.types import (
     ConnectByQueryResult,
     ConnectResult,
-    ConnectsResult,
     ConnectSpec,
+    ConnectsResult,
     ConsolidateResult,
     CurateResult,
     DisconnectResult,
@@ -418,6 +419,73 @@ class MemorySystem:
         """
         records = list(self._history)
         return records[-last_n:] if last_n < len(records) else records
+
+    @property
+    def _db_path(self) -> str:
+        """File path to the SQLite database. Empty string for in-memory databases."""
+        db = str(self._engine.url.database or "")
+        return "" if db in ("", ":memory:") else db
+
+    def visualise(
+        self,
+        path: str | None = None,
+        open_browser: bool = True,
+        offline: bool = False,
+        include_archived: bool = False,
+        max_nodes: int = 100,
+    ) -> str:
+        """Generate an interactive HTML dashboard of the knowledge system.
+
+        USE WHEN: Exploring the knowledge graph, diagnosing retrieval behaviour,
+                  or sharing a snapshot of memory state with a team.
+        DON'T USE WHEN: In automated pipelines or latency-sensitive agent code.
+                         This is a developer/debug tool, not a production operation.
+        COST: One synchronous SQLite read pass. No LLM calls. Fast.
+        RETURNS: Absolute path to the generated HTML file.
+        NEXT: Open the file in a browser. No cleanup required.
+              Requires the elfmem[viz] extra: ``uv add elfmem[viz]``.
+
+        Args:
+            path: Output file path. A temp file is created if None.
+            open_browser: Open the generated file in the default browser.
+            offline: Inline vendored JS libraries (no CDN requests). Requires
+                     real vis-network and Chart.js in src/elfmem/viz/assets/.
+            include_archived: Include archived blocks as dim nodes in the graph.
+            max_nodes: Cap on visible graph nodes; top-N selected by centrality.
+
+        Raises:
+            ElfmemError: If elfmem[viz] is not installed or if the database is
+                         in-memory (no file to read from).
+        """
+        try:
+            from elfmem.viz import DashboardData, render_dashboard
+        except ImportError as exc:
+            raise ElfmemError(
+                "Visualisation requires the viz extra.",
+                recovery="uv add elfmem[viz]",
+            ) from exc
+
+        db_path = self._db_path
+        if not db_path:
+            raise ElfmemError(
+                "Visualisation requires a file-based database.",
+                recovery=(
+                    "Use MemorySystem.from_config('path/to/agent.db') "
+                    "instead of an in-memory database."
+                ),
+            )
+
+        data = DashboardData.from_db(
+            db_path,
+            include_archived=include_archived,
+            max_nodes=max_nodes,
+        )
+        return render_dashboard(
+            data,
+            path=path,
+            open_browser=open_browser,
+            offline=offline,
+        )
 
     # ── Session management ───────────────────────────────────────────────────
 

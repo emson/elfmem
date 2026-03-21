@@ -579,6 +579,7 @@ cli = [
 ]
 dev = [
     { name = "fastmcp" },
+    { name = "jinja2" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -593,6 +594,9 @@ tools = [
     { name = "fastmcp" },
     { name = "typer" },
 ]
+viz = [
+    { name = "jinja2" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -603,6 +607,8 @@ requires-dist = [
     { name = "fastmcp", marker = "extra == 'tools'", specifier = ">=2.0" },
     { name = "greenlet", specifier = ">=3.3.2" },
     { name = "instructor", specifier = ">=1.2" },
+    { name = "jinja2", marker = "extra == 'dev'", specifier = ">=3.1" },
+    { name = "jinja2", marker = "extra == 'viz'", specifier = ">=3.1" },
     { name = "litellm", specifier = ">=1.30" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "numpy", specifier = ">=1.26" },
@@ -617,7 +623,7 @@ requires-dist = [
     { name = "typer", marker = "extra == 'tools'", specifier = ">=0.12" },
     { name = "types-pyyaml", marker = "extra == 'dev'" },
 ]
-provides-extras = ["mcp", "cli", "tools", "dev"]
+provides-extras = ["mcp", "cli", "tools", "viz", "dev"]
 
 [[package]]
 name = "email-validator"
