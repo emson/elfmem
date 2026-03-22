@@ -87,10 +87,12 @@ class TestRememberCommand:
         data = json.loads(result.output)
         assert "block_id" in data
 
-    def test_missing_db_exits_nonzero(self) -> None:
-        result = runner.invoke(app, ["remember", "fact"])  # no --db
-        assert result.exit_code != 0
-        assert "ELFMEM_DB" in result.output
+    def test_no_db_flag_uses_discovery_chain(self, mock_managed: AsyncMock) -> None:
+        # Without --db, the command uses the discovery chain (falls back to
+        # ~/.elfmem/agent.db) rather than failing. mock_managed intercepts
+        # the MemorySystem.managed() call so no real file I/O occurs.
+        result = runner.invoke(app, ["remember", "fact"])
+        assert result.exit_code == 0
 
     def test_tags_are_passed_through(self, mock_managed: AsyncMock) -> None:
         result = runner.invoke(

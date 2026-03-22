@@ -92,7 +92,13 @@ Sessions and consolidation are managed automatically.
 ### CLI — for shell access
 
 ```bash
-export ELFMEM_DB=agent.db
+# One-time project setup (detects project root, writes .elfmem/config.yaml)
+elfmem init
+
+# Check discovery paths and health
+elfmem doctor
+
+# Daily operations (no --db needed after init)
 elfmem remember "User prefers dark mode" --tags ui,preference
 elfmem recall "code style preferences" --json
 elfmem status
@@ -126,6 +132,63 @@ Requires Python 3.11+. Set your API key:
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default)
 export OPENAI_API_KEY=sk-...          # for OpenAI models
+```
+
+---
+
+## Project Setup
+
+`elfmem init` makes the CLI project-aware. Run it once in any project directory.
+
+```bash
+cd ~/projects/my-agent
+elfmem init
+```
+
+What it does:
+1. Detects your project root (walks up to find `.git`, `pyproject.toml`, etc.)
+2. Infers your project name from `pyproject.toml` or `package.json`
+3. Creates `.elfmem/config.yaml` with a `project:` section
+4. Creates a database at `~/.elfmem/databases/{project-name}.db` (outside the repo — never committed)
+5. Writes an elfmem section into `CLAUDE.md` / `AGENTS.md` (or creates `CLAUDE.md`)
+6. Prints the MCP JSON snippet to paste into `.claude.json`
+
+After `init`, every `elfmem` command in that directory tree discovers the config automatically — no `--db` or `--config` flags needed.
+
+### Discovery chain
+
+All commands resolve config and database through the same chain:
+
+| Priority | Config | Database |
+|----------|--------|---------|
+| 1 | `--config PATH` flag | `--db PATH` flag |
+| 2 | `ELFMEM_CONFIG` env var | `ELFMEM_DB` env var |
+| 3 | `.elfmem/config.yaml` (walk up from cwd) | `project.db` in discovered config |
+| 4 | `~/.elfmem/config.yaml` | `~/.elfmem/agent.db` (global fallback) |
+
+### Init options
+
+```bash
+elfmem init                              # project-local (recommended)
+elfmem init --global                     # write to ~/.elfmem/config.yaml instead
+elfmem init --no-docs                    # skip CLAUDE.md / AGENTS.md update
+elfmem init --docs-file CONTRIBUTING.md  # write section to a different file
+elfmem init --force                      # overwrite existing config
+```
+
+### Doctor
+
+`elfmem doctor` shows you exactly which files were discovered and why:
+
+```
+elfmem doctor
+
+Config:   /path/to/.elfmem/config.yaml  [project-local (.elfmem/config.yaml)]
+Database: /Users/you/.elfmem/databases/my-agent.db  [project.db in config]
+Project:  my-agent
+
+Agent doc: CLAUDE.md  ✓ elfmem section found
+MCP config: .claude.json  ✓ elfmem entry found
 ```
 
 ---
@@ -394,21 +457,21 @@ elfmem is built to work as the memory layer for Claude Code and other Claude-pow
 # Install
 uv tool install 'elfmem[tools]'
 
-# Seed identity
-elfmem setup --db ~/.elfmem/coding-agent.db
+# Run in your project directory — detects root, writes config, updates CLAUDE.md
+elfmem init
 
-# Start the MCP server
-elfmem serve --db ~/.elfmem/coding-agent.db
+# Paste the printed MCP snippet into ~/.claude.json, then start the server
+elfmem serve   # no --db needed; reads project.db from .elfmem/config.yaml
 ```
 
-Add to `~/.claude.json`:
+`elfmem init` prints the exact JSON to paste into `~/.claude.json`. It looks like:
 
 ```json
 {
   "mcpServers": {
     "elfmem": {
       "command": "elfmem",
-      "args": ["serve", "--db", "/Users/you/.elfmem/coding-agent.db"],
+      "args": ["serve", "--config", "/path/to/.elfmem/config.yaml"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -416,6 +479,8 @@ Add to `~/.claude.json`:
   }
 }
 ```
+
+The `--config` flag is used instead of `--db` so each project gets its own database without hardcoding the path. Run `elfmem init` once per project; each project gets its own entry in `~/.elfmem/databases/`.
 
 Claude can now remember what it has learned across sessions, reinforce effective patterns, and surface relevant context before acting — all automatically through tool calls.
 
@@ -670,8 +735,9 @@ All result types implement `__str__`, `.summary()`, and `.to_dict()`. All except
 src/elfmem/
 ├── api.py                  # MemorySystem — all public operations
 ├── config.py               # ElfmemConfig — Pydantic configuration
+├── project.py              # Project root detection, config/DB discovery, agent doc integration
 ├── mcp.py                  # FastMCP server — 10 agent tools
-├── cli.py                  # Typer CLI — 7 commands
+├── cli.py                  # Typer CLI — init, doctor, remember, recall, status, …
 ├── scoring.py              # Composite scoring formula (frozen)
 ├── types.py                # Domain types — shared vocabulary
 ├── guide.py                # AgentGuide — runtime documentation
