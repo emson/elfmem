@@ -7,6 +7,24 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.0] — 2026-03-26
+
+> Package and documentation hardening for public release.
+
+### Added
+- GitHub Pages documentation deployment workflow with MkDocs Material theme
+- CI/CD workflows: tests on Python 3.11-3.13, PyPI publishing via OIDC trusted publishing
+- Status badges in README (Tests, PyPI, Python version, Codecov, License)
+- `.nojekyll` to prevent Jekyll interference with static site deployment
+- Enhanced PyPI package metadata: maintainer info, security contact, expanded classifiers
+
+### Changed
+- Improved project metadata: author and maintainer email addresses
+- Extended classifier coverage for better PyPI discoverability
+- Strengthened GitHub Pages configuration to avoid upstream project conflicts
+
+---
+
 ## [0.2.0] — 2026-03-26
 
 > First public release. Version 0.1.0 was pre-publication only.
