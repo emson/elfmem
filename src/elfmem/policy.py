@@ -110,7 +110,7 @@ class ConsolidationPolicy:
         - otherwise → no change (in "acceptable" dead-band)
 
         Args:
-            result: ConsolidateResult from SmartMemory.dream().
+            result: ConsolidateResult from MemorySystem.dream().
         """
         if result.processed == 0:
             # Edge case: empty consolidation (no blocks to process)

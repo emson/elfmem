@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from elfmem.seed import CONSTITUTIONAL_SEED
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 
 
 async def seed_self(db_path: str, config_path: str | None = None) -> None:
@@ -13,7 +13,7 @@ async def seed_self(db_path: str, config_path: str | None = None) -> None:
     db_expanded = Path(db_path).expanduser()
     config_expanded = Path(config_path).expanduser() if config_path else None
 
-    async with SmartMemory.managed(str(db_expanded), config=str(config_expanded)) as mem:
+    async with MemorySystem.managed(str(db_expanded), config=str(config_expanded)) as mem:
         print(f"Seeding SELF frame from {len(CONSTITUTIONAL_SEED)} constitutional blocks...\n")
 
         for i, block in enumerate(CONSTITUTIONAL_SEED, 1):

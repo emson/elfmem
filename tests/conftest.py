@@ -1,7 +1,5 @@
 """Shared test fixtures for elfmem test suite."""
 
-import warnings
-
 import pytest
 
 from elfmem.adapters.mock import (
@@ -12,15 +10,6 @@ from elfmem.adapters.mock import (
 )
 from elfmem.db.engine import create_test_engine
 from elfmem.db.queries import seed_builtin_data
-from elfmem.smart import SmartMemory
-
-# SmartMemory is deprecated but used in legacy fixtures. Suppress warnings so
-# test output stays clean; the deprecation itself is verified in test_phase3.py.
-warnings.filterwarnings(
-    "ignore",
-    message="SmartMemory is deprecated",
-    category=DeprecationWarning,
-)
 
 
 @pytest.fixture
@@ -59,11 +48,3 @@ async def db_conn(test_engine):
 def db_path_str(tmp_path):
     """A temporary database file path as a string."""
     return str(tmp_path / "test.db")
-
-
-@pytest.fixture
-async def memory(db_path_str):
-    """A SmartMemory instance for testing. Auto-opens and closes."""
-    mem = await SmartMemory.open(db_path_str)
-    yield mem
-    await mem.close()

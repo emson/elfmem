@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Extract and learn core concepts from the elfmem Design Simulation system."""
 import asyncio
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 
 CONCEPTS = [
     {
@@ -107,7 +107,7 @@ CONCEPTS = [
 
 async def learn_concepts(db_path: str, config_path: str | None = None) -> None:
     """Learn design simulation concepts into elfmem."""
-    async with SmartMemory.managed(db_path, config=config_path) as mem:
+    async with MemorySystem.managed(db_path, config=config_path) as mem:
         print(f"Learning {len(CONCEPTS)} design simulation concepts...\n")
 
         for i, concept in enumerate(CONCEPTS, 1):

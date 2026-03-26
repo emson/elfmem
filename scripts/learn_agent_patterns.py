@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Extract and learn agent usage patterns for elfmem into memory."""
 import asyncio
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 
 AGENT_PATTERNS = [
     # Remember (Learn) Patterns
@@ -255,7 +255,7 @@ AGENT_PATTERNS = [
 
 async def learn_patterns(db_path: str, config_path: str | None = None) -> None:
     """Learn agent usage patterns into elfmem."""
-    async with SmartMemory.managed(db_path, config=config_path) as mem:
+    async with MemorySystem.managed(db_path, config=config_path) as mem:
         print(f"Learning {len(AGENT_PATTERNS)} agent usage patterns...\n")
 
         for i, pattern in enumerate(AGENT_PATTERNS, 1):

@@ -17,7 +17,7 @@ from decision_maker import (
     PendingDecision,
     Signal,
 )
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 
 
 class TestSignal:
@@ -62,7 +62,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decide_returns_decision(self, db_path_str: str) -> None:
         """decide() returns a Decision object."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("what should I work on next?")
@@ -72,7 +72,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decision_has_choice(self, db_path_str: str) -> None:
         """Decision always has a non-empty choice."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("how should I approach this problem?")
@@ -83,7 +83,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decision_has_rationale(self, db_path_str: str) -> None:
         """Decision includes rationale explaining the choice."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("what architecture to use?")
@@ -94,7 +94,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decision_has_self_alignment(self, db_path_str: str) -> None:
         """Decision includes a self_alignment score."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("how to build the next feature?")
@@ -104,7 +104,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decide_with_options(self, db_path_str: str) -> None:
         """decide() with options picks one of them."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         options = ["Build feature A", "Build feature B", "Refactor existing code"]
@@ -116,7 +116,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decide_creates_pending_record(self, db_path_str: str) -> None:
         """decide() adds a PendingDecision to internal state."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         assert len(maker.pending_decisions) == 0
@@ -127,7 +127,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decide_returns_pending_record(self, db_path_str: str) -> None:
         """decision.pending is a PendingDecision with block_ids."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         # Learn some context first
@@ -141,7 +141,7 @@ class TestElfDecisionMakerDecide:
     @pytest.mark.asyncio
     async def test_decide_has_supporting_frames(self, db_path_str: str) -> None:
         """Decision includes context from each frame."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("how should I approach testing?")
@@ -158,7 +158,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_returns_result(self, db_path_str: str) -> None:
         """calibrate() returns a CalibrationResult."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("what to build next?")
@@ -170,7 +170,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_removes_pending(self, db_path_str: str) -> None:
         """After calibration, decision is removed from pending."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("what to build next?")
@@ -183,7 +183,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_records_signal(self, db_path_str: str) -> None:
         """CalibrationResult records the signal used."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("something")
@@ -195,7 +195,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_records_learning(self, db_path_str: str) -> None:
         """calibrate() records a learning block."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("how to structure the API?")
@@ -208,7 +208,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_reports_block_count(self, db_path_str: str) -> None:
         """CalibrationResult includes number of blocks reinforced."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("what architecture to use?")
@@ -221,7 +221,7 @@ class TestElfDecisionMakerCalibrate:
     @pytest.mark.asyncio
     async def test_calibrate_advises_dream(self, db_path_str: str) -> None:
         """CalibrationResult indicates if should_dream."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         decision = await maker.decide("something")
@@ -237,7 +237,7 @@ class TestElfDecisionMakerFullCycle:
     @pytest.mark.asyncio
     async def test_full_decision_calibration_cycle(self, db_path_str: str) -> None:
         """Complete cycle: learn context → decide → calibrate → reflect."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         # 1. Populate memory with context
@@ -275,7 +275,7 @@ class TestElfDecisionMakerFullCycle:
     @pytest.mark.asyncio
     async def test_multiple_decisions_and_calibrations(self, db_path_str: str) -> None:
         """Multiple decision cycles — pending list managed correctly."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         # Make 3 decisions
@@ -299,7 +299,7 @@ class TestElfDecisionMakerFullCycle:
     @pytest.mark.asyncio
     async def test_decision_summary_observable(self, db_path_str: str) -> None:
         """summary() returns observable state."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         summary = maker.summary()
@@ -315,7 +315,7 @@ class TestElfDecisionMakerFullCycle:
     @pytest.mark.asyncio
     async def test_reflect_returns_text(self, db_path_str: str) -> None:
         """reflect() returns text from self-frame recall."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         text = await maker.reflect("what decisions have worked best for elf")
@@ -325,7 +325,7 @@ class TestElfDecisionMakerFullCycle:
     @pytest.mark.asyncio
     async def test_dream_if_ready(self, db_path_str: str) -> None:
         """dream_if_ready() consolidates when should_dream is True."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         # Not ready initially
@@ -351,7 +351,7 @@ class TestPercieve:
     @pytest.mark.asyncio
     async def test_perceive_returns_all_frames(self, db_path_str: str) -> None:
         """perceive() returns results for all four frames."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         frames = await maker.perceive("how should I approach testing?")
@@ -365,7 +365,7 @@ class TestPercieve:
     @pytest.mark.asyncio
     async def test_perceive_all_frames_have_text(self, db_path_str: str) -> None:
         """All frame results have text content."""
-        mem = await SmartMemory.open(db_path_str)
+        mem = await MemorySystem.from_config(db_path_str)
         maker = ElfDecisionMaker(mem)
 
         frames = await maker.perceive("what should I prioritize?")

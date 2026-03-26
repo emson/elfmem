@@ -11,7 +11,7 @@ from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.policy import ConsolidationPolicy
-from elfmem.smart import SmartMemory
+
 from elfmem.types import ConsolidateResult
 
 
@@ -54,7 +54,7 @@ async def simulate_high_quality_agent(policy: ConsolidationPolicy | None, blocks
     )
 
     db_path = "/tmp/test_high_quality.db"
-    mem = await SmartMemory.open(db_path, config=config, policy=policy)
+    mem = await MemorySystem.from_config(db_path, config=config, policy=policy)
 
     # Learn 100 blocks
     for i in range(blocks):
@@ -103,7 +103,7 @@ async def simulate_noisy_agent(policy: ConsolidationPolicy | None, blocks: int =
     )
 
     db_path = "/tmp/test_noisy.db"
-    mem = await SmartMemory.open(db_path, config=config, policy=policy)
+    mem = await MemorySystem.from_config(db_path, config=config, policy=policy)
 
     # Learn 100 blocks
     for i in range(blocks):
@@ -150,7 +150,7 @@ async def simulate_burst_agent(policy: ConsolidationPolicy | None, blocks: int =
     )
 
     db_path = "/tmp/test_burst.db"
-    mem = await SmartMemory.open(db_path, config=config, policy=policy)
+    mem = await MemorySystem.from_config(db_path, config=config, policy=policy)
 
     # Learn in 5 bursts of 20 blocks each
     burst_size = 20

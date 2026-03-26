@@ -1,23 +1,25 @@
 """Tests for token usage tracking: TokenUsage, TokenCounter, MemorySystem integration.
 
 Sections:
-  - TestTokenUsage            — public dataclass behaviour (no DB)
-  - TestTokenCounter          — mutable accumulator (internal, tested because session
-                                management depends on it directly)
-  - TestStatusTokenFields     — status() surfaces correct token snapshot
-  - TestTokenPersistence      — lifetime tokens survive across sessions
-  - TestLiteLLMAdapterTokenRecording    — LLM adapter records tokens
-  - TestLiteLLMEmbeddingAdapterTokenRecording — embedding adapter records tokens
+  - TestTokenUsage                        — public dataclass behaviour (no DB)
+  - TestTokenCounter                      — mutable accumulator (internal, tested
+                                            because session management depends on it)
+  - TestStatusTokenFields                 — status() surfaces correct token snapshot
+  - TestTokenPersistence                  — lifetime tokens survive across sessions
+  - TestAnthropicAdapterTokenRecording    — Anthropic LLM adapter records tokens
+  - TestOpenAILLMAdapterTokenRecording    — OpenAI LLM adapter records tokens
+  - TestOpenAIEmbeddingAdapterTokenRecording — Embedding adapter records tokens
 """
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import anthropic
 import pytest
 
-from elfmem.adapters.litellm import LiteLLMAdapter, LiteLLMEmbeddingAdapter
-from elfmem.adapters.models import BlockAnalysisModel
+from elfmem.adapters.anthropic import AnthropicLLMAdapter
+from elfmem.adapters.openai import OpenAIEmbeddingAdapter, OpenAILLMAdapter
 from elfmem.api import MemorySystem
 from elfmem.token_counter import TokenCounter
 from elfmem.types import TokenUsage
@@ -244,25 +246,34 @@ class TestTokenPersistence:
         await sys.end_session()
 
 
-# ── LiteLLMAdapter token recording ────────────────────────────────────────────
+# ── AnthropicLLMAdapter token recording ───────────────────────────────────────
 
 
-class TestLiteLLMAdapterTokenRecording:
+def _make_anthropic_response(
+    input_tokens: int = 100,
+    output_tokens: int = 20,
+    tool_input: dict | None = None,
+) -> MagicMock:
+    """Build a mock Anthropic messages.create() response."""
+    if tool_input is None:
+        tool_input = {"alignment_score": 0.8, "tags": [], "summary": "test summary"}
+    tool_block = MagicMock(spec=anthropic.types.ToolUseBlock)
+    tool_block.input = tool_input
+    response = MagicMock()
+    response.usage.input_tokens = input_tokens
+    response.usage.output_tokens = output_tokens
+    response.content = [tool_block]
+    return response
+
+
+class TestAnthropicAdapterTokenRecording:
     @pytest.mark.asyncio
     async def test_records_llm_tokens_when_counter_provided(self):
         counter = TokenCounter()
-        adapter = LiteLLMAdapter(model="gpt-4o-mini", token_counter=counter)
-
-        mock_completion = MagicMock()
-        mock_completion.usage.prompt_tokens = 100
-        mock_completion.usage.completion_tokens = 20
-        adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(
-                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
-                mock_completion,
-            )
+        adapter = AnthropicLLMAdapter(model="claude-haiku-4-5-20251001", token_counter=counter)
+        adapter._client.messages.create = AsyncMock(
+            return_value=_make_anthropic_response(input_tokens=100, output_tokens=20)
         )
-
         await adapter.process_block("block content", "self context")
         snap = counter.snapshot()
         assert snap.llm_input_tokens == 100
@@ -271,76 +282,147 @@ class TestLiteLLMAdapterTokenRecording:
 
     @pytest.mark.asyncio
     async def test_skips_recording_when_no_counter(self):
-        adapter = LiteLLMAdapter(model="gpt-4o-mini")
-        mock_completion = MagicMock()
-        mock_completion.usage.prompt_tokens = 100
-        mock_completion.usage.completion_tokens = 20
-        adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(
-                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
-                mock_completion,
+        adapter = AnthropicLLMAdapter(model="claude-haiku-4-5-20251001")
+        adapter._client.messages.create = AsyncMock(
+            return_value=_make_anthropic_response()
+        )
+        await adapter.process_block("block content", "self context")  # must not raise
+
+    @pytest.mark.asyncio
+    async def test_records_tokens_for_contradiction_call(self):
+        counter = TokenCounter()
+        adapter = AnthropicLLMAdapter(model="claude-haiku-4-5-20251001", token_counter=counter)
+        adapter._client.messages.create = AsyncMock(
+            return_value=_make_anthropic_response(
+                input_tokens=50, output_tokens=10, tool_input={"score": 0.2}
             )
+        )
+        await adapter.detect_contradiction("block A", "block B")
+        snap = counter.snapshot()
+        assert snap.llm_input_tokens == 50
+        assert snap.llm_calls == 1
+
+
+# ── OpenAILLMAdapter token recording ──────────────────────────────────────────
+
+
+def _make_openai_llm_response(
+    prompt_tokens: int = 100,
+    completion_tokens: int = 20,
+    content: str = '{"alignment_score": 0.8, "tags": [], "summary": "test summary"}',
+) -> MagicMock:
+    """Build a mock OpenAI chat.completions.create() response."""
+    response = MagicMock()
+    response.usage.prompt_tokens = prompt_tokens
+    response.usage.completion_tokens = completion_tokens
+    response.choices = [MagicMock()]
+    response.choices[0].message.content = content
+    return response
+
+
+class TestOpenAILLMAdapterTokenRecording:
+    @pytest.mark.asyncio
+    async def test_records_llm_tokens_when_counter_provided(self):
+        counter = TokenCounter()
+        adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
+        adapter._json_mode_supported = True  # skip BadRequestError detection
+        adapter._client.chat.completions.create = AsyncMock(
+            return_value=_make_openai_llm_response(prompt_tokens=100, completion_tokens=20)
+        )
+        await adapter.process_block("block content", "self context")
+        snap = counter.snapshot()
+        assert snap.llm_input_tokens == 100
+        assert snap.llm_output_tokens == 20
+        assert snap.llm_calls == 1
+
+    @pytest.mark.asyncio
+    async def test_skips_recording_when_no_counter(self):
+        adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key")
+        adapter._json_mode_supported = True
+        adapter._client.chat.completions.create = AsyncMock(
+            return_value=_make_openai_llm_response()
         )
         await adapter.process_block("block content", "self context")  # must not raise
 
     @pytest.mark.asyncio
     async def test_handles_none_usage_gracefully(self):
         counter = TokenCounter()
-        adapter = LiteLLMAdapter(model="gpt-4o-mini", token_counter=counter)
-        mock_completion = MagicMock()
-        mock_completion.usage = None
-        adapter._client.chat.completions.create_with_completion = AsyncMock(
-            return_value=(
-                BlockAnalysisModel(alignment_score=0.8, tags=[], summary="test"),
-                mock_completion,
-            )
-        )
+        adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
+        adapter._json_mode_supported = True
+        response = _make_openai_llm_response()
+        response.usage = None
+        adapter._client.chat.completions.create = AsyncMock(return_value=response)
         await adapter.process_block("block content", "self context")
         assert counter.snapshot() == TokenUsage()  # nothing recorded
 
 
-# ── LiteLLMEmbeddingAdapter token recording ───────────────────────────────────
+# ── OpenAIEmbeddingAdapter token recording ────────────────────────────────────
 
 
-class TestLiteLLMEmbeddingAdapterTokenRecording:
+def _make_openai_embedding_response(
+    prompt_tokens: int = 15,
+    embedding: list[float] | None = None,
+) -> MagicMock:
+    """Build a mock OpenAI embeddings.create() response."""
+    if embedding is None:
+        embedding = [0.1] * 1536
+    item = MagicMock()
+    item.embedding = embedding
+    response = MagicMock()
+    response.usage.prompt_tokens = prompt_tokens
+    response.data = [item]
+    return response
+
+
+class TestOpenAIEmbeddingAdapterTokenRecording:
     @pytest.mark.asyncio
     async def test_records_embedding_tokens_when_counter_provided(self):
         counter = TokenCounter()
-        adapter = LiteLLMEmbeddingAdapter(model="text-embedding-3-small", token_counter=counter)
-        mock_response = MagicMock()
-        mock_response.usage.prompt_tokens = 15
-        mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch(
-            "elfmem.adapters.litellm.litellm.aembedding",
-            new=AsyncMock(return_value=mock_response),
-        ):
-            await adapter.embed("test text")
+        adapter = OpenAIEmbeddingAdapter(
+            model="text-embedding-3-small", api_key="test-key", token_counter=counter
+        )
+        adapter._client.embeddings.create = AsyncMock(
+            return_value=_make_openai_embedding_response(prompt_tokens=15)
+        )
+        await adapter.embed("test text")
         snap = counter.snapshot()
         assert snap.embedding_tokens == 15
         assert snap.embedding_calls == 1
 
     @pytest.mark.asyncio
     async def test_skips_recording_when_no_counter(self):
-        adapter = LiteLLMEmbeddingAdapter(model="text-embedding-3-small")
-        mock_response = MagicMock()
-        mock_response.usage.prompt_tokens = 15
-        mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch(
-            "elfmem.adapters.litellm.litellm.aembedding",
-            new=AsyncMock(return_value=mock_response),
-        ):
-            await adapter.embed("test text")  # must not raise
+        adapter = OpenAIEmbeddingAdapter(model="text-embedding-3-small", api_key="test-key")
+        adapter._client.embeddings.create = AsyncMock(
+            return_value=_make_openai_embedding_response()
+        )
+        await adapter.embed("test text")  # must not raise
 
     @pytest.mark.asyncio
-    async def test_handles_none_usage_gracefully(self):
+    async def test_handles_missing_usage_gracefully(self):
         counter = TokenCounter()
-        adapter = LiteLLMEmbeddingAdapter(model="text-embedding-3-small", token_counter=counter)
-        mock_response = MagicMock()
-        mock_response.usage = None
-        mock_response.data = [{"embedding": [0.1] * 1536}]
-        with patch(
-            "elfmem.adapters.litellm.litellm.aembedding",
-            new=AsyncMock(return_value=mock_response),
-        ):
-            await adapter.embed("test text")
+        adapter = OpenAIEmbeddingAdapter(
+            model="text-embedding-3-small", api_key="test-key", token_counter=counter
+        )
+        response = _make_openai_embedding_response()
+        response.usage = MagicMock()
+        response.usage.prompt_tokens = None  # no token data
+        adapter._client.embeddings.create = AsyncMock(return_value=response)
+        await adapter.embed("test text")
         assert counter.snapshot() == TokenUsage()  # nothing recorded
+
+    @pytest.mark.asyncio
+    async def test_embed_batch_records_tokens(self):
+        counter = TokenCounter()
+        adapter = OpenAIEmbeddingAdapter(
+            model="text-embedding-3-small", api_key="test-key", token_counter=counter
+        )
+        item_a, item_b = MagicMock(), MagicMock()
+        item_a.embedding = [0.1] * 1536
+        item_b.embedding = [0.2] * 1536
+        response = MagicMock()
+        response.usage.prompt_tokens = 30
+        response.data = [item_a, item_b]
+        adapter._client.embeddings.create = AsyncMock(return_value=response)
+        vecs = await adapter.embed_batch(["text one", "text two"])
+        assert len(vecs) == 2
+        assert counter.snapshot().embedding_tokens == 30

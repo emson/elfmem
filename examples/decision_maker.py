@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 from elfmem.types import FrameResult
 
 
@@ -140,7 +140,7 @@ class ElfDecisionMaker:
         - curate() prunes weak patterns over time
     """
 
-    def __init__(self, memory: SmartMemory) -> None:
+    def __init__(self, memory: MemorySystem) -> None:
         self._memory = memory
         self._pending: list[PendingDecision] = []
 
