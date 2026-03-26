@@ -78,12 +78,22 @@ class OpenAILLMAdapter:
         # None = not yet tested, True = JSON mode works, False = not supported.
         # Tested lazily on first call to avoid BadRequestError on every retry.
         self._json_mode_supported: bool | None = None
-        self._client = openai.AsyncOpenAI(
-            api_key=api_key,  # None → read OPENAI_API_KEY env var.
-            timeout=float(timeout),
-            max_retries=max_retries,  # SDK handles HTTP-level retries (429, 503).
-            base_url=base_url,
-        )
+        # Client is created lazily on first use so that operations which never
+        # call the LLM (status, history, etc.) don't fail when OPENAI_API_KEY
+        # is absent. The key is validated by the SDK when the first call is made.
+        self._client_kwargs = {
+            "api_key": api_key,
+            "timeout": float(timeout),
+            "max_retries": max_retries,
+            "base_url": base_url,
+        }
+        self._client: openai.AsyncOpenAI | None = None
+
+    @property
+    def _get_client(self) -> openai.AsyncOpenAI:
+        if self._client is None:
+            self._client = openai.AsyncOpenAI(**self._client_kwargs)  # type: ignore[arg-type]
+        return self._client
 
     def _effective_model(self, override: str | None) -> str:
         return override if override is not None else self._model
@@ -102,9 +112,10 @@ class OpenAILLMAdapter:
         is raised at most once regardless of how many calls are made.
         """
         messages = [{"role": "user", "content": prompt}]
+        client = self._get_client
         if self._json_mode_supported is not False:
             try:
-                response = await self._client.chat.completions.create(
+                response = await client.chat.completions.create(
                     model=model,
                     temperature=self._temperature,
                     max_tokens=self._max_tokens,
@@ -117,7 +128,7 @@ class OpenAILLMAdapter:
             except openai.BadRequestError:
                 # Provider does not support JSON mode — remember and use plain text.
                 self._json_mode_supported = False
-        response = await self._client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=model,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -202,11 +213,19 @@ class OpenAIEmbeddingAdapter:
         self._model = model
         self._dimensions = dimensions  # Stored for reference; not sent to API.
         self._token_counter = token_counter
-        self._client = openai.AsyncOpenAI(
-            api_key=api_key,  # None → read OPENAI_API_KEY env var.
-            timeout=float(timeout),
-            base_url=base_url,
-        )
+        # Lazy client creation — same rationale as OpenAILLMAdapter.
+        self._client_kwargs = {
+            "api_key": api_key,
+            "timeout": float(timeout),
+            "base_url": base_url,
+        }
+        self._client: openai.AsyncOpenAI | None = None
+
+    @property
+    def _get_client(self) -> openai.AsyncOpenAI:
+        if self._client is None:
+            self._client = openai.AsyncOpenAI(**self._client_kwargs)  # type: ignore[arg-type]
+        return self._client
 
     def _record_usage(self, usage: object) -> None:
         """Record embedding token usage. Uses getattr for SDK version safety."""
@@ -230,7 +249,7 @@ class OpenAIEmbeddingAdapter:
         COST:       1 OpenAI embeddings API call.
         RETURNS:    Unit-normalised float32 ndarray.
         """
-        response = await self._client.embeddings.create(
+        response = await self._get_client.embeddings.create(
             model=self._model, input=[text]
         )
         self._record_usage(response.usage)
@@ -246,7 +265,7 @@ class OpenAIEmbeddingAdapter:
         """
         if not texts:
             return []
-        response = await self._client.embeddings.create(
+        response = await self._get_client.embeddings.create(
             model=self._model, input=texts
         )
         self._record_usage(response.usage)

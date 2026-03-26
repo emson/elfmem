@@ -326,6 +326,7 @@ class TestOpenAILLMAdapterTokenRecording:
         counter = TokenCounter()
         adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
         adapter._json_mode_supported = True  # skip BadRequestError detection
+        adapter._client = MagicMock()  # bypass lazy init; inject mock directly
         adapter._client.chat.completions.create = AsyncMock(
             return_value=_make_openai_llm_response(prompt_tokens=100, completion_tokens=20)
         )
@@ -339,6 +340,7 @@ class TestOpenAILLMAdapterTokenRecording:
     async def test_skips_recording_when_no_counter(self):
         adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key")
         adapter._json_mode_supported = True
+        adapter._client = MagicMock()
         adapter._client.chat.completions.create = AsyncMock(
             return_value=_make_openai_llm_response()
         )
@@ -349,6 +351,7 @@ class TestOpenAILLMAdapterTokenRecording:
         counter = TokenCounter()
         adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
         adapter._json_mode_supported = True
+        adapter._client = MagicMock()
         response = _make_openai_llm_response()
         response.usage = None
         adapter._client.chat.completions.create = AsyncMock(return_value=response)
@@ -381,6 +384,7 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
         adapter = OpenAIEmbeddingAdapter(
             model="text-embedding-3-small", api_key="test-key", token_counter=counter
         )
+        adapter._client = MagicMock()  # bypass lazy init; inject mock directly
         adapter._client.embeddings.create = AsyncMock(
             return_value=_make_openai_embedding_response(prompt_tokens=15)
         )
@@ -392,6 +396,7 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
     @pytest.mark.asyncio
     async def test_skips_recording_when_no_counter(self):
         adapter = OpenAIEmbeddingAdapter(model="text-embedding-3-small", api_key="test-key")
+        adapter._client = MagicMock()
         adapter._client.embeddings.create = AsyncMock(
             return_value=_make_openai_embedding_response()
         )
@@ -403,6 +408,7 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
         adapter = OpenAIEmbeddingAdapter(
             model="text-embedding-3-small", api_key="test-key", token_counter=counter
         )
+        adapter._client = MagicMock()
         response = _make_openai_embedding_response()
         response.usage = MagicMock()
         response.usage.prompt_tokens = None  # no token data
@@ -416,6 +422,7 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
         adapter = OpenAIEmbeddingAdapter(
             model="text-embedding-3-small", api_key="test-key", token_counter=counter
         )
+        adapter._client = MagicMock()
         item_a, item_b = MagicMock(), MagicMock()
         item_a.embedding = [0.1] * 1536
         item_b.embedding = [0.2] * 1536
