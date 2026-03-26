@@ -1,0 +1,2647 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/simulation_graph_temporal_decay/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Agent Simulation: C2 — Edge Temporal Decay - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent-simulation-c2-edge-temporal-decay" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Agent Simulation: C2 — Edge Temporal Decay
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#agent-archetypes-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Archetypes Used
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-1-fresh-start-first-curate-after-consolidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 1 — Fresh Start: First Curate After Consolidation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-2-solo-dev-steady-state-300-active-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 2 — Solo Dev Steady State: 300 Active Hours
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-3-domain-shift-the-critical-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 3 — Domain Shift: The Critical Scenario
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-4-signal-agent-outcome-edges-under-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 4 — Signal Agent: Outcome Edges Under Decay
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-5-the-agent-that-reads-curateresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 5 — The Agent That Reads CurateResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-6-the-idle-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 6 — The Idle Agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-7-over-calling-curate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 7 — Over-Calling curate()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-8-never-calling-curate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 8 — Never Calling curate()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-9-insert-or-ignore-the-reconsolidation-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 9 — INSERT OR IGNORE: The Reconsolidation Question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-10-the-pre-c2-edge-problem-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 10 — The Pre-C2 Edge Problem (Migration)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-11-two-thresholds-static-vs-temporal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 11 — Two Thresholds: Static vs Temporal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-12-established-threshold-boundary-count9-vs-count10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 12 — Established Threshold Boundary (count=9 vs count=10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-13-the-connect-then-decay-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 13 — The Connect-Then-Decay Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-14-curate-in-a-long-running-always-on-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 14 — curate() in a Long-Running Always-On Agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-15-curateresult-as-agent-decision-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 15 — CurateResult as Agent Decision Input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-16-the-pathological-all-edges-decay-at-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 16 — The Pathological: All Edges Decay at Once
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-flaws-and-required-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: Flaws and Required Improvements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Summary: Flaws and Required Improvements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-must-fix-before-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required (must fix before implementation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-fix-in-c2-not-expensive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Important (fix in C2, not expensive)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deferred-note-for-c3-or-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred (note for C3 or later)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updated-curateresult-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updated CurateResult Design
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revised-implementation-checklist-for-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revised Implementation Checklist for Plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/simulation_graph_temporal_decay.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="agent-simulation-c2-edge-temporal-decay">Agent Simulation: C2 — Edge Temporal Decay<a class="headerlink" href="#agent-simulation-c2-edge-temporal-decay" title="Permanent link">&para;</a></h1>
+<p><strong>Purpose:</strong> Evaluate the C2 plan from an agent-first perspective.
+Identify gaps, failure modes, and improvements before implementation.</p>
+<p><strong>Method:</strong> Walk through 16 scenarios across different agent archetypes.
+For each: state the setup, trace what happens, evaluate the outcome,
+and note any API improvement needed.</p>
+<hr />
+<h2 id="agent-archetypes-used">Agent Archetypes Used<a class="headerlink" href="#agent-archetypes-used" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Archetype</th>
+<th>Pattern</th>
+<th>Phase 1 Scale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Solo Dev</strong></td>
+<td>Long single session, one domain</td>
+<td>50–100 blocks</td>
+</tr>
+<tr>
+<td><strong>Knowledge Builder</strong></td>
+<td>Burst learning, light recall</td>
+<td>100–200 blocks</td>
+</tr>
+<tr>
+<td><strong>Domain Shifter</strong></td>
+<td>Multi-project, pivots between topics</td>
+<td>150–400 blocks</td>
+</tr>
+<tr>
+<td><strong>Signal Agent</strong></td>
+<td>Heavy outcome() feedback loop</td>
+<td>50–100 blocks</td>
+</tr>
+<tr>
+<td><strong>Idle Agent</strong></td>
+<td>Learns, then goes quiet</td>
+<td>50 blocks</td>
+</tr>
+<tr>
+<td><strong>Meta Agent</strong></td>
+<td>Reads CurateResult and acts on it</td>
+<td>any</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="scenario-1-fresh-start-first-curate-after-consolidation">Scenario 1 — Fresh Start: First Curate After Consolidation<a class="headerlink" href="#scenario-1-fresh-start-first-curate-after-consolidation" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Solo Dev
+<strong>Setup:</strong> Agent learns 20 blocks at h=5. Consolidate creates 8 similarity edges
+(weight 0.45–0.78), all with <code>last_active_hours=5.0</code>. Curate runs immediately at h=5.</p>
+<p><strong>Trace:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>all edges: last_active_hours=5.0, current=5.0
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>→ hours_since = max(0.0, 5.0 − 5.0) = 0.0
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>→ effective_weight = weight × exp(0) = weight (unchanged)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>→ no edges pruned by temporal decay
+</span></code></pre></div></p>
+<p><strong>Outcome:</strong> ✅ Correct. A brand-new graph is not harmed by an immediate curate.</p>
+<p><strong>Agent impact:</strong> None. The agent can safely call <code>should_curate()</code> / <code>curate()</code>
+immediately after <code>consolidate()</code> without losing freshly created edges.</p>
+<hr />
+<h2 id="scenario-2-solo-dev-steady-state-300-active-hours">Scenario 2 — Solo Dev Steady State: 300 Active Hours<a class="headerlink" href="#scenario-2-solo-dev-steady-state-300-active-hours" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Solo Dev
+<strong>Setup:</strong> Agent runs continuously. Edges formed at h=0–50, co-retrieved regularly.
+At h=200, last meaningful co-retrieval (last_active_hours updated to 200).
+Curate runs at h=280.</p>
+<p><strong>Trace (standard edge, weight=0.60, count=3, last_active=200):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>hours_since = 280 − 200 = 80
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>λ_edge = min(0.010, 0.010) × 0.5 = 0.005
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>effective = 0.60 × exp(−0.005 × 80) = 0.60 × 0.670 = 0.402
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>threshold = 0.10 → survives
+</span></code></pre></div></p>
+<p><strong>Curate runs at h=440 (no further co-retrieval):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>hours_since = 440 − 200 = 240
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>effective = 0.60 × exp(−1.20) = 0.60 × 0.301 = 0.181 → survives
+</span></code></pre></div></p>
+<p><strong>Curate runs at h=640:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>hours_since = 440, effective = 0.60 × exp(−2.2) = 0.60 × 0.111 = 0.067 → PRUNED
+</span></code></pre></div></p>
+<p><strong>Outcome:</strong> ✅ An edge unused for ~440 active hours (equivalent to months of full-time
+work) is pruned. Correct biological behaviour. The agent has moved on.</p>
+<p><strong>Agent impact:</strong> None visible. The edge was genuinely stale. If the agent needs it,
+next consolidate() recreates it; next recall() over the same topic retrieves the blocks.</p>
+<hr />
+<h2 id="scenario-3-domain-shift-the-critical-scenario">Scenario 3 — Domain Shift: The Critical Scenario<a class="headerlink" href="#scenario-3-domain-shift-the-critical-scenario" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Domain Shifter
+<strong>Setup:</strong>
+- Phase A (Python, h=0–100): 50 Python blocks, many edges, heavily co-retrieved.
+  Last co-retrieval of Python edges at h=95 (last_active_hours=95).
+- Phase B (Data Science, h=100–600): 80 new blocks, zero Python recalls.
+- Agent returns to Python at h=600.</p>
+<p><strong>Curate cycles during Phase B (every 40 hours):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>h=200: hours_since=105, effective=0.60×exp(−0.525)=0.60×0.592=0.355 → survives
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>h=280: hours_since=185, effective=0.60×exp(−0.925)=0.60×0.396=0.238 → survives
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>h=360: hours_since=265, effective=0.60×exp(−1.325)=0.60×0.266=0.160 → survives
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>h=440: hours_since=345, effective=0.60×exp(−1.725)=0.60×0.179=0.107 → survives (barely)
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>h=480: hours_since=385, effective=0.60×exp(−1.925)=0.60×0.146=0.088 → PRUNED
+</span></code></pre></div></p>
+<p>Python edges are silently pruned at h=480. Agent returns at h=600 to a
+disconnected Python subgraph. Blocks still active (top-K reinforcement kept them alive),
+but their inter-connections are gone.</p>
+<p><strong>🚨 FLAW 1 — Silent Domain Erosion</strong></p>
+<p>The agent returns to Python, calls <code>recall("async patterns")</code>, and gets blocks back
+from vector search — but without graph expansion. The Python cluster is now fragmented.
+The agent has NO signal that its Python connections dissolved while it was away.</p>
+<p><strong>CurateResult it saw at h=480:</strong> <code>"Curated: 5 edges decayed."</code> — but the agent was
+deep in data science work, probably not reading curate results carefully. By the time
+it returns to Python, the signal is gone.</p>
+<p><strong>Mitigation A (counters the silent nature):</strong> Add <code>edges_decayed</code> to a persistent
+tally in <code>system_config</code> — something the agent can query later.</p>
+<p><strong>Mitigation B (immediate):</strong> Make <code>CurateResult.summary</code> include a next-step tip
+when significant edges decay:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&quot;Curated: 5 edges decayed. If working across topics, consider running consolidate()
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>to rebuild connections for recently active blocks.&quot;
+</span></code></pre></div></p>
+<p><strong>Mitigation C (proactive):</strong> When <code>recall()</code> returns blocks with <code>was_expanded=False</code>
+and the blocks have high <code>confidence</code> (should have neighbours), surface a hint:
+<code>"Tip: these blocks may have lost graph connections. Run consolidate() to rebuild."</code> —
+but this is scope creep for C2.</p>
+<p><strong>Accepted mitigation for C2:</strong> B only. The summary tip when edges_decayed &gt; 0.</p>
+<hr />
+<h2 id="scenario-4-signal-agent-outcome-edges-under-decay">Scenario 4 — Signal Agent: Outcome Edges Under Decay<a class="headerlink" href="#scenario-4-signal-agent-outcome-edges-under-decay" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Signal Agent
+<strong>Setup:</strong> Agent uses outcome() heavily. A pair of blocks was confirmed 8 times
+(high signal=0.9 each time). Outcome edge created at h=10 with weight=0.72,
+reinforcement_count=8 (from upsert_outcome_edge updating count on each call).
+<code>last_active_hours</code> updated to h=10 on creation. Each subsequent outcome() call
+doesn't update last_active_hours (only upsert_outcome_edge on NEW edges does;
+existing edges just increment reinforcement_count).</p>
+<p><strong>Wait — critical inspection:</strong> <code>upsert_outcome_edge()</code> on an EXISTING edge does:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">update</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">reinforcement_count</span><span class="o">=</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">reinforcement_count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">)</span>
+</span></code></pre></div>
+It does NOT update <code>last_active_hours</code>. Only <code>reinforce_edges()</code> (called from
+<code>reinforce_co_retrieved_edges()</code> during recall) updates <code>last_active_hours</code>.</p>
+<p><strong>So:</strong> An outcome edge confirmed 8 times but never co-retrieved has:
+- <code>last_active_hours = 10.0</code> (from creation — after C2 fix)
+- <code>reinforcement_count = 8</code></p>
+<p>At h=500: hours_since=490, count=8 (below ESTABLISHED_EDGE_THRESHOLD=10):
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>λ_edge = 0.005
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>effective = 0.72 × exp(−2.45) = 0.72 × 0.086 = 0.062 → PRUNED
+</span></code></pre></div></p>
+<p><strong>🚨 FLAW 2 — Outcome Confirmation Doesn't Refresh Edge Anchor</strong></p>
+<p>An edge confirmed via <code>outcome()</code> 8 times is pruned at h=500 because
+<code>upsert_outcome_edge()</code> only updates <code>reinforcement_count</code>, not <code>last_active_hours</code>.
+The agent's explicit feedback signal is not treated as "active use."</p>
+<p>This contradicts the biological model: outcome confirmation IS the strongest signal of
+usefulness. A synapse strengthened through repeated dopaminergic gating should NOT
+decay as if it hasn't been used.</p>
+<p><strong>Fix:</strong> <code>upsert_outcome_edge()</code> on an EXISTING edge should also update
+<code>last_active_hours = current_active_hours</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># When edge already exists (rowcount == 0):</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">update</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">from_id</span> <span class="o">==</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to_id</span> <span class="o">==</span> <span class="n">to_id</span><span class="p">))</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="o">.</span><span class="n">values</span><span class="p">(</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="n">reinforcement_count</span><span class="o">=</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">reinforcement_count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="n">last_active_hours</span><span class="o">=</span><span class="n">last_active_hours</span><span class="p">,</span>  <span class="c1"># refresh anchor on re-confirmation</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="p">)</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>This is a required fix to the plan — not optional. Without it, the most
+validated edges in the system still decay on the co-retrieval clock rather than
+the outcome clock.</p>
+<p><strong>Updated plan entry:</strong> <code>upsert_outcome_edge()</code> must update <code>last_active_hours</code>
+on BOTH insert (new edge) and update (existing edge reinforcement).</p>
+<hr />
+<h2 id="scenario-5-the-agent-that-reads-curateresult">Scenario 5 — The Agent That Reads CurateResult<a class="headerlink" href="#scenario-5-the-agent-that-reads-curateresult" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Meta Agent
+<strong>Setup:</strong> Agent runs curate() and receives:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">curate</span><span class="p">()</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># → &quot;Curated: 3 archived, 12 edges decayed, 5 reinforced.&quot;</span>
+</span></code></pre></div></p>
+<p>The agent sees 12 edges decayed. It wants to reason about this:
+- Were these important connections?
+- Should it use connect() to rebuild any?
+- Is the graph still healthy?</p>
+<p><strong>What the agent has:</strong> <code>result.edges_decayed = 12</code>. Nothing else.</p>
+<p><strong>What the agent needs:</strong>
+1. <strong>Denominator.</strong> "12 out of 47" is actionable. "12" in isolation is not.
+   Is this 25% of the graph? 1%? The agent can't gauge severity.
+2. <strong>Identity.</strong> WHICH edges decayed? The agent might know from its own reasoning
+   that "the async-patterns ↔ database-optimization connection is important."
+   Without knowing it decayed, it can't reconnect it.
+3. <strong>Guidance.</strong> What should it do now?</p>
+<p><strong>🚨 FLAW 3 — Observability Gap: Count Without Context</strong></p>
+<p>A count without a denominator is a half-measure. An agent optimising for graph health
+cannot act on <code>edges_decayed=12</code> without knowing the total graph size.</p>
+<p><strong>Fix A (required for C2):</strong> Add <code>total_edges_after: int</code> to <code>CurateResult</code>.
+This is a single <code>SELECT COUNT(*) FROM edges</code> added after pruning. Trivial cost.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CurateResult</span><span class="p">:</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="o">...</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">edges_decayed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">total_edges_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># NEW — denominator for observability</span>
+</span></code></pre></div>
+<p>Updated summary:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>&quot;Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced.&quot;
+</span></code></pre></div></p>
+<p><strong>Fix B (future / C3):</strong> <code>CurateResult</code> includes a <code>decayed_sample: list[str]</code> —
+3-5 one-line summaries of what was lost: <code>"async patterns ↔ database-optimization (was 0.45)"</code>.
+Scope-creep for C2; note for future.</p>
+<hr />
+<h2 id="scenario-6-the-idle-agent">Scenario 6 — The Idle Agent<a class="headerlink" href="#scenario-6-the-idle-agent" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Idle Agent
+<strong>Setup:</strong> Agent learns 30 blocks, consolidates (edges with <code>last_active_hours=10</code>),
+then is idle for a simulated long period. BUT: <code>current_active_hours</code> ONLY increments
+during actual sessions. The idle period is wall-clock time, not active hours.</p>
+<p><strong>Trace:</strong>
+The agent was at h=10 when it last ran. It returns after 3 months offline. The
+DB still has <code>total_active_hours=10</code>. The agent starts a new session. Active hours
+resume at 10 + new session time.</p>
+<p>Edges still have <code>last_active_hours=10</code>. At h=15 (5 hours of new usage):
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hours_since = 15 − 10 = 5
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>effective = 0.60 × exp(−0.025) = 0.60 × 0.975 = 0.585 → survives
+</span></code></pre></div></p>
+<p><strong>Outcome:</strong> ✅ Perfect. The session-aware clock is the core design axiom.
+Holidays, weekends, and months of inactivity don't kill knowledge. This is one of
+elfmem's primary differentiators from wall-clock systems.</p>
+<p><strong>Agent impact:</strong> Zero. The agent returns to a fully intact graph. This scenario
+validates the session-aware hours approach completely.</p>
+<hr />
+<h2 id="scenario-7-over-calling-curate">Scenario 7 — Over-Calling curate()<a class="headerlink" href="#scenario-7-over-calling-curate" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Any
+<strong>Setup:</strong> Agent calls curate() every 2 active hours (aggressive), ignoring
+<code>should_curate()</code>. Current active hours = 50. All edges have <code>last_active_hours</code>
+set close to current.</p>
+<p><strong>Trace (edge last_active=48, current=50):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>hours_since = 2
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>λ_edge = 0.005
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>effective = 0.60 × exp(−0.01) = 0.60 × 0.990 = 0.594 → survives
+</span></code></pre></div></p>
+<p><strong>Outcome:</strong> ✅ Idempotent under over-calling. The formula degrades gently;
+short elapsed times produce near-zero decay. Aggressive curate callers don't
+lose edges prematurely.</p>
+<p><strong>Agent impact:</strong> Safe. <code>should_curate()</code> guard is advisory, not mandatory.
+Agents that ignore it won't corrupt the graph.</p>
+<hr />
+<h2 id="scenario-8-never-calling-curate">Scenario 8 — Never Calling curate()<a class="headerlink" href="#scenario-8-never-calling-curate" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Any
+<strong>Setup:</strong> Agent never calls curate() — only learn() + consolidate() + recall().</p>
+<p><strong>What happens:</strong> Temporal decay never runs. Edges accumulate indefinitely.
+<code>prune_weak_edges()</code> also never runs. Graph grows monotonically.</p>
+<p><strong>Impact:</strong> Stale edges persist. Graph expansion retrieves increasingly irrelevant
+neighbours. Recall quality degrades silently. No error, no warning.</p>
+<p><strong>🚨 FLAW 4 — No Signal When Curate Has Been Skipped Too Long</strong></p>
+<p>The agent using only learn/consolidate/recall has no indication that its graph
+is growing stale. The <code>status()</code> call returns inbox/active counts but no
+"time since last curate" or "graph staleness" metric.</p>
+<p><strong>Fix:</strong> <code>MemorySystem.status()</code> should include <code>hours_since_curate: float | None</code>.
+This already requires reading <code>last_curate_at</code> from <code>system_config</code>. The field could
+be None if curate has never run. An agent can then act:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">hours_since_curate</span> <span class="ow">and</span> <span class="n">status</span><span class="o">.</span><span class="n">hours_since_curate</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">:</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">curate</span><span class="p">()</span>
+</span></code></pre></div></p>
+<p>This is consistent with the existing <code>should_curate()</code> function — surface it in status.</p>
+<p><strong>Note:</strong> This fix touches <code>SystemStatus</code> in <code>types.py</code> and <code>MemorySystem.status()</code>.
+Relatively contained. Include in C2 or note as a follow-on improvement.</p>
+<hr />
+<h2 id="scenario-9-insert-or-ignore-the-reconsolidation-question">Scenario 9 — INSERT OR IGNORE: The Reconsolidation Question<a class="headerlink" href="#scenario-9-insert-or-ignore-the-reconsolidation-question" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Knowledge Builder
+<strong>Setup:</strong> Agent learns blocks A and B at h=5. Consolidate creates edge A↔B,
+<code>last_active_hours=5</code>. Agent learns many new blocks. At h=100, blocks A and B
+are in the active set. Agent runs consolidate() again.</p>
+<p><strong>What happens:</strong> <code>insert_edge()</code> uses <code>INSERT OR IGNORE</code>. The duplicate insert is
+silently ignored. Edge A↔B keeps <code>last_active_hours=5</code> even though the current
+time is h=100.</p>
+<p><strong>Is this a flaw?</strong> Let's think carefully.</p>
+<p>The <code>last_active_hours</code> represents "when was this connection last actively used."
+Re-consolidation at h=100 does NOT represent "active use" of the A↔B connection —
+it just re-recognises that A and B are still geometrically similar. Only co-retrieval
+(the agent actually using both blocks together in reasoning) represents active use.</p>
+<p><strong>Verdict:</strong> ✅ Not a flaw. The behaviour is semantically correct.</p>
+<p><code>INSERT OR IGNORE</code> means: "the connection was established at h=5; subsequent
+recognition of the same similarity is not evidence that the connection was used."
+The edge ages from its creation anchor; only co-retrieval refreshes it.</p>
+<p><strong>BUT:</strong> An agent that runs consolidate() frequently on a stable corpus may believe
+it's "refreshing" its graph when in fact edge timestamps are not advancing.
+This expectation mismatch should be documented in the docstring and guide.</p>
+<p><strong>Documentation fix:</strong> <code>insert_edge()</code> docstring should note that <code>INSERT OR IGNORE</code>
+does not update <code>last_active_hours</code> on duplicate — edge timestamps advance only via
+<code>reinforce_edges()</code> (co-retrieval) or <code>outcome()</code> (confirmation).</p>
+<hr />
+<h2 id="scenario-10-the-pre-c2-edge-problem-migration">Scenario 10 — The Pre-C2 Edge Problem (Migration)<a class="headerlink" href="#scenario-10-the-pre-c2-edge-problem-migration" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Any agent upgrading
+<strong>Setup:</strong> Agent has an existing DB with edges created before C2 (all with
+<code>last_active_hours=NULL</code>). Upgrades to C2-enabled elfmem.</p>
+<p><strong>What happens:</strong>
+- <code>_prune_decayed_edges()</code> skips all NULL edges (guard: "skip if no session anchor")
+- Static pruning (<code>prune_weak_edges</code>) still applies: weight &lt; 0.10 AND count=0
+- Well-weighted NULL edges (weight=0.60) persist indefinitely — temporal decay never fires</p>
+<p><strong>Is this a flaw?</strong> For the transition period: acceptable. NULL edges from old code
+face only static pruning, which is what they faced before C2. No regression.</p>
+<p>Over time, edges that get co-retrieved have <code>last_active_hours</code> set by <code>reinforce_edges()</code>.
+These then participate in temporal decay normally. Only edges that are NEVER co-retrieved
+remain NULL and outside temporal decay — which is the correct conservative treatment.</p>
+<p><strong>Verdict:</strong> ✅ Acceptable degraded behavior during transition. Cleans up naturally as
+edges are co-retrieved or re-created.</p>
+<p><strong>Documentation fix:</strong> Note in <code>_prune_decayed_edges</code> that NULL-anchor edges are
+intentionally excluded — they're either newly created or pre-C2 legacy edges.</p>
+<hr />
+<h2 id="scenario-11-two-thresholds-static-vs-temporal">Scenario 11 — Two Thresholds: Static vs Temporal<a class="headerlink" href="#scenario-11-two-thresholds-static-vs-temporal" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Any
+<strong>Setup:</strong> Edge A↔B: weight=0.35 (moderate composite score), never co-retrieved,
+<code>last_active_hours=10.0</code>, current=500.</p>
+<p><strong>Static prune</strong> (prune_weak_edges): weight=0.35 ≥ 0.10 → survives (count doesn't matter).
+<strong>Temporal decay</strong> at h=500, hours_since=490:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>λ = 0.005, effective = 0.35 × exp(−2.45) = 0.35 × 0.086 = 0.030 → PRUNED
+</span></code></pre></div></p>
+<p>This is correct. The edge had moderate initial score but was never used. After ~490
+active hours of non-use, it's dead weight.</p>
+<p><strong>Now consider:</strong> What if <code>edge_prune_threshold=0.10</code> is too HIGH for temporal decay?</p>
+<p>A weight=0.60 edge that was meaningfully created (both blocks genuinely related,
+composite score high) but the agent simply never happened to recall both in the same
+query. At h=640: effective=0.067 → PRUNED.</p>
+<p>The agent lost a VALID connection just because it never triggered BOTH blocks in the
+same recall. This is the "false positive decay" problem — temporally pruning a
+semantically valid edge because co-retrieval patterns didn't happen to fire.</p>
+<p><strong>🚨 FLAW 5 — Single Threshold Conflates "Never Useful" and "Stale but Valid"</strong></p>
+<p>Static pruning at 0.10 catches genuinely useless edges.
+Temporal decay at 0.10 may catch edges that are semantically valid but never
+co-retrieved. A higher-weight edge (0.60) formed from a solid composite score
+should require a longer evidence window before temporal pruning.</p>
+<p><strong>Option A:</strong> Separate thresholds — <code>edge_prune_threshold=0.10</code> for static,
+<code>edge_temporal_threshold=0.05</code> for temporal (more conservative).</p>
+<p><strong>Option B:</strong> Time-weighted threshold — <code>temporal_threshold = edge_prune_threshold × 0.5</code>.
+Default 0.05. Only prune temporally when effective weight drops to HALF the static threshold.</p>
+<p><strong>Option C:</strong> Status quo — accept that high-weight stale edges decay correctly.
+If the agent never uses two blocks together, the connection is genuinely unvalidated.
+The composite edge score (which already includes temporal proximity and tags) provides
+the right initial weight. If the connection were truly important, the agent's recall
+patterns would have reinforced it.</p>
+<p><strong>Verdict for C2:</strong> Accept option C with documentation. The temporal decay
+threshold matching the static threshold is intentional — it means edges decay
+to "junk level" before being pruned. An edge that starts at 0.60 needs to drop
+to 0.10 effective weight before deletion. That requires 479+ active hours of
+non-co-retrieval (standard blocks). This is a very long grace period.</p>
+<p>The calibration table in the plan already shows this is conservative enough.</p>
+<hr />
+<h2 id="scenario-12-established-threshold-boundary-count9-vs-count10">Scenario 12 — Established Threshold Boundary (count=9 vs count=10)<a class="headerlink" href="#scenario-12-established-threshold-boundary-count9-vs-count10" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Signal Agent
+<strong>Setup:</strong> Two similar blocks co-retrieved 9 times vs 10 times. Both with
+weight=0.50, last_active_hours=0.0, current=500.</p>
+<p><strong>count=9 (not established):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>λ = 0.005, hours_since=500
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>effective = 0.50 × exp(−2.5) = 0.50 × 0.082 = 0.041 → PRUNED
+</span></code></pre></div></p>
+<p><strong>count=10 (established):</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>λ = 0.0025, hours_since=500
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>effective = 0.50 × exp(−1.25) = 0.50 × 0.287 = 0.143 → survives
+</span></code></pre></div></p>
+<p>There is a hard discontinuity at count=10. An agent that co-retrieves a pair 9 times
+loses the edge; 10 times keeps it. The same staleness, radically different outcome.</p>
+<p><strong>Is this a flaw?</strong> It's an inherent property of any threshold-based system.
+The cliff is slightly jarring but the magnitude of the difference (0.041 vs 0.143)
+is substantial enough to be considered a feature — established edges genuinely should
+survive much longer.</p>
+<p><strong>Mitigation:</strong> The threshold is already conservative at 10 co-retrievals. An agent
+that uses two blocks together 9 times but then shifts domain has arguably moved on.
+At count=9, the edge survives 400+ active hours without reinforcement (threshold
+only hit at h=500 in this example). Acceptable.</p>
+<p><strong>Alternative:</strong> Continuous bonus instead of hard cutoff — <code>λ_factor = 1.0 / (1 + count/10)</code>.
+More biologically accurate but harder to reason about. Defer to a future scoring revision.</p>
+<hr />
+<h2 id="scenario-13-the-connect-then-decay-lifecycle">Scenario 13 — The Connect-Then-Decay Lifecycle<a class="headerlink" href="#scenario-13-the-connect-then-decay-lifecycle" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Meta Agent
+<strong>Setup:</strong> Agent uses <code>connect()</code> to manually link block A and block B with
+<code>relation_type="supports"</code>, <code>weight=0.85</code>, <code>note="B elaborates A's core theorem"</code>.</p>
+<p>Edge created by <code>insert_agent_edge()</code>: <code>origin="agent"</code>, <code>last_active_hours=h_current</code>.</p>
+<p>After 800 active hours of non-use, curate() runs. Does this edge decay?</p>
+<p><strong>Trace:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">if</span> <span class="n">edge</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;origin&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;agent&quot;</span><span class="p">:</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="k">continue</span>  <span class="c1"># PROTECTED — temporal decay skipped</span>
+</span></code></pre></div></p>
+<p><strong>Outcome:</strong> ✅ Agent-asserted connections never temporally decay. Correct.</p>
+<p>The agent EXPLICITLY said these blocks are related. That deliberate assertion is
+not overridable by the passage of time. If the relationship becomes stale,
+the agent revokes it explicitly via <code>connect()</code> with lower weight or a future
+<code>disconnect()</code> API.</p>
+<p><strong>Follow-on thought:</strong> What if the agent made a mistake with <code>connect()</code> and wants
+the system to self-correct? Currently: can't happen. The agent must explicitly
+correct its own connections. This is the right tradeoff for agent-first design
+— the agent's explicit will is sovereign.</p>
+<hr />
+<h2 id="scenario-14-curate-in-a-long-running-always-on-agent">Scenario 14 — curate() in a Long-Running Always-On Agent<a class="headerlink" href="#scenario-14-curate-in-a-long-running-always-on-agent" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Daemon / tool agent running 24/7
+<strong>Setup:</strong> Agent accumulates 10 active hours/day. After 30 days: h=300.
+Curate runs every 40 hours (7-8 curate cycles over 30 days).</p>
+<p>Edges from day 1 (h≈0–10) with no co-retrieval:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>After curate at h=280: hours_since≈270, effective=0.60×exp(−1.35)=0.60×0.259=0.155 → survives
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>After curate at h=320: hours_since≈310, effective=0.60×exp(−1.55)=0.60×0.212=0.127 → survives
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>After curate at h=360: hours_since≈350, effective=0.60×exp(−1.75)=0.60×0.174=0.104 → survives (barely)
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>After curate at h=400: hours_since≈390, effective=0.60×exp(−1.95)=0.60×0.142=0.085 → PRUNED
+</span></code></pre></div></p>
+<p>After ~40 days (400 active hours), edges that never proved useful are pruned.
+For a 10 hr/day agent, that's 40 days. For a 24 hr/day agent (hypothetical), 17 days.</p>
+<p><strong>Verdict:</strong> ✅ Appropriate for always-on agents. Connections that are never used in
+40+ days of active operation are genuinely stale.</p>
+<p><strong>Agent impact:</strong> The always-on agent should call <code>should_curate()</code> before each
+<code>consolidate()</code> cycle. The existing <code>should_curate()</code> function handles this correctly.</p>
+<hr />
+<h2 id="scenario-15-curateresult-as-agent-decision-input">Scenario 15 — CurateResult as Agent Decision Input<a class="headerlink" href="#scenario-15-curateresult-as-agent-decision-input" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Meta Agent
+<strong>Setup:</strong> A sophisticated agent reads curate results and acts on them:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">curate</span><span class="p">()</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1"># What can the agent currently infer?</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># result.archived      → blocks lost (might need to re-learn)</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="c1"># result.edges_decayed → connections lost (might need to reconnect)</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="c1"># result.reinforced    → top blocks reinforced (healthy)</span>
+</span></code></pre></div>
+<p><strong>Current <code>result.summary</code>:</strong> <code>"Curated: 3 archived, 12 edges decayed, 5 reinforced."</code></p>
+<p><strong>What the agent cannot infer:</strong>
+- How many total edges remain? Is 12 decayed out of 15 catastrophic?
+  Is 12 out of 500 irrelevant?
+- Are the decayed edges from important topic clusters or noise?
+- Should it run <code>consolidate()</code> now to rebuild?</p>
+<p><strong>Ideal agent interaction after C2 with improvements:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>&quot;Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced.
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>Graph: 35 edges across 47 active blocks.
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>Tip: If working across topics, run consolidate() to rebuild lost connections.&quot;
+</span></code></pre></div></p>
+<p><strong>Required improvements from this scenario:</strong>
+1. <code>total_edges_after: int</code> in <code>CurateResult</code> (denominator)
+2. Contextual tip in <code>summary</code> when <code>edges_decayed / total_edges_after &gt; 0.15</code>
+   (i.e., &gt;15% of the graph decayed in one cycle — that's significant)</p>
+<hr />
+<h2 id="scenario-16-the-pathological-all-edges-decay-at-once">Scenario 16 — The Pathological: All Edges Decay at Once<a class="headerlink" href="#scenario-16-the-pathological-all-edges-decay-at-once" title="Permanent link">&para;</a></h2>
+<p><strong>Archetype:</strong> Burst learner → long absence → return
+<strong>Setup:</strong> Agent learns 100 blocks in session 1 (h=0–20). All similarity edges
+created with <code>last_active_hours=10.0</code>. Agent does nothing for 1000 active hours.</p>
+<p>Curate at h=1000:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>hours_since = 990 for all edges
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>standard edges: effective = weight × exp(−0.005 × 990) = weight × 0.0074
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>ALL edges below 0.10 threshold → ALL pruned
+</span></code></pre></div></p>
+<p>Agent returns to a graph with 0 edges. Blocks all still active (top-K reinforcement
+kept them alive). But the knowledge graph is shattered.</p>
+<p><strong>Is this a flaw?</strong> It's extreme input — 1000 active hours of zero recalls is the
+equivalent of using the system for 10 hours/day for 100 days without ever using it
+for recall. Extreme, but possible for a tool agent that learned a corpus and then
+primarily used it for generation without recall.</p>
+<p><strong>🚨 FLAW 6 — Catastrophic Graph Loss Without Recovery Path</strong></p>
+<p>The agent that allowed this has no signal that its entire graph was destroyed.
+<code>edges_decayed: int</code> would be large, but if the agent doesn't read it carefully,
+it's silent. After this event, <code>expand_1hop()</code> returns nothing. Recall quality
+drops to vector-only search. The agent might not notice.</p>
+<p><strong>Mitigation:</strong></p>
+<ol>
+<li>
+<p><strong>Cap decay per curate cycle.</strong> Add <code>max_decay_fraction: float = 0.30</code> to curate():
+   only prune the worst 30% of decayed edges per cycle. This prevents single-cycle
+   catastrophic loss and gives the agent time to notice and react. Remaining edges
+   get another 40 active hours before re-evaluation.</p>
+</li>
+<li>
+<p><strong>Warn the agent via summary:</strong> If <code>edges_decayed / total_edges_before &gt; 0.25</code>,
+   escalate the message: <code>"WARNING: 82% of graph connections decayed. Run consolidate()
+   to rebuild."</code> This makes the event visible.</p>
+</li>
+<li>
+<p><strong>Bridge protection for edges</strong> (mirrors block bridge protection): if removing an
+   edge would disconnect a graph cluster (leave a block isolated), preserve it.
+   But this requires graph connectivity analysis — expensive for curate(). Defer.</p>
+</li>
+</ol>
+<p><strong>Recommended for C2:</strong> Mitigations 1 and 2. They are cheap and directly address
+the risk without adding complexity.</p>
+<p>The <code>max_decay_fraction</code> defaults to 1.0 (no cap, current behavior) so existing
+behavior is preserved; agents can opt into protection by setting it in config.</p>
+<hr />
+<h2 id="summary-flaws-and-required-improvements">Summary: Flaws and Required Improvements<a class="headerlink" href="#summary-flaws-and-required-improvements" title="Permanent link">&para;</a></h2>
+<h3 id="required-must-fix-before-implementation">Required (must fix before implementation)<a class="headerlink" href="#required-must-fix-before-implementation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Flaw</th>
+<th>Fix</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F2</td>
+<td><code>upsert_outcome_edge()</code> doesn't refresh <code>last_active_hours</code> on re-confirmation</td>
+<td>Update UPDATE statement to include <code>last_active_hours</code></td>
+<td><code>queries.py</code></td>
+</tr>
+<tr>
+<td>F3</td>
+<td>No denominator in CurateResult</td>
+<td>Add <code>total_edges_after: int</code> field</td>
+<td><code>types.py</code>, <code>curate.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="important-fix-in-c2-not-expensive">Important (fix in C2, not expensive)<a class="headerlink" href="#important-fix-in-c2-not-expensive" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Flaw</th>
+<th>Fix</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>Silent domain erosion — decayed edges provide no recovery guidance</td>
+<td>Add contextual tip to <code>summary</code> when <code>edges_decayed &gt; 0</code></td>
+<td><code>types.py</code></td>
+</tr>
+<tr>
+<td>F5</td>
+<td>Same threshold for static/temporal pruning (acceptable but confusing)</td>
+<td>Document why single threshold is correct; add calibration note in docstring</td>
+<td><code>curate.py</code></td>
+</tr>
+<tr>
+<td>F6</td>
+<td>Catastrophic mass-decay without warning</td>
+<td>Add <code>edges_decayed &gt; 0.25 × total</code> escalation message</td>
+<td><code>types.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="deferred-note-for-c3-or-later">Deferred (note for C3 or later)<a class="headerlink" href="#deferred-note-for-c3-or-later" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Flaw</th>
+<th>Fix</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F4</td>
+<td>No <code>hours_since_curate</code> in <code>status()</code></td>
+<td>Add to <code>SystemStatus</code></td>
+<td><code>types.py</code>, <code>api.py</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>decayed_sample</code> for identity of lost edges</td>
+<td>Add to <code>CurateResult</code></td>
+<td><code>types.py</code>, <code>curate.py</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td>Continuous established bonus vs hard threshold</td>
+<td>Replace <code>count &gt;= 10</code> with <code>1/(1+count/10)</code> factor</td>
+<td><code>scoring.py</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td>Bridge protection for edges during mass-decay</td>
+<td>Graph connectivity check before pruning</td>
+<td><code>curate.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="updated-curateresult-design">Updated <code>CurateResult</code> Design<a class="headerlink" href="#updated-curateresult-design" title="Permanent link">&para;</a></h2>
+<p>Taking all scenarios into account, the final <code>CurateResult</code> should be:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CurateResult</span><span class="p">:</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="n">archived</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>    <span class="n">edges_pruned</span><span class="p">:</span> <span class="nb">int</span>                <span class="c1"># static: weight &lt; threshold AND count==0</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="n">reinforced</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>    <span class="n">constitutional_reinforced</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>    <span class="n">edges_decayed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>           <span class="c1"># temporal: effective_weight &lt; threshold</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    <span class="n">total_edges_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>       <span class="c1"># denominator — graph size after pruning</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>    <span class="nd">@property</span>
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">,</span>
+</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">]):</span>
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>            <span class="k">return</span> <span class="s2">&quot;Curated: nothing required.&quot;</span>
+</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>        <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">:</span>
+</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="si">}</span><span class="s2"> archived&quot;</span><span class="p">)</span>
+</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">:</span>
+</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="si">}</span><span class="s2"> edges pruned&quot;</span><span class="p">)</span>
+</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">:</span>
+</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>            <span class="n">edge_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="si">}</span><span class="s2"> edges decayed&quot;</span>
+</span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>                <span class="n">edge_info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span><span class="si">}</span><span class="s2"> remain)&quot;</span>
+</span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge_info</span><span class="p">)</span>
+</span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">:</span>
+</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="si">}</span><span class="s2"> reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-23-27"><a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">:</span>
+</span><span id="__span-23-28"><a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="si">}</span><span class="s2"> constitutional reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-23-29"><a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a>
+</span><span id="__span-23-30"><a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a>        <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Curated: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+</span><span id="__span-23-31"><a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a>
+</span><span id="__span-23-32"><a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a>        <span class="c1"># Escalation: significant graph decay</span>
+</span><span id="__span-23-33"><a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-23-34"><a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a>            <span class="n">total_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span>
+</span><span id="__span-23-35"><a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a>            <span class="n">decay_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">total_before</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-23-36"><a id="__codelineno-23-36" name="__codelineno-23-36" href="#__codelineno-23-36"></a>            <span class="k">if</span> <span class="n">decay_fraction</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
+</span><span id="__span-23-37"><a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">&quot; Graph connections reduced significantly — consider running consolidate() to rebuild.&quot;</span>
+</span><span id="__span-23-38"><a id="__codelineno-23-38" name="__codelineno-23-38" href="#__codelineno-23-38"></a>            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-23-39"><a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">&quot; Tip: run consolidate() to rebuild connections for recently active blocks.&quot;</span>
+</span><span id="__span-23-40"><a id="__codelineno-23-40" name="__codelineno-23-40" href="#__codelineno-23-40"></a>
+</span><span id="__span-23-41"><a id="__codelineno-23-41" name="__codelineno-23-41" href="#__codelineno-23-41"></a>        <span class="k">return</span> <span class="n">summary</span>
+</span></code></pre></div>
+<hr />
+<h2 id="revised-implementation-checklist-for-plan">Revised Implementation Checklist for Plan<a class="headerlink" href="#revised-implementation-checklist-for-plan" title="Permanent link">&para;</a></h2>
+<p>Based on the simulation, the plan needs these additions:</p>
+<ol>
+<li>
+<p><strong><code>upsert_outcome_edge()</code> update clause</strong> — add <code>last_active_hours</code> to the UPDATE
+   that fires when an existing edge is reinforced via outcome(). This is
+   the most important semantic fix.</p>
+</li>
+<li>
+<p><strong><code>total_edges_after</code></strong> — count edges after all pruning in <code>curate()</code>;
+   populate <code>CurateResult.total_edges_after</code>. One <code>SELECT COUNT(*)</code> after deletion.</p>
+</li>
+<li>
+<p><strong><code>CurateResult.summary</code> escalation</strong> — contextual tip when <code>edges_decayed &gt; 0</code>;
+   escalated warning when <code>decay_fraction &gt; 0.25</code>.</p>
+</li>
+<li>
+<p><strong><code>_prune_decayed_edges()</code> docstring</strong> — explicitly document that NULL
+   <code>last_active_hours</code> is intentionally excluded and why.</p>
+</li>
+<li>
+<p><strong><code>insert_edge()</code> docstring</strong> — note that <code>INSERT OR IGNORE</code> does not refresh
+   <code>last_active_hours</code> on duplicate; only co-retrieval does.</p>
+</li>
+</ol>
+<p>None of these change the core formula or structural decisions. They improve
+the agent-facing surface without adding complexity to the implementation.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

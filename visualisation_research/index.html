@@ -1,0 +1,3517 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/visualisation_research/">
+      
+      
+        <link rel="prev" href="../research_agent_patterns/">
+      
+      
+        <link rel="next" href="../simulation_behaviour_research/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Visualisation Research - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#visualisation-research-elfmem-knowledge-system" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Visualisation Research
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-data-exists-and-what-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Data Exists (and What Matters)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Data Exists (and What Matters)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-value-visualisation-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Value Visualisation Targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lower-value-skip-initially" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lower-Value (Skip Initially)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approach-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Approach Evaluation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approach Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-rich-terminal-textualrich-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. Rich Terminal (textual/rich TUI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-static-images-matplotlibseaborn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. Static Images (matplotlib/seaborn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-single-file-html-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C. Single-File HTML Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-streamlitgradio-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D. Streamlit/Gradio App
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-jupyter-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E. Jupyter Widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f-graphviz-dot-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F. GraphViz DOT Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommended Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-html-dashboard-primary-terminal-summary-quick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid: HTML Dashboard (primary) + Terminal Summary (quick)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboard-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dashboard Layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dashboard Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#page-structure-single-scrollable-page-tabbed-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Page Structure (Single Scrollable Page, Tabbed Sections)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-cases-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Cases and Mitigations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Edge Cases and Mitigations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#emptyminimal-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Empty/Minimal States
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale Concerns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Integrity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-choices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technology Choices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technology Choices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#js-libraries-inlined-in-html" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JS Libraries (Inlined in HTML)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#primary-entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primary Entry Point
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-layer-reusable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Layer (Reusable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-data-collection-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Data Collection Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-html-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: HTML Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-remaining-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Remaining Tabs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-polish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Polish
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#visual-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visual Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Visual Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#colour-palette-dark-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour Palette (Dark Theme)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-sizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node Sizing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Rendering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences-and-trade-offs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences and Trade-offs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences and Trade-offs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-we-gain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Gain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-we-pay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Pay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-we-explicitly-skip-for-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Explicitly Skip (for now)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-data-exists-and-what-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Data Exists (and What Matters)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Data Exists (and What Matters)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-value-visualisation-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Value Visualisation Targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lower-value-skip-initially" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lower-Value (Skip Initially)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#approach-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Approach Evaluation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Approach Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-rich-terminal-textualrich-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. Rich Terminal (textual/rich TUI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-static-images-matplotlibseaborn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. Static Images (matplotlib/seaborn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-single-file-html-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C. Single-File HTML Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-streamlitgradio-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D. Streamlit/Gradio App
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-jupyter-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E. Jupyter Widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f-graphviz-dot-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F. GraphViz DOT Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommended Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-html-dashboard-primary-terminal-summary-quick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid: HTML Dashboard (primary) + Terminal Summary (quick)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboard-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dashboard Layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dashboard Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#page-structure-single-scrollable-page-tabbed-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Page Structure (Single Scrollable Page, Tabbed Sections)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-cases-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Cases and Mitigations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Edge Cases and Mitigations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#emptyminimal-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Empty/Minimal States
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-concerns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale Concerns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Integrity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-choices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technology Choices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technology Choices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#js-libraries-inlined-in-html" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JS Libraries (Inlined in HTML)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#primary-entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primary Entry Point
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-layer-reusable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Layer (Reusable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-data-collection-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Data Collection Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-html-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: HTML Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-remaining-tabs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Remaining Tabs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-polish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Polish
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#visual-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visual Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Visual Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#colour-palette-dark-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour Palette (Dark Theme)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-sizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node Sizing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Rendering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences-and-trade-offs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences and Trade-offs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences and Trade-offs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-we-gain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Gain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-we-pay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Pay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-we-explicitly-skip-for-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Explicitly Skip (for now)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/visualisation_research.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="visualisation-research-elfmem-knowledge-system">Visualisation Research: elfmem Knowledge System<a class="headerlink" href="#visualisation-research-elfmem-knowledge-system" title="Permanent link">&para;</a></h1>
+<h2 id="problem-statement">Problem Statement<a class="headerlink" href="#problem-statement" title="Permanent link">&para;</a></h2>
+<p>elfmem stores rich, interconnected knowledge — blocks with decay curves, edges with reinforcement histories, frames with scoring pipelines, sessions with temporal boundaries. <strong>None of this is visible.</strong> An agent (or developer) interacting with elfmem today sees only text summaries. The internal dynamics — why a block ranks high, which edges are strengthening, what's about to decay — remain opaque.</p>
+<p>We need a visualisation layer that makes the invisible visible, without overwhelming.</p>
+<hr />
+<h2 id="what-data-exists-and-what-matters">What Data Exists (and What Matters)<a class="headerlink" href="#what-data-exists-and-what-matters" title="Permanent link">&para;</a></h2>
+<h3 id="high-value-visualisation-targets">High-Value Visualisation Targets<a class="headerlink" href="#high-value-visualisation-targets" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Why It Matters</th>
+<th>Changes How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Knowledge graph</strong> (blocks + edges)</td>
+<td>The core structure — how knowledge relates</td>
+<td>Edges form/strengthen/decay/break</td>
+</tr>
+<tr>
+<td><strong>Block lifecycle</strong> (inbox→active→archived)</td>
+<td>Shows system health and learning rhythm</td>
+<td>Blocks flow through states over sessions</td>
+</tr>
+<tr>
+<td><strong>Decay curves</strong> (recency over active-hours)</td>
+<td>The heartbeat of memory — what's alive, what's fading</td>
+<td>Exponential decay, reset by reinforcement</td>
+</tr>
+<tr>
+<td><strong>Scoring breakdown</strong> (5 components)</td>
+<td>Explains retrieval ranking — "why this block?"</td>
+<td>Weights shift per frame</td>
+</tr>
+<tr>
+<td><strong>Frame retrieval results</strong></td>
+<td>What the agent actually sees</td>
+<td>Changes per query/frame</td>
+</tr>
+<tr>
+<td><strong>Contradictions</strong></td>
+<td>Unresolved conflicts in knowledge</td>
+<td>Created during consolidation, resolved by agent</td>
+</tr>
+<tr>
+<td><strong>Token usage</strong></td>
+<td>Cost awareness</td>
+<td>Accumulates per session/lifetime</td>
+</tr>
+<tr>
+<td><strong>Session timeline</strong></td>
+<td>Temporal context for all operations</td>
+<td>Discrete sessions with operation history</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lower-value-skip-initially">Lower-Value (Skip Initially)<a class="headerlink" href="#lower-value-skip-initially" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Why Skip</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raw embeddings</td>
+<td>High-dimensional, needs UMAP/t-SNE — expensive and hard to interpret</td>
+</tr>
+<tr>
+<td>System config internals</td>
+<td>Only useful for debugging, not understanding</td>
+</tr>
+<tr>
+<td>Consolidation policy details</td>
+<td>Implementation detail, not user-facing insight</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="design-principles">Design Principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Progressive disclosure</strong> — summary first, drill-down on demand</li>
+<li><strong>Zero infrastructure</strong> — no servers, no databases, no npm builds</li>
+<li><strong>Library-native</strong> — generated from Python, consumed anywhere</li>
+<li><strong>Informative over decorative</strong> — every visual element must answer a question</li>
+<li><strong>Edge-case resilient</strong> — empty databases, single blocks, disconnected graphs, zero sessions</li>
+</ol>
+<hr />
+<h2 id="approach-evaluation">Approach Evaluation<a class="headerlink" href="#approach-evaluation" title="Permanent link">&para;</a></h2>
+<h3 id="a-rich-terminal-textualrich-tui">A. Rich Terminal (textual/rich TUI)<a class="headerlink" href="#a-rich-terminal-textualrich-tui" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Fits CLI ethos, real-time, no browser needed, familiar to developers.</p>
+<p><strong>Weaknesses:</strong> Graphs in terminal are crude (ASCII/braille). Limited interactivity. Can't zoom/pan a knowledge graph. Screen size constrains layout. Poor for sharing.</p>
+<p><strong>Verdict:</strong> Good for quick health checks (status already does this). <strong>Insufficient for graph/decay/scoring visualisation.</strong></p>
+<h3 id="b-static-images-matplotlibseaborn">B. Static Images (matplotlib/seaborn)<a class="headerlink" href="#b-static-images-matplotlibseaborn" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Python-native, familiar, easy to generate, works in notebooks and docs.</p>
+<p><strong>Weaknesses:</strong> Not interactive — can't click a node to see its edges. NetworkX graph layouts are mediocre for &lt; 100 nodes. Multiple separate images feel disconnected. Decay curves are fine but graphs are the weak point.</p>
+<p><strong>Verdict:</strong> Decent for charts (decay, scoring, lifecycle counts). <strong>Poor for the knowledge graph</strong>, which is the most valuable target.</p>
+<h3 id="c-single-file-html-dashboard">C. Single-File HTML Dashboard<a class="headerlink" href="#c-single-file-html-dashboard" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Rich interactivity (zoom, pan, hover, click). Force-directed graph layout with physics simulation. All JS/CSS inlined — just open the file. Shareable. Beautiful with minimal effort. No server needed.</p>
+<p><strong>Weaknesses:</strong> Requires browser (acceptable for deep exploration). Generating HTML from Python adds a template layer. JS libraries must be vendored or fetched from CDN.</p>
+<p><strong>Verdict:</strong> <strong>Best fit for primary visualisation.</strong> Handles the knowledge graph beautifully. Charts, timelines, and drill-downs all work naturally.</p>
+<h3 id="d-streamlitgradio-app">D. Streamlit/Gradio App<a class="headerlink" href="#d-streamlitgradio-app" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Interactive, Pythonic, live connection to database.</p>
+<p><strong>Weaknesses:</strong> Heavy dependency. Requires running a server. Overkill for a library. Ties visualisation to a runtime.</p>
+<p><strong>Verdict:</strong> <strong>Over-engineered for our use case.</strong> elfmem is a library, not a web application.</p>
+<h3 id="e-jupyter-widgets">E. Jupyter Widgets<a class="headerlink" href="#e-jupyter-widgets" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Interactive, inline with code, great for exploration.</p>
+<p><strong>Weaknesses:</strong> Requires Jupyter environment. Not all users use notebooks. Graph widgets (ipycytoscape) are powerful but niche.</p>
+<p><strong>Verdict:</strong> <strong>Nice secondary target</strong>, not primary. Could offer a <code>to_notebook()</code> integration later.</p>
+<h3 id="f-graphviz-dot-export">F. GraphViz DOT Export<a class="headerlink" href="#f-graphviz-dot-export" title="Permanent link">&para;</a></h3>
+<p><strong>Strengths:</strong> Excellent layout algorithms for directed graphs. Standard format. Many renderers.</p>
+<p><strong>Weaknesses:</strong> Requires graphviz installed. Static output (SVG/PNG). No interactivity. Not great for temporal data.</p>
+<p><strong>Verdict:</strong> <strong>Good complement</strong> for static documentation. Not the primary tool.</p>
+<hr />
+<h2 id="recommended-architecture">Recommended Architecture<a class="headerlink" href="#recommended-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="hybrid-html-dashboard-primary-terminal-summary-quick">Hybrid: HTML Dashboard (primary) + Terminal Summary (quick)<a class="headerlink" href="#hybrid-html-dashboard-primary-terminal-summary-quick" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────┐
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                  Python Layer                    │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│                                                  │
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  MemorySystem.visualise(path=&quot;report.html&quot;)      │
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│       │                                          │
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│       ├── DataCollector  (queries SQLite)         │
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│       │     ├── graph_data()     → nodes, edges  │
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│       │     ├── lifecycle_data() → counts, flows │
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│       │     ├── decay_data()     → curves by tier│
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│       │     ├── scoring_data()   → breakdowns    │
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│       │     ├── session_data()   → timeline      │
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│       │     └── health_data()    → status snapshot│
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│       │                                          │
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│       └── HTMLRenderer                           │
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│             ├── Jinja2 template (single file)    │
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│             ├── JS libs inlined (vis.js, Chart.js)│
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│             └── CSS inlined (minimal, dark theme)│
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│                                                  │
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│  MemorySystem.visualise(format=&quot;terminal&quot;)       │
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│       └── Rich tables + sparklines               │
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>└─────────────────────────────────────────────────┘
+</span></code></pre></div>
+<h3 id="why-this-architecture">Why This Architecture<a class="headerlink" href="#why-this-architecture" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>DataCollector is reusable</strong> — same data feeds HTML, terminal, future Jupyter, or API consumers</li>
+<li><strong>HTML template is a single file</strong> — no build step, no bundler, no node_modules</li>
+<li><strong>JS libraries are tiny when scoped right:</strong></li>
+<li>vis-network.min.js (~300KB) — force-directed graph with physics, zoom, click events</li>
+<li>Chart.js (~200KB) — charts for decay curves, lifecycle bars, scoring radar</li>
+<li>Both can be loaded from CDN with local fallback, or vendored</li>
+<li><strong>Dark theme by default</strong> — developers live in dark mode; knowledge graphs look stunning on dark backgrounds</li>
+</ol>
+<hr />
+<h2 id="dashboard-layout">Dashboard Layout<a class="headerlink" href="#dashboard-layout" title="Permanent link">&para;</a></h2>
+<h3 id="page-structure-single-scrollable-page-tabbed-sections">Page Structure (Single Scrollable Page, Tabbed Sections)<a class="headerlink" href="#page-structure-single-scrollable-page-tabbed-sections" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌─────────────────────────────────────────────────────────┐
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│  elf Memory Dashboard                    [Generated: …] │
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├─────────────────────────────────────────────────────────┤
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│                                                         │
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│  ┌─── Health Bar ────────────────────────────────────┐  │
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│  │  ● Session: active (2.4h)  │ Inbox: 3  Active: 47│  │
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│  │  │ Archived: 12  │ Health: good  │ Tokens: 12.3K │  │
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│                                                         │
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│  [Graph]  [Lifecycle]  [Decay]  [Scoring]  [Timeline]   │
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│                                                         │
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>├─ Graph Tab ─────────────────────────────────────────────┤
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│  ┌───────────────────────────────────────────────────┐  │
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│  │                                                   │  │
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│  │         Force-directed knowledge graph            │  │
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│  │                                                   │  │
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>│  │    ○──────○           Nodes: blocks (active)      │  │
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>│  │   /│\    /│\          Colour: frame/decay tier     │  │
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>│  │  ○ ○ ○  ○ ○ ○        Size: reinforcement count    │  │
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>│  │         ╲│╱           Edges: weight = thickness    │  │
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>│  │          ○            Edge colour: relation type   │  │
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>│  │                       Hover: block summary         │  │
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>│  │                       Click: detail panel          │  │
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>│  ┌─ Detail Panel (on click) ─────────────────────────┐  │
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>│  │ Block: &quot;Python decorators wrap...&quot;                │  │
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>│  │ Status: active  │ Confidence: 0.82                │  │
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>│  │ Decay tier: STANDARD (λ=0.010)                    │  │
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>│  │ Tags: [python, patterns, self/skill]              │  │
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>│  │ Reinforced: 7 times  │ Last: 2.1h ago             │  │
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>│  │ Edges: 4 (2 similar, 1 co_occurs, 1 outcome)     │  │
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>│  │ Recency score: 0.979                              │  │
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>│                                                         │
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>├─ Lifecycle Tab ─────────────────────────────────────────┤
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>│  ┌─ Status Distribution ──┐  ┌─ Decay Tier Mix ──────┐ │
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>│  │  ████████████░░░░░░░░  │  │  ██ permanent (4)     │ │
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>│  │  inbox(3) active(47)   │  │  ████ durable (8)     │ │
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>│  │  archived(12)          │  │  ██████████ std (35)   │ │
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>│  └────────────────────────┘  │  ██ ephemeral (4)     │ │
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>│                              └────────────────────────┘ │
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>│  ┌─ Knowledge Flow (Sankey-style) ───────────────────┐  │
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>│  │  learn(58) ──→ inbox(3) ──→ active(47)            │  │
+</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>│  │                    │            │                  │  │
+</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>│  │                    └→ dedup(8)  └→ archived(12)    │  │
+</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>│                                                         │
+</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>├─ Decay Tab ─────────────────────────────────────────────┤
+</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>│  ┌─ Recency Curves by Tier ──────────────────────────┐  │
+</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>│  │  1.0 ┤ ████                                       │  │
+</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>│  │      │ ██ ██                                      │  │
+</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>│  │      │ █   ███                                    │  │
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>│  │  0.5 ┤ █     ████  ← standard (λ=0.01)           │  │
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>│  │      │ █         ██████                           │  │
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>│  │      │ █              ██████████                  │  │
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>│  │  0.0 ┤──────────────────────────── active hours → │  │
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>│  │      │ ─── permanent  ─── durable  ─── ephemeral │  │
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>│  ┌─ Block Recency Distribution ──────────────────────┐  │
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>│  │  Histogram: how many blocks at each recency level │  │
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>│  │  Highlights blocks near PRUNE_THRESHOLD (0.05)    │  │
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>│                                                         │
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>├─ Scoring Tab ───────────────────────────────────────────┤
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>│  ┌─ Component Radar (per-frame) ─────────────────────┐  │
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>│  │        similarity                                 │  │
+</span><span id="__span-1-67"><a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a>│  │           ╱╲                                      │  │
+</span><span id="__span-1-68"><a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>│  │     reinf╱  ╲confidence                           │  │
+</span><span id="__span-1-69"><a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>│  │         ╱ ●● ╲         SELF: conf+reinf heavy     │  │
+</span><span id="__span-1-70"><a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a>│  │    cent╱      ╲recency  ATTENTION: sim+rec heavy  │  │
+</span><span id="__span-1-71"><a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a>│  │        ────────                                   │  │
+</span><span id="__span-1-72"><a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-73"><a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a>│  ┌─ Score Breakdown (last retrieval) ────────────────┐  │
+</span><span id="__span-1-74"><a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a>│  │  Block A: [sim:0.3 conf:0.25 rec:0.2 ...]  = 0.8 │  │
+</span><span id="__span-1-75"><a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a>│  │  Block B: [sim:0.1 conf:0.4 rec:0.15 ...] = 0.72 │  │
+</span><span id="__span-1-76"><a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a>│  │  Stacked bar chart showing component contribution │  │
+</span><span id="__span-1-77"><a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-78"><a id="__codelineno-1-78" name="__codelineno-1-78" href="#__codelineno-1-78"></a>│                                                         │
+</span><span id="__span-1-79"><a id="__codelineno-1-79" name="__codelineno-1-79" href="#__codelineno-1-79"></a>├─ Timeline Tab ──────────────────────────────────────────┤
+</span><span id="__span-1-80"><a id="__codelineno-1-80" name="__codelineno-1-80" href="#__codelineno-1-80"></a>│  ┌─ Session History ─────────────────────────────────┐  │
+</span><span id="__span-1-81"><a id="__codelineno-1-81" name="__codelineno-1-81" href="#__codelineno-1-81"></a>│  │  S1 ━━━━━ S2 ━━━━━━━━ S3 ━━━ S4 ━━━━━━━         │  │
+</span><span id="__span-1-82"><a id="__codelineno-1-82" name="__codelineno-1-82" href="#__codelineno-1-82"></a>│  │  │learn   │learn      │learn  │frame              │  │
+</span><span id="__span-1-83"><a id="__codelineno-1-83" name="__codelineno-1-83" href="#__codelineno-1-83"></a>│  │  │dream   │frame      │dream  │outcome            │  │
+</span><span id="__span-1-84"><a id="__codelineno-1-84" name="__codelineno-1-84" href="#__codelineno-1-84"></a>│  │  │frame   │outcome    │curate │curate             │  │
+</span><span id="__span-1-85"><a id="__codelineno-1-85" name="__codelineno-1-85" href="#__codelineno-1-85"></a>│  └───────────────────────────────────────────────────┘  │
+</span><span id="__span-1-86"><a id="__codelineno-1-86" name="__codelineno-1-86" href="#__codelineno-1-86"></a>└─────────────────────────────────────────────────────────┘
+</span></code></pre></div>
+<hr />
+<h2 id="edge-cases-and-mitigations">Edge Cases and Mitigations<a class="headerlink" href="#edge-cases-and-mitigations" title="Permanent link">&para;</a></h2>
+<h3 id="emptyminimal-states">Empty/Minimal States<a class="headerlink" href="#emptyminimal-states" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Empty database</strong> (zero blocks)</td>
+<td>Blank graph, meaningless charts</td>
+<td>Show "Getting Started" message with learn() example. Health bar shows "No knowledge yet."</td>
+</tr>
+<tr>
+<td><strong>Single block, no edges</strong></td>
+<td>Lonely node, no graph to draw</td>
+<td>Show the block with metadata. Graph section says "1 block — connections form during consolidation."</td>
+</tr>
+<tr>
+<td><strong>All inbox, nothing consolidated</strong></td>
+<td>No active blocks, no edges, no scores</td>
+<td>Health bar shows "attention" state. Prominent "Run dream() to consolidate" suggestion. Lifecycle tab shows inbox-heavy distribution.</td>
+</tr>
+<tr>
+<td><strong>All archived</strong></td>
+<td>Empty graph, only historical data</td>
+<td>Show archived count. Suggest "Learn new knowledge to rebuild." Decay tab shows the archival curve.</td>
+</tr>
+<tr>
+<td><strong>No sessions started</strong></td>
+<td>Missing temporal data</td>
+<td>Session timeline hidden. Decay curves use wall-clock approximation with warning.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scale-concerns">Scale Concerns<a class="headerlink" href="#scale-concerns" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>500+ active blocks</strong></td>
+<td>Graph becomes hairball</td>
+<td>Cluster by tag prefix. Show top-50 by centrality with option to expand clusters. Force-directed layout with stronger repulsion.</td>
+</tr>
+<tr>
+<td><strong>1000+ edges</strong></td>
+<td>Visual noise</td>
+<td>Filter by minimum weight (slider). Default: hide edges with weight &lt; 0.2. Group parallel edges.</td>
+</tr>
+<tr>
+<td><strong>Very long content</strong></td>
+<td>Tooltips overflow</td>
+<td>Truncate to 200 chars with "..." in tooltips. Full content in detail panel only.</td>
+</tr>
+<tr>
+<td><strong>Many frames</strong></td>
+<td>Tab explosion</td>
+<td>Show 5 builtins + user-defined in dropdown. Radar chart supports overlay comparison.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-integrity">Data Integrity<a class="headerlink" href="#data-integrity" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Orphan edges</strong> (target archived)</td>
+<td>Edges pointing to nothing</td>
+<td>Filter edges where both endpoints are active. Show archived connections as greyed-out optional layer.</td>
+</tr>
+<tr>
+<td><strong>NaN/None in scores</strong></td>
+<td>Chart crashes</td>
+<td>Default to 0.0 with visual indicator (dashed border). Never pass None to JS.</td>
+</tr>
+<tr>
+<td><strong>Concurrent writes</strong></td>
+<td>Stale snapshot</td>
+<td>Generate is a point-in-time snapshot. Add "Generated at: ..." timestamp. Read-only SQLite connection.</td>
+</tr>
+<tr>
+<td><strong>Very old database</strong></td>
+<td>Schema mismatch</td>
+<td>Check schema version before querying. Graceful fallback for missing columns.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="technology-choices">Technology Choices<a class="headerlink" href="#technology-choices" title="Permanent link">&para;</a></h2>
+<h3 id="js-libraries-inlined-in-html">JS Libraries (Inlined in HTML)<a class="headerlink" href="#js-libraries-inlined-in-html" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Size (min+gzip)</th>
+<th>Purpose</th>
+<th>Alternative</th>
+<th>Why Chosen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>vis-network</strong></td>
+<td>~95KB</td>
+<td>Force-directed graph</td>
+<td>cytoscape.js (100KB), d3-force (30KB)</td>
+<td>Best balance of features, ease, and physics simulation. Clustering built-in. Click/hover events.</td>
+</tr>
+<tr>
+<td><strong>Chart.js</strong></td>
+<td>~70KB</td>
+<td>Bar, line, radar charts</td>
+<td>Plotly.js (1MB+), lightweight SVG</td>
+<td>Small, beautiful defaults, responsive. Radar chart for scoring. Line chart for decay.</td>
+</tr>
+<tr>
+<td><strong>No framework</strong></td>
+<td>0KB</td>
+<td>DOM manipulation</td>
+<td>React, Vue</td>
+<td>Overkill for a generated report. Vanilla JS + template literals suffice.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total JS payload: ~165KB gzip</strong> — acceptable for a local file.</p>
+<p><strong>CDN vs Vendor Strategy:</strong>
+- Default: load from CDN (<code>cdnjs.cloudflare.com</code>) with integrity hash
+- Fallback: if CDN fails, use vendored copy in <code>src/elfmem/viz/assets/</code>
+- Option: <code>visualise(offline=True)</code> inlines everything (larger file, no network needed)</p>
+<h3 id="python-dependencies">Python Dependencies<a class="headerlink" href="#python-dependencies" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Purpose</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Jinja2</strong></td>
+<td>HTML template rendering</td>
+<td>Already likely available (common). Lightweight.</td>
+</tr>
+<tr>
+<td><strong>json</strong> (stdlib)</td>
+<td>Serialize data for JS</td>
+<td>No new dependency</td>
+</tr>
+<tr>
+<td><strong>webbrowser</strong> (stdlib)</td>
+<td>Auto-open generated report</td>
+<td>No new dependency</td>
+</tr>
+</tbody>
+</table>
+<p><strong>If Jinja2 is too heavy:</strong> Use Python f-strings / <code>string.Template</code> for the HTML. The template is simple enough. This keeps dependencies at zero.</p>
+<hr />
+<h2 id="api-design">API Design<a class="headerlink" href="#api-design" title="Permanent link">&para;</a></h2>
+<h3 id="primary-entry-point">Primary Entry Point<a class="headerlink" href="#primary-entry-point" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Generate and open HTML dashboard</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">ms</span> <span class="o">=</span> <span class="n">MemorySystem</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;knowledge.db&quot;</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">ms</span><span class="o">.</span><span class="n">visualise</span><span class="p">()</span>  <span class="c1"># → opens report.html in browser</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Customise output</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">ms</span><span class="o">.</span><span class="n">visualise</span><span class="p">(</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;my_report.html&quot;</span><span class="p">,</span>   <span class="c1"># Custom output path (default: temp file)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">open_browser</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>       <span class="c1"># Auto-open (default: True)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">offline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>            <span class="c1"># Inline all JS/CSS (default: False)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">include_archived</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Show archived blocks (default: False)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">max_nodes</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>           <span class="c1"># Cap graph nodes (default: 100)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># Terminal quick-view (no browser)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">ms</span><span class="o">.</span><span class="n">visualise</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;terminal&quot;</span><span class="p">)</span>  <span class="c1"># Rich table to stdout</span>
+</span></code></pre></div>
+<h3 id="data-layer-reusable">Data Layer (Reusable)<a class="headerlink" href="#data-layer-reusable" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashboardData</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Collect all data for any consumer</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">data</span> <span class="o">=</span> <span class="n">DashboardData</span><span class="o">.</span><span class="n">from_memory_system</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">data</span><span class="o">.</span><span class="n">graph</span>       <span class="c1"># → {&quot;nodes&quot;: [...], &quot;edges&quot;: [...]}</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">data</span><span class="o">.</span><span class="n">lifecycle</span>   <span class="c1"># → {&quot;inbox&quot;: 3, &quot;active&quot;: 47, &quot;archived&quot;: 12, ...}</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">data</span><span class="o">.</span><span class="n">decay</span>       <span class="c1"># → {&quot;blocks&quot;: [...], &quot;tiers&quot;: {...}, &quot;threshold&quot;: 0.05}</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">data</span><span class="o">.</span><span class="n">scoring</span>     <span class="c1"># → {&quot;frames&quot;: {...}, &quot;last_retrieval&quot;: [...]}</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">data</span><span class="o">.</span><span class="n">health</span>      <span class="c1"># → SystemStatus.to_dict()</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">data</span><span class="o">.</span><span class="n">sessions</span>    <span class="c1"># → [{&quot;id&quot;: ..., &quot;duration&quot;: ..., &quot;ops&quot;: [...]}, ...]</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">data</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span>   <span class="c1"># → JSON string for embedding in HTML</span>
+</span></code></pre></div>
+<h3 id="mcp-integration">MCP Integration<a class="headerlink" href="#mcp-integration" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># New MCP tool</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nd">@tool</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">elfmem_visualise</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">offline</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate interactive HTML dashboard of the knowledge system.&quot;&quot;&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">ms</span> <span class="o">=</span> <span class="n">get_memory_system</span><span class="p">()</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">ms</span><span class="o">.</span><span class="n">visualise</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">offline</span><span class="o">=</span><span class="n">offline</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Dashboard generated: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span>
+</span></code></pre></div>
+<hr />
+<h2 id="implementation-plan">Implementation Plan<a class="headerlink" href="#implementation-plan" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-data-collection-layer">Phase 1: Data Collection Layer<a class="headerlink" href="#phase-1-data-collection-layer" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>src/elfmem/viz/__init__.py</code> — public API</li>
+<li><code>src/elfmem/viz/data.py</code> — <code>DashboardData</code> class with all query methods</li>
+<li>Tests: verify data extraction from known database states</li>
+</ul>
+<h3 id="phase-2-html-dashboard">Phase 2: HTML Dashboard<a class="headerlink" href="#phase-2-html-dashboard" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>src/elfmem/viz/template.html</code> — Jinja2 (or f-string) template</li>
+<li><code>src/elfmem/viz/renderer.py</code> — template rendering + file writing</li>
+<li>Graph tab (vis-network) + Health bar</li>
+<li>Tests: verify HTML generation, check for XSS in block content</li>
+</ul>
+<h3 id="phase-3-remaining-tabs">Phase 3: Remaining Tabs<a class="headerlink" href="#phase-3-remaining-tabs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Lifecycle tab (Chart.js bar/doughnut)</li>
+<li>Decay tab (Chart.js line + histogram)</li>
+<li>Scoring tab (Chart.js radar + stacked bar)</li>
+<li>Timeline tab (HTML/CSS timeline)</li>
+</ul>
+<h3 id="phase-4-integration">Phase 4: Integration<a class="headerlink" href="#phase-4-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>api.py</code> — add <code>visualise()</code> method to <code>MemorySystem</code></li>
+<li>MCP tool registration</li>
+<li>Terminal format option (Rich)</li>
+</ul>
+<h3 id="phase-5-polish">Phase 5: Polish<a class="headerlink" href="#phase-5-polish" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dark theme CSS</li>
+<li>Responsive layout</li>
+<li>Accessibility (ARIA labels, keyboard navigation)</li>
+<li>Edge case handling (empty states, scale limits)</li>
+</ul>
+<hr />
+<h2 id="visual-design-decisions">Visual Design Decisions<a class="headerlink" href="#visual-design-decisions" title="Permanent link">&para;</a></h2>
+<h3 id="colour-palette-dark-theme">Colour Palette (Dark Theme)<a class="headerlink" href="#colour-palette-dark-theme" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Background:    #1a1b26  (deep navy)
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Surface:       #24283b  (card backgrounds)
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Border:        #3b4261  (subtle dividers)
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Text primary:  #c0caf5  (soft white)
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Text secondary:#565f89  (muted)
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>Node colours (by decay tier):
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  Permanent:   #bb9af7  (purple — identity, stands out)
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  Durable:     #7aa2f7  (blue — stable, reliable)
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>  Standard:    #9ece6a  (green — healthy, growing)
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>  Ephemeral:   #e0af68  (amber — warm, transient)
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  Inbox:       #565f89  (grey — not yet processed)
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>  Archived:    #3b4261  (dim — faded away)
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>Edge colours (by relation type):
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>  similar:     #3b4261  (subtle — background connections)
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>  co_occurs:   #7aa2f7  (blue — Hebbian, learned)
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>  outcome:     #9ece6a  (green — validated by results)
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>  agent:       #ff9e64  (orange — explicit, human-asserted)
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>  contradicts: #f7768e  (red — conflict, attention needed)
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>Health indicator:
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>  good:        #9ece6a  (green)
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>  attention:   #e0af68  (amber)
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>  degraded:    #f7768e  (red)
+</span></code></pre></div>
+<p>Palette inspired by Tokyo Night — popular with developers, high contrast, accessible.</p>
+<h3 id="node-sizing">Node Sizing<a class="headerlink" href="#node-sizing" title="Permanent link">&para;</a></h3>
+<p><div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>radius = BASE_SIZE + log(1 + reinforcement_count) * SCALE_FACTOR
+</span></code></pre></div>
+- Base: 8px (never invisible)
+- Max: 30px (heavily reinforced constitutional blocks)
+- Log scale prevents outliers from dominating</p>
+<h3 id="edge-rendering">Edge Rendering<a class="headerlink" href="#edge-rendering" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>thickness = 1 + weight * 4           (1px to 5px)
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>opacity   = 0.3 + weight * 0.5       (subtle to prominent)
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>dash      = solid if reinforced, dashed if weight &lt; 0.3
+</span></code></pre></div>
+<hr />
+<h2 id="consequences-and-trade-offs">Consequences and Trade-offs<a class="headerlink" href="#consequences-and-trade-offs" title="Permanent link">&para;</a></h2>
+<h3 id="what-we-gain">What We Gain<a class="headerlink" href="#what-we-gain" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Debugging power:</strong> "Why did frame() return block X over block Y?" — look at the scoring breakdown</li>
+<li><strong>System intuition:</strong> See how knowledge clusters, decays, and reinforces over time</li>
+<li><strong>Health monitoring:</strong> Spot problems before they matter (inbox buildup, over-archival, disconnected clusters)</li>
+<li><strong>Onboarding:</strong> New users understand the system by seeing it work</li>
+<li><strong>Demo/sharing:</strong> A beautiful HTML file is worth a thousand status() calls</li>
+</ul>
+<h3 id="what-we-pay">What We Pay<a class="headerlink" href="#what-we-pay" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>~500 lines of new code</strong> (data collection + HTML template + renderer)</li>
+<li><strong>Optional Jinja2 dependency</strong> (or zero dependencies with f-string templates)</li>
+<li><strong>JS payload in generated files</strong> (~165KB gzip, ~500KB raw) — acceptable for local files</li>
+<li><strong>Maintenance surface</strong> for the template as the data model evolves</li>
+</ul>
+<h3 id="what-we-explicitly-skip-for-now">What We Explicitly Skip (for now)<a class="headerlink" href="#what-we-explicitly-skip-for-now" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Real-time / live-updating dashboards (YAGNI — generate-and-view is sufficient)</li>
+<li>Embedding space visualisation (UMAP/t-SNE — expensive, hard to interpret, low ROI)</li>
+<li>Multi-database comparison (single database per report)</li>
+<li>Edit/modify capabilities in the dashboard (read-only — mutations go through the API)</li>
+</ul>
+<hr />
+<h2 id="decision-summary">Decision Summary<a class="headerlink" href="#decision-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Choice</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Primary format</strong></td>
+<td>Single-file HTML</td>
+<td>Interactive, zero infra, shareable, beautiful</td>
+</tr>
+<tr>
+<td><strong>Graph library</strong></td>
+<td>vis-network</td>
+<td>Best physics simulation + clustering for our scale</td>
+</tr>
+<tr>
+<td><strong>Chart library</strong></td>
+<td>Chart.js</td>
+<td>Small, beautiful defaults, radar chart support</td>
+</tr>
+<tr>
+<td><strong>Template engine</strong></td>
+<td>Jinja2 (or string.Template)</td>
+<td>Minimal dependency, clean separation</td>
+</tr>
+<tr>
+<td><strong>Theme</strong></td>
+<td>Dark (Tokyo Night inspired)</td>
+<td>Developer-friendly, graphs pop on dark backgrounds</td>
+</tr>
+<tr>
+<td><strong>API surface</strong></td>
+<td><code>ms.visualise()</code></td>
+<td>One call, sensible defaults, progressive options</td>
+</tr>
+<tr>
+<td><strong>Data layer</strong></td>
+<td>Separate <code>DashboardData</code> class</td>
+<td>Reusable across formats (HTML, terminal, notebook)</td>
+</tr>
+<tr>
+<td><strong>Terminal fallback</strong></td>
+<td>Rich tables</td>
+<td>Quick health check without browser</td>
+</tr>
+<tr>
+<td><strong>Dependency strategy</strong></td>
+<td>Zero required, Jinja2 optional</td>
+<td>Respects elfmem's "zero infrastructure" principle</td>
+</tr>
+<tr>
+<td><strong>Scale strategy</strong></td>
+<td>Top-N by centrality + clustering</td>
+<td>Handles 500+ blocks gracefully</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Review this document and align on approach</li>
+<li>Implement Phase 1 (data collection layer) with tests</li>
+<li>Build the HTML template with graph + health bar</li>
+<li>Iterate on remaining tabs</li>
+<li>Integrate into <code>MemorySystem</code> API and MCP server</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

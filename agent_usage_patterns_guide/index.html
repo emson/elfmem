@@ -1,0 +1,3408 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/agent_usage_patterns_guide/">
+      
+      
+        <link rel="prev" href="../dev_setup/">
+      
+      
+        <link rel="next" href="../cognitive_loop_operations_guide/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Agent Patterns - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent-usage-patterns-for-elfmem-complete-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Agent Patterns
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-not-all-experiences-are-worth-remembering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Not All Experiences Are Worth Remembering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-feedback-loop-is-mandatory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Feedback Loop is Mandatory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frame-selection-dominates-retrieval-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Frame Selection Dominates Retrieval Quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-signals-must-be-calibrated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Signals Must Be Calibrated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-curation-is-active-knowledge-gardening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Curation is Active Knowledge Gardening
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-remember-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Remember Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Remember Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-remember-after-surprise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Remember After Surprise
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-remember-patterns-not-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Remember Patterns, Not Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-remember-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Remember Connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-tag-hierarchically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Tag Hierarchically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-confidence-actual-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Confidence = Actual Reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-recall-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Recall Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Recall Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-frame-selection-is-task-dependent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Frame Selection is Task-Dependent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-query-semantically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Query Semantically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-handle-contradictions-recursively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Handle Contradictions Recursively
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-silence-is-signal-empty-recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Silence is Signal (Empty Recall)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-expand-graph-when-top-k-insufficient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Expand Graph When Top-K Insufficient
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-outcome-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Outcome Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Outcome Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-signal-expectation-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Signal = Expectation - Observation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-weight-by-signal-confidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Weight by Signal Confidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-batch-outcomes-to-reduce-noise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Batch Outcomes to Reduce Noise
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-reinforce-patterns-not-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Reinforce Patterns, Not Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-penalize-confident-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Penalize Confident Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-curate-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Curate Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Curate Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-trigger-on-accumulation-or-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Trigger on Accumulation OR Stability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-preserve-constitutional-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Preserve Constitutional Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-reinforce-top-k-by-recent-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Reinforce Top-K by Recent Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-archive-weak-edges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Archive Weak Edges
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-meta-curation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Meta-Curation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-key-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Key Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Key Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-1-remember-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 1: Remember Everything
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-2-no-feedback-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 2: No Feedback Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-3-ignore-contradictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 3: Ignore Contradictions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-4-generic-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 4: Generic Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-5-fixed-decay-everywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 5: Fixed Decay Everywhere
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operationalizing-the-cognitive-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operationalizing the Cognitive Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference-task-frame-top-k-expand-weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference: Task → Frame → Top-K → Expand → Weight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-the-20-agent-usage-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: The 20 Agent Usage Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Summary: The 20 Agent Usage Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remember-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remember (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recall-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recall (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outcome-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outcome (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#curate-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curate (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-discipline-making-patterns-automatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Discipline: Making Patterns Automatic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-operationalizing-the-cognitive-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next: Operationalizing the Cognitive Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-not-all-experiences-are-worth-remembering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Not All Experiences Are Worth Remembering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-feedback-loop-is-mandatory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Feedback Loop is Mandatory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frame-selection-dominates-retrieval-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Frame Selection Dominates Retrieval Quality
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-signals-must-be-calibrated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Signals Must Be Calibrated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-curation-is-active-knowledge-gardening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Curation is Active Knowledge Gardening
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-remember-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Remember Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Remember Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-remember-after-surprise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Remember After Surprise
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-remember-patterns-not-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Remember Patterns, Not Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-remember-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Remember Connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-tag-hierarchically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Tag Hierarchically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-confidence-actual-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Confidence = Actual Reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-recall-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Recall Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Recall Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-frame-selection-is-task-dependent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Frame Selection is Task-Dependent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-query-semantically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Query Semantically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-handle-contradictions-recursively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Handle Contradictions Recursively
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-silence-is-signal-empty-recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Silence is Signal (Empty Recall)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-expand-graph-when-top-k-insufficient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Expand Graph When Top-K Insufficient
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-outcome-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Outcome Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Outcome Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-signal-expectation-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Signal = Expectation - Observation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-weight-by-signal-confidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Weight by Signal Confidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-batch-outcomes-to-reduce-noise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Batch Outcomes to Reduce Noise
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-reinforce-patterns-not-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Reinforce Patterns, Not Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-penalize-confident-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Penalize Confident Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-core-curate-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Core Curate Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Core Curate Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-trigger-on-accumulation-or-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Trigger on Accumulation OR Stability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-preserve-constitutional-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Preserve Constitutional Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-reinforce-top-k-by-recent-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Reinforce Top-K by Recent Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-archive-weak-edges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Archive Weak Edges
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-meta-curation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Meta-Curation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-5-key-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 5 Key Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The 5 Key Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-1-remember-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 1: Remember Everything
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-2-no-feedback-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 2: No Feedback Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-3-ignore-contradictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 3: Ignore Contradictions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-4-generic-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 4: Generic Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-5-fixed-decay-everywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 5: Fixed Decay Everywhere
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operationalizing-the-cognitive-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operationalizing the Cognitive Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference-task-frame-top-k-expand-weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference: Task → Frame → Top-K → Expand → Weight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-the-20-agent-usage-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: The 20 Agent Usage Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Summary: The 20 Agent Usage Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remember-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remember (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recall-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recall (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outcome-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outcome (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#curate-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Curate (5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-discipline-making-patterns-automatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Discipline: Making Patterns Automatic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-operationalizing-the-cognitive-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next: Operationalizing the Cognitive Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/agent_usage_patterns_guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="agent-usage-patterns-for-elfmem-complete-guide">Agent Usage Patterns for elfmem — Complete Guide<a class="headerlink" href="#agent-usage-patterns-for-elfmem-complete-guide" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This guide captures optimal patterns for AI agents using elfmem's four core operations. These patterns emerge from research into how LLM agents learn, what feedback loops compound knowledge, and common pitfalls.</p>
+<p><strong>Key Insight:</strong> Agents that follow these patterns learn 5-10x faster and achieve more stable knowledge than agents that don't.</p>
+<hr />
+<h2 id="core-principles">Core Principles<a class="headerlink" href="#core-principles" title="Permanent link">&para;</a></h2>
+<h3 id="1-not-all-experiences-are-worth-remembering">1. Not All Experiences Are Worth Remembering<a class="headerlink" href="#1-not-all-experiences-are-worth-remembering" title="Permanent link">&para;</a></h3>
+<p><strong>Most agents make this mistake:</strong> Storing every observation, event, or outcome.</p>
+<p><strong>The Fix:</strong> Remember only:
+- Surprising observations (violations of expectations)
+- Generalizable patterns (rules that transfer)
+- Unexpected failures and successes
+- Learnings from resolved conflicts</p>
+<p><strong>Result:</strong> Smaller, higher-quality knowledge base. More reliable retrieval.</p>
+<hr />
+<h3 id="2-feedback-loop-is-mandatory">2. Feedback Loop is Mandatory<a class="headerlink" href="#2-feedback-loop-is-mandatory" title="Permanent link">&para;</a></h3>
+<p><strong>Formula:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>PLAN → SET EXPECTATION → ACT → OBSERVE → COMPARE → SIGNAL → ENCODE
+</span></code></pre></div></p>
+<p><strong>Most agents miss:</strong> The expectation-setting step. Without it, you can't compute surprise/signal.</p>
+<p><strong>The Fix:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Before action:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">expectation</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">retrieved_knowledge</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">store</span><span class="p">(</span><span class="n">expectation</span><span class="p">)</span>  <span class="c1"># Critical!</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># After action:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">observation</span> <span class="o">=</span> <span class="n">measure_outcome</span><span class="p">()</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">signal</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">observation</span> <span class="o">-</span> <span class="n">expectation</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">outcome</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signal</span><span class="p">)</span>  <span class="c1"># Reinforce guides</span>
+</span></code></pre></div></p>
+<p><strong>Result:</strong> Closed feedback loop. Knowledge compounds predictably.</p>
+<hr />
+<h3 id="3-frame-selection-dominates-retrieval-quality">3. Frame Selection Dominates Retrieval Quality<a class="headerlink" href="#3-frame-selection-dominates-retrieval-quality" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern:</strong> Always retrieving from ATTENTION or a default frame.</p>
+<p><strong>The Fix:</strong> Select frame by task type:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Task</strong></th>
+<th><strong>Frame</strong></th>
+<th><strong>Top-K</strong></th>
+<th><strong>Expand?</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Novel problem</td>
+<td>ATTENTION</td>
+<td>20</td>
+<td>YES</td>
+</tr>
+<tr>
+<td>Executing known pattern</td>
+<td>TASK</td>
+<td>5</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>Values/identity conflict</td>
+<td>SELF</td>
+<td>5</td>
+<td>YES</td>
+</tr>
+<tr>
+<td>Understanding context</td>
+<td>WORLD</td>
+<td>10</td>
+<td>YES</td>
+</tr>
+<tr>
+<td>Quick lookup</td>
+<td>SHORT_TERM</td>
+<td>3</td>
+<td>NO</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> 50%+ improvement in retrieval relevance.</p>
+<hr />
+<h3 id="4-signals-must-be-calibrated">4. Signals Must Be Calibrated<a class="headerlink" href="#4-signals-must-be-calibrated" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern:</strong> Treating all signals equally, or creating noisy signals.</p>
+<p><strong>The Fix:</strong>
+- <strong>Weight by signal reliability:</strong> Tight feedback loop (action → outcome in seconds) = weight 1.0. Loose loop (days) = weight 0.5.
+- <strong>Batch outcomes:</strong> Average 3-5 related outcomes before signaling.
+- <strong>Penalize confident errors:</strong> Block with confidence=0.9 that was wrong deserves harsher penalty.</p>
+<p><strong>Result:</strong> Learning from reliable signals only. Noise filtered out.</p>
+<hr />
+<h3 id="5-curation-is-active-knowledge-gardening">5. Curation is Active Knowledge Gardening<a class="headerlink" href="#5-curation-is-active-knowledge-gardening" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern:</strong> Set it and forget it. Knowledge just decays.</p>
+<p><strong>The Fix:</strong>
+- <strong>Trigger on schedule:</strong> Every 7 days or when INBOX &gt; 50 blocks
+- <strong>Reinforce top patterns:</strong> Boost recently-used blocks
+- <strong>Archive weak edges:</strong> Prune connections below confidence 0.3
+- <strong>Preserve constitutional:</strong> Identity blocks never decay</p>
+<p><strong>Result:</strong> Knowledge stays alive and useful. Noise gradually removed.</p>
+<hr />
+<h2 id="the-5-core-remember-patterns">The 5 Core Remember Patterns<a class="headerlink" href="#the-5-core-remember-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-1-remember-after-surprise">Pattern 1: Remember After Surprise<a class="headerlink" href="#pattern-1-remember-after-surprise" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="o">|</span><span class="n">observation</span> <span class="o">-</span> <span class="n">expectation</span><span class="o">|</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">remember</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">confidence</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="n">surprise_magnitude</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>When to use:</strong> After every significant action.</p>
+<p><strong>Example:</strong>
+- Expected: API call succeeds in &lt;100ms
+- Observed: Timeout after 30 seconds
+- Surprise magnitude: High
+- Remember: "API X times out under high load. Implement timeout + retry."</p>
+<p><strong>Why it works:</strong> Surprises indicate knowledge gaps. High surprise = high learning value.</p>
+<hr />
+<h3 id="pattern-2-remember-patterns-not-events">Pattern 2: Remember Patterns, Not Events<a class="headerlink" href="#pattern-2-remember-patterns-not-events" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>BAD:  &quot;On 2026-03-07 at 14:32, the request failed&quot;
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>GOOD: &quot;Database timeouts occur when concurrent writes exceed 100/sec.
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>       Implement connection pooling with max_wait=5s&quot;
+</span></code></pre></div>
+<p><strong>Tagging strategy:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>BAD:  [&quot;event&quot;, &quot;learned&quot;, &quot;important&quot;]
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>GOOD: [&quot;domain/database/concurrency&quot;, &quot;pattern/optimization&quot;]
+</span></code></pre></div></p>
+<p><strong>Why it works:</strong> Patterns transfer to new situations. Events don't. Natural decay removes unreinforced noise.</p>
+<hr />
+<h3 id="pattern-3-remember-connections">Pattern 3: Remember Connections<a class="headerlink" href="#pattern-3-remember-connections" title="Permanent link">&para;</a></h3>
+<p>When you learn something new, search existing memory for related blocks:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>New learning: &quot;Rate limiting prevents cascading failures&quot;
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Related blocks:
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  - &quot;API degradation under load&quot; (connected via feedback loops)
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  - &quot;Circuit breaker pattern&quot; (connected via failure handling)
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Explicit edge: &quot;Rate limiting supports circuit breaker; prevents need to trip it&quot;
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Isolated knowledge decays. Connected knowledge reinforces across the graph.</p>
+<hr />
+<h3 id="pattern-4-tag-hierarchically">Pattern 4: Tag Hierarchically<a class="headerlink" href="#pattern-4-tag-hierarchically" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>SEMANTIC HIERARCHY TEMPLATE:
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  domain/category/subcategory/specific
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  agent_context/memory_type/stability
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>EXAMPLES:
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  &quot;programming/python/concurrency/asyncio_patterns&quot;
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  &quot;pattern/performance/caching/redis_strategies&quot;
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  &quot;self/experience/conflict_resolved/async_vs_sync_choice&quot;
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Enables multi-grain filtering. "programming" returns all code knowledge. "programming/python" narrows down. Hierarchies beat flat tags 10:1.</p>
+<hr />
+<h3 id="pattern-5-confidence-actual-reliability">Pattern 5: Confidence = Actual Reliability<a class="headerlink" href="#pattern-5-confidence-actual-reliability" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>0.3  Seen once, contradictions exist, limited testing
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>0.5  Multiple confirmations, tested in 2-3 contexts
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>0.7  Reliable across varied conditions, no contradictions
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>0.9  Deep validation, used successfully 10+ times
+</span></code></pre></div>
+<p><strong>NOT to be confused with:</strong>
+- Recency (that's handled by decay)
+- Importance (that's handled by reinforcement weight)</p>
+<p><strong>Why it works:</strong> Retrieved high-confidence blocks are more reliable. Agents can weight low-confidence knowledge appropriately (explore vs. exploit).</p>
+<hr />
+<h2 id="the-5-core-recall-patterns">The 5 Core Recall Patterns<a class="headerlink" href="#the-5-core-recall-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-1-frame-selection-is-task-dependent">Pattern 1: Frame Selection is Task-Dependent<a class="headerlink" href="#pattern-1-frame-selection-is-task-dependent" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">frame</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="s2">&quot;exploration&quot;</span><span class="p">:</span> <span class="s2">&quot;attention&quot;</span><span class="p">,</span>           <span class="c1"># Broad scope, diverse ideas</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="s2">&quot;execution&quot;</span><span class="p">:</span> <span class="s2">&quot;task&quot;</span><span class="p">,</span>                  <span class="c1"># Goal-focused</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="s2">&quot;identity_conflict&quot;</span><span class="p">:</span> <span class="s2">&quot;self&quot;</span><span class="p">,</span>          <span class="c1"># Values-guided</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="s2">&quot;understanding&quot;</span><span class="p">:</span> <span class="s2">&quot;world&quot;</span><span class="p">,</span>             <span class="c1"># Context and connections</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="s2">&quot;quick_fact&quot;</span><span class="p">:</span> <span class="s2">&quot;short_term&quot;</span>            <span class="c1"># Recent learning</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task_type</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">blocks</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Real example:</strong>
+- Task: "Should I refactor this code now or later?"
+- This is a SELF conflict (effort vs. technical debt vs. deadlines)
+- Retrieve SELF frame: What do I value? (speed vs. quality)
+- Not ATTENTION: That would give me generic refactoring advice
+- Result: Decision grounded in identity</p>
+<p><strong>Why it works:</strong> Frame filtering dramatically improves signal-to-noise.</p>
+<hr />
+<h3 id="pattern-2-query-semantically">Pattern 2: Query Semantically<a class="headerlink" href="#pattern-2-query-semantically" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>BAD QUERIES:
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  &quot;python&quot;               (100+ results, all Python-related)
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  &quot;TypeError line 42&quot;    (0 results, too specific)
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>GOOD QUERIES:
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  &quot;concurrent programming patterns&quot;       (Captures intent)
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>  &quot;API error handling best practices&quot;    (Domain + intent)
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>  &quot;when should I use async vs threads?&quot;  (Comparison, actionable)
+</span></code></pre></div>
+<p><strong>Why it works:</strong>
+- Semantic captures intent better than keywords
+- Specific enough to be useful, general enough to transfer
+- Goldilocks zone: not too broad, not too narrow</p>
+<hr />
+<h3 id="pattern-3-handle-contradictions-recursively">Pattern 3: Handle Contradictions Recursively<a class="headerlink" href="#pattern-3-handle-contradictions-recursively" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">if</span> <span class="n">contradictions_detected</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="c1"># Don&#39;t pick one arbitrarily</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="c1"># Understand the conflict</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">self_blocks</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>    <span class="c1"># My values</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">world_blocks</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">)</span>  <span class="c1"># Broader context</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="c1"># Design resolution experiment:</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">design_experiment</span><span class="p">(</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>        <span class="n">contradictions</span><span class="o">=</span><span class="n">contradictions</span><span class="p">,</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>        <span class="n">values</span><span class="o">=</span><span class="n">self_blocks</span><span class="p">,</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>        <span class="n">context</span><span class="o">=</span><span class="n">world_blocks</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Real example:</strong>
+- Retrieve: Block A says "optimize for speed". Block B says "optimize for reliability".
+- Both are true in different contexts. Don't merge or pick one.
+- Query SELF: "What do I actually value here?" → (reliability matters more in this domain)
+- Query WORLD: "What's the usage pattern?" → (Users tolerate slowness more than crashes)
+- Result: Coherent decision grounded in values and context.</p>
+<p><strong>Why it works:</strong> Contradictions signal incomplete model. Ignoring them compounds confusion. Recursive queries provide context for genuine resolution.</p>
+<hr />
+<h3 id="pattern-4-silence-is-signal-empty-recall">Pattern 4: Silence is Signal (Empty Recall)<a class="headerlink" href="#pattern-4-silence-is-signal-empty-recall" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        <span class="s2">&quot;exploration_phase&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore and remember&quot;</span><span class="p">,</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="s2">&quot;execution_phase&quot;</span><span class="p">:</span> <span class="s2">&quot;Be very careful (untested)&quot;</span><span class="p">,</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        <span class="s2">&quot;high_stakes&quot;</span><span class="p">:</span> <span class="s2">&quot;STOP. Design experiment first.&quot;</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Real example:</strong>
+- Query: "How do I handle distributed transactions?"
+- Result: No blocks found
+- This is NOT a failure. This is a knowledge gap discovery.
+- In exploration mode: Explore and learn. Document what you discover.
+- In production: Design careful experiment. Untested path is risky.</p>
+<p><strong>Why it works:</strong> Gaps are highest-learning opportunities. Treating gaps seriously leads to robust knowledge.</p>
+<hr />
+<h3 id="pattern-5-expand-graph-when-top-k-insufficient">Pattern 5: Expand Graph When Top-K Insufficient<a class="headerlink" href="#pattern-5-expand-graph-when-top-k-insufficient" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">blocks</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">if</span> <span class="n">blocks_feel_insufficient</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">expanded</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">expand_graph</span><span class="o">=</span><span class="n">true</span><span class="p">)</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="c1"># Retrieves related-but-not-similar blocks via edges</span>
+</span></code></pre></div>
+<p><strong>When to use:</strong>
+- Task is novel (topicallearning curve)
+- Domain is interconnected (ideas reference each other)
+- Need broad context (not just top-similar)</p>
+<p><strong>Why it works:</strong> Similarity-based retrieval is blind to indirect relevance. Graph expansion recovers context you didn't know was relevant.</p>
+<hr />
+<h2 id="the-5-core-outcome-patterns">The 5 Core Outcome Patterns<a class="headerlink" href="#the-5-core-outcome-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-1-signal-expectation-observation">Pattern 1: Signal = Expectation - Observation<a class="headerlink" href="#pattern-1-signal-expectation-observation" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">expectation</span> <span class="o">=</span> <span class="n">agent_prediction</span><span class="p">(</span><span class="n">situation</span><span class="p">)</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">observation</span> <span class="o">=</span> <span class="n">actual_outcome</span><span class="p">(</span><span class="n">after_action</span><span class="p">)</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">surprise</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">observation</span> <span class="o">-</span> <span class="n">expectation</span><span class="p">)</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">signal</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">surprise</span><span class="p">)</span>  <span class="c1"># [0, 1] scale</span>
+</span></code></pre></div>
+<p><strong>Examples:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Expected: API succeeds (&lt;100ms)
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Observed: Timeout (30s)
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Signal: 0.1 (bad prediction, learn!)
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>Expected: Timeout
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>Observed: Timeout
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>Signal: 0.5 (model correct, neutral)
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>Expected: Timeout
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>Observed: Success
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>Signal: 0.9 (pleasant surprise, learn!)
+</span></code></pre></div></p>
+<p><strong>Why it works:</strong>
+- Surprise captures learning value
+- Correct predictions = no learning needed
+- Mispredictions = high learning value</p>
+<hr />
+<h3 id="pattern-2-weight-by-signal-confidence">Pattern 2: Weight by Signal Confidence<a class="headerlink" href="#pattern-2-weight-by-signal-confidence" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Tight feedback loop (action → outcome in seconds): weight = 1.0
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Loose loop (action → outcome in days): weight = 0.5
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Noisy environment (many confounding factors): weight = 0.3
+</span></code></pre></div>
+<p><strong>Why it works:</strong>
+- Tight loops are reliable; learn fast
+- Loose loops are ambiguous; learn slowly
+- Noisy signals are uncertain; dilute appropriately</p>
+<hr />
+<h3 id="pattern-3-batch-outcomes-to-reduce-noise">Pattern 3: Batch Outcomes to Reduce Noise<a class="headerlink" href="#pattern-3-batch-outcomes-to-reduce-noise" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Don&#39;t: signal individually</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">outcome</span><span class="p">([</span><span class="n">block_1</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">outcome</span><span class="p">([</span><span class="n">block_2</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">outcome</span><span class="p">([</span><span class="n">block_3</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.65</span><span class="p">)</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="c1"># Do: batch related outcomes</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">outcomes</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">]</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="n">avg_signal</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">outcomes</span><span class="p">)</span>       <span class="c1"># 0.65</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="n">confidence</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">std</span><span class="p">(</span><span class="n">outcomes</span><span class="p">)</span>  <span class="c1"># Low variance = high confidence</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="n">outcome</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">avg_signal</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">confidence</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Single outcomes are noisy. Batches reveal true signal. Consistency indicates reliable learning.</p>
+<hr />
+<h3 id="pattern-4-reinforce-patterns-not-events">Pattern 4: Reinforce Patterns, Not Events<a class="headerlink" href="#pattern-4-reinforce-patterns-not-events" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># After successful action:</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">retrieved_blocks</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">retrieved_blocks</span><span class="p">:</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">enabled_success</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>        <span class="c1"># Reinforce the pattern (rule), not the event</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>        <span class="n">outcome</span><span class="p">([</span><span class="n">block</span><span class="o">.</span><span class="n">id</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;successful_execution&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Patterns transfer to new situations. Events don't.</p>
+<hr />
+<h3 id="pattern-5-penalize-confident-errors">Pattern 5: Penalize Confident Errors<a class="headerlink" href="#pattern-5-penalize-confident-errors" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Block had confidence=0.9, was wrong → harsh penalty</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="c1"># Block had confidence=0.3, was wrong → mild penalty</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">signal_adjustment</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">block</span><span class="o">.</span><span class="n">confidence</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">outcome</span><span class="p">([</span><span class="n">block</span><span class="o">.</span><span class="n">id</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="n">base_signal</span> <span class="o">*</span> <span class="n">signal_adjustment</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Prevents over-confidence accumulation. High-confidence errors are more damaging.</p>
+<hr />
+<h2 id="the-5-core-curate-patterns">The 5 Core Curate Patterns<a class="headerlink" href="#the-5-core-curate-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-1-trigger-on-accumulation-or-stability">Pattern 1: Trigger on Accumulation OR Stability<a class="headerlink" href="#pattern-1-trigger-on-accumulation-or-stability" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">should_curate</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="p">(</span><span class="n">blocks_in_inbox</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">)</span> <span class="n">OR</span>                    <span class="c1"># Too many uncommitted</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="p">(</span><span class="n">days_since_last_curate</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="n">OR</span>              <span class="c1"># Time-based</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="p">(</span><span class="n">new_blocks_this_session</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="n">AND</span>             <span class="c1"># Stability signal:</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>     <span class="n">time_in_session</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="n">_hours</span><span class="p">)</span>                  <span class="c1"># Learning has slowed</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong>
+- Accumulation: Too many options hurt decision-making
+- Stability: When learning slows, consolidate what you've learned</p>
+<hr />
+<h3 id="pattern-2-preserve-constitutional-blocks">Pattern 2: Preserve Constitutional Blocks<a class="headerlink" href="#pattern-2-preserve-constitutional-blocks" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Constitutional blocks (tagged &quot;self/constitutional&quot;):</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="c1">#   - PERMANENT decay (λ = 0.00001, ~7.9 year half-life)</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1">#   - Always guaranteed in SELF retrieval</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1">#   - Auto-reinforced during curation</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="c1">#   - Confidence always = 1.0</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># NEVER archive constitutional blocks</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="c1"># They are identity; if they decay, agent becomes directionless</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Identity is bedrock. Everything else is built on it.</p>
+<hr />
+<h3 id="pattern-3-reinforce-top-k-by-recent-usage">Pattern 3: Reinforce Top-K by Recent Usage<a class="headerlink" href="#pattern-3-reinforce-top-k-by-recent-usage" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">top_blocks</span> <span class="o">=</span> <span class="n">get_blocks_by_recency</span><span class="p">(</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="n">hours</span><span class="o">=</span><span class="mi">168</span><span class="p">,</span>        <span class="c1"># Last 7 days</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>             <span class="c1"># Top 10 most-used</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">)</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">top_blocks</span><span class="p">:</span>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>    <span class="c1"># Boost confidence</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>    <span class="n">block</span><span class="o">.</span><span class="n">confidence</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">confidence</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>    <span class="c1"># Reset decay timer</span>
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>    <span class="n">block</span><span class="o">.</span><span class="n">last_reinforced</span> <span class="o">=</span> <span class="n">now</span><span class="p">()</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong>
+- Knowledge you use often should survive
+- Reinforcement combats natural decay
+- Creates virtuous cycle: use → curate → reinforced → more useful</p>
+<hr />
+<h3 id="pattern-4-archive-weak-edges">Pattern 4: Archive Weak Edges<a class="headerlink" href="#pattern-4-archive-weak-edges" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">edges_to_prune</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="n">edge</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edges</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="k">if</span> <span class="n">edge</span><span class="o">.</span><span class="n">confidence</span> <span class="o">&lt;</span> <span class="mf">0.3</span> <span class="ow">and</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>       <span class="ow">not</span> <span class="n">edge</span><span class="o">.</span><span class="n">recently_traversed</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="p">]</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges_to_prune</span><span class="p">:</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>    <span class="n">archive_edge</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span>  <span class="c1"># Reversible</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong>
+- Weak edges create false paths
+- Unused edges probably aren't valuable
+- Cleaner graph = more reliable retrieval</p>
+<hr />
+<h3 id="pattern-5-meta-curation">Pattern 5: Meta-Curation<a class="headerlink" href="#pattern-5-meta-curation" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># After several curation cycles, reflect:</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="o">-</span> <span class="n">How</span> <span class="n">many</span> <span class="n">blocks</span> <span class="n">were</span> <span class="n">archived</span><span class="err">?</span> <span class="p">(</span><span class="n">Decay</span> <span class="n">rate</span> <span class="n">healthy</span><span class="err">?</span><span class="p">)</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="o">-</span> <span class="n">Which</span> <span class="n">domains</span> <span class="n">have</span> <span class="n">highest</span> <span class="n">retention</span><span class="err">?</span> <span class="p">(</span><span class="n">Where</span> <span class="ow">is</span> <span class="n">knowledge</span> <span class="n">stable</span><span class="err">?</span><span class="p">)</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="o">-</span> <span class="n">Are</span> <span class="n">contradictions</span> <span class="n">being</span> <span class="n">resolved</span><span class="err">?</span> <span class="p">(</span><span class="n">Is</span> <span class="n">learning</span> <span class="n">coherent</span><span class="err">?</span><span class="p">)</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="o">-</span> <span class="n">Is</span> <span class="n">the</span> <span class="n">graph</span> <span class="n">growing</span> <span class="ow">or</span> <span class="n">stabilizing</span><span class="err">?</span> <span class="p">(</span><span class="n">Learning</span> <span class="n">curve</span><span class="err">?</span><span class="p">)</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="k">if</span> <span class="n">contradictions_persist</span><span class="p">:</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    <span class="c1"># Previous learning isn&#39;t coherent</span>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="c1"># Trigger meta-experiment: design resolution process</span>
+</span></code></pre></div>
+<p><strong>Why it works:</strong> Monitoring curation itself reveals system health.</p>
+<hr />
+<h2 id="the-5-key-anti-patterns">The 5 Key Anti-Patterns<a class="headerlink" href="#the-5-key-anti-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="anti-pattern-1-remember-everything">Anti-Pattern 1: Remember Everything<a class="headerlink" href="#anti-pattern-1-remember-everything" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Hundreds of blocks, retrieval returns 50+ results, can't find signal.</p>
+<p><strong>Why it fails:</strong> Events don't transfer. Noise accumulates.</p>
+<p><strong>Fix:</strong> Remember patterns, surprising outcomes, transferable lessons. Trust decay.</p>
+<hr />
+<h3 id="anti-pattern-2-no-feedback-loop">Anti-Pattern 2: No Feedback Loop<a class="headerlink" href="#anti-pattern-2-no-feedback-loop" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Knowledge gradually becomes stale and forgotten.</p>
+<p><strong>Why it fails:</strong> Without signals, all knowledge decays equally. Good patterns can't compound.</p>
+<p><strong>Fix:</strong> Collect outcome signals after actions. Batch for reliability. Reinforce patterns. Curate periodically.</p>
+<hr />
+<h3 id="anti-pattern-3-ignore-contradictions">Anti-Pattern 3: Ignore Contradictions<a class="headerlink" href="#anti-pattern-3-ignore-contradictions" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Conflicting blocks confuse decision-making. Contradiction persists.</p>
+<p><strong>Why it fails:</strong> Contradictions signal incomplete model. Ignoring them compounds confusion.</p>
+<p><strong>Fix:</strong> Flag immediately. Query SELF/WORLD for context. Design resolution experiment.</p>
+<hr />
+<h3 id="anti-pattern-4-generic-tags">Anti-Pattern 4: Generic Tags<a class="headerlink" href="#anti-pattern-4-generic-tags" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> tags=['learned', 'important', 'fact']. All blocks identical.</p>
+<p><strong>Why it fails:</strong> Tags become noise. Can't filter or categorize.</p>
+<p><strong>Fix:</strong> Semantic hierarchy. Example: 'programming/python/concurrency'.</p>
+<hr />
+<h3 id="anti-pattern-5-fixed-decay-everywhere">Anti-Pattern 5: Fixed Decay Everywhere<a class="headerlink" href="#anti-pattern-5-fixed-decay-everywhere" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Constitutional principles decay like event facts. Good knowledge fades as fast as bad.</p>
+<p><strong>Why it fails:</strong> Not all knowledge is equal. Stability should influence decay.</p>
+<p><strong>Fix:</strong> Adaptive decay profiles. Constitutional=permanent. High-confidence=durable. Experimental=ephemeral.</p>
+<hr />
+<h2 id="operationalizing-the-cognitive-loop">Operationalizing the Cognitive Loop<a class="headerlink" href="#operationalizing-the-cognitive-loop" title="Permanent link">&para;</a></h2>
+<p>The 10 constitutional blocks define <em>principles</em>. These usage patterns define <em>how to operationalize</em> those principles.</p>
+<p><strong>Example:</strong>
+- Constitutional block: "Curiosity is my primary drive"
+- Agent usage pattern: "Silence is signal—empty recall indicates knowledge gap"
+- Combined: When agent discovers a gap, curiosity drives exploration (pattern-consistent behavior)</p>
+<p><strong>Next phase:</strong> Operationalize each of the 10 constitutional blocks into concrete behaviors, decision frameworks, and reflection practices.</p>
+<hr />
+<h2 id="quick-reference-task-frame-top-k-expand-weight">Quick Reference: Task → Frame → Top-K → Expand → Weight<a class="headerlink" href="#quick-reference-task-frame-top-k-expand-weight" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th><strong>Task</strong></th>
+<th><strong>Frame</strong></th>
+<th><strong>Top-K</strong></th>
+<th><strong>Expand</strong></th>
+<th><strong>Weight</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Novel problem</td>
+<td>ATTENTION</td>
+<td>20</td>
+<td>YES</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>Execution</td>
+<td>TASK</td>
+<td>5</td>
+<td>NO</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Values conflict</td>
+<td>SELF</td>
+<td>5</td>
+<td>YES</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Understanding</td>
+<td>WORLD</td>
+<td>10</td>
+<td>YES</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>Quick lookup</td>
+<td>SHORT_TERM</td>
+<td>3</td>
+<td>NO</td>
+<td>0.8</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="summary-the-20-agent-usage-patterns">Summary: The 20 Agent Usage Patterns<a class="headerlink" href="#summary-the-20-agent-usage-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="remember-5">Remember (5)<a class="headerlink" href="#remember-5" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Remember after surprise</li>
+<li>Remember patterns, not events</li>
+<li>Remember connections</li>
+<li>Tag hierarchically</li>
+<li>Confidence = actual reliability</li>
+</ol>
+<h3 id="recall-5">Recall (5)<a class="headerlink" href="#recall-5" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Frame selection is task-dependent</li>
+<li>Query semantically</li>
+<li>Handle contradictions recursively</li>
+<li>Silence is signal (knowledge gaps)</li>
+<li>Expand graph when insufficient</li>
+</ol>
+<h3 id="outcome-5">Outcome (5)<a class="headerlink" href="#outcome-5" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Signal = expectation - observation</li>
+<li>Weight by signal confidence</li>
+<li>Batch outcomes to reduce noise</li>
+<li>Reinforce patterns, not events</li>
+<li>Penalize confident errors</li>
+</ol>
+<h3 id="curate-5">Curate (5)<a class="headerlink" href="#curate-5" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Trigger on accumulation or stability</li>
+<li>Preserve constitutional blocks</li>
+<li>Reinforce top-K by recency</li>
+<li>Archive weak edges</li>
+<li>Meta-curation (monitor the monitors)</li>
+</ol>
+<hr />
+<h2 id="agent-discipline-making-patterns-automatic">Agent Discipline: Making Patterns Automatic<a class="headerlink" href="#agent-discipline-making-patterns-automatic" title="Permanent link">&para;</a></h2>
+<p>These 20 patterns describe <em>what</em> to do. <strong>Agent discipline</strong> makes them
+automatic by embedding them into prompt instructions that agents follow every
+cycle. The discipline loop ensures agents calibrate their own memory through
+use — good patterns get reinforced, noise decays, and the system self-improves.</p>
+<p><strong>See:</strong>
+- <code>examples/agent_discipline.md</code> — Copy-pasteable prompt instructions (3 tiers)
+- <code>examples/calibrating_agent.py</code> — Python reference implementation with 36 tests
+- <code>examples/simulation_calibration.md</code> — Proactive calibration via scenario simulation
+- <code>docs/CLAUDE_CODE_INTEGRATION.md</code> — How to use discipline with Claude Code teams</p>
+<hr />
+<h2 id="next-operationalizing-the-cognitive-loop">Next: Operationalizing the Cognitive Loop<a class="headerlink" href="#next-operationalizing-the-cognitive-loop" title="Permanent link">&para;</a></h2>
+<p>These patterns tell agents <em>how to use elfmem</em>. Next, we'll operationalize the 10 constitutional blocks to tell agents <em>why</em> and <em>when</em> to use these patterns.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

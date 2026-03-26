@@ -1,0 +1,3000 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_graph_composite_scoring/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: Graph Composite Edge Scoring (Phase B2) - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-graph-composite-edge-scoring-phase-b2" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: Graph Composite Edge Scoring (Phase B2)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Solution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-architecture-decision-where-each-function-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Architecture Decision — Where Each Function Lives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Architecture Decision — Where Each Function Lives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scoringpy-pure-python-helper-functions-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scoring.py — pure Python helper functions only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consolidatepy-composite-orchestrator-as-private-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        consolidate.py — composite orchestrator as private function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-file-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. File Changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-scoringpy-new-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. scoring.py — New Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. scoring.py — New Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jaccard_similarity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jaccard_similarity()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal_proximity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        temporal_proximity()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-consolidatepy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. consolidate.py — Changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. consolidate.py — Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-private-function-_composite_edge_score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New private function _composite_edge_score()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constant-rename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constant rename
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-rename-in-consolidate-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter rename in consolidate() signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-rewrite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3 rewrite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-hours-why-current_active_hours-not-blocklast_reinforced_at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal hours: why current_active_hours not block["last_reinforced_at"]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-queriespy-get_tags_batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. queries.py — get_tags_batch()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-configpy-rename-and-recalibrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. config.py — Rename and Recalibrate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-apipy-param-name-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. api.py — Param Name Update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-edge-case-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Edge Case Analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-test-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Test Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Test Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-file-teststest_edge_scoringpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New file: tests/test_edge_scoring.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test_storagepy-add-get_tags_batch-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_storage.py — add get_tags_batch test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test_lifecyclepy-update-existing-add-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_lifecycle.py — update existing + add integration tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-implementation-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Implementation Order
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Implementation Order">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-scoringpy-pure-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — scoring.py: pure functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-queriespy-batch-tag-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — queries.py: batch tag query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-configpy-rename-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — config.py: rename threshold
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-consolidatepy-replace-phase-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — consolidate.py: replace Phase 3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-apipy-param-rename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — api.py: param rename
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 — Integration tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-guide-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7 — Guide update
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Success Criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-agent-simulation-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Agent Simulation Findings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Agent Simulation Findings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scenario-1-single-session-batch-ingestion-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 1: Single-session batch ingestion (common)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-2-tags-as-primary-signal-recommended-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 2: Tags-as-primary-signal (recommended pattern)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-3-zero-tag-agent-graceful-degradation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 3: Zero-tag agent (graceful degradation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-4-cross-category-semantic-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 4: Cross-category semantic pair
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-5-long-running-agent-temporal-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 5: Long-running agent (temporal decay)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-6-large-batch-50-blocks-same-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 6: Large batch (50 blocks, same session)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-7-backward-compatibility-existing-db" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 7: Backward compatibility (existing DB)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-agent-sees-api-perspective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the agent sees (API perspective)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. Out of Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_graph_composite_scoring.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-graph-composite-edge-scoring-phase-b2">Plan: Graph Composite Edge Scoring (Phase B2)<a class="headerlink" href="#plan-graph-composite-edge-scoring-phase-b2" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Ready for implementation
+<strong>Date:</strong> 2026-03-09
+<strong>Scope:</strong> Phase B2 — replace single-signal cosine edge scoring with multi-signal composite in <code>consolidate()</code>
+<strong>Research source:</strong> <code>docs/graph_improvement_research.md</code> §4.5 and §6 (Phase B2)
+<strong>Depends on:</strong> Phase A (schema + outcome fix) — COMPLETE
+<strong>Out of scope:</strong> Hebbian co-retrieval (C1), edge temporal decay (C2), LLM classification (D1)</p>
+<hr />
+<h2 id="1-problem">1. Problem<a class="headerlink" href="#1-problem" title="Permanent link">&para;</a></h2>
+<p><code>consolidate()</code> Phase 3 creates edges using only cosine similarity:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">sim</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">a_vec</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">if</span> <span class="n">sim</span> <span class="o">&gt;=</span> <span class="n">similarity_edge_threshold</span><span class="p">:</span>        <span class="c1"># 0.60</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="n">sim</span><span class="p">))</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">...</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">await</span> <span class="n">insert_edge</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">sim</span><span class="p">)</span>
+</span></code></pre></div>
+<p>This misses three signals that are already in the DB, require zero extra LLM calls, and capture meaningfully different relationship types:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Captures</th>
+<th>Available in DB?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tag Jaccard</td>
+<td>Categorical kinship</td>
+<td>✅ <code>block_tags</code> table</td>
+</tr>
+<tr>
+<td>Category match</td>
+<td>Domain alignment (observation vs preference vs fact)</td>
+<td>✅ <code>blocks.category</code></td>
+</tr>
+<tr>
+<td>Temporal proximity</td>
+<td>Same-session learning → experiential connection</td>
+<td>✅ <code>blocks.last_reinforced_at</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Failure cases:</strong>
+- Two blocks tagged <code>frame-selection/heuristic</code>, phrased differently → cosine 0.45 → no edge. They are deeply related.
+- Two blocks cosine 0.62 from unrelated domains → weak edge that will never be used.
+- Two blocks learned in the same troubleshooting session, tagged <code>debugging</code> → cosine 0.50 → no edge.</p>
+<hr />
+<h2 id="2-solution">2. Solution<a class="headerlink" href="#2-solution" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>edge_score = cosine × 0.55
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>           + tag_jaccard × 0.20
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>           + category_match × 0.15
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>           + temporal_proximity × 0.10
+</span></code></pre></div>
+<p><strong>Properties:</strong>
+- Score ∈ [0.0, 1.0] — same range as cosine, threshold is directly comparable
+- Symmetric: <code>score(a, b) == score(b, a)</code>
+- Pure: deterministic, no LLM calls, no side effects
+- Zero schema changes — all signals already exist</p>
+<p><strong>Threshold calibration</strong> (<code>edge_score_threshold = 0.40</code>, <code>MINIMUM_COSINE_FOR_EDGE = 0.30</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Score</th>
+<th>Edge?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cosine=0.60, no context signals</td>
+<td>~0.38</td>
+<td>No — raised bar for pure cosine</td>
+</tr>
+<tr>
+<td>cosine=0.70, no context signals</td>
+<td>~0.43</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>cosine=0.50, shared tags + same category + same session</td>
+<td>~0.62</td>
+<td>Yes — new capability</td>
+</tr>
+<tr>
+<td>cosine=0.45, 5 shared tags, same category, same session</td>
+<td>~0.55</td>
+<td>Yes — new capability</td>
+</tr>
+<tr>
+<td>cosine=0.60, same category only</td>
+<td>~0.53</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>cosine=0.28, same category + same session (no tags)</td>
+<td>—</td>
+<td><strong>No</strong> — cosine guard rejects at 0.28 &lt; 0.30</td>
+</tr>
+<tr>
+<td>cosine=0.30, same category + same session (no tags)</td>
+<td>~0.415</td>
+<td>Yes — minimum acceptable edge</td>
+</tr>
+</tbody>
+</table>
+<p>Minimum cosine for a pure-cosine pair to qualify: <code>(0.40 − 0.045) / 0.55 ≈ 0.65</code></p>
+<p><strong>Why the cosine guard exists:</strong> Same-session + same-category context gives a fixed non-cosine floor of 0.25 (when tags=[]). Without a guard, blocks with cosine≈0.27 would form edges purely from shared session context. At that cosine level, blocks are semantically close to random. Graph expansion during recall follows these spurious edges and injects off-topic blocks into the agent's context — degrading answer quality silently.</p>
+<hr />
+<h2 id="3-architecture-decision-where-each-function-lives">3. Architecture Decision — Where Each Function Lives<a class="headerlink" href="#3-architecture-decision-where-each-function-lives" title="Permanent link">&para;</a></h2>
+<h3 id="scoringpy-pure-python-helper-functions-only"><code>scoring.py</code> — pure Python helper functions only<a class="headerlink" href="#scoringpy-pure-python-helper-functions-only" title="Permanent link">&para;</a></h3>
+<p><code>scoring.py</code> is explicitly a zero-numpy, zero-DB module (<code>import math</code> only). Two new pure functions belong here because they are generic, reusable, and could serve future edge scoring paths (co-retrieval, curate decay):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">jaccard_similarity</span><span class="p">(</span><span class="n">tags_a</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tags_b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">temporal_proximity</span><span class="p">(</span><span class="n">hours_a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">hours_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</span></code></pre></div>
+<p>Constants added alongside:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">TEMPORAL_SIGMA_HOURS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">8.0</span>      <span class="c1"># Gaussian half-width in active hours</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">CROSS_CATEGORY_SCORE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.30</span>     <span class="c1"># frame_match when categories differ</span>
+</span></code></pre></div></p>
+<h3 id="consolidatepy-composite-orchestrator-as-private-function"><code>consolidate.py</code> — composite orchestrator as private function<a class="headerlink" href="#consolidatepy-composite-orchestrator-as-private-function" title="Permanent link">&para;</a></h3>
+<p><code>consolidate.py</code> already imports <code>numpy</code> and <code>cosine_similarity</code>. The composite function is a private implementation detail of Phase 3 — it has exactly one caller and is not a reusable utility:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_composite_edge_score</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">vec_a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">vec_b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">tags_a</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">tags_b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">hours_a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">hours_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">category_a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">category_b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</span></code></pre></div>
+<p>This keeps <code>scoring.py</code> numpy-free and <code>consolidate.py</code> self-contained.</p>
+<hr />
+<h2 id="4-file-changes">4. File Changes<a class="headerlink" href="#4-file-changes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/elfmem/scoring.py</code></td>
+<td>Add <code>jaccard_similarity()</code>, <code>temporal_proximity()</code>, 2 constants</td>
+</tr>
+<tr>
+<td><code>src/elfmem/operations/consolidate.py</code></td>
+<td>Add <code>_composite_edge_score()</code>, rewrite Phase 3, rename constant+param</td>
+</tr>
+<tr>
+<td><code>src/elfmem/db/queries.py</code></td>
+<td>Add <code>get_tags_batch()</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/config.py</code></td>
+<td>Rename <code>similarity_edge_threshold</code> → <code>edge_score_threshold</code>, default 0.60 → 0.40</td>
+</tr>
+<tr>
+<td><code>src/elfmem/api.py</code></td>
+<td>Update param name in <code>consolidate()</code> call</td>
+</tr>
+<tr>
+<td><code>src/elfmem/guide.py</code></td>
+<td>Add one sentence to <code>dream</code> entry: tags increase graph connectivity</td>
+</tr>
+<tr>
+<td><code>tests/test_lifecycle.py</code></td>
+<td>Update 2 existing tests that pass <code>similarity_edge_threshold=0.60</code> explicitly</td>
+</tr>
+<tr>
+<td><code>tests/test_edge_scoring.py</code></td>
+<td><strong>New</strong> — pure function unit tests</td>
+</tr>
+<tr>
+<td><code>tests/test_storage.py</code></td>
+<td>Add <code>get_tags_batch()</code> test</td>
+</tr>
+</tbody>
+</table>
+<p>No schema changes. No new result types. No MCP changes.</p>
+<p><strong>Guide change:</strong> <code>src/elfmem/guide.py</code> — add one sentence to the <code>dream</code> entry noting that tags increase graph connectivity.</p>
+<hr />
+<h2 id="5-scoringpy-new-functions">5. <code>scoring.py</code> — New Functions<a class="headerlink" href="#5-scoringpy-new-functions" title="Permanent link">&para;</a></h2>
+<p>Add after the existing <code>compute_lambda_edge()</code> function.</p>
+<h3 id="constants">Constants<a class="headerlink" href="#constants" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Temporal proximity — Gaussian kernel half-width in active hours.</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># At TEMPORAL_SIGMA_HOURS apart: proximity = exp(-0.5) ≈ 0.61.</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># At 3× sigma apart: proximity &lt; 0.01 (effectively different sessions).</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">TEMPORAL_SIGMA_HOURS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">8.0</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Category match score when blocks belong to different categories.</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># 0.30 means &quot;different domains still have baseline relationship potential&quot;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># rather than zero, which would make category dominate the score unfairly.</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">CROSS_CATEGORY_SCORE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.30</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Hard minimum cosine before any edge is considered.</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Without this guard, same-session + same-category blocks can form edges</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># at cosine ≈ 0.27 (non-cosine floor = 0.25 when temporal=cat=1.0, tags=[]).</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># This causes recall poisoning: graph expansion follows spurious edges to</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="c1"># off-topic blocks, injecting unrelated content into the agent&#39;s prompt.</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="c1"># 0.30 is the semantic floor for &quot;might be related&quot; in embedding space.</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">MINIMUM_COSINE_FOR_EDGE</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.30</span>
+</span></code></pre></div>
+<h3 id="jaccard_similarity"><code>jaccard_similarity()</code><a class="headerlink" href="#jaccard_similarity" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">jaccard_similarity</span><span class="p">(</span><span class="n">tags_a</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tags_b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Jaccard similarity between two tag lists: |A ∩ B| / |A ∪ B|.</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="sd">    Returns 0.0 when both lists are empty (no categorical signal).</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="sd">    Returns 0.0 when one list is empty (no shared categories).</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="sd">    Returns 1.0 for identical non-empty lists.</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">set_a</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tags_a</span><span class="p">)</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">set_b</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tags_b</span><span class="p">)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">union</span> <span class="o">=</span> <span class="n">set_a</span> <span class="o">|</span> <span class="n">set_b</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">union</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>        <span class="k">return</span> <span class="mf">0.0</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">set_a</span> <span class="o">&amp;</span> <span class="n">set_b</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">union</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="temporal_proximity"><code>temporal_proximity()</code><a class="headerlink" href="#temporal_proximity" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">temporal_proximity</span><span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">hours_a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">hours_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TEMPORAL_SIGMA_HOURS</span><span class="p">,</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Gaussian proximity between two active-hour timestamps.</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="sd">    Returns exp(−Δh² / 2σ²) ∈ (0.0, 1.0].</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="sd">    Same hours → 1.0. sigma hours apart → ≈ 0.61. 3×sigma → &lt; 0.01.</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="sd">    Uses active hours (session-aware clock), not wall-clock time.</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="sd">    Symmetric: temporal_proximity(a, b) == temporal_proximity(b, a).</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="n">delta</span> <span class="o">=</span> <span class="n">hours_a</span> <span class="o">-</span> <span class="n">hours_b</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">delta</span> <span class="o">*</span> <span class="n">delta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">))</span>
+</span></code></pre></div>
+<hr />
+<h2 id="6-consolidatepy-changes">6. <code>consolidate.py</code> — Changes<a class="headerlink" href="#6-consolidatepy-changes" title="Permanent link">&para;</a></h2>
+<h3 id="new-private-function-_composite_edge_score">New private function <code>_composite_edge_score()</code><a class="headerlink" href="#new-private-function-_composite_edge_score" title="Permanent link">&para;</a></h3>
+<p>Add above the <code>consolidate()</code> function. Uses <code>cosine_similarity</code> (already imported from <code>dedup</code>), <code>np</code> (already imported), and the two new <code>scoring.py</code> helpers.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_composite_edge_score</span><span class="p">(</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">vec_a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">vec_b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">tags_a</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">tags_b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">hours_a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">hours_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">category_a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">category_b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Multi-signal edge quality score for similarity-origin edges.</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="sd">    Formula: cosine×0.55 + tag_jaccard×0.20 + category_match×0.15 + temporal×0.10</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="sd">    Cosine is clamped to [0.0, 1.0] — negative cosine (anti-correlated vectors)</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="sd">    contributes 0 rather than penalising contextually related blocks.</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="sd">    Hard guard: returns 0.0 if cosine &lt; MINIMUM_COSINE_FOR_EDGE.</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="sd">    Without this, same-session + same-category context signals (non-cosine</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="sd">    floor = 0.25) would allow cosine ≈ 0.27 to form edges — below the semantic</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="sd">    floor for meaningful relatedness. This causes recall poisoning where graph</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="sd">    expansion follows spurious edges and injects off-topic blocks into context.</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="n">w_cos</span><span class="p">,</span> <span class="n">w_tag</span><span class="p">,</span> <span class="n">w_cat</span><span class="p">,</span> <span class="n">w_temp</span> <span class="o">=</span> <span class="mf">0.55</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.10</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>    <span class="n">cos</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">vec_a</span><span class="p">,</span> <span class="n">vec_b</span><span class="p">))</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>    <span class="k">if</span> <span class="n">cos</span> <span class="o">&lt;</span> <span class="n">MINIMUM_COSINE_FOR_EDGE</span><span class="p">:</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>        <span class="k">return</span> <span class="mf">0.0</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>    <span class="n">tag</span>  <span class="o">=</span> <span class="n">jaccard_similarity</span><span class="p">(</span><span class="n">tags_a</span><span class="p">,</span> <span class="n">tags_b</span><span class="p">)</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>    <span class="n">cat</span>  <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">category_a</span> <span class="o">==</span> <span class="n">category_b</span> <span class="k">else</span> <span class="n">CROSS_CATEGORY_SCORE</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>    <span class="n">temp</span> <span class="o">=</span> <span class="n">temporal_proximity</span><span class="p">(</span><span class="n">hours_a</span><span class="p">,</span> <span class="n">hours_b</span><span class="p">)</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>    <span class="k">return</span> <span class="n">w_cos</span> <span class="o">*</span> <span class="n">cos</span> <span class="o">+</span> <span class="n">w_tag</span> <span class="o">*</span> <span class="n">tag</span> <span class="o">+</span> <span class="n">w_cat</span> <span class="o">*</span> <span class="n">cat</span> <span class="o">+</span> <span class="n">w_temp</span> <span class="o">*</span> <span class="n">temp</span>
+</span></code></pre></div>
+<p><strong>Import addition:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.scoring</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="o">...</span>          <span class="c1"># existing imports</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">CROSS_CATEGORY_SCORE</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">MINIMUM_COSINE_FOR_EDGE</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">jaccard_similarity</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">temporal_proximity</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<h3 id="constant-rename">Constant rename<a class="headerlink" href="#constant-rename" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Before:</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">SIMILARITY_EDGE_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.60</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># After:</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">EDGE_SCORE_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.40</span>
+</span></code></pre></div>
+<h3 id="parameter-rename-in-consolidate-signature">Parameter rename in <code>consolidate()</code> signature<a class="headerlink" href="#parameter-rename-in-consolidate-signature" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Before:</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">similarity_edge_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">SIMILARITY_EDGE_THRESHOLD</span><span class="p">,</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># After:</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">edge_score_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">EDGE_SCORE_THRESHOLD</span><span class="p">,</span>
+</span></code></pre></div>
+<h3 id="phase-3-rewrite">Phase 3 rewrite<a class="headerlink" href="#phase-3-rewrite" title="Permanent link">&para;</a></h3>
+<p><strong>Before:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># ── Phase 3: edge creation ────────────────────────────────────────────────</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">edges_created</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">all_active_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">active_vecs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">for</span> <span class="n">block</span><span class="p">,</span> <span class="n">vec</span> <span class="ow">in</span> <span class="n">newly_promoted</span><span class="p">:</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">block_id</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="k">for</span> <span class="n">a_block</span><span class="p">,</span> <span class="n">a_vec</span> <span class="ow">in</span> <span class="n">all_active_items</span><span class="p">:</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="k">if</span> <span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">block_id</span><span class="p">:</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>            <span class="k">continue</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        <span class="n">sim</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">a_vec</span><span class="p">)</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>        <span class="k">if</span> <span class="n">sim</span> <span class="o">&gt;=</span> <span class="n">similarity_edge_threshold</span><span class="p">:</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="n">sim</span><span class="p">))</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>    <span class="n">candidates</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="k">for</span> <span class="n">other_id</span><span class="p">,</span> <span class="n">sim</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">[:</span><span class="n">edge_degree_cap</span><span class="p">]:</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>        <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span> <span class="o">=</span> <span class="n">Edge</span><span class="o">.</span><span class="n">canonical</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">other_id</span><span class="p">)</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>        <span class="k">await</span> <span class="n">insert_edge</span><span class="p">(</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>            <span class="n">conn</span><span class="p">,</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>            <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>            <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>            <span class="n">weight</span><span class="o">=</span><span class="n">sim</span><span class="p">,</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>            <span class="n">relation_type</span><span class="o">=</span><span class="s2">&quot;similar&quot;</span><span class="p">,</span>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>            <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;similarity&quot;</span><span class="p">,</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>        <span class="p">)</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>        <span class="n">edges_created</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></code></pre></div></p>
+<p><strong>After:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># ── Phase 3: edge creation ────────────────────────────────────────────────</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># Composite score: cosine×0.55 + tag_jaccard×0.20 + category×0.15 + temporal×0.10</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1"># One batch tag query for all active blocks — avoids N per-block queries.</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">edges_created</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">all_active_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">active_vecs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">all_block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">all_active_items</span><span class="p">]</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="n">tags_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_tags_batch</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">all_block_ids</span><span class="p">)</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="k">for</span> <span class="n">block</span><span class="p">,</span> <span class="n">vec</span> <span class="ow">in</span> <span class="n">newly_promoted</span><span class="p">:</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="n">block_id</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="c1"># Use current_active_hours — the block dict is from Phase 0 (stale last_reinforced_at=0.0).</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="c1"># reinforce_blocks() updated the DB in Phase 2, but the in-memory dict was not refreshed.</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    <span class="n">block_hours</span> <span class="o">=</span> <span class="n">current_active_hours</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    <span class="n">block_category</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>    <span class="n">tags</span> <span class="o">=</span> <span class="n">tags_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="p">[])</span>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>    <span class="k">for</span> <span class="n">a_block</span><span class="p">,</span> <span class="n">a_vec</span> <span class="ow">in</span> <span class="n">all_active_items</span><span class="p">:</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>        <span class="k">if</span> <span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">block_id</span><span class="p">:</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>            <span class="k">continue</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>        <span class="n">score</span> <span class="o">=</span> <span class="n">_composite_edge_score</span><span class="p">(</span>
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>            <span class="n">vec</span><span class="p">,</span> <span class="n">a_vec</span><span class="p">,</span>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a>            <span class="n">tags</span><span class="p">,</span> <span class="n">tags_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="p">[]),</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>            <span class="n">block_hours</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">a_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_reinforced_at&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">),</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>            <span class="n">block_category</span><span class="p">,</span> <span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">],</span>
+</span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>        <span class="p">)</span>
+</span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>        <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;=</span> <span class="n">edge_score_threshold</span><span class="p">:</span>
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="n">score</span><span class="p">))</span>
+</span><span id="__span-13-29"><a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>
+</span><span id="__span-13-30"><a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>    <span class="n">candidates</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-13-31"><a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>    <span class="k">for</span> <span class="n">other_id</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">[:</span><span class="n">edge_degree_cap</span><span class="p">]:</span>
+</span><span id="__span-13-32"><a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a>        <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span> <span class="o">=</span> <span class="n">Edge</span><span class="o">.</span><span class="n">canonical</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="n">other_id</span><span class="p">)</span>
+</span><span id="__span-13-33"><a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a>        <span class="k">await</span> <span class="n">insert_edge</span><span class="p">(</span>
+</span><span id="__span-13-34"><a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a>            <span class="n">conn</span><span class="p">,</span>
+</span><span id="__span-13-35"><a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a>            <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+</span><span id="__span-13-36"><a id="__codelineno-13-36" name="__codelineno-13-36" href="#__codelineno-13-36"></a>            <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+</span><span id="__span-13-37"><a id="__codelineno-13-37" name="__codelineno-13-37" href="#__codelineno-13-37"></a>            <span class="n">weight</span><span class="o">=</span><span class="n">score</span><span class="p">,</span>          <span class="c1"># composite score, not raw cosine</span>
+</span><span id="__span-13-38"><a id="__codelineno-13-38" name="__codelineno-13-38" href="#__codelineno-13-38"></a>            <span class="n">relation_type</span><span class="o">=</span><span class="s2">&quot;similar&quot;</span><span class="p">,</span>
+</span><span id="__span-13-39"><a id="__codelineno-13-39" name="__codelineno-13-39" href="#__codelineno-13-39"></a>            <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;similarity&quot;</span><span class="p">,</span>
+</span><span id="__span-13-40"><a id="__codelineno-13-40" name="__codelineno-13-40" href="#__codelineno-13-40"></a>        <span class="p">)</span>
+</span><span id="__span-13-41"><a id="__codelineno-13-41" name="__codelineno-13-41" href="#__codelineno-13-41"></a>        <span class="n">edges_created</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></code></pre></div></p>
+<p><strong>Import addition:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="o">...</span>          <span class="c1"># existing imports</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">get_tags_batch</span><span class="p">,</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<h3 id="temporal-hours-why-current_active_hours-not-blocklast_reinforced_at">Temporal hours: why <code>current_active_hours</code> not <code>block["last_reinforced_at"]</code><a class="headerlink" href="#temporal-hours-why-current_active_hours-not-blocklast_reinforced_at" title="Permanent link">&para;</a></h3>
+<p>The block dict in <code>newly_promoted</code> comes from <code>get_inbox_blocks()</code> at Phase 0. At that point <code>last_reinforced_at = 0.0</code> (the initial value from <code>insert_block()</code>). Phase 2 calls <code>reinforce_blocks(conn, [block_id], current_active_hours)</code> which updates the DB row, but does NOT update the Python dict. The dict is stale.</p>
+<p>For <strong>existing active blocks</strong> (<code>a_block</code> from <code>active_vecs</code>): <code>last_reinforced_at</code> is accurate — these blocks were fetched in Phase 0 and Phase 2 does not reinforce them.</p>
+<p>Result: a newly promoted block gets <code>hours = current_active_hours</code>, existing active blocks get <code>hours = last_reinforced_at</code>. This correctly models "newly learned blocks share the current session time."</p>
+<hr />
+<h2 id="7-queriespy-get_tags_batch">7. <code>queries.py</code> — <code>get_tags_batch()</code><a class="headerlink" href="#7-queriespy-get_tags_batch" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_tags_batch</span><span class="p">(</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">block_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch tags for multiple blocks in a single query.</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="sd">    Returns {block_id: [tags_sorted_alphabetically]}.</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="sd">    Block IDs with no tags return []. Missing IDs also return [].</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">block_ids</span><span class="p">:</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>        <span class="k">return</span> <span class="p">{}</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>        <span class="n">select</span><span class="p">(</span><span class="n">block_tags</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">block_id</span><span class="p">,</span> <span class="n">block_tags</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>        <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">block_tags</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">block_id</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">block_ids</span><span class="p">))</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">block_tags</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">block_id</span><span class="p">,</span> <span class="n">block_tags</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="p">)</span>
+</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="n">tags_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">bid</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">bid</span> <span class="ow">in</span> <span class="n">block_ids</span><span class="p">}</span>
+</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">mappings</span><span class="p">():</span>
+</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>        <span class="n">tags_map</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">])</span>
+</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>    <span class="k">return</span> <span class="n">tags_map</span>
+</span></code></pre></div>
+<p>One query replaces up to N queries (one per block). Safe with empty input. Alphabetically sorted for deterministic Jaccard (set operations are order-independent but consistent output is cleaner for debugging).</p>
+<hr />
+<h2 id="8-configpy-rename-and-recalibrate">8. <code>config.py</code> — Rename and Recalibrate<a class="headerlink" href="#8-configpy-rename-and-recalibrate" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># MemoryConfig — before:</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">similarity_edge_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.60</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># After:</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">edge_score_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.40</span>
+</span></code></pre></div>
+<p><code>similarity_edge_threshold</code> implied cosine only. <code>edge_score_threshold</code> is implementation-agnostic and describes what it actually is: the minimum quality score for an edge to be created.</p>
+<p><strong>Also update <code>render_default_config()</code>:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Before:</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  <span class="n">similarity_edge_threshold</span><span class="p">:</span> <span class="p">{</span><span class="n">d</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">similarity_edge_threshold</span><span class="p">}</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># After:</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>  <span class="n">edge_score_threshold</span><span class="p">:</span> <span class="p">{</span><span class="n">d</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">edge_score_threshold</span><span class="p">}</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="9-apipy-param-name-update">9. <code>api.py</code> — Param Name Update<a class="headerlink" href="#9-apipy-param-name-update" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># In MemorySystem._consolidate() / dream() — before:</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">similarity_edge_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">similarity_edge_threshold</span><span class="p">,</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1"># After:</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">edge_score_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">edge_score_threshold</span><span class="p">,</span>
+</span></code></pre></div>
+<hr />
+<h2 id="10-edge-case-analysis">10. Edge Case Analysis<a class="headerlink" href="#10-edge-case-analysis" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Behaviour</th>
+<th>Why it's correct</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Both blocks have no tags</td>
+<td><code>jaccard = 0.0</code>, tag component = 0</td>
+<td>No shared category signal → no categorical boost. Score relies on cosine + category + temporal.</td>
+</tr>
+<tr>
+<td>One block has tags, other has none</td>
+<td><code>jaccard = 0.0</code></td>
+<td>Asymmetric tagging means no shared signal.</td>
+</tr>
+<tr>
+<td>Blocks both have <code>last_reinforced_at = 0.0</code></td>
+<td><code>temporal = 1.0</code></td>
+<td>Both are brand-new blocks; 0.0 is the initial inbox value. In the Phase 3 loop, newly promoted blocks get <code>block_hours = current_active_hours</code> (not 0.0). The 0.0 case only arises if somehow an existing active block has never been reinforced — in which case temporal=1.0 vs current_active_hours will produce a low proximity anyway.</td>
+</tr>
+<tr>
+<td>Newly promoted block vs old active block</td>
+<td><code>block_hours = current_active_hours</code>, <code>a_block_hours = old_hours</code> → large delta → <code>temporal ≈ 0</code></td>
+<td>Correct. Old blocks are from a different session. Cosine + tags + category still determine the edge.</td>
+</tr>
+<tr>
+<td>Two newly promoted blocks in the same batch</td>
+<td>Both get <code>block_hours = current_active_hours</code> → <code>temporal = 1.0</code></td>
+<td>They were learned in the same session. Temporal bonus is justified.</td>
+</tr>
+<tr>
+<td>Negative cosine similarity</td>
+<td>Clamped to 0.0 before applying weight</td>
+<td>Anti-correlated vectors shouldn't penalise blocks that share tags and category. Floor is 0, not negative.</td>
+</tr>
+<tr>
+<td>Empty category string <code>""</code></td>
+<td><code>"" == ""</code> → <code>category_match = 1.0</code></td>
+<td>Category is a non-null column. Empty string means data quality issue, not a scoring concern. The consolidate pipeline always sets category.</td>
+</tr>
+<tr>
+<td>All blocks in batch share same category</td>
+<td>All get <code>category_match = 1.0</code></td>
+<td>Correct. A batch of SELF-frame blocks should have stronger edges between them.</td>
+</tr>
+<tr>
+<td>All blocks share same session AND same category (e.g. "knowledge" throughout)</td>
+<td>Non-cosine floor = 0.25 (no tags) or 0.45 (full tag match). Without the guard, cosine≈0.27 would qualify.</td>
+<td><code>MINIMUM_COSINE_FOR_EDGE = 0.30</code> hard rejects before scoring. Blocks with cosine=0.30 still get contextual boost; blocks below are structurally unrelated.</td>
+</tr>
+<tr>
+<td>Large batch (50 blocks, same session)</td>
+<td>50×49/2 = 1,225 candidate pairs. Without guard, same-session floor lets spurious edges form at scale.</td>
+<td>Guard prevents recall poisoning even in high-volume ingestion. Degree cap (5) then limits graph density.</td>
+</tr>
+<tr>
+<td>Recall quality impact</td>
+<td>Spurious edges cause graph expansion to inject off-topic blocks into prompt context.</td>
+<td>Guard is a silent quality guarantee — agent never sees the failure mode.</td>
+</tr>
+<tr>
+<td>Degree cap</td>
+<td>Unchanged. <code>candidates[:edge_degree_cap]</code> takes the top-N by composite score.</td>
+<td>Composite score ordering is strictly better than cosine ordering. Best-quality edges survive.</td>
+</tr>
+<tr>
+<td>Tags for newly promoted blocks</td>
+<td>Added in Phase 2 (<code>add_tags()</code>). Batch query runs at start of Phase 3, within the same transaction. All tags are visible.</td>
+<td>Transaction isolation: writes in Phase 2 visible to Phase 3 reads on the same connection. ✓</td>
+</tr>
+<tr>
+<td>Tags for blocks added in this batch</td>
+<td>Newly promoted blocks ARE added to <code>active_vecs</code> at end of Phase 2 loop. Their IDs are in <code>all_block_ids</code>. <code>tags_cache</code> includes them.</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Backward compatibility — existing DB edges</td>
+<td>Existing edges have weights = raw cosine (0.60–0.85). New edges after upgrade have composite weights (0.40–0.95). Mixed graph until blocks cycle through.</td>
+<td><code>prune_weak_edges(threshold=0.10)</code> treats all weights the same — no issue at that threshold. Graph expansion orders by weight; old high-cosine edges appear slightly more relevant than equivalent new composite edges. Self-heals as active blocks accumulate new composite edges over time. No migration needed.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-test-plan">11. Test Plan<a class="headerlink" href="#11-test-plan" title="Permanent link">&para;</a></h2>
+<h3 id="new-file-teststest_edge_scoringpy">New file: <code>tests/test_edge_scoring.py</code><a class="headerlink" href="#new-file-teststest_edge_scoringpy" title="Permanent link">&para;</a></h3>
+<p>Pure function tests — no DB, no async, no fixtures needed.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.scoring</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">CROSS_CATEGORY_SCORE</span><span class="p">,</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">TEMPORAL_SIGMA_HOURS</span><span class="p">,</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">jaccard_similarity</span><span class="p">,</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">temporal_proximity</span><span class="p">,</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="p">)</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.operations.consolidate</span><span class="w"> </span><span class="kn">import</span> <span class="n">_composite_edge_score</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="n">TOL</span> <span class="o">=</span> <span class="mf">0.001</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestJaccardSimilarity</span><span class="p">:</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_both_empty_returns_zero</span><span class="p">():</span>             <span class="c1"># [], [] → 0.0</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_identical_lists_return_one</span><span class="p">():</span>           <span class="c1"># [&quot;a&quot;,&quot;b&quot;], [&quot;a&quot;,&quot;b&quot;] → 1.0</span>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_partial_overlap</span><span class="p">():</span>                      <span class="c1"># {a,b} ∩ {b,c} / {a,b,c} → 1/3</span>
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_no_overlap_returns_zero</span><span class="p">():</span>              <span class="c1"># {a} ∩ {b} → 0.0</span>
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_one_empty_returns_zero</span><span class="p">():</span>               <span class="c1"># [], [&quot;x&quot;,&quot;y&quot;] → 0.0</span>
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_symmetric</span><span class="p">():</span>                            <span class="c1"># jaccard(a,b) == jaccard(b,a)</span>
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestTemporalProximity</span><span class="p">:</span>
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_same_hours_returns_one</span><span class="p">():</span>               <span class="c1"># hours_a==hours_b → 1.0</span>
+</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_sigma_apart</span><span class="p">():</span>                          <span class="c1"># |Δh|==TEMPORAL_SIGMA_HOURS → exp(-0.5)</span>
+</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_far_apart_near_zero</span><span class="p">():</span>                  <span class="c1"># |Δh|==3×sigma → &lt; 0.012</span>
+</span><span id="__span-19-23"><a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_symmetric</span><span class="p">():</span>                            <span class="c1"># proximity(a,b) == proximity(b,a)</span>
+</span><span id="__span-19-24"><a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>
+</span><span id="__span-19-25"><a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestCompositeEdgeScore</span><span class="p">:</span>
+</span><span id="__span-19-26"><a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_perfect_match_returns_one</span><span class="p">():</span>
+</span><span id="__span-19-27"><a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>    <span class="c1"># Identical vecs (cosine=1.0), identical tags (jaccard=1.0),</span>
+</span><span id="__span-19-28"><a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>    <span class="c1"># same category, same hours → score = 1.0</span>
+</span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>
+</span><span id="__span-19-30"><a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_zero_cosine_no_tags_different_cat_returns_min</span><span class="p">():</span>
+</span><span id="__span-19-31"><a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>    <span class="c1"># cosine=0.0, jaccard=0.0, different cat → 0.3×0.15 + 1.0×0.10 = 0.145</span>
+</span><span id="__span-19-32"><a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a>    <span class="c1"># (temporal=1.0 when both hours=0.0)</span>
+</span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>
+</span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_tag_overlap_boosts_above_cosine_threshold</span><span class="p">():</span>
+</span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>    <span class="c1"># cosine=0.50 → cosine component only = 0.275</span>
+</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>    <span class="c1"># + full tag overlap: 0.275 + 0.20 = 0.475 (above 0.40 threshold)</span>
+</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>
+</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_same_category_boosts_vs_different</span><span class="p">():</span>
+</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>    <span class="c1"># delta = (1.0 - 0.30) × 0.15 = 0.105 difference</span>
+</span><span id="__span-19-40"><a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>
+</span><span id="__span-19-41"><a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_score_bounded_zero_to_one</span><span class="p">()</span>
+</span><span id="__span-19-42"><a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_symmetric</span><span class="p">()</span>
+</span><span id="__span-19-43"><a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>
+</span><span id="__span-19-44"><a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_negative_cosine_clamped</span><span class="p">():</span>
+</span><span id="__span-19-45"><a id="__codelineno-19-45" name="__codelineno-19-45" href="#__codelineno-19-45"></a>    <span class="c1"># Anti-correlated vecs: cosine &lt; 0 → clamped to 0.0</span>
+</span><span id="__span-19-46"><a id="__codelineno-19-46" name="__codelineno-19-46" href="#__codelineno-19-46"></a>    <span class="c1"># Score = tag + category + temporal components only</span>
+</span><span id="__span-19-47"><a id="__codelineno-19-47" name="__codelineno-19-47" href="#__codelineno-19-47"></a>
+</span><span id="__span-19-48"><a id="__codelineno-19-48" name="__codelineno-19-48" href="#__codelineno-19-48"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_minimum_cosine_guard_returns_zero</span><span class="p">():</span>
+</span><span id="__span-19-49"><a id="__codelineno-19-49" name="__codelineno-19-49" href="#__codelineno-19-49"></a>    <span class="c1"># cosine=0.28, same category, same session, shared tags</span>
+</span><span id="__span-19-50"><a id="__codelineno-19-50" name="__codelineno-19-50" href="#__codelineno-19-50"></a>    <span class="c1"># Without guard: 0.28×0.55 + 0.20 + 0.15 + 0.10 = 0.604 (would qualify)</span>
+</span><span id="__span-19-51"><a id="__codelineno-19-51" name="__codelineno-19-51" href="#__codelineno-19-51"></a>    <span class="c1"># With guard: cosine &lt; MINIMUM_COSINE_FOR_EDGE → return 0.0</span>
+</span><span id="__span-19-52"><a id="__codelineno-19-52" name="__codelineno-19-52" href="#__codelineno-19-52"></a>    <span class="c1"># Assert _composite_edge_score(...) == 0.0</span>
+</span><span id="__span-19-53"><a id="__codelineno-19-53" name="__codelineno-19-53" href="#__codelineno-19-53"></a>
+</span><span id="__span-19-54"><a id="__codelineno-19-54" name="__codelineno-19-54" href="#__codelineno-19-54"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_at_minimum_cosine_returns_nonzero</span><span class="p">():</span>
+</span><span id="__span-19-55"><a id="__codelineno-19-55" name="__codelineno-19-55" href="#__codelineno-19-55"></a>    <span class="c1"># cosine=0.30 (exactly at guard), same cat, same session, no tags</span>
+</span><span id="__span-19-56"><a id="__codelineno-19-56" name="__codelineno-19-56" href="#__codelineno-19-56"></a>    <span class="c1"># Expected: 0.30×0.55 + 0 + 0.15 + 0.10 = 0.415 (not zero)</span>
+</span><span id="__span-19-57"><a id="__codelineno-19-57" name="__codelineno-19-57" href="#__codelineno-19-57"></a>    <span class="c1"># Assert abs(score - 0.415) &lt; TOL</span>
+</span></code></pre></div>
+<h3 id="test_storagepy-add-get_tags_batch-test"><code>test_storage.py</code> — add <code>get_tags_batch</code> test<a class="headerlink" href="#test_storagepy-add-get_tags_batch-test" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestGetTagsBatch</span><span class="p">:</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_returns_tags_for_multiple_blocks</span><span class="p">(</span><span class="n">db_conn</span><span class="p">):</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="c1"># Insert two blocks with tags, call get_tags_batch([id1, id2])</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="c1"># Assert tags_map[id1] == expected_tags, tags_map[id2] == expected_tags</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_empty_input_returns_empty_dict</span><span class="p">(</span><span class="n">db_conn</span><span class="p">):</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>    <span class="c1"># get_tags_batch(conn, []) → {}</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_missing_block_id_returns_empty_list</span><span class="p">(</span><span class="n">db_conn</span><span class="p">):</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>    <span class="c1"># Block exists but has no tags → []</span>
+</span></code></pre></div>
+<h3 id="test_lifecyclepy-update-existing-add-integration-tests"><code>test_lifecycle.py</code> — update existing + add integration tests<a class="headerlink" href="#test_lifecyclepy-update-existing-add-integration-tests" title="Permanent link">&para;</a></h3>
+<p><strong>New integration test: minimum cosine guard in practice:</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_same_session_low_cosine_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">):</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="c1"># cosine=0.28 between two &quot;knowledge&quot; blocks learned in same session</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="c1"># Even with same category and same session (temporal=1.0, cat=1.0),</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="c1"># the guard prevents the edge. Assert edges_created == 0.</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>    <span class="n">embedding_svc</span> <span class="o">=</span> <span class="n">MockEmbeddingService</span><span class="p">(</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>        <span class="n">similarity_overrides</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>            <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;python async&quot;</span><span class="p">,</span> <span class="s2">&quot;sql optimization&quot;</span><span class="p">}):</span> <span class="mf">0.28</span>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>        <span class="p">}</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>    <span class="p">)</span>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>    <span class="c1"># ... learn both, consolidate, assert no edge</span>
+</span></code></pre></div>
+<p><strong>Existing tests that break (must update):</strong></p>
+<ul>
+<li><code>TC-G-001</code> line 355: <code>similarity_edge_threshold=0.60</code> → <code>edge_score_threshold=0.65</code></li>
+<li>Test currently relies on cosine=0.78 with no context signals. At threshold=0.65 a cosine=0.78 pair still qualifies (composite ≈ 0.48). Updated threshold for the call; assertion unchanged.</li>
+<li><code>TC-G-002</code> line 394: <code>similarity_edge_threshold=0.60</code> → <code>edge_score_threshold=0.40</code> (or just remove it to use the default)</li>
+</ul>
+<p><strong>New integration tests (<code>TestCompositeEdgeCreation</code>):</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_shared_tags_form_edge_at_low_cosine</span><span class="p">():</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="c1"># Setup: MockEmbeddingService with similarity_overrides controlling cosine to ~0.50</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="c1"># MockLLMService with tag_overrides so both blocks get [&quot;frame-selection&quot;]</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="c1"># Call consolidate(). Assert edges_created &gt;= 1.</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="c1"># Cosine alone (0.50 &lt; default 0.65 minimum) would not qualify; tags push it above 0.40.</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>    <span class="n">embedding_svc</span> <span class="o">=</span> <span class="n">MockEmbeddingService</span><span class="p">(</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>        <span class="n">similarity_overrides</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>            <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;frame heuristic alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;frame heuristic beta&quot;</span><span class="p">}):</span> <span class="mf">0.50</span>
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>        <span class="p">}</span>
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    <span class="p">)</span>
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>    <span class="n">llm</span> <span class="o">=</span> <span class="n">MockLLMService</span><span class="p">(</span><span class="n">tag_overrides</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;frame heuristic&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;frame-selection/heuristic&quot;</span><span class="p">]})</span>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a>    <span class="c1"># ... learn both blocks, consolidate, assert edge exists</span>
+</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>
+</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_pure_cosine_0_62_does_not_form_edge</span><span class="p">():</span>
+</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>    <span class="c1"># cosine=0.62, no tag overlap, different categories</span>
+</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>    <span class="c1"># composite ≈ 0.62×0.55 + 0 + 0.3×0.15 + temporal ≈ 0.38 &lt; 0.40</span>
+</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>    <span class="c1"># Assert edges_created == 0</span>
+</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>
+</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_edge_weight_is_composite_not_cosine</span><span class="p">():</span>
+</span><span id="__span-22-20"><a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>    <span class="c1"># cosine=0.78, same tags (jaccard=1.0), same category, same session</span>
+</span><span id="__span-22-21"><a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a>    <span class="c1"># expected_weight = 0.78×0.55 + 1.0×0.20 + 1.0×0.15 + 1.0×0.10 = 0.879</span>
+</span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a>    <span class="c1"># Fetch edge from DB, assert abs(edge[&quot;weight&quot;] - 0.879) &lt; TOL</span>
+</span><span id="__span-22-23"><a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a>    <span class="c1"># Verify weight != 0.78 (not raw cosine)</span>
+</span></code></pre></div>
+<p><strong>Test setup pattern</strong> (consistent with existing tests in <code>test_lifecycle.py</code>):
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">embedding_svc</span> <span class="o">=</span> <span class="n">MockEmbeddingService</span><span class="p">(</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="n">similarity_overrides</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>        <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;content a&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s2">&quot;content b&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()}):</span> <span class="mf">0.50</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>    <span class="p">}</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="p">)</span>
+</span></code></pre></div>
+Note: <code>consolidate.py</code> normalises content as <code>content.strip().lower()</code> before embedding. Keys must match.</p>
+<hr />
+<h2 id="12-implementation-order">12. Implementation Order<a class="headerlink" href="#12-implementation-order" title="Permanent link">&para;</a></h2>
+<p>Green test suite at every step.</p>
+<h3 id="step-1-scoringpy-pure-functions">Step 1 — <code>scoring.py</code>: pure functions<a class="headerlink" href="#step-1-scoringpy-pure-functions" title="Permanent link">&para;</a></h3>
+<p>Add <code>TEMPORAL_SIGMA_HOURS</code>, <code>CROSS_CATEGORY_SCORE</code>, <code>jaccard_similarity()</code>, <code>temporal_proximity()</code>.
+<strong>Run:</strong> <code>tests/test_edge_scoring.py</code> (pure functions, no DB) — all pass immediately.</p>
+<h3 id="step-2-queriespy-batch-tag-query">Step 2 — <code>queries.py</code>: batch tag query<a class="headerlink" href="#step-2-queriespy-batch-tag-query" title="Permanent link">&para;</a></h3>
+<p>Add <code>get_tags_batch()</code>.
+<strong>Run:</strong> new test in <code>test_storage.py</code> — passes.</p>
+<h3 id="step-3-configpy-rename-threshold">Step 3 — <code>config.py</code>: rename threshold<a class="headerlink" href="#step-3-configpy-rename-threshold" title="Permanent link">&para;</a></h3>
+<p><code>similarity_edge_threshold</code> → <code>edge_score_threshold</code>, default 0.60 → 0.40.
+Update <code>render_default_config()</code>.
+<strong>Run:</strong> <code>python -m pytest tests/ -q</code> — catch any test that references the old name.</p>
+<h3 id="step-4-consolidatepy-replace-phase-3">Step 4 — <code>consolidate.py</code>: replace Phase 3<a class="headerlink" href="#step-4-consolidatepy-replace-phase-3" title="Permanent link">&para;</a></h3>
+<p>Add <code>_composite_edge_score()</code>. Rewrite Phase 3. Rename constant and parameter.
+Add imports: <code>get_tags_batch</code>, <code>CROSS_CATEGORY_SCORE</code>, <code>jaccard_similarity</code>, <code>temporal_proximity</code>.
+<strong>Run:</strong> <code>tests/test_lifecycle.py</code> — update the two tests that pass <code>similarity_edge_threshold</code> explicitly.</p>
+<h3 id="step-5-apipy-param-rename">Step 5 — <code>api.py</code>: param rename<a class="headerlink" href="#step-5-apipy-param-rename" title="Permanent link">&para;</a></h3>
+<p>Update <code>consolidate()</code> call to pass <code>edge_score_threshold</code>.
+<strong>Run:</strong> <code>python -m pytest tests/ -q</code> — all 353+ tests pass.</p>
+<h3 id="step-6-integration-tests">Step 6 — Integration tests<a class="headerlink" href="#step-6-integration-tests" title="Permanent link">&para;</a></h3>
+<p>Add <code>TestCompositeEdgeCreation</code> to <code>test_lifecycle.py</code> (including minimum cosine guard test).
+<strong>Run:</strong> <code>python -m pytest tests/ -q</code> — all tests pass.</p>
+<h3 id="step-7-guide-update">Step 7 — Guide update<a class="headerlink" href="#step-7-guide-update" title="Permanent link">&para;</a></h3>
+<p>In <code>guide.py</code>, add to the <code>dream</code> entry: "Tags assigned during consolidation directly affect graph connectivity — blocks with shared tags form edges at lower cosine similarity."
+<strong>Run:</strong> <code>python -m pytest tests/ -q</code> — no regressions.</p>
+<hr />
+<h2 id="13-success-criteria">13. Success Criteria<a class="headerlink" href="#13-success-criteria" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] <code>jaccard_similarity()</code>, <code>temporal_proximity()</code>, <code>MINIMUM_COSINE_FOR_EDGE</code>, <code>CROSS_CATEGORY_SCORE</code>, <code>TEMPORAL_SIGMA_HOURS</code> are in <code>scoring.py</code> with zero numpy</li>
+<li>[ ] <code>_composite_edge_score()</code> is private to <code>consolidate.py</code></li>
+<li>[ ] Score is in [0.0, 1.0] for all valid inputs; symmetric</li>
+<li>[ ] <code>_composite_edge_score()</code> returns 0.0 for any cosine &lt; <code>MINIMUM_COSINE_FOR_EDGE</code> regardless of other signals</li>
+<li>[ ] Shared-tag blocks form edges at cosine below the old threshold (≥ 0.30)</li>
+<li>[ ] Pure-cosine blocks require cosine ≥ 0.65 to form an edge</li>
+<li>[ ] Same-session + same-category blocks at cosine=0.28 do NOT form edges (recall poisoning prevented)</li>
+<li>[ ] Edge weights stored in DB are composite scores, not raw cosine values</li>
+<li>[ ] One <code>get_tags_batch()</code> call per <code>consolidate()</code> invocation (not N)</li>
+<li>[ ] Zero new LLM calls</li>
+<li>[ ] <code>edge_score_threshold</code> in <code>MemoryConfig</code>, default 0.40; old name gone</li>
+<li>[ ] <code>dream()</code> guide mentions tags increase graph connectivity</li>
+<li>[ ] All 353+ existing tests pass</li>
+</ul>
+<hr />
+<h2 id="14-agent-simulation-findings">14. Agent Simulation Findings<a class="headerlink" href="#14-agent-simulation-findings" title="Permanent link">&para;</a></h2>
+<p>Scenarios evaluated to stress-test the design from the agent's perspective.</p>
+<h3 id="scenario-1-single-session-batch-ingestion-common">Scenario 1: Single-session batch ingestion (common)<a class="headerlink" href="#scenario-1-single-session-batch-ingestion-common" title="Permanent link">&para;</a></h3>
+<p>Agent learns 10 blocks in one session, all <code>category="knowledge"</code>, no tags. Temporal=1.0, cat=1.0 for all pairs. Non-cosine floor = 0.25.</p>
+<p><strong>Without guard:</strong> cosine=0.27 qualifies → spurious edges. Agent asks about Python; graph expansion follows an edge to SQL block (cosine=0.28) and injects SQL content into Python context. Silent quality degradation.</p>
+<p><strong>With guard:</strong> cosine must be ≥ 0.30. Blocks below are structurally unrelated — no edge. ✓</p>
+<h3 id="scenario-2-tags-as-primary-signal-recommended-pattern">Scenario 2: Tags-as-primary-signal (recommended pattern)<a class="headerlink" href="#scenario-2-tags-as-primary-signal-recommended-pattern" title="Permanent link">&para;</a></h3>
+<p>Agent tags blocks with domain namespaces: <code>["async", "python"]</code> and <code>["async", "database"]</code>. cosine≈0.45 (different domains). Jaccard=1/3≈0.33. Score = 0.45×0.55 + 0.33×0.20 + 0.15 + 0.10 = 0.577. Edge forms ✓ — correct, these ARE experientially related for the async-programming domain.</p>
+<p><strong>Key insight:</strong> Tags are the agent's primary tool for augmenting graph connectivity beyond pure semantics. The <code>dream()</code> guide should make this explicit.</p>
+<h3 id="scenario-3-zero-tag-agent-graceful-degradation">Scenario 3: Zero-tag agent (graceful degradation)<a class="headerlink" href="#scenario-3-zero-tag-agent-graceful-degradation" title="Permanent link">&para;</a></h3>
+<p>Agent never assigns tags. <code>jaccard=0.0</code> always. System degrades gracefully:
+- Old blocks vs new (temporal≈0): needs cosine≥0.45 (same cat) or cosine≥0.65 (diff cat)
+- Same session (temporal=1.0): cosine≥0.30 (guard floor) + cat boost possible
+- This is strictly better than old cosine-only threshold=0.60: more connections in-session, fewer spurious cross-domain connections at rest.</p>
+<h3 id="scenario-4-cross-category-semantic-pair">Scenario 4: Cross-category semantic pair<a class="headerlink" href="#scenario-4-cross-category-semantic-pair" title="Permanent link">&para;</a></h3>
+<p>"User prefers dark mode" (preference) + "Use dark color scheme in UI" (knowledge). cosine=0.60, different categories. Score = 0.33 + 0 + 0.30×0.15 + temporal. With temporal=1.0: 0.33 + 0.045 + 0.10 = 0.475 ≥ 0.40. Edge forms ✓.</p>
+<p><strong>Cross-category pairs need cosine ≥ ~0.47 (same session) or ~0.64 (different sessions).</strong> This is correct — cross-category edges require stronger semantic overlap when temporal context is absent.</p>
+<h3 id="scenario-5-long-running-agent-temporal-decay">Scenario 5: Long-running agent (temporal decay)<a class="headerlink" href="#scenario-5-long-running-agent-temporal-decay" title="Permanent link">&para;</a></h3>
+<p>Agent has 100 active hours. Old block (last_reinforced_at=10.0) vs new block (current=100.0). Δh=90, sigma=8 → temporal=exp(-90²/128)≈0. Score = cosine×0.55 + tag×0.20 + cat×0.15. Old and new blocks need cosine≥0.45 (same cat, no tags) or tags to compensate. Old knowledge is structurally harder to connect to new knowledge — intentional.</p>
+<h3 id="scenario-6-large-batch-50-blocks-same-session">Scenario 6: Large batch (50 blocks, same session)<a class="headerlink" href="#scenario-6-large-batch-50-blocks-same-session" title="Permanent link">&para;</a></h3>
+<p>1,225 candidate pairs. Without guard: same-session floor allows cosine=0.27 × 1,225 pairs = large spurious graph. Degree cap (5) limits per-block edges but doesn't prevent junk. With guard: only semantically adjacent pairs (cosine≥0.30) enter scoring. Degree cap then selects the top 5 by composite quality. Graph remains navigable.</p>
+<h3 id="scenario-7-backward-compatibility-existing-db">Scenario 7: Backward compatibility (existing DB)<a class="headerlink" href="#scenario-7-backward-compatibility-existing-db" title="Permanent link">&para;</a></h3>
+<p>Existing edges in DB have <code>weight = raw_cosine</code> (0.60–0.85). New edges after upgrade have <code>weight = composite</code> (0.40–0.95). Mixed graph. <code>prune_weak_edges(threshold=0.10)</code> unaffected — all existing edges are far above 0.10. Graph expansion orders by weight; old high-cosine edges (e.g., 0.72) appear slightly more relevant than equivalent new composite edges (e.g., 0.58). Self-heals as active blocks gain new composite edges over time. No migration needed.</p>
+<h3 id="what-the-agent-sees-api-perspective">What the agent sees (API perspective)<a class="headerlink" href="#what-the-agent-sees-api-perspective" title="Permanent link">&para;</a></h3>
+<p>The agent experiences zero API changes. <code>remember()</code> returns the same result. <code>dream()</code> returns the same <code>DreamResult</code>. The only observable changes:
+1. More edges created for semantically adjacent blocks that share tags or session context
+2. Fewer spurious edges between genuinely unrelated blocks from the same session
+3. Edge weights in raw DB are composite scores (not visible via public API)
+4. <code>guide("dream")</code> now mentions tags affect connectivity</p>
+<p>The improvement is entirely silent and beneficial — no breaking changes, no new parameters to learn.</p>
+<hr />
+<h2 id="16-out-of-scope">16. Out of Scope<a class="headerlink" href="#16-out-of-scope" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Co-retrieval edge creation (C1)</td>
+<td>Separate plan. Staging counter in <code>MemorySystem</code>.</td>
+</tr>
+<tr>
+<td>Edge temporal decay at <code>curate()</code> (C2)</td>
+<td>Separate plan. <code>last_active_hours</code> schema ready.</td>
+</tr>
+<tr>
+<td>LLM batch classification (D1)</td>
+<td>Separate plan. One LLM call per <code>dream()</code> cycle.</td>
+</tr>
+<tr>
+<td><code>prune_weak_edges()</code> threshold</td>
+<td>Unchanged. <code>edge_prune_threshold = 0.10</code> applies to stored composite weight.</td>
+</tr>
+<tr>
+<td><code>find_displaceable_edge()</code></td>
+<td>Unchanged. Eviction order by relation type is unaffected.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

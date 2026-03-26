@@ -1,0 +1,4838 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/amgs_architecture/">
+      
+      
+        <link rel="prev" href="../operationalize_cognitive_loop/">
+      
+      
+        <link rel="next" href="../simulation_overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Technical Specification - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adaptive-memory-graph-system" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Technical Specification
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Specification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-intent-and-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Intent and Philosophy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Intent and Philosophy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-axioms-and-foundational-truths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Axioms and Foundational Truths
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Primitives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Primitives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-memory-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Memory Block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Edge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-decay-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Decay Function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-context-frames-the-universal-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Context Frames: The Universal Abstraction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Context Frames: The Universal Abstraction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-frame-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Frame Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-inbox-as-a-context-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Inbox as a Context Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-composite-context-frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Composite Context Frames
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.4 Composite Context Frames">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#composition-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-compositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Compositions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#circular-dependency-prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Circular Dependency Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-budget-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Budget Allocation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-frame-construction-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Frame Construction Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-storage-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Storage Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-primary-store-duckdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Primary Store: DuckDB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-graph-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Graph Representation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-embedding-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Embedding Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-retrieval-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Retrieval Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Retrieval Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-hybrid-retrieval-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Hybrid Retrieval Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-mathematical-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Mathematical Foundations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Mathematical Foundations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-half-life-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Half-Life Decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-composite-attention-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Composite Attention Score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-confidence-calibration-brier-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Confidence Calibration (Brier Score)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-graph-centrality-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Graph Centrality Measures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75-shannon-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 Shannon Entropy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#76-monte-carlo-simulation-post-mvp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.6 Monte Carlo Simulation (Post-MVP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Ingestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-consolidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Consolidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-enhancement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Enhancement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-reinforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Reinforcement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 Pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-agent-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Agent Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Agent Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-agent-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Agent Communication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-self-and-identity-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Self and Identity Assembly
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Self and Identity Assembly">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-self-identification-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Self Identification Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-self-refresh-cadence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Self Refresh Cadence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-interface-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Interface Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Interface Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-layer-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Layer Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-rest-api-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 REST API Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.2 REST API Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#memory-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frame Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graph-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Graph Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-cli-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 CLI Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.3 CLI Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-python-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Python SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-identity-and-hashing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Identity and Hashing Strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-calibration-and-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Calibration and Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Calibration and Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-success-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Success Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-parameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Parameter Tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#133-feedback-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.3 Feedback Loops
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-minimal-viable-product-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Minimal Viable Product Scope
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Minimal Viable Product Scope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mvp-includes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP Includes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mvp-excludes-deferred-to-v11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP Excludes (Deferred to v1.1+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-python-package-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Python Package Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-differentiation-from-existing-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. Differentiation from Existing Systems
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17-implementation-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Implementation Roadmap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Specification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-intent-and-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Intent and Philosophy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Intent and Philosophy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-axioms-and-foundational-truths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Axioms and Foundational Truths
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Primitives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Primitives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-memory-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Memory Block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Edge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-decay-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Decay Function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-context-frames-the-universal-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Context Frames: The Universal Abstraction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Context Frames: The Universal Abstraction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-frame-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Frame Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-inbox-as-a-context-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Inbox as a Context Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-composite-context-frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Composite Context Frames
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.4 Composite Context Frames">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#composition-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-compositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Compositions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#circular-dependency-prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Circular Dependency Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-budget-allocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Budget Allocation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-frame-construction-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Frame Construction Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-storage-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Storage Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-primary-store-duckdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Primary Store: DuckDB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-graph-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Graph Representation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-embedding-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Embedding Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-retrieval-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Retrieval Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Retrieval Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-hybrid-retrieval-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Hybrid Retrieval Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-mathematical-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Mathematical Foundations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Mathematical Foundations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-half-life-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Half-Life Decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-composite-attention-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Composite Attention Score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-confidence-calibration-brier-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Confidence Calibration (Brier Score)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-graph-centrality-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Graph Centrality Measures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75-shannon-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 Shannon Entropy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#76-monte-carlo-simulation-post-mvp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.6 Monte Carlo Simulation (Post-MVP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Ingestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-consolidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Consolidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-enhancement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Enhancement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-reinforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Reinforcement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 Pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-agent-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Agent Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Agent Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-agent-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Agent Communication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-self-and-identity-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Self and Identity Assembly
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Self and Identity Assembly">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-self-identification-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Self Identification Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-self-refresh-cadence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Self Refresh Cadence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-interface-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Interface Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Interface Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-layer-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Layer Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-rest-api-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 REST API Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.2 REST API Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#memory-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frame Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graph-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Graph Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-cli-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 CLI Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.3 CLI Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-python-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Python SDK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-identity-and-hashing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Identity and Hashing Strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-calibration-and-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Calibration and Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Calibration and Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-success-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Success Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-parameter-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Parameter Tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#133-feedback-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.3 Feedback Loops
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-minimal-viable-product-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Minimal Viable Product Scope
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Minimal Viable Product Scope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mvp-includes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP Includes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mvp-excludes-deferred-to-v11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MVP Excludes (Deferred to v1.1+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-python-package-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Python Package Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-differentiation-from-existing-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. Differentiation from Existing Systems
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17-implementation-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Implementation Roadmap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/amgs_architecture.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="adaptive-memory-graph-system">Adaptive Memory Graph System<a class="headerlink" href="#adaptive-memory-graph-system" title="Permanent link">&para;</a></h1>
+<h2 id="architecture-specification">Architecture Specification<a class="headerlink" href="#architecture-specification" title="Permanent link">&para;</a></h2>
+<p><strong>Version 1.0 — March 2026</strong></p>
+<p><em>A graph-based, decay-aware, confidence-calibrated, context-assembling cognitive engine.</em></p>
+<hr />
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#1-intent-and-philosophy">Intent and Philosophy</a></li>
+<li><a href="#2-axioms-and-foundational-truths">Axioms and Foundational Truths</a></li>
+<li><a href="#3-primitives">Primitives</a></li>
+<li><a href="#4-context-frames-the-universal-abstraction">Context Frames: The Universal Abstraction</a></li>
+<li><a href="#5-storage-architecture">Storage Architecture</a></li>
+<li><a href="#6-retrieval-architecture">Retrieval Architecture</a></li>
+<li><a href="#7-mathematical-foundations">Mathematical Foundations</a></li>
+<li><a href="#8-memory-lifecycle">Memory Lifecycle</a></li>
+<li><a href="#9-agent-architecture">Agent Architecture</a></li>
+<li><a href="#10-self-and-identity-assembly">Self and Identity Assembly</a></li>
+<li><a href="#11-interface-architecture">Interface Architecture</a></li>
+<li><a href="#12-identity-and-hashing-strategy">Identity and Hashing Strategy</a></li>
+<li><a href="#13-calibration-and-tuning">Calibration and Tuning</a></li>
+<li><a href="#14-minimal-viable-product-scope">Minimal Viable Product Scope</a></li>
+<li><a href="#15-python-package-structure">Python Package Structure</a></li>
+<li><a href="#16-differentiation-from-existing-systems">Differentiation from Existing Systems</a></li>
+<li><a href="#17-implementation-roadmap">Implementation Roadmap</a></li>
+</ol>
+<hr />
+<h2 id="1-intent-and-philosophy">1. Intent and Philosophy<a class="headerlink" href="#1-intent-and-philosophy" title="Permanent link">&para;</a></h2>
+<p>This document specifies the architecture of the <strong>Adaptive Memory Graph System</strong> (AMGS): a Python library designed to function as a persistent, evolvable cognitive substrate for AI agents. AMGS is not a database, not a knowledge graph, and not a RAG pipeline, though it draws on techniques from all three. It is a system that models human-like memory dynamics: accumulation, consolidation, selective attention, temporal decay, confidence calibration, and emergent identity.</p>
+<p>The system is designed to serve as the memory layer for autonomous and semi-autonomous AI agents, enabling them to build, maintain, and reason over an evolving knowledge base without requiring a human to curate or structure that knowledge manually.</p>
+<h3 id="design-principles">Design Principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Memory is atomic</strong>: all knowledge reduces to discrete, immutable content blocks with mutable metadata</li>
+<li><strong>Relationships create meaning</strong>: edges are first-class entities that carry weight, confidence, and decay</li>
+<li><strong>Relevance is dynamic</strong>: all memory decays unless reinforced through use or explicit action</li>
+<li><strong>Attention is selective</strong>: only a subset of memory is active at any moment, selected by scoring</li>
+<li><strong>Context is constructed</strong>: there is no permanent context; it is assembled on demand from memory</li>
+<li><strong>Confidence must be calibrated</strong>: all classifications, links, and predictions carry measurable uncertainty</li>
+<li><strong>Identity is emergent</strong>: the system's sense of self is continuously reconstructed from long-lived memory</li>
+</ul>
+<hr />
+<h2 id="2-axioms-and-foundational-truths">2. Axioms and Foundational Truths<a class="headerlink" href="#2-axioms-and-foundational-truths" title="Permanent link">&para;</a></h2>
+<p>These axioms are the irreducible assumptions upon which the entire system is built. They are not configurable; they define the nature of the system.</p>
+<table>
+<thead>
+<tr>
+<th>Axiom</th>
+<th>Statement</th>
+<th>Implication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Atomicity</td>
+<td>All knowledge reduces to discrete memory blocks</td>
+<td>Content is immutable once stored; metadata evolves independently</td>
+</tr>
+<tr>
+<td>2. Relational Meaning</td>
+<td>Meaning emerges from relationships, not isolation</td>
+<td>Edges are first-class entities with their own lifecycle</td>
+</tr>
+<tr>
+<td>3. Dynamic Relevance</td>
+<td>All memory decays unless reinforced</td>
+<td>Relevance is a function of time, usage, connectivity, and confidence</td>
+</tr>
+<tr>
+<td>4. Selective Attention</td>
+<td>Only a subset of memory is active at any moment</td>
+<td>Attention is a selection process, not a storage mechanism</td>
+</tr>
+<tr>
+<td>5. Constructed Context</td>
+<td>There is no permanent context</td>
+<td>Context is assembled dynamically from memory blocks via frames</td>
+</tr>
+<tr>
+<td>6. Calibrated Confidence</td>
+<td>All predictions carry uncertainty</td>
+<td>Confidence must be measured and refined over time using Brier scoring</td>
+</tr>
+<tr>
+<td>7. Emergent Identity</td>
+<td>Self is not a static document</td>
+<td>Identity is a continuously reconstructed context frame from long-lived memory</td>
+</tr>
+</tbody>
+</table>
+<p>These axioms have a direct consequence: the <strong>Context Frame</strong> becomes the universal abstraction through which all context assembly — including identity, attention, world knowledge, and task reasoning — is performed.</p>
+<hr />
+<h2 id="3-primitives">3. Primitives<a class="headerlink" href="#3-primitives" title="Permanent link">&para;</a></h2>
+<p>The following are the minimal structural elements from which the entire system is composed.</p>
+<h3 id="31-memory-block">3.1 Memory Block<a class="headerlink" href="#31-memory-block" title="Permanent link">&para;</a></h3>
+<p>The atomic unit of knowledge. Content is immutable; metadata evolves.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Mutability</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR</td>
+<td>Immutable</td>
+<td>SHA-256 hash of canonicalised content</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>TEXT</td>
+<td>Immutable</td>
+<td>Markdown text of the knowledge block</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TIMESTAMP</td>
+<td>Immutable</td>
+<td>When the block was first ingested</td>
+</tr>
+<tr>
+<td><code>last_reinforced_at</code></td>
+<td>TIMESTAMP</td>
+<td>Mutable</td>
+<td>Last access or reinforcement event</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>VARCHAR</td>
+<td>Mutable</td>
+<td>Tag-based classification</td>
+</tr>
+<tr>
+<td><code>confidence</code></td>
+<td>FLOAT</td>
+<td>Mutable</td>
+<td>Calibrated confidence score (0.0 to 1.0)</td>
+</tr>
+<tr>
+<td><code>decay_lambda</code></td>
+<td>FLOAT</td>
+<td>Mutable</td>
+<td>Decay constant; higher = faster decay</td>
+</tr>
+<tr>
+<td><code>embedding</code></td>
+<td>FLOAT[]</td>
+<td>Mutable</td>
+<td>Vector embedding of content</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>VARCHAR</td>
+<td>Mutable</td>
+<td>One of: <code>raw</code>, <code>consolidated</code>, <code>archived</code>, <code>pruned</code></td>
+</tr>
+<tr>
+<td><code>is_self_component</code></td>
+<td>BOOLEAN</td>
+<td>Mutable</td>
+<td>Flagged for Self frame inclusion</td>
+</tr>
+<tr>
+<td><code>meta</code></td>
+<td>JSON</td>
+<td>Mutable</td>
+<td>Extensible metadata dictionary</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-edge">3.2 Edge<a class="headerlink" href="#32-edge" title="Permanent link">&para;</a></h3>
+<p>Represents a weighted, typed relationship between two memory blocks. Edges decay independently of the nodes they connect.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source_id</code></td>
+<td>VARCHAR</td>
+<td>Origin memory block ID</td>
+</tr>
+<tr>
+<td><code>target_id</code></td>
+<td>VARCHAR</td>
+<td>Destination memory block ID</td>
+</tr>
+<tr>
+<td><code>relation_type</code></td>
+<td>VARCHAR</td>
+<td>Semantic label (e.g. <code>supports</code>, <code>contradicts</code>, <code>elaborates</code>, <code>causes</code>)</td>
+</tr>
+<tr>
+<td><code>weight</code></td>
+<td>FLOAT</td>
+<td>Strength of the relationship (0.0 to 1.0)</td>
+</tr>
+<tr>
+<td><code>confidence</code></td>
+<td>FLOAT</td>
+<td>Calibrated confidence in this edge's validity</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TIMESTAMP</td>
+<td>When the edge was first created</td>
+</tr>
+<tr>
+<td><code>last_reinforced_at</code></td>
+<td>TIMESTAMP</td>
+<td>Last reinforcement event</td>
+</tr>
+<tr>
+<td><code>decay_lambda</code></td>
+<td>FLOAT</td>
+<td>Independent decay constant for this edge</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33-score">3.3 Score<a class="headerlink" href="#33-score" title="Permanent link">&para;</a></h3>
+<p>A composite numerical function that drives all selection decisions in the system. The general form is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Score = w1 × RecencyScore
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>      + w2 × CentralityScore
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>      + w3 × ConfidenceScore
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>      + w4 × QuerySimilarity
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>      + w5 × ReinforcementScore
+</span></code></pre></div>
+<p>Weights are tunable per context frame type, allowing the same scoring infrastructure to serve radically different selection purposes.</p>
+<h3 id="34-decay-function">3.4 Decay Function<a class="headerlink" href="#34-decay-function" title="Permanent link">&para;</a></h3>
+<p>The temporal relevance function that governs memory fade:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Relevance(t) = e^(-λ × t)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Where:
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  t = time since last reinforcement (hours)
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  λ = decay constant (per block or edge)
+</span></code></pre></div>
+<p>Different <strong>decay profiles</strong> serve different memory types: ephemeral observations might have λ = 0.1 (half-life of ~7 hours), while core identity beliefs might have λ = 0.0001 (half-life of ~289 days).</p>
+<hr />
+<h2 id="4-context-frames-the-universal-abstraction">4. Context Frames: The Universal Abstraction<a class="headerlink" href="#4-context-frames-the-universal-abstraction" title="Permanent link">&para;</a></h2>
+<p>This is the central architectural insight of AMGS. Previously, Self, Attention, World Model, and Short-Term Memory were treated as separate mechanisms. In this architecture, they are all instances of the same primitive: the <strong>Context Frame</strong>.</p>
+<h3 id="41-definition">4.1 Definition<a class="headerlink" href="#41-definition" title="Permanent link">&para;</a></h3>
+<p>A Context Frame is a dynamically assembled, purpose-bound subset of memory blocks. It is <strong>not</strong> a storage type. It is a <strong>selection mechanism</strong>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ContextFrame = SelectionRule + ScoringFunction + AssemblyStrategy
+</span></code></pre></div>
+<h3 id="42-frame-types">4.2 Frame Types<a class="headerlink" href="#42-frame-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Frame Type</th>
+<th>Purpose</th>
+<th>Selection Bias</th>
+<th>Refresh Cadence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SELF</strong></td>
+<td>Assemble long-lived identity and core beliefs</td>
+<td>Low decay, high reinforcement, identity-tagged nodes</td>
+<td>Periodic (hourly/daily)</td>
+</tr>
+<tr>
+<td><strong>WORLD</strong></td>
+<td>External knowledge model and domain understanding</td>
+<td>Category-based clusters, semantic neighbourhood expansion</td>
+<td>On consolidation</td>
+</tr>
+<tr>
+<td><strong>ATTENTION</strong></td>
+<td>Active reasoning window for current query</td>
+<td>Query similarity, recency, centrality</td>
+<td>Per query</td>
+</tr>
+<tr>
+<td><strong>SHORT_TERM</strong></td>
+<td>Recent events summary and working memory</td>
+<td>Time-windowed, recent reinforcement</td>
+<td>Periodic (minutes)</td>
+</tr>
+<tr>
+<td><strong>TASK</strong></td>
+<td>Solve a specific problem temporarily</td>
+<td>Query similarity, task tags, graph traversal</td>
+<td>Per task lifecycle</td>
+</tr>
+<tr>
+<td><strong>INBOX</strong></td>
+<td>View of unconsolidated raw memory</td>
+<td><code>status = raw</code>, recency-weighted</td>
+<td>Continuous</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-inbox-as-a-context-frame">4.3 Inbox as a Context Frame<a class="headerlink" href="#43-inbox-as-a-context-frame" title="Permanent link">&para;</a></h3>
+<p>The Inbox is not a separate subsystem. It is a Context Frame whose selection rule filters for memory blocks with <code>status = raw</code>. Its scoring function weights recency heavily and ignores centrality and reinforcement (since these do not yet exist for unprocessed blocks). This means ingestion, consolidation monitoring, and inbox review all operate through the same frame interface.</p>
+<p>This unification means any agent or CLI command that can assemble a frame can inspect the inbox. There is no special-case code path for raw memory.</p>
+<h3 id="44-composite-context-frames">4.4 Composite Context Frames<a class="headerlink" href="#44-composite-context-frames" title="Permanent link">&para;</a></h3>
+<p>A critical design question: can a Context Frame contain other Context Frames? The answer is <strong>yes</strong>, and this creates a powerful compositional model.</p>
+<p>A Composite Frame does not select directly from the memory block pool. Instead, it merges the outputs of child frames, applies its own deduplication and re-scoring, and produces a unified context. This creates a <strong>directed acyclic graph (DAG)</strong> of frame dependencies.</p>
+<h4 id="composition-model">Composition Model<a class="headerlink" href="#composition-model" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>CompositeFrame = {
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    children: [Frame, Frame, ...],
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    merge_strategy: union | intersection | priority_chain,
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    budget_allocation: { child_name: token_budget, ... },
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    dedup_strategy: content_hash | semantic_threshold,
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    rescore_weights: { ... }  // optional re-ranking after merge
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>}
+</span></code></pre></div>
+<h4 id="example-compositions">Example Compositions<a class="headerlink" href="#example-compositions" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Composite</th>
+<th>Children</th>
+<th>Merge Strategy</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SESSION</strong></td>
+<td>SELF + ATTENTION + SHORT_TERM</td>
+<td>priority_chain</td>
+<td>Full agent reasoning context</td>
+</tr>
+<tr>
+<td><strong>REASONING</strong></td>
+<td>WORLD + TASK + ATTENTION</td>
+<td>union</td>
+<td>Domain problem solving</td>
+</tr>
+<tr>
+<td><strong>BRIEFING</strong></td>
+<td>SELF + SHORT_TERM + INBOX</td>
+<td>priority_chain</td>
+<td>Daily cognitive digest</td>
+</tr>
+<tr>
+<td><strong>DEEP_RECALL</strong></td>
+<td>WORLD + SELF</td>
+<td>union</td>
+<td>Identity-grounded knowledge retrieval</td>
+</tr>
+</tbody>
+</table>
+<h4 id="circular-dependency-prevention">Circular Dependency Prevention<a class="headerlink" href="#circular-dependency-prevention" title="Permanent link">&para;</a></h4>
+<p>Composite frames form a DAG, not a cyclic graph. The system enforces this at frame registration time by performing a topological sort. If adding a child frame would create a cycle, the operation is rejected with a clear error. This is a hard constraint, not a runtime check.</p>
+<h4 id="token-budget-allocation">Token Budget Allocation<a class="headerlink" href="#token-budget-allocation" title="Permanent link">&para;</a></h4>
+<p>When composing frames, the composite must allocate a finite token budget across its children. The budget allocation strategy can be:</p>
+<ul>
+<li><strong>Static</strong>: fixed percentages per child</li>
+<li><strong>Dynamic</strong>: proportional to child score mass</li>
+<li><strong>Priority-based</strong>: fill highest-priority child first, then next with remainder</li>
+</ul>
+<p>The default for SESSION is <code>priority_chain</code>: SELF gets its full allocation first, then ATTENTION fills the remaining budget, then SHORT_TERM gets whatever is left.</p>
+<h3 id="45-frame-construction-pipeline">4.5 Frame Construction Pipeline<a class="headerlink" href="#45-frame-construction-pipeline" title="Permanent link">&para;</a></h3>
+<p>All frames — whether atomic or composite — follow the same four-step pipeline:</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Operation</th>
+<th>Mechanisms Used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Candidate Pool</td>
+<td>Gather potential memory blocks</td>
+<td>Category filter, graph traversal, vector similarity, time window, child frame outputs</td>
+</tr>
+<tr>
+<td>2. Scoring</td>
+<td>Apply weighted composite score to each candidate</td>
+<td>Decay weight, centrality, confidence, query similarity, reinforcement</td>
+</tr>
+<tr>
+<td>3. Selection</td>
+<td>Choose the final set from scored candidates</td>
+<td>Top-K, threshold cutoff, entropy balancing, token budget constraint</td>
+</tr>
+<tr>
+<td>4. Assembly</td>
+<td>Produce the output context</td>
+<td>Raw concatenation, LLM summarisation, structured formatting, markdown template</td>
+</tr>
+</tbody>
+</table>
+<p>The scoring weights differ per frame type. SELF weights confidence and reinforcement heavily. ATTENTION weights query similarity and recency. INBOX weights recency and ignores all graph-derived scores.</p>
+<hr />
+<h2 id="5-storage-architecture">5. Storage Architecture<a class="headerlink" href="#5-storage-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="51-primary-store-duckdb">5.1 Primary Store: DuckDB<a class="headerlink" href="#51-primary-store-duckdb" title="Permanent link">&para;</a></h3>
+<p>DuckDB is the primary storage engine. It provides OLAP-grade analytical queries, native array types for embeddings, JSON support for metadata, and zero-dependency embedded operation. No external database server is required.</p>
+<h3 id="52-schema">5.2 Schema<a class="headerlink" href="#52-schema" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+<th>Key Columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory_blocks</code></td>
+<td>All atomic knowledge units</td>
+<td>id, content, status, category, confidence, decay_lambda, embedding, meta</td>
+</tr>
+<tr>
+<td><code>edges</code></td>
+<td>Relationships between blocks</td>
+<td>source_id, target_id, relation_type, weight, confidence, decay_lambda</td>
+</tr>
+<tr>
+<td><code>frame_definitions</code></td>
+<td>Registered context frame configurations</td>
+<td>name, frame_type, selection_rules, scoring_weights, assembly_strategy</td>
+</tr>
+<tr>
+<td><code>frame_compositions</code></td>
+<td>Parent-child relationships between frames</td>
+<td>parent_frame, child_frame, merge_strategy, budget_allocation</td>
+</tr>
+<tr>
+<td><code>scores_cache</code></td>
+<td>Precomputed attention scores</td>
+<td>block_id, frame_name, score, computed_at</td>
+</tr>
+<tr>
+<td><code>calibration_log</code></td>
+<td>Brier score history for confidence tuning</td>
+<td>prediction_id, predicted, actual, brier_score, timestamp</td>
+</tr>
+<tr>
+<td><code>reinforcement_log</code></td>
+<td>Record of all reinforcement events</td>
+<td>block_id, event_type, timestamp, source</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-graph-representation">5.3 Graph Representation<a class="headerlink" href="#53-graph-representation" title="Permanent link">&para;</a></h3>
+<p>The graph is stored as an edge list in DuckDB (the <code>edges</code> table) for persistence and analytical queries. At runtime, a NetworkX graph is materialised from this table for centrality computation, traversal, and neighbourhood expansion. The NetworkX graph is rebuilt on demand or cached with a TTL.</p>
+<p>For systems exceeding approximately 100,000 nodes, a migration path to a dedicated graph engine (Neo4j, Memgraph) is available but not required for MVP.</p>
+<h3 id="54-embedding-storage">5.4 Embedding Storage<a class="headerlink" href="#54-embedding-storage" title="Permanent link">&para;</a></h3>
+<p>Embeddings are stored as FLOAT arrays directly in the <code>memory_blocks</code> table. DuckDB's native array operations support cosine similarity computation without an external vector database. For systems exceeding 500,000 blocks, an external vector index (FAISS, pgvector, Qdrant) can be introduced as an acceleration layer without changing the data model.</p>
+<hr />
+<h2 id="6-retrieval-architecture">6. Retrieval Architecture<a class="headerlink" href="#6-retrieval-architecture" title="Permanent link">&para;</a></h2>
+<p>The system uses a layered retrieval strategy designed to minimise cost while maximising recall. Each layer is progressively more expensive and operates on a progressively smaller candidate set.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Mechanism</th>
+<th>Cost</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Pre-filter</td>
+<td>SQL WHERE clauses on category, status, time window</td>
+<td>Minimal</td>
+<td>Eliminate obviously irrelevant blocks</td>
+</tr>
+<tr>
+<td>2. Keyword search</td>
+<td>Full-text search on content column</td>
+<td>Low</td>
+<td>Exact and structural matching</td>
+</tr>
+<tr>
+<td>3. Fuzzy search</td>
+<td>Trigram or Levenshtein distance matching</td>
+<td>Low</td>
+<td>Typo tolerance and near-match retrieval</td>
+</tr>
+<tr>
+<td>4. Vector search</td>
+<td>Cosine similarity against query embedding</td>
+<td>Medium</td>
+<td>Semantic similarity retrieval</td>
+</tr>
+<tr>
+<td>5. Graph expansion</td>
+<td>NetworkX neighbourhood traversal from seed nodes</td>
+<td>Medium</td>
+<td>Associative and structural recall</td>
+</tr>
+<tr>
+<td>6. Composite scoring</td>
+<td>Weighted multi-signal ranking</td>
+<td>Low (compute)</td>
+<td>Final ranking for selection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="61-hybrid-retrieval-flow">6.1 Hybrid Retrieval Flow<a class="headerlink" href="#61-hybrid-retrieval-flow" title="Permanent link">&para;</a></h3>
+<p>For a typical query, the system:</p>
+<ol>
+<li>Applies <strong>pre-filters</strong> to reduce the candidate pool (typically by category and time window)</li>
+<li>Runs <strong>vector similarity</strong> against the filtered set to find semantically relevant blocks</li>
+<li>Expands via <strong>graph traversal</strong> to pull in structurally connected nodes the vector search may have missed</li>
+<li><strong>Ranks</strong> all candidates using the composite scoring function appropriate for the active context frame</li>
+</ol>
+<p>This layered approach means that vector embeddings are never computed against the full corpus. The pre-filter stage typically reduces the search space by 80–95% before any embedding comparison occurs.</p>
+<hr />
+<h2 id="7-mathematical-foundations">7. Mathematical Foundations<a class="headerlink" href="#7-mathematical-foundations" title="Permanent link">&para;</a></h2>
+<h3 id="71-half-life-decay">7.1 Half-Life Decay<a class="headerlink" href="#71-half-life-decay" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>decay_weight(t) = e^(-λ × t)
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>half_life = ln(2) / λ
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>Example profiles:
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  Ephemeral  (λ = 0.1):    half-life ≈ 6.9 hours
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  Standard   (λ = 0.01):   half-life ≈ 2.9 days
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  Durable    (λ = 0.001):  half-life ≈ 28.9 days
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  Core       (λ = 0.0001): half-life ≈ 289 days
+</span></code></pre></div>
+<h3 id="72-composite-attention-score">7.2 Composite Attention Score<a class="headerlink" href="#72-composite-attention-score" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>AttentionScore = w1 × RecencyScore
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>               + w2 × CentralityScore
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>               + w3 × ConfidenceScore
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>               + w4 × QuerySimilarity
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>               + w5 × ReinforcementScore
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>All component scores normalised to [0, 1]
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Weights are per-frame-type, summing to 1.0
+</span></code></pre></div>
+<p><strong>Default weight profiles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Frame Type</th>
+<th>w1 Recency</th>
+<th>w2 Centrality</th>
+<th>w3 Confidence</th>
+<th>w4 Similarity</th>
+<th>w5 Reinforcement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELF</td>
+<td>0.05</td>
+<td>0.25</td>
+<td>0.30</td>
+<td>0.10</td>
+<td>0.30</td>
+</tr>
+<tr>
+<td>ATTENTION</td>
+<td>0.25</td>
+<td>0.15</td>
+<td>0.15</td>
+<td>0.35</td>
+<td>0.10</td>
+</tr>
+<tr>
+<td>SHORT_TERM</td>
+<td>0.50</td>
+<td>0.05</td>
+<td>0.10</td>
+<td>0.20</td>
+<td>0.15</td>
+</tr>
+<tr>
+<td>WORLD</td>
+<td>0.10</td>
+<td>0.30</td>
+<td>0.25</td>
+<td>0.25</td>
+<td>0.10</td>
+</tr>
+<tr>
+<td>TASK</td>
+<td>0.15</td>
+<td>0.10</td>
+<td>0.15</td>
+<td>0.45</td>
+<td>0.15</td>
+</tr>
+<tr>
+<td>INBOX</td>
+<td>0.60</td>
+<td>0.00</td>
+<td>0.10</td>
+<td>0.20</td>
+<td>0.10</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-confidence-calibration-brier-score">7.3 Confidence Calibration (Brier Score)<a class="headerlink" href="#73-confidence-calibration-brier-score" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>BrierScore = (forecast_probability − actual_outcome)²
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Perfect calibration: BS = 0
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>Random guessing:     BS = 0.25
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>Always wrong:        BS = 1.0
+</span></code></pre></div>
+<p>The Brier score is used to tune confidence weights over time. When the system predicts that a relationship has strength 0.8 but subsequent retrieval feedback shows it was irrelevant, the confidence on that edge is adjusted downward and the calibration log records the miss.</p>
+<h3 id="74-graph-centrality-measures">7.4 Graph Centrality Measures<a class="headerlink" href="#74-graph-centrality-measures" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>What It Captures</th>
+<th>Use In AMGS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Degree centrality</td>
+<td>Number of direct connections</td>
+<td>Basic importance signal</td>
+</tr>
+<tr>
+<td>Eigenvector centrality</td>
+<td>Connection to other important nodes</td>
+<td>Influence propagation</td>
+</tr>
+<tr>
+<td>PageRank</td>
+<td>Importance via recursive link analysis</td>
+<td>Knowledge hub identification</td>
+</tr>
+<tr>
+<td>Betweenness centrality</td>
+<td>Bridge between clusters</td>
+<td>Conceptual connector detection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="75-shannon-entropy">7.5 Shannon Entropy<a class="headerlink" href="#75-shannon-entropy" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>H = −Σ p(x) × log₂(p(x))
+</span></code></pre></div>
+<p>Used to measure category diversity within a context frame (high entropy means broadly distributed knowledge), uncertainty in classification decisions, and fragmentation of knowledge clusters. Entropy balancing during frame selection ensures that context frames do not become monocultural.</p>
+<h3 id="76-monte-carlo-simulation-post-mvp">7.6 Monte Carlo Simulation (Post-MVP)<a class="headerlink" href="#76-monte-carlo-simulation-post-mvp" title="Permanent link">&para;</a></h3>
+<p>Monte Carlo methods will be used in the enhancement cycle to simulate the impact of adding or removing edges before committing changes, model future graph evolution under different pruning strategies, identify optimal node insertion points, and test graph stability under various decay scenarios. This is explicitly excluded from MVP scope.</p>
+<hr />
+<h2 id="8-memory-lifecycle">8. Memory Lifecycle<a class="headerlink" href="#8-memory-lifecycle" title="Permanent link">&para;</a></h2>
+<h3 id="81-ingestion">8.1 Ingestion<a class="headerlink" href="#81-ingestion" title="Permanent link">&para;</a></h3>
+<p>Raw markdown content enters the system through the Inbox. At this stage, minimal processing occurs: a content hash is computed as the block ID, a <code>created_at</code> timestamp is set, status is marked as <code>raw</code>, and the block is written to the <code>memory_blocks</code> table. No embedding, categorisation, or linking happens at ingestion time. This keeps the ingestion path fast and cheap.</p>
+<h3 id="82-consolidation">8.2 Consolidation<a class="headerlink" href="#82-consolidation" title="Permanent link">&para;</a></h3>
+<p>Consolidation transforms raw blocks into fully integrated memory. It is triggered either periodically (e.g. every 15 minutes) or when the inbox exceeds a configurable volume threshold. The consolidation pipeline performs the following steps in order:</p>
+<ol>
+<li><strong>Categorise</strong> the block using tag inference (LLM-assisted or rule-based)</li>
+<li><strong>Compute and store</strong> the embedding vector</li>
+<li><strong>Extract</strong> named entities and key concepts</li>
+<li><strong>Create edges</strong> to semantically and structurally related existing blocks</li>
+<li><strong>Assign</strong> a decay profile based on category</li>
+<li><strong>Compute</strong> initial attention scores</li>
+<li><strong>Update status</strong> to <code>consolidated</code></li>
+</ol>
+<p>LLM invocation during consolidation is selective. Categorisation and entity extraction may use an LLM, but embedding and scoring are purely computational. This keeps consolidation cost manageable.</p>
+<h3 id="83-enhancement">8.3 Enhancement<a class="headerlink" href="#83-enhancement" title="Permanent link">&para;</a></h3>
+<p>The enhancement cycle operates as an offline background process. It evaluates the health of the graph by examining weak edges (low weight and confidence), redundant nodes (near-duplicate content), overlapping concepts that should be merged, and confidence mismatches between related nodes.</p>
+<p>Enhancement may:</p>
+<ul>
+<li><strong>Merge</strong> nodes (combining content and preserving the stronger ID)</li>
+<li><strong>Split</strong> nodes (when a block covers multiple distinct concepts)</li>
+<li><strong>Strengthen</strong> or <strong>weaken</strong> edges based on usage patterns</li>
+<li><strong>Prune</strong> low-value fragments</li>
+</ul>
+<p>Enhancement is the most expensive lifecycle phase and is typically scheduled weekly or monthly.</p>
+<h3 id="84-reinforcement">8.4 Reinforcement<a class="headerlink" href="#84-reinforcement" title="Permanent link">&para;</a></h3>
+<p>When a memory block is accessed during frame assembly, query retrieval, or explicit user interaction, its <code>last_reinforced_at</code> timestamp is updated. This resets the decay clock for that block. Edges traversed during retrieval are also reinforced. Reinforcement is the mechanism by which frequently useful memories resist decay and maintain their position in the attention hierarchy.</p>
+<h3 id="85-pruning">8.5 Pruning<a class="headerlink" href="#85-pruning" title="Permanent link">&para;</a></h3>
+<p>Blocks are candidates for pruning when their decay weight falls below a configurable threshold, they have low centrality in the graph, they have low reinforcement history, and their confidence is low.</p>
+<p>Pruning sets the block status to <code>pruned</code> (soft delete) and cleans up orphaned edges. Hard deletion is a separate administrative operation. Graph integrity is maintained by ensuring no edge references a pruned node.</p>
+<hr />
+<h2 id="9-agent-architecture">9. Agent Architecture<a class="headerlink" href="#9-agent-architecture" title="Permanent link">&para;</a></h2>
+<p>AMGS is designed to be operated by a set of specialised agents, each responsible for a distinct phase of the memory lifecycle. Agents interact with the system exclusively through the public API (described in Section 11). They do not access storage directly.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Responsibility</th>
+<th>Trigger</th>
+<th>LLM Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ingestion Agent</strong></td>
+<td>Receives raw content, writes to inbox</td>
+<td>External input (API call, file watch, conversation)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Consolidation Agent</strong></td>
+<td>Processes inbox, categorises, embeds, links</td>
+<td>Periodic or volume threshold</td>
+<td>Selective (categorisation, entity extraction)</td>
+</tr>
+<tr>
+<td><strong>Enhancement Agent</strong></td>
+<td>Evaluates graph health, adjusts weights, merges/splits</td>
+<td>Scheduled (weekly/monthly)</td>
+<td>Moderate (relationship evaluation, merge decisions)</td>
+</tr>
+<tr>
+<td><strong>Attention Agent</strong></td>
+<td>Assembles context frames on demand</td>
+<td>Per query or periodic refresh</td>
+<td>Optional (summarisation during assembly)</td>
+</tr>
+<tr>
+<td><strong>Curation Agent</strong></td>
+<td>Monitors decay, triggers pruning, manages lifecycle</td>
+<td>Periodic (daily)</td>
+<td>Minimal (threshold checks)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="91-agent-communication">9.1 Agent Communication<a class="headerlink" href="#91-agent-communication" title="Permanent link">&para;</a></h3>
+<p>Agents do not communicate directly with each other. They interact through the shared state of the memory graph. The Ingestion Agent writes raw blocks; the Consolidation Agent reads raw blocks and writes consolidated blocks; the Enhancement Agent reads the full graph and writes adjustments; the Attention Agent reads consolidated blocks and scores to assemble frames.</p>
+<p>This shared-state model avoids complex inter-agent messaging while maintaining clear separation of concerns.</p>
+<hr />
+<h2 id="10-self-and-identity-assembly">10. Self and Identity Assembly<a class="headerlink" href="#10-self-and-identity-assembly" title="Permanent link">&para;</a></h2>
+<p>The Self is not a static system prompt. It is a Context Frame of type <code>SELF</code>, assembled from memory blocks that satisfy the following criteria:</p>
+<ul>
+<li>They have the <code>is_self_component</code> flag set to <code>true</code></li>
+<li>They have high confidence scores</li>
+<li>They have low <code>decay_lambda</code> values (long half-life)</li>
+<li>They have high reinforcement counts</li>
+<li>They have high graph centrality within the identity subgraph</li>
+</ul>
+<h3 id="101-self-identification-strategy">10.1 Self Identification Strategy<a class="headerlink" href="#101-self-identification-strategy" title="Permanent link">&para;</a></h3>
+<p>The recommended approach uses a <strong>hybrid of three mechanisms</strong> working together:</p>
+<ol>
+<li>
+<p><strong>Explicit tag</strong>: blocks can be flagged with <code>is_self_component = true</code> by the ingestion or consolidation agent when content appears to describe identity, values, or persistent preferences.</p>
+</li>
+<li>
+<p><strong>Root anchor</strong>: a dedicated root node in the graph serves as the identity anchor, and blocks within a configurable graph distance of this anchor are candidates for the Self frame.</p>
+</li>
+<li>
+<p><strong>Scoring threshold</strong>: even without explicit tagging, blocks that exceed a centrality and reinforcement threshold are considered for Self inclusion.</p>
+</li>
+</ol>
+<p>This three-layer approach ensures that Self is robust: explicitly tagged blocks are always included, structurally central blocks are discovered automatically, and the scoring threshold catches emergent identity patterns that neither tagging nor anchoring anticipated.</p>
+<h3 id="102-self-refresh-cadence">10.2 Self Refresh Cadence<a class="headerlink" href="#102-self-refresh-cadence" title="Permanent link">&para;</a></h3>
+<p>The Self frame is not recalculated per query. It is assembled periodically (default: hourly) and cached. This reflects the human cognitive pattern where core identity is stable within a session but may shift gradually over longer timeframes. The cached Self is invalidated when new self-tagged blocks are consolidated or when a significant centrality shift is detected in the identity subgraph.</p>
+<hr />
+<h2 id="11-interface-architecture">11. Interface Architecture<a class="headerlink" href="#11-interface-architecture" title="Permanent link">&para;</a></h2>
+<p>The system exposes its capabilities through a layered interface architecture. Each layer builds on the one below it, and external consumers can interact at whichever level is appropriate for their use case.</p>
+<h3 id="111-layer-model">11.1 Layer Model<a class="headerlink" href="#111-layer-model" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Consumers</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Core Library</td>
+<td>Python package (<code>amgs</code>)</td>
+<td>Other Python code, agents, notebooks</td>
+<td>Domain model, algorithms, storage. Direct function calls.</td>
+</tr>
+<tr>
+<td>2. Service Layer</td>
+<td>Async Python (asyncio)</td>
+<td>API layer, scheduler</td>
+<td>Lifecycle management, consolidation scheduling, event loop</td>
+</tr>
+<tr>
+<td>3. REST API</td>
+<td>FastAPI</td>
+<td>CLI, web UI, external agents, webhooks</td>
+<td>HTTP endpoints for all operations. OpenAPI schema.</td>
+</tr>
+<tr>
+<td>4. CLI</td>
+<td>Typer (Python CLI framework)</td>
+<td>Developers, operators, scripts</td>
+<td>Command-line interface mapping to API operations</td>
+</tr>
+<tr>
+<td>5. Python SDK</td>
+<td>Thin client over REST API</td>
+<td>Agent code, notebooks, integrations</td>
+<td>Ergonomic Python wrapper for the API</td>
+</tr>
+</tbody>
+</table>
+<h3 id="112-rest-api-specification">11.2 REST API Specification<a class="headerlink" href="#112-rest-api-specification" title="Permanent link">&para;</a></h3>
+<p>The API follows RESTful conventions with JSON request and response bodies. All endpoints are versioned under <code>/v1/</code>.</p>
+<h4 id="memory-operations">Memory Operations<a class="headerlink" href="#memory-operations" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/memory/ingest</code></td>
+<td>Add raw content to inbox. Accepts markdown string or batch array.</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/memory/{id}</code></td>
+<td>Retrieve a specific memory block by ID</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td><code>/v1/memory/{id}</code></td>
+<td>Update mutable metadata (category, confidence, decay_lambda, meta)</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/v1/memory/{id}</code></td>
+<td>Soft-delete (set status to pruned). Hard delete via <code>?hard=true</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/memory/reinforce</code></td>
+<td>Explicitly reinforce one or more blocks by ID</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/memory/search</code></td>
+<td>Hybrid search with query, filters, and retrieval layer options</td>
+</tr>
+</tbody>
+</table>
+<h4 id="frame-operations">Frame Operations<a class="headerlink" href="#frame-operations" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/frame/assemble</code></td>
+<td>Assemble a context frame by type. Returns ordered blocks.</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/frame/definitions</code></td>
+<td>List all registered frame definitions</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/frame/define</code></td>
+<td>Register a new frame definition with custom scoring weights</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/v1/frame/define/{name}</code></td>
+<td>Update an existing frame definition</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/frame/compose</code></td>
+<td>Define a composite frame from child frames</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/frame/{name}/cached</code></td>
+<td>Retrieve the most recently cached assembly for a frame</td>
+</tr>
+</tbody>
+</table>
+<h4 id="graph-operations">Graph Operations<a class="headerlink" href="#graph-operations" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/graph/edge</code></td>
+<td>Create or update an edge between two blocks</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/v1/graph/edge</code></td>
+<td>Remove an edge</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/graph/neighbours/{id}</code></td>
+<td>Get neighbouring nodes within N hops</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/graph/centrality/{id}</code></td>
+<td>Compute centrality scores for a node</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/graph/stats</code></td>
+<td>Graph-level statistics (node count, edge count, density, components)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="lifecycle-operations">Lifecycle Operations<a class="headerlink" href="#lifecycle-operations" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/lifecycle/consolidate</code></td>
+<td>Trigger consolidation of inbox blocks</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/lifecycle/enhance</code></td>
+<td>Trigger an enhancement cycle</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/lifecycle/prune</code></td>
+<td>Trigger pruning of decayed blocks</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/lifecycle/calibrate</code></td>
+<td>Run confidence calibration using Brier score log</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/lifecycle/status</code></td>
+<td>System health: inbox size, graph stats, last consolidation, decay summary</td>
+</tr>
+</tbody>
+</table>
+<h3 id="113-cli-specification">11.3 CLI Specification<a class="headerlink" href="#113-cli-specification" title="Permanent link">&para;</a></h3>
+<p>The CLI is built with Typer and maps directly to the REST API. It is the primary developer interface for operating and inspecting the system. All commands support <code>--format json</code> for machine-readable output.</p>
+<h4 id="command-reference">Command Reference<a class="headerlink" href="#command-reference" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>amgs ingest &lt;text&gt;</code></td>
+<td>Add content to inbox</td>
+<td><code>amgs ingest "Python supports duck typing"</code></td>
+</tr>
+<tr>
+<td><code>amgs ingest --file &lt;path&gt;</code></td>
+<td>Ingest from markdown file</td>
+<td><code>amgs ingest --file notes.md</code></td>
+</tr>
+<tr>
+<td><code>amgs ingest --batch &lt;dir&gt;</code></td>
+<td>Batch ingest all .md files in directory</td>
+<td><code>amgs ingest --batch ./knowledge/</code></td>
+</tr>
+<tr>
+<td><code>amgs search &lt;query&gt;</code></td>
+<td>Hybrid search across all layers</td>
+<td><code>amgs search "memory decay models"</code></td>
+</tr>
+<tr>
+<td><code>amgs search --layer vector</code></td>
+<td>Search using only a specific retrieval layer</td>
+<td><code>amgs search --layer keyword "DuckDB"</code></td>
+</tr>
+<tr>
+<td><code>amgs frame assemble &lt;type&gt;</code></td>
+<td>Build and display a context frame</td>
+<td><code>amgs frame assemble SELF</code></td>
+</tr>
+<tr>
+<td><code>amgs frame assemble --composite</code></td>
+<td>Assemble a composite frame</td>
+<td><code>amgs frame assemble SESSION</code></td>
+</tr>
+<tr>
+<td><code>amgs frame list</code></td>
+<td>Show all registered frame definitions</td>
+<td><code>amgs frame list</code></td>
+</tr>
+<tr>
+<td><code>amgs frame define &lt;name&gt;</code></td>
+<td>Register a new frame interactively</td>
+<td><code>amgs frame define RESEARCH</code></td>
+</tr>
+<tr>
+<td><code>amgs graph inspect &lt;id&gt;</code></td>
+<td>Show a node and its neighbourhood</td>
+<td><code>amgs graph inspect abc123</code></td>
+</tr>
+<tr>
+<td><code>amgs graph stats</code></td>
+<td>Display graph-level statistics</td>
+<td><code>amgs graph stats</code></td>
+</tr>
+<tr>
+<td><code>amgs consolidate</code></td>
+<td>Run consolidation on inbox</td>
+<td><code>amgs consolidate</code></td>
+</tr>
+<tr>
+<td><code>amgs consolidate --dry-run</code></td>
+<td>Preview consolidation without committing</td>
+<td><code>amgs consolidate --dry-run</code></td>
+</tr>
+<tr>
+<td><code>amgs enhance</code></td>
+<td>Run enhancement cycle</td>
+<td><code>amgs enhance</code></td>
+</tr>
+<tr>
+<td><code>amgs prune</code></td>
+<td>Run pruning of decayed blocks</td>
+<td><code>amgs prune --threshold 0.05</code></td>
+</tr>
+<tr>
+<td><code>amgs calibrate</code></td>
+<td>Run confidence calibration</td>
+<td><code>amgs calibrate</code></td>
+</tr>
+<tr>
+<td><code>amgs status</code></td>
+<td>System health overview</td>
+<td><code>amgs status</code></td>
+</tr>
+<tr>
+<td><code>amgs export</code></td>
+<td>Export full graph as JSON or GraphML</td>
+<td><code>amgs export --format graphml</code></td>
+</tr>
+<tr>
+<td><code>amgs shell</code></td>
+<td>Interactive REPL for exploration</td>
+<td><code>amgs shell</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="114-python-sdk">11.4 Python SDK<a class="headerlink" href="#114-python-sdk" title="Permanent link">&para;</a></h3>
+<p>The SDK provides an ergonomic Python interface for agent code and notebooks:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">amgs</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryClient</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">MemoryClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;http://localhost:8420&quot;</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Ingest</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">block</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="s2">&quot;Python&#39;s GIL prevents true thread parallelism&quot;</span><span class="p">)</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Search</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">results</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;concurrency in Python&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1"># Assemble a frame</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">self_frame</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">assemble</span><span class="p">(</span><span class="s2">&quot;SELF&quot;</span><span class="p">)</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">session</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">assemble</span><span class="p">(</span><span class="s2">&quot;SESSION&quot;</span><span class="p">)</span>  <span class="c1"># composite</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># Graph inspection</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">neighbours</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbours</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">hops</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="c1"># Lifecycle</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="n">client</span><span class="o">.</span><span class="n">lifecycle</span><span class="o">.</span><span class="n">consolidate</span><span class="p">()</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="n">client</span><span class="o">.</span><span class="n">lifecycle</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
+</span></code></pre></div>
+<hr />
+<h2 id="12-identity-and-hashing-strategy">12. Identity and Hashing Strategy<a class="headerlink" href="#12-identity-and-hashing-strategy" title="Permanent link">&para;</a></h2>
+<p>The block ID is a SHA-256 hash of the canonicalised content. Canonicalisation strips leading and trailing whitespace, normalises line endings to LF, and collapses multiple blank lines to a single blank line. This ensures that semantically identical content always produces the same ID regardless of formatting variations.</p>
+<p>The ID contains <strong>no encoded metadata</strong>. Category prefixes, timestamps, and confidence bits were evaluated and rejected.</p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Benefit</th>
+<th>Risk</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pure content hash</td>
+<td>Identity integrity, deduplication</td>
+<td>No structural information</td>
+<td><strong>Adopted</strong></td>
+</tr>
+<tr>
+<td>Category prefix</td>
+<td>Fast filtering</td>
+<td>Breaks on recategorisation</td>
+<td>Rejected (use SQL filter)</td>
+</tr>
+<tr>
+<td>LSH component</td>
+<td>Similar nodes cluster by ID</td>
+<td>Collision risk, mutable similarity</td>
+<td>Rejected (use embeddings)</td>
+</tr>
+<tr>
+<td>Timestamp component</td>
+<td>Temporal sorting by ID</td>
+<td>Volatile, misleading after reinforcement</td>
+<td>Rejected (use <code>created_at</code> column)</td>
+</tr>
+<tr>
+<td>Confidence bits</td>
+<td>Quick trust estimation</td>
+<td>Needs recalibration, stale quickly</td>
+<td>Rejected (use <code>confidence</code> column)</td>
+</tr>
+</tbody>
+</table>
+<p>The rationale: IDs must be stable across the full lifecycle. Metadata changes (recategorisation, confidence adjustment) must never change a block's identity. <strong>State belongs in metadata columns, not in identifiers.</strong></p>
+<hr />
+<h2 id="13-calibration-and-tuning">13. Calibration and Tuning<a class="headerlink" href="#13-calibration-and-tuning" title="Permanent link">&para;</a></h2>
+<h3 id="131-success-metrics">13.1 Success Metrics<a class="headerlink" href="#131-success-metrics" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>What It Measures</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Retrieval precision</td>
+<td>Fraction of retrieved blocks that are relevant</td>
+<td>&gt; 0.80</td>
+</tr>
+<tr>
+<td>Retrieval recall</td>
+<td>Fraction of relevant blocks that are retrieved</td>
+<td>&gt; 0.70</td>
+</tr>
+<tr>
+<td>Context coherence</td>
+<td>Semantic consistency within assembled frames</td>
+<td>Evaluated qualitatively</td>
+</tr>
+<tr>
+<td>Graph stability</td>
+<td>Rate of structural change between enhancement cycles</td>
+<td>Low drift between cycles</td>
+</tr>
+<tr>
+<td>Confidence calibration</td>
+<td>Average Brier score across predictions</td>
+<td>&lt; 0.15</td>
+</tr>
+<tr>
+<td>Attention stability</td>
+<td>Overlap between successive frame assemblies for same query</td>
+<td>&gt; 0.60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="132-parameter-tuning">13.2 Parameter Tuning<a class="headerlink" href="#132-parameter-tuning" title="Permanent link">&para;</a></h3>
+<p>The system supports multiple tuning methods:</p>
+<ul>
+<li><strong>Grid search</strong> over scoring weight parameters for each frame type provides a baseline</li>
+<li><strong>Bayesian optimisation</strong> can find optimal weight configurations more efficiently</li>
+<li><strong>A/B testing</strong> of retrieval weight variants against held-out evaluation sets provides empirical validation</li>
+<li><strong>Simulation runs</strong> using synthetic memory corpora test system behaviour under controlled conditions</li>
+</ul>
+<h3 id="133-feedback-loops">13.3 Feedback Loops<a class="headerlink" href="#133-feedback-loops" title="Permanent link">&para;</a></h3>
+<p>The system becomes self-calibrating through several feedback mechanisms:</p>
+<ul>
+<li>The <strong>Brier score log</strong> tracks prediction accuracy over time and adjusts confidence weights accordingly</li>
+<li><strong>Centrality drift monitoring</strong> detects when the graph's structural importance distribution shifts unexpectedly</li>
+<li><strong>Entropy monitoring</strong> tracks the diversity of categories and concepts within frames</li>
+<li><strong>Attention stability tracking</strong> measures whether successive assemblies for similar queries produce consistent results</li>
+</ul>
+<hr />
+<h2 id="14-minimal-viable-product-scope">14. Minimal Viable Product Scope<a class="headerlink" href="#14-minimal-viable-product-scope" title="Permanent link">&para;</a></h2>
+<p>The MVP delivers a working system that demonstrates the core architectural principles without the full mathematical and agent infrastructure. The guiding principle is: <strong>get the data model right, prove the frame abstraction works, and defer expensive optimisation.</strong></p>
+<h3 id="mvp-includes">MVP Includes<a class="headerlink" href="#mvp-includes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>DuckDB storage with <code>memory_blocks</code>, <code>edges</code>, and <code>frame_definitions</code> tables</li>
+<li>Content-hash ID generation with canonicalisation</li>
+<li>Basic ingestion pipeline (markdown content to inbox)</li>
+<li>Single-pass consolidation (categorise, embed, link, score)</li>
+<li>Simple half-life decay with configurable lambda per block</li>
+<li>Tag-based category system</li>
+<li>Basic composite attention scoring with configurable weights</li>
+<li>Two atomic frame types: SELF and ATTENTION</li>
+<li>One composite frame: SESSION (SELF + ATTENTION)</li>
+<li>INBOX as a context frame</li>
+<li>REST API via FastAPI with core endpoints</li>
+<li>CLI via Typer with ingest, search, frame assemble, consolidate, and status commands</li>
+<li>Python SDK with MemoryClient</li>
+<li>NetworkX for graph centrality computation</li>
+<li>Sentence-transformer embeddings (local, no API cost)</li>
+</ul>
+<h3 id="mvp-excludes-deferred-to-v11">MVP Excludes (Deferred to v1.1+)<a class="headerlink" href="#mvp-excludes-deferred-to-v11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Monte Carlo simulation</li>
+<li>Shannon entropy balancing in frame selection</li>
+<li>Advanced calibration (Brier score feedback loops)</li>
+<li>Enhancement agent (graph health evaluation and repair)</li>
+<li>Curation agent (automated pruning)</li>
+<li>Bayesian parameter optimisation</li>
+<li>External graph database support</li>
+<li>External vector index support</li>
+<li>Multi-tenant isolation</li>
+<li>Web UI</li>
+</ul>
+<hr />
+<h2 id="15-python-package-structure">15. Python Package Structure<a class="headerlink" href="#15-python-package-structure" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>amgs/
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>├── __init__.py
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>├── core/
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>│   ├── __init__.py
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>│   ├── models.py          # Pydantic models: MemoryBlock, Edge, Score, FrameDefinition
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>│   ├── storage.py         # DuckDB connection, table creation, CRUD
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>│   ├── hashing.py         # Content canonicalisation and SHA-256 ID generation
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>│   ├── decay.py           # Half-life decay computation
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>│   └── scoring.py         # Composite attention score calculation
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>├── graph/
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>│   ├── __init__.py
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>│   ├── manager.py         # NetworkX graph build, cache, rebuild
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>│   ├── centrality.py      # Degree, eigenvector, PageRank, betweenness
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>│   └── traversal.py       # Neighbourhood expansion, path finding
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>├── retrieval/
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>│   ├── __init__.py
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>│   ├── keyword.py         # Full-text and fuzzy search
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>│   ├── vector.py          # Embedding similarity search
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>│   └── hybrid.py          # Layered retrieval orchestration
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>├── frames/
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>│   ├── __init__.py
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>│   ├── registry.py        # Frame definition storage and DAG validation
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>│   ├── builder.py         # Frame construction pipeline (4 steps)
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>│   ├── composer.py        # Composite frame merging and budget allocation
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>│   └── assembler.py       # Output formatting (markdown, structured, summarised)
+</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>├── embeddings/
+</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>│   ├── __init__.py
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>│   └── provider.py        # Embedding generation (sentence-transformers, OpenAI, etc.)
+</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>├── lifecycle/
+</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>│   ├── __init__.py
+</span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>│   ├── ingestion.py       # Inbox write logic
+</span><span id="__span-9-32"><a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>│   ├── consolidation.py   # Full consolidation pipeline
+</span><span id="__span-9-33"><a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>│   ├── enhancement.py     # Graph health evaluation and repair
+</span><span id="__span-9-34"><a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>│   ├── reinforcement.py   # Access tracking and decay reset
+</span><span id="__span-9-35"><a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>│   └── pruning.py         # Decay-based soft delete and edge cleanup
+</span><span id="__span-9-36"><a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>├── calibration/
+</span><span id="__span-9-37"><a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>│   ├── __init__.py
+</span><span id="__span-9-38"><a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>│   ├── brier.py           # Brier score computation and logging
+</span><span id="__span-9-39"><a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>│   └── tuning.py          # Weight optimisation (grid search, Bayesian)
+</span><span id="__span-9-40"><a id="__codelineno-9-40" name="__codelineno-9-40" href="#__codelineno-9-40"></a>├── api/
+</span><span id="__span-9-41"><a id="__codelineno-9-41" name="__codelineno-9-41" href="#__codelineno-9-41"></a>│   ├── __init__.py
+</span><span id="__span-9-42"><a id="__codelineno-9-42" name="__codelineno-9-42" href="#__codelineno-9-42"></a>│   ├── app.py             # FastAPI application factory
+</span><span id="__span-9-43"><a id="__codelineno-9-43" name="__codelineno-9-43" href="#__codelineno-9-43"></a>│   ├── routes/
+</span><span id="__span-9-44"><a id="__codelineno-9-44" name="__codelineno-9-44" href="#__codelineno-9-44"></a>│   │   ├── memory.py      # /v1/memory/* endpoints
+</span><span id="__span-9-45"><a id="__codelineno-9-45" name="__codelineno-9-45" href="#__codelineno-9-45"></a>│   │   ├── frames.py      # /v1/frame/* endpoints
+</span><span id="__span-9-46"><a id="__codelineno-9-46" name="__codelineno-9-46" href="#__codelineno-9-46"></a>│   │   ├── graph.py       # /v1/graph/* endpoints
+</span><span id="__span-9-47"><a id="__codelineno-9-47" name="__codelineno-9-47" href="#__codelineno-9-47"></a>│   │   └── lifecycle.py   # /v1/lifecycle/* endpoints
+</span><span id="__span-9-48"><a id="__codelineno-9-48" name="__codelineno-9-48" href="#__codelineno-9-48"></a>│   └── deps.py            # Dependency injection (storage, graph, embeddings)
+</span><span id="__span-9-49"><a id="__codelineno-9-49" name="__codelineno-9-49" href="#__codelineno-9-49"></a>├── cli/
+</span><span id="__span-9-50"><a id="__codelineno-9-50" name="__codelineno-9-50" href="#__codelineno-9-50"></a>│   ├── __init__.py
+</span><span id="__span-9-51"><a id="__codelineno-9-51" name="__codelineno-9-51" href="#__codelineno-9-51"></a>│   └── main.py            # Typer CLI application
+</span><span id="__span-9-52"><a id="__codelineno-9-52" name="__codelineno-9-52" href="#__codelineno-9-52"></a>├── sdk/
+</span><span id="__span-9-53"><a id="__codelineno-9-53" name="__codelineno-9-53" href="#__codelineno-9-53"></a>│   ├── __init__.py
+</span><span id="__span-9-54"><a id="__codelineno-9-54" name="__codelineno-9-54" href="#__codelineno-9-54"></a>│   └── client.py          # MemoryClient (httpx-based API client)
+</span><span id="__span-9-55"><a id="__codelineno-9-55" name="__codelineno-9-55" href="#__codelineno-9-55"></a>└── config.py              # Configuration (paths, defaults, decay profiles)
+</span></code></pre></div>
+<hr />
+<h2 id="16-differentiation-from-existing-systems">16. Differentiation from Existing Systems<a class="headerlink" href="#16-differentiation-from-existing-systems" title="Permanent link">&para;</a></h2>
+<p>Existing patterns that AMGS draws from include knowledge graphs, RAG pipelines, agent memory frameworks, GraphRAG-style systems, vector databases, and hybrid search systems. However, AMGS is architecturally distinct in several important ways.</p>
+<table>
+<thead>
+<tr>
+<th>Existing Pattern</th>
+<th>What It Does</th>
+<th>What AMGS Adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vector database + RAG</td>
+<td>Semantic retrieval over static documents</td>
+<td>Temporal decay, confidence calibration, graph relationships, dynamic identity</td>
+</tr>
+<tr>
+<td>Knowledge graph</td>
+<td>Structured entity-relationship storage</td>
+<td>Decay-aware relevance, attention scoring, frame-based context assembly</td>
+</tr>
+<tr>
+<td>Agent memory (LangChain, etc.)</td>
+<td>Conversation history and simple retrieval</td>
+<td>Graph centrality, composite scoring, self-assembling identity, calibration</td>
+</tr>
+<tr>
+<td>GraphRAG</td>
+<td>Graph-enhanced retrieval augmented generation</td>
+<td>Context frames as universal abstraction, compositional frames, lifecycle agents</td>
+</tr>
+</tbody>
+</table>
+<p>The fundamental difference is that AMGS treats memory as a <strong>living system</strong> with its own lifecycle, rather than as a static store that is queried. Memory decays, relationships evolve, confidence is calibrated, and identity emerges from the interaction of these processes over time.</p>
+<hr />
+<h2 id="17-implementation-roadmap">17. Implementation Roadmap<a class="headerlink" href="#17-implementation-roadmap" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Scope</th>
+<th>Duration</th>
+<th>Key Deliverables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1: Foundation</td>
+<td>Core data model, storage, ingestion, basic search</td>
+<td>2–3 weeks</td>
+<td>DuckDB schema, MemoryBlock CRUD, content hashing, keyword + vector search</td>
+</tr>
+<tr>
+<td>Phase 2: Frames</td>
+<td>Frame abstraction, SELF, ATTENTION, INBOX, composition</td>
+<td>2–3 weeks</td>
+<td>Frame registry, builder pipeline, composite frames, SESSION assembly</td>
+</tr>
+<tr>
+<td>Phase 3: Interface</td>
+<td>REST API, CLI, Python SDK</td>
+<td>1–2 weeks</td>
+<td>FastAPI app, Typer CLI, MemoryClient SDK</td>
+</tr>
+<tr>
+<td>Phase 4: Lifecycle</td>
+<td>Consolidation pipeline, reinforcement, basic pruning</td>
+<td>2 weeks</td>
+<td>Consolidation agent, decay computation, reinforcement tracking</td>
+</tr>
+<tr>
+<td>Phase 5: Graph Intelligence</td>
+<td>Centrality computation, graph expansion, enhanced scoring</td>
+<td>2 weeks</td>
+<td>NetworkX integration, centrality measures, graph-aware retrieval</td>
+</tr>
+<tr>
+<td>Phase 6: Calibration</td>
+<td>Brier scoring, confidence feedback, weight tuning</td>
+<td>2 weeks</td>
+<td>Calibration log, feedback loops, grid search tuning</td>
+</tr>
+<tr>
+<td>Phase 7: Enhancement</td>
+<td>Graph health evaluation, merge/split, Monte Carlo</td>
+<td>3–4 weeks</td>
+<td>Enhancement agent, simulation framework, automated repair</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>The Adaptive Memory Graph System is a graph-based, decay-aware, confidence-calibrated, context-assembling cognitive engine. Its central abstraction — the <strong>Context Frame</strong> — unifies all forms of context assembly (identity, attention, world knowledge, task reasoning, and even the raw inbox) under a single compositional model. The layered interface architecture ensures that the system is equally accessible to CLI operators, API consumers, agent code, and interactive notebooks.</p>
+<p>This specification provides the complete reference for implementing AMGS. The MVP scope is deliberately constrained to prove the core abstractions, with a clear roadmap for incremental capability expansion.</p>
+<hr />
+<p><em>End of Specification</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
