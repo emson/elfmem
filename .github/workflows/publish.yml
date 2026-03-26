@@ -10,8 +10,12 @@ permissions:
 
 jobs:
   build:
-    name: Build distribution
+    name: Build and test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +25,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Set up Python
-        run: uv python install 3.11
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies and run tests
         run: |
@@ -30,9 +34,11 @@ jobs:
           uv run pytest -q
 
       - name: Build package
+        if: matrix.python-version == '3.11'
         run: uv build
 
       - name: Upload distribution artifact
+        if: matrix.python-version == '3.11'
         uses: actions/upload-artifact@v4
         with:
           name: dist

@@ -274,5 +274,5 @@ sim/
 ## Reference
 
 - Architecture spec: `docs/amgs_architecture.md`
-- Previous Python sim notes: `docs/notes.md`
-- Previous sim instructions: `docs/amgs_instructions.md`
+- Exploration index: `sim/EXPLORATIONS.md`
+- Implementation plans: `docs/plans/`

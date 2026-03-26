@@ -1,0 +1,3011 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_graph_temporal_decay/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: C2 — Edge Temporal Decay at curate() - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-c2-edge-temporal-decay-at-curate" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: C2 — Edge Temporal Decay at curate()
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-c2-adds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What C2 Adds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-decay-formula-from-research-doc-46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Decay Formula (from research doc §4.6)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Decay Formula (from research doc §4.6)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-edge-decay-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Edge decay rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-effective-weight-at-curate-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Effective weight at curate time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-worked-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Worked examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-null-last_active_hours-skip-temporal-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 NULL last_active_hours → skip temporal decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-agent-origin-edges-protected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Agent-origin edges protected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-interaction-with-prune_weak_edges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Interaction with prune_weak_edges()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-batch-tag-fetch-for-efficiency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Batch tag fetch for efficiency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-compute_lambda_edge-extension-is-backward-compatible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 compute_lambda_edge() extension is backward compatible
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-files-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Files Changed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-detailed-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Detailed Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Detailed Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-scoringpy-extend-compute_lambda_edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: scoring.py — extend compute_lambda_edge()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-queriespy-two-new-functions-two-updated-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: queries.py — two new functions + two updated signatures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-consolidatepy-pass-current_active_hours-to-insert_edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: consolidate.py — pass current_active_hours to insert_edge()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-outcomepy-pass-current_active_hours-to-upsert_outcome_edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: outcome.py — pass current_active_hours to upsert_outcome_edge()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-typespy-extend-curateresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: types.py — extend CurateResult
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-curatepy-new-helper-updated-orchestration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: curate.py — new helper + updated orchestration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-test-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Test Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Test Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test matrix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-1-stale-edge-pruned-by-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1: stale edge pruned by decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-recent-edge-survives-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2: recent edge survives decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-established-edge-decays-slower" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3: established edge decays slower
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-4-agent-edge-not-decayed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 4: agent edge not decayed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-5-null-last_active_hours-not-decayed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 5: NULL last_active_hours not decayed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-edge-cases-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Edge Cases and Mitigations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-calibration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Calibration Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Calibration Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#survival-horizon-standard-edge-_edge-0005" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Survival horizon: standard edge (λ_edge = 0.005)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#established-edge-bonus-_edge-00025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Established edge bonus (λ_edge = 0.0025)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-consistency-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Consistency Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-implementation-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Implementation Order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Success Criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-agent-simulation-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Agent Simulation Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_graph_temporal_decay.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-c2-edge-temporal-decay-at-curate">Plan: C2 — Edge Temporal Decay at curate()<a class="headerlink" href="#plan-c2-edge-temporal-decay-at-curate" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Ready to implement
+<strong>Phase:</strong> C2 (depends on A2 schema extension — ✅ complete)
+<strong>Date:</strong> 2026-03-09
+<strong>Biological analogy:</strong> Long-Term Depression — unused synaptic connections weaken over time</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p>Edges in the knowledge graph are created once and persist indefinitely at full weight.
+A similarity edge formed between two blocks 300 active hours ago — blocks never
+co-retrieved since — carries the same retrieval authority as an edge reinforced
+yesterday. This is wrong and actively harmful:</p>
+<ul>
+<li><strong>Recall poisoning:</strong> Stale edges pull irrelevant blocks into graph expansion, diluting
+  context quality.</li>
+<li><strong>Frozen graph:</strong> The graph cannot evolve as the agent's knowledge domain shifts.
+  Regions the agent no longer visits remain connected at full weight forever.</li>
+<li><strong>Inconsistency with block model:</strong> Blocks decay via <code>compute_recency()</code>. Edges between
+  them should decay too. A decayed block that barely survives archival should not carry
+  strong edges — the graph and the blocks tell contradictory stories.</li>
+</ul>
+<p>The <code>last_active_hours</code> column was added in A2 precisely to enable this. It is populated
+by <code>reinforce_edges()</code> and by <code>insert_agent_edge()</code> — but currently never read.</p>
+<hr />
+<h2 id="2-what-c2-adds">2. What C2 Adds<a class="headerlink" href="#2-what-c2-adds" title="Permanent link">&para;</a></h2>
+<p>Three new behaviors:</p>
+<ol>
+<li>
+<p><strong>Session anchor at creation.</strong> <code>insert_edge()</code> and <code>upsert_outcome_edge()</code> gain an
+   optional <code>last_active_hours</code> parameter. Callers (<code>consolidate.py</code>, <code>outcome.py</code>)
+   pass <code>current_active_hours</code> so every new edge records when it was born in session
+   time, not just wall-clock time.</p>
+</li>
+<li>
+<p><strong>Temporal decay at curate().</strong> A new <code>_prune_decayed_edges()</code> helper runs after
+   the existing <code>prune_weak_edges()</code>. It fetches all edges, computes an effective
+   weight accounting for elapsed active hours, and deletes edges whose effective weight
+   has fallen below the prune threshold.</p>
+</li>
+<li>
+<p><strong>Observability.</strong> <code>CurateResult</code> gains <code>edges_decayed: int</code> to distinguish
+   temporally-pruned edges (stale relationships) from statically-pruned ones (never
+   proved useful). Agents can observe "12 edges decayed this cycle" and understand
+   their knowledge graph is evolving.</p>
+</li>
+</ol>
+<hr />
+<h2 id="3-decay-formula-from-research-doc-46">3. Decay Formula (from research doc §4.6)<a class="headerlink" href="#3-decay-formula-from-research-doc-46" title="Permanent link">&para;</a></h2>
+<h3 id="31-edge-decay-rate">3.1 Edge decay rate<a class="headerlink" href="#31-edge-decay-rate" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>λ_edge = min(λ_a, λ_b) × 0.5
+</span></code></pre></div>
+<p>Where <code>λ_a</code>, <code>λ_b</code> are the decay rates of the two endpoint blocks (from their
+<code>DecayTier</code>). The edge inherits durability from the <strong>more stable</strong> block. Halving
+gives edges more longevity than their weakest block — relationships outlast individual
+memories.</p>
+<p><strong>Established edge bonus</strong> (Long-Term Depression protection):
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>if reinforcement_count &gt;= ESTABLISHED_EDGE_THRESHOLD (10):
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    λ_edge *= 0.5
+</span></code></pre></div></p>
+<p>Edges proven through ≥10 co-retrievals decay at one-quarter the base rate. These are
+genuine, tested relationships — Long-Term Depression should not erase them casually.</p>
+<h3 id="32-effective-weight-at-curate-time">3.2 Effective weight at curate time<a class="headerlink" href="#32-effective-weight-at-curate-time" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>hours_since = max(0.0, current_active_hours − edge.last_active_hours)
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>effective_weight = edge.weight × exp(−λ_edge × hours_since)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>if effective_weight &lt; edge_prune_threshold:
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    DELETE edge
+</span></code></pre></div>
+<p><strong><code>hours_since</code> uses active hours</strong> (session-aware clock), not wall time. An agent
+that takes a two-week holiday accumulates zero active hours — edges do not decay
+during the absence. Consistent with block decay model.</p>
+<h3 id="33-worked-examples">3.3 Worked examples<a class="headerlink" href="#33-worked-examples" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>λ_edge</th>
+<th>hours_since</th>
+<th>weight</th>
+<th>effective</th>
+<th>outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard blocks, stale</td>
+<td>0.005</td>
+<td>500</td>
+<td>0.50</td>
+<td>0.041</td>
+<td>PRUNED</td>
+</tr>
+<tr>
+<td>Standard blocks, recent</td>
+<td>0.005</td>
+<td>50</td>
+<td>0.50</td>
+<td>0.390</td>
+<td>survives</td>
+</tr>
+<tr>
+<td>Established (count=12)</td>
+<td>0.0025</td>
+<td>400</td>
+<td>0.50</td>
+<td>0.184</td>
+<td>survives</td>
+</tr>
+<tr>
+<td>Non-established (count=5)</td>
+<td>0.005</td>
+<td>400</td>
+<td>0.50</td>
+<td>0.068</td>
+<td>PRUNED</td>
+</tr>
+<tr>
+<td>Permanent+Standard blocks</td>
+<td>0.000005</td>
+<td>500</td>
+<td>0.50</td>
+<td>0.499</td>
+<td>survives</td>
+</tr>
+<tr>
+<td>Ephemeral blocks</td>
+<td>0.025</td>
+<td>100</td>
+<td>0.50</td>
+<td>0.041</td>
+<td>PRUNED</td>
+</tr>
+</tbody>
+</table>
+<p>Constitutional edges between PERMANENT blocks (λ_edge ≈ 5e-6) are effectively
+immortal, consistent with their blocks.</p>
+<hr />
+<h2 id="4-design-decisions">4. Design Decisions<a class="headerlink" href="#4-design-decisions" title="Permanent link">&para;</a></h2>
+<h3 id="41-null-last_active_hours-skip-temporal-decay">4.1 <code>NULL last_active_hours</code> → skip temporal decay<a class="headerlink" href="#41-null-last_active_hours-skip-temporal-decay" title="Permanent link">&para;</a></h3>
+<p>When <code>last_active_hours IS NULL</code>, the edge has no session anchor. This happens for:
+- Edges created by old code before this change (rare, in-memory SQLite means fresh each test run)
+- Theoretically possible future edge creation paths that forget the parameter</p>
+<p><strong>Decision:</strong> Skip temporal decay entirely for NULL-anchored edges. Static pruning
+(<code>prune_weak_edges</code>) still applies to them.</p>
+<p><strong>Rationale:</strong> We cannot safely assign a decay age to an edge with no timestamp.
+Deleting a potentially-valid edge because we don't know when it was created would be
+a false positive. The static threshold (weight &lt; 0.10 AND reinforcement_count=0) is
+the correct safety net for these.</p>
+<p><strong>Consequence:</strong> Once <code>insert_edge()</code> and <code>upsert_outcome_edge()</code> are updated to always
+pass <code>last_active_hours</code>, NULL edges become rare (only legacy or uncorrected callers).</p>
+<h3 id="42-agent-origin-edges-protected">4.2 Agent-origin edges protected<a class="headerlink" href="#42-agent-origin-edges-protected" title="Permanent link">&para;</a></h3>
+<p>Edges with <code>origin == "agent"</code> skip temporal decay. The agent explicitly asserted these
+connections. If they're wrong, the agent can revoke them explicitly (via future
+<code>disconnect()</code> API or by letting the static threshold eventually remove very-low-weight ones).</p>
+<p>This is consistent with <code>find_displaceable_edge()</code> which already protects agent-origin
+edges from degree-cap displacement.</p>
+<h3 id="43-interaction-with-prune_weak_edges">4.3 Interaction with <code>prune_weak_edges()</code><a class="headerlink" href="#43-interaction-with-prune_weak_edges" title="Permanent link">&para;</a></h3>
+<p>The two pruning mechanisms are <strong>complementary, not redundant</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Catches</th>
+<th>Guards</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prune_weak_edges()</code></td>
+<td>Edges that were never useful (weight &lt; threshold AND count=0)</td>
+<td>Fast; no per-row computation needed</td>
+</tr>
+<tr>
+<td><code>_prune_decayed_edges()</code></td>
+<td>Edges that WERE useful but have gone stale</td>
+<td>Applies to all edges including well-reinforced ones</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Run order:</strong> <code>prune_weak_edges()</code> first (fast DB DELETE), then <code>_prune_decayed_edges()</code>
+(slower, requires per-edge computation). Archiving blocks first (phase 1 of curate) means
+orphaned-endpoint edges are already cascade-deleted before decay runs.</p>
+<p>A reinforced edge (count &gt; 0) that has gone stale <strong>will</strong> be pruned by temporal decay
+even though <code>prune_weak_edges()</code> spares it. This is the correct behavior: being
+reinforced 2 years ago is not the same as being actively used.</p>
+<h3 id="44-batch-tag-fetch-for-efficiency">4.4 Batch tag fetch for efficiency<a class="headerlink" href="#44-batch-tag-fetch-for-efficiency" title="Permanent link">&para;</a></h3>
+<p>Computing tier requires tags for both endpoints. Rather than N individual <code>get_tags()</code>
+calls, use the existing <code>get_tags_batch()</code> (added in B2) to fetch all endpoint tags in
+one query. At Phase 1 scale (≤500 blocks, degree cap 10, ≤2500 edges), this is fast.</p>
+<h3 id="45-compute_lambda_edge-extension-is-backward-compatible">4.5 <code>compute_lambda_edge()</code> extension is backward compatible<a class="headerlink" href="#45-compute_lambda_edge-extension-is-backward-compatible" title="Permanent link">&para;</a></h3>
+<p>Adding <code>reinforcement_count: int = 0</code> as a keyword-only parameter with default 0
+preserves all existing callers. When called with the default, the output is identical
+to the current formula. No existing tests break.</p>
+<hr />
+<h2 id="5-files-changed">5. Files Changed<a class="headerlink" href="#5-files-changed" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/elfmem/scoring.py</code></td>
+<td>Add <code>ESTABLISHED_EDGE_THRESHOLD = 10</code>; extend <code>compute_lambda_edge()</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/db/queries.py</code></td>
+<td>Add <code>get_all_edges()</code>, <code>delete_edges_bulk()</code>, <code>count_edges()</code>; add <code>last_active_hours</code> param to <code>insert_edge()</code>, <code>upsert_outcome_edge()</code>; update UPDATE clause in <code>upsert_outcome_edge()</code> to refresh <code>last_active_hours</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/operations/consolidate.py</code></td>
+<td>Pass <code>last_active_hours=current_active_hours</code> to <code>insert_edge()</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/operations/outcome.py</code></td>
+<td>Pass <code>last_active_hours=current_active_hours</code> to <code>upsert_outcome_edge()</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/operations/curate.py</code></td>
+<td>Add <code>_prune_decayed_edges()</code>; call it in <code>curate()</code>; add <code>count_edges()</code> after pruning</td>
+</tr>
+<tr>
+<td><code>src/elfmem/types.py</code></td>
+<td>Add <code>edges_decayed: int = 0</code> and <code>total_edges_after: int = 0</code> to <code>CurateResult</code>; update <code>summary</code> with contextual tips, <code>to_dict()</code></td>
+</tr>
+<tr>
+<td><code>tests/test_curate.py</code></td>
+<td>Add <code>TestEdgeTemporalDecay</code> class (5 tests)</td>
+</tr>
+</tbody>
+</table>
+<p>No schema changes — <code>last_active_hours</code> column already exists (A2).
+No config changes — uses existing <code>edge_prune_threshold</code>.
+No MCP changes — <code>CurateResult.__str__</code> updates automatically.</p>
+<hr />
+<h2 id="6-detailed-implementation">6. Detailed Implementation<a class="headerlink" href="#6-detailed-implementation" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-scoringpy-extend-compute_lambda_edge">Step 1: <code>scoring.py</code> — extend <code>compute_lambda_edge()</code><a class="headerlink" href="#step-1-scoringpy-extend-compute_lambda_edge" title="Permanent link">&para;</a></h3>
+<p>Add constant and extend function. Placed immediately above <code>compute_lambda_edge()</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Reinforcement count above which edge λ is halved (established relationship bonus).</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># Mirrors Long-Term Depression protection: well-used edges decay at 1/4 the base rate.</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">ESTABLISHED_EDGE_THRESHOLD</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_lambda_edge</span><span class="p">(</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">tier_a</span><span class="p">:</span> <span class="n">DecayTier</span><span class="p">,</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">tier_b</span><span class="p">:</span> <span class="n">DecayTier</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">reinforcement_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute edge decay rate from endpoint block tiers and reinforcement history.</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="sd">    λ_edge = min(λ_a, λ_b) × 0.5</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="sd">    The edge inherits durability from the more stable block. Halving gives edges</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="sd">    more longevity than their weakest-endpoint block.</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="sd">    Established edges (reinforcement_count ≥ ESTABLISHED_EDGE_THRESHOLD) have</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="sd">    λ halved again — they decay at one-quarter the base rate (LTD protection).</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="sd">    Backward compatible: default reinforcement_count=0 preserves existing output.</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    <span class="n">lam</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">LAMBDA</span><span class="p">[</span><span class="n">tier_a</span><span class="p">],</span> <span class="n">LAMBDA</span><span class="p">[</span><span class="n">tier_b</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.5</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="k">if</span> <span class="n">reinforcement_count</span> <span class="o">&gt;=</span> <span class="n">ESTABLISHED_EDGE_THRESHOLD</span><span class="p">:</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="n">lam</span> <span class="o">*=</span> <span class="mf">0.5</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>    <span class="k">return</span> <span class="n">lam</span>
+</span></code></pre></div>
+<h3 id="step-2-queriespy-two-new-functions-two-updated-signatures">Step 2: <code>queries.py</code> — two new functions + two updated signatures<a class="headerlink" href="#step-2-queriespy-two-new-functions-two-updated-signatures" title="Permanent link">&para;</a></h3>
+<p><strong><code>get_all_edges()</code></strong> — placed near <code>get_edges_for_block()</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_all_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch all edge rows. Used by curate() for temporal decay computation.&quot;&quot;&quot;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">edges</span><span class="p">))</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">mappings</span><span class="p">()]</span>
+</span></code></pre></div>
+<p><strong><code>count_edges()</code></strong> — lightweight count for <code>CurateResult.total_edges_after</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return total number of edges in the graph.&quot;&quot;&quot;</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">())</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">edges</span><span class="p">))</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">0</span>
+</span></code></pre></div>
+<p><strong><code>delete_edges_bulk()</code></strong> — placed near <code>delete_edge()</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_edges_bulk</span><span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete multiple edges by canonical (from_id, to_id) pairs.</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="sd">    Returns count of edges actually deleted. Silently skips missing pairs.</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">pairs</span><span class="p">:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">deleted</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="k">for</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>            <span class="n">delete</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>                <span class="n">and_</span><span class="p">(</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">from_id</span> <span class="o">==</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to_id</span> <span class="o">==</span> <span class="n">to_id</span><span class="p">)</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            <span class="p">)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>        <span class="p">)</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="n">deleted</span> <span class="o">+=</span> <span class="n">result</span><span class="o">.</span><span class="n">rowcount</span> <span class="ow">or</span> <span class="mi">0</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="k">return</span> <span class="n">deleted</span>
+</span></code></pre></div>
+<p><strong><code>insert_edge()</code> signature update</strong> (backward compatible):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">insert_edge</span><span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">from_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">to_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">relation_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;similar&quot;</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">origin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;similarity&quot;</span><span class="p">,</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">last_active_hours</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>   <span class="c1"># NEW — session anchor at creation</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Insert a similarity edge idempotently. from_id &lt; to_id enforced by caller.&quot;&quot;&quot;</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        <span class="n">insert</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span><span class="o">.</span><span class="n">prefix_with</span><span class="p">(</span><span class="s2">&quot;OR IGNORE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>            <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>            <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>            <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">,</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>            <span class="n">reinforcement_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>            <span class="n">created_at</span><span class="o">=</span><span class="n">_now_iso</span><span class="p">(),</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>            <span class="n">relation_type</span><span class="o">=</span><span class="n">relation_type</span><span class="p">,</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>            <span class="n">origin</span><span class="o">=</span><span class="n">origin</span><span class="p">,</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>            <span class="n">last_active_hours</span><span class="o">=</span><span class="n">last_active_hours</span><span class="p">,</span>   <span class="c1"># was hardcoded None</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>            <span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">,</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>        <span class="p">)</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>    <span class="p">)</span>
+</span></code></pre></div>
+<p><strong><code>upsert_outcome_edge()</code> signature update</strong> (backward compatible):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upsert_outcome_edge</span><span class="p">(</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">from_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">to_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">last_active_hours</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>   <span class="c1"># NEW — session anchor at creation and re-confirmation</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="o">...</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>        <span class="n">insert</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span><span class="o">.</span><span class="n">prefix_with</span><span class="p">(</span><span class="s2">&quot;OR IGNORE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>            <span class="o">...</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>            <span class="n">last_active_hours</span><span class="o">=</span><span class="n">last_active_hours</span><span class="p">,</span>   <span class="c1"># was hardcoded None</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>            <span class="o">...</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>        <span class="p">)</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="p">)</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">rowcount</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># new edge</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="c1"># Edge already exists — reinforce it AND refresh its temporal anchor.</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>    <span class="c1"># Outcome confirmation is active use: the agent is saying &quot;this connection</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>    <span class="c1"># was relevant to a real-world result.&quot; Reset the decay clock.</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>        <span class="n">update</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>        <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">from_id</span> <span class="o">==</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to_id</span> <span class="o">==</span> <span class="n">to_id</span><span class="p">))</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>        <span class="o">.</span><span class="n">values</span><span class="p">(</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>            <span class="n">reinforcement_count</span><span class="o">=</span><span class="n">edges</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">reinforcement_count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>            <span class="n">last_active_hours</span><span class="o">=</span><span class="n">last_active_hours</span><span class="p">,</span>  <span class="c1"># NEW — was omitted; key fix from simulation</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>        <span class="p">)</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>    <span class="p">)</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>    <span class="k">return</span> <span class="kc">False</span>
+</span></code></pre></div>
+<p><strong>Why this matters (from agent simulation):</strong> Without this fix, an edge confirmed 8 times
+via <code>outcome()</code> still decays from its creation timestamp. Outcome confirmation is the
+strongest signal of usefulness in the system — it must refresh the decay clock.
+See simulation scenario 4 for the full failure trace.</p>
+<h3 id="step-3-consolidatepy-pass-current_active_hours-to-insert_edge">Step 3: <code>consolidate.py</code> — pass <code>current_active_hours</code> to <code>insert_edge()</code><a class="headerlink" href="#step-3-consolidatepy-pass-current_active_hours-to-insert_edge" title="Permanent link">&para;</a></h3>
+<p>Single-line change at the call site:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">await</span> <span class="n">insert_edge</span><span class="p">(</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">conn</span><span class="p">,</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">weight</span><span class="o">=</span><span class="n">score</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">relation_type</span><span class="o">=</span><span class="s2">&quot;similar&quot;</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;similarity&quot;</span><span class="p">,</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">last_active_hours</span><span class="o">=</span><span class="n">current_active_hours</span><span class="p">,</span>   <span class="c1"># NEW</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="step-4-outcomepy-pass-current_active_hours-to-upsert_outcome_edge">Step 4: <code>outcome.py</code> — pass <code>current_active_hours</code> to <code>upsert_outcome_edge()</code><a class="headerlink" href="#step-4-outcomepy-pass-current_active_hours-to-upsert_outcome_edge" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">created</span> <span class="o">=</span> <span class="k">await</span> <span class="n">upsert_outcome_edge</span><span class="p">(</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">conn</span><span class="p">,</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">weight</span><span class="o">=</span><span class="n">outcome_weight</span><span class="p">,</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">last_active_hours</span><span class="o">=</span><span class="n">current_active_hours</span><span class="p">,</span>   <span class="c1"># NEW</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="step-5-typespy-extend-curateresult">Step 5: <code>types.py</code> — extend <code>CurateResult</code><a class="headerlink" href="#step-5-typespy-extend-curateresult" title="Permanent link">&para;</a></h3>
+<p>Add <code>edges_decayed</code> and <code>total_edges_after</code> fields; update <code>summary</code> and <code>to_dict()</code>.
+<code>total_edges_after</code> gives agents a denominator — "12 decayed (35 remain)" is actionable;
+"12 decayed" in isolation is not (from agent simulation scenario 5).</p>
+<p>The contextual tip and escalation in <code>summary</code> close the observability gap: an agent
+that shifted domains for 500 hours needs to know it should run <code>consolidate()</code> to rebuild
+its graph (from agent simulation scenario 3).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CurateResult</span><span class="p">:</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">archived</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">edges_pruned</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">reinforced</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">constitutional_reinforced</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">edges_decayed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>       <span class="c1"># NEW: temporally-decayed edges removed at curate()</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">total_edges_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c1"># NEW: denominator — graph size after all pruning</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="nd">@property</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">,</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">,</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>        <span class="p">]):</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>            <span class="k">return</span> <span class="s2">&quot;Curated: nothing required.&quot;</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>        <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">:</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="si">}</span><span class="s2"> archived&quot;</span><span class="p">)</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">:</span>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="si">}</span><span class="s2"> edges pruned&quot;</span><span class="p">)</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">:</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>            <span class="n">edge_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="si">}</span><span class="s2"> edges decayed&quot;</span>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>                <span class="n">edge_info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span><span class="si">}</span><span class="s2"> remain)&quot;</span>
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge_info</span><span class="p">)</span>
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">:</span>
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="si">}</span><span class="s2"> reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">:</span>
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="si">}</span><span class="s2"> constitutional reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>        <span class="n">result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Curated: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>
+</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a>        <span class="c1"># Contextual tip: tell the agent what to do next.</span>
+</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a>        <span class="c1"># Escalate when &gt;25% of the graph decayed in one cycle (catastrophic signal).</span>
+</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a>            <span class="n">total_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span>
+</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a>            <span class="n">decay_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">total_before</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-11-39"><a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>            <span class="k">if</span> <span class="n">decay_fraction</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
+</span><span id="__span-11-40"><a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot; Graph connections reduced significantly — run consolidate() to rebuild.&quot;</span>
+</span><span id="__span-11-41"><a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-11-42"><a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a>                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot; Tip: run consolidate() to rebuild connections for recently active blocks.&quot;</span>
+</span><span id="__span-11-43"><a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a>
+</span><span id="__span-11-44"><a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a>        <span class="k">return</span> <span class="n">result</span>
+</span><span id="__span-11-45"><a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a>
+</span><span id="__span-11-46"><a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+</span><span id="__span-11-47"><a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-11-48"><a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a>            <span class="s2">&quot;archived&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">,</span>
+</span><span id="__span-11-49"><a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a>            <span class="s2">&quot;edges_pruned&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">,</span>
+</span><span id="__span-11-50"><a id="__codelineno-11-50" name="__codelineno-11-50" href="#__codelineno-11-50"></a>            <span class="s2">&quot;edges_decayed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">,</span>
+</span><span id="__span-11-51"><a id="__codelineno-11-51" name="__codelineno-11-51" href="#__codelineno-11-51"></a>            <span class="s2">&quot;total_edges_after&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span><span class="p">,</span>
+</span><span id="__span-11-52"><a id="__codelineno-11-52" name="__codelineno-11-52" href="#__codelineno-11-52"></a>            <span class="s2">&quot;reinforced&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">,</span>
+</span><span id="__span-11-53"><a id="__codelineno-11-53" name="__codelineno-11-53" href="#__codelineno-11-53"></a>            <span class="s2">&quot;constitutional_reinforced&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">,</span>
+</span><span id="__span-11-54"><a id="__codelineno-11-54" name="__codelineno-11-54" href="#__codelineno-11-54"></a>        <span class="p">}</span>
+</span></code></pre></div>
+<h3 id="step-6-curatepy-new-helper-updated-orchestration">Step 6: <code>curate.py</code> — new helper + updated orchestration<a class="headerlink" href="#step-6-curatepy-new-helper-updated-orchestration" title="Permanent link">&para;</a></h3>
+<p><strong>New imports:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">delete_edges_bulk</span><span class="p">,</span>     <span class="c1"># NEW</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">get_active_blocks</span><span class="p">,</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">get_all_edges</span><span class="p">,</span>         <span class="c1"># NEW</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">get_blocks_by_tag_pattern</span><span class="p">,</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">get_config</span><span class="p">,</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">get_tags_batch</span><span class="p">,</span>        <span class="c1"># NEW</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">get_weighted_degree</span><span class="p">,</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="n">prune_weak_edges</span><span class="p">,</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>    <span class="n">reinforce_blocks</span><span class="p">,</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>    <span class="n">set_config</span><span class="p">,</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="n">update_block_status</span><span class="p">,</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="p">)</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.scoring</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>    <span class="n">ESTABLISHED_EDGE_THRESHOLD</span><span class="p">,</span>   <span class="c1"># NEW</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    <span class="n">SELF_WEIGHTS</span><span class="p">,</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    <span class="n">compute_lambda_edge</span><span class="p">,</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>    <span class="n">compute_recency</span><span class="p">,</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>    <span class="n">log_normalise_reinforcement</span><span class="p">,</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong>Updated <code>curate()</code> signature and body:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">curate</span><span class="p">(</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">current_active_hours</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">prune_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">PRUNE_THRESHOLD</span><span class="p">,</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">edge_prune_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">EDGE_PRUNE_THRESHOLD</span><span class="p">,</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">reinforce_top_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">CURATE_REINFORCE_TOP_N</span><span class="p">,</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CurateResult</span><span class="p">:</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Run maintenance on the memory corpus.</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="sd">    Four phases:</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="sd">    1. Archive blocks whose recency has dropped below prune_threshold</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="sd">    2. Delete edges whose weight is below edge_prune_threshold (static, fast)</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="sd">    3. Delete edges whose effective weight has decayed below threshold (temporal)</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="sd">    4. Reinforce constitutional blocks and top-N by composite score</span>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="sd">    Updates last_curate_at in system_config after completion.</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    <span class="n">archived</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_archive_decayed_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">,</span> <span class="n">prune_threshold</span><span class="p">)</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>    <span class="n">edges_pruned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">prune_weak_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">edge_prune_threshold</span><span class="p">)</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>    <span class="n">edges_decayed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_prune_decayed_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">,</span> <span class="n">edge_prune_threshold</span><span class="p">)</span>
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>    <span class="n">total_edges_after</span> <span class="o">=</span> <span class="k">await</span> <span class="n">count_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>   <span class="c1"># denominator for agent observability</span>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a>    <span class="n">constitutional_reinforced</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_reinforce_constitutional</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">)</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>    <span class="n">reinforced</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_reinforce_top_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">,</span> <span class="n">reinforce_top_n</span><span class="p">)</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>
+</span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>    <span class="k">await</span> <span class="n">set_config</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;last_curate_at&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_active_hours</span><span class="p">))</span>
+</span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>    <span class="k">return</span> <span class="n">CurateResult</span><span class="p">(</span>
+</span><span id="__span-13-29"><a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>        <span class="n">archived</span><span class="o">=</span><span class="n">archived</span><span class="p">,</span>
+</span><span id="__span-13-30"><a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>        <span class="n">edges_pruned</span><span class="o">=</span><span class="n">edges_pruned</span><span class="p">,</span>
+</span><span id="__span-13-31"><a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>        <span class="n">edges_decayed</span><span class="o">=</span><span class="n">edges_decayed</span><span class="p">,</span>
+</span><span id="__span-13-32"><a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a>        <span class="n">total_edges_after</span><span class="o">=</span><span class="n">total_edges_after</span><span class="p">,</span>
+</span><span id="__span-13-33"><a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a>        <span class="n">reinforced</span><span class="o">=</span><span class="n">reinforced</span><span class="p">,</span>
+</span><span id="__span-13-34"><a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a>        <span class="n">constitutional_reinforced</span><span class="o">=</span><span class="n">constitutional_reinforced</span><span class="p">,</span>
+</span><span id="__span-13-35"><a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a>    <span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong>New <code>_prune_decayed_edges()</code> helper:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_prune_decayed_edges</span><span class="p">(</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">current_active_hours</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">edge_prune_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete edges whose effective weight has decayed below the prune threshold.</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="sd">    Effective weight = weight × exp(−λ_edge × hours_since_last_active).</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="sd">    λ_edge inherits from the more stable endpoint block (via compute_lambda_edge).</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="sd">    Established edges (reinforcement_count ≥ ESTABLISHED_EDGE_THRESHOLD) decay</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="sd">    at half rate — long-proven relationships get LTD protection.</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="sd">    Skips:</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="sd">    - Edges with NULL last_active_hours (no session anchor; static prune handles them).</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="sd">    - Agent-origin edges (deliberate conscious associations; agent revokes explicitly).</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    <span class="n">all_edges</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_all_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">all_edges</span><span class="p">:</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>    <span class="c1"># Batch-fetch tags for all endpoint blocks in one query</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>    <span class="n">endpoint_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">({</span><span class="n">e</span><span class="p">[</span><span class="s2">&quot;from_id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">all_edges</span><span class="p">}</span> <span class="o">|</span> <span class="p">{</span><span class="n">e</span><span class="p">[</span><span class="s2">&quot;to_id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">all_edges</span><span class="p">})</span>
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    <span class="n">tags_map</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_tags_batch</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">endpoint_ids</span><span class="p">)</span>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    <span class="c1"># Build category map from active blocks (archived blocks already have cascade-deleted edges)</span>
+</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>    <span class="n">active</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_active_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>    <span class="n">category_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]:</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">active</span><span class="p">}</span>
+</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_tier</span><span class="p">(</span><span class="n">block_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecayTier</span><span class="p">:</span>
+</span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>        <span class="n">tags</span> <span class="o">=</span> <span class="n">tags_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="p">[])</span>
+</span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>        <span class="n">category</span> <span class="o">=</span> <span class="n">category_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="s2">&quot;knowledge&quot;</span><span class="p">)</span>
+</span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>        <span class="k">return</span> <span class="n">determine_decay_tier</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
+</span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>
+</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>    <span class="n">to_delete</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-14-35"><a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">all_edges</span><span class="p">:</span>
+</span><span id="__span-14-36"><a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>        <span class="c1"># Guard 1: agent-origin edges are protected from temporal decay</span>
+</span><span id="__span-14-37"><a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>        <span class="k">if</span> <span class="n">edge</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;origin&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;agent&quot;</span><span class="p">:</span>
+</span><span id="__span-14-38"><a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>            <span class="k">continue</span>
+</span><span id="__span-14-39"><a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>        <span class="c1"># Guard 2: no session anchor — cannot safely compute age</span>
+</span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>        <span class="k">if</span> <span class="n">edge</span><span class="p">[</span><span class="s2">&quot;last_active_hours&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-14-41"><a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>            <span class="k">continue</span>
+</span><span id="__span-14-42"><a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a>
+</span><span id="__span-14-43"><a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a>        <span class="n">hours_since</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">current_active_hours</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;last_active_hours&quot;</span><span class="p">]))</span>
+</span><span id="__span-14-44"><a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>        <span class="n">lam</span> <span class="o">=</span> <span class="n">compute_lambda_edge</span><span class="p">(</span>
+</span><span id="__span-14-45"><a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a>            <span class="n">_tier</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;from_id&quot;</span><span class="p">]),</span>
+</span><span id="__span-14-46"><a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a>            <span class="n">_tier</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;to_id&quot;</span><span class="p">]),</span>
+</span><span id="__span-14-47"><a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a>            <span class="n">reinforcement_count</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;reinforcement_count&quot;</span><span class="p">]),</span>
+</span><span id="__span-14-48"><a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a>        <span class="p">)</span>
+</span><span id="__span-14-49"><a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a>        <span class="n">effective_weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">lam</span> <span class="o">*</span> <span class="n">hours_since</span><span class="p">)</span>
+</span><span id="__span-14-50"><a id="__codelineno-14-50" name="__codelineno-14-50" href="#__codelineno-14-50"></a>
+</span><span id="__span-14-51"><a id="__codelineno-14-51" name="__codelineno-14-51" href="#__codelineno-14-51"></a>        <span class="k">if</span> <span class="n">effective_weight</span> <span class="o">&lt;</span> <span class="n">edge_prune_threshold</span><span class="p">:</span>
+</span><span id="__span-14-52"><a id="__codelineno-14-52" name="__codelineno-14-52" href="#__codelineno-14-52"></a>            <span class="n">to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;from_id&quot;</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="s2">&quot;to_id&quot;</span><span class="p">]))</span>
+</span><span id="__span-14-53"><a id="__codelineno-14-53" name="__codelineno-14-53" href="#__codelineno-14-53"></a>
+</span><span id="__span-14-54"><a id="__codelineno-14-54" name="__codelineno-14-54" href="#__codelineno-14-54"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">delete_edges_bulk</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">)</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="7-test-plan">7. Test Plan<a class="headerlink" href="#7-test-plan" title="Permanent link">&para;</a></h2>
+<p>All tests live in <code>tests/test_curate.py</code>, new class <code>TestEdgeTemporalDecay</code>.
+Each test uses the existing <code>system_setup</code> fixture and <code>_make_active_pair()</code> helper.
+<code>insert_edge()</code> is called with explicit <code>last_active_hours</code> to control decay age.</p>
+<h3 id="test-matrix">Test matrix<a class="headerlink" href="#test-matrix" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Setup</th>
+<th>Assert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_stale_edge_pruned_by_decay</code></td>
+<td>weight=0.50, last_active_hours=0.0, current=500</td>
+<td>edges_decayed ≥ 1, edge gone</td>
+</tr>
+<tr>
+<td><code>test_recent_edge_survives_decay</code></td>
+<td>weight=0.50, last_active_hours=490.0, current=500</td>
+<td>edges_decayed == 0, edge present</td>
+</tr>
+<tr>
+<td><code>test_established_edge_decays_slower</code></td>
+<td>count=10, weight=0.50, last_active=0.0, moderate hours</td>
+<td>edge survives where non-established would not</td>
+</tr>
+<tr>
+<td><code>test_agent_edge_not_decayed</code></td>
+<td>origin="agent", weight=0.50, last_active=0.0, current=500</td>
+<td>edge present after curate</td>
+</tr>
+<tr>
+<td><code>test_null_last_active_hours_not_decayed</code></td>
+<td>last_active_hours=None (NULL), weight=0.05</td>
+<td>not in edges_decayed (may be in edges_pruned)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-1-stale-edge-pruned-by-decay">Test 1: stale edge pruned by decay<a class="headerlink" href="#test-1-stale-edge-pruned-by-decay" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_stale_edge_pruned_by_decay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Edge with large hours_since decays to effective_weight &lt; threshold and is deleted.&quot;&quot;&quot;</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="c1"># Standard blocks: λ_edge = 0.005. At hours_since=500, effective = 0.50 × e^-2.5 ≈ 0.041.</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="c1"># 0.041 &lt; edge_prune_threshold=0.10 → PRUNED.</span>
+</span></code></pre></div>
+<h3 id="test-2-recent-edge-survives-decay">Test 2: recent edge survives decay<a class="headerlink" href="#test-2-recent-edge-survives-decay" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_recent_edge_survives_decay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Edge last active 10 hours ago is not pruned by temporal decay.&quot;&quot;&quot;</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="c1"># Standard blocks: λ_edge = 0.005. At hours_since=10, effective = 0.50 × e^-0.05 ≈ 0.475.</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="c1"># 0.475 &gt; 0.10 → survives.</span>
+</span></code></pre></div>
+<h3 id="test-3-established-edge-decays-slower">Test 3: established edge decays slower<a class="headerlink" href="#test-3-established-edge-decays-slower" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_established_edge_decays_slower</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Edge with reinforcement_count=10 has λ halved; survives hours where count=0 would not.&quot;&quot;&quot;</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="c1"># count=10: λ_edge = 0.0025. At hours_since=300, effective = 0.50 × e^-0.75 ≈ 0.236.</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="c1"># count=0 at same hours: λ_edge = 0.005, effective = 0.50 × e^-1.5 ≈ 0.111.</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="c1"># Both survive 0.10 threshold at 300hrs. Use hours=500: count=10 → 0.184 (survives),</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="c1"># count=0 → 0.041 (pruned). Two edges, verify only the non-established is pruned.</span>
+</span></code></pre></div>
+<h3 id="test-4-agent-edge-not-decayed">Test 4: agent edge not decayed<a class="headerlink" href="#test-4-agent-edge-not-decayed" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_agent_edge_not_decayed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent-origin edge survives even with large hours_since (protected from LTD).&quot;&quot;&quot;</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="c1"># Insert with origin=&quot;agent&quot;, last_active_hours=0.0, current=500.</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="c1"># Must use insert_agent_edge() or insert_edge(origin=&quot;agent&quot;, last_active_hours=0.0).</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="c1"># After curate: edge still present, edges_decayed == 0.</span>
+</span></code></pre></div>
+<h3 id="test-5-null-last_active_hours-not-decayed">Test 5: NULL last_active_hours not decayed<a class="headerlink" href="#test-5-null-last_active_hours-not-decayed" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_null_last_active_hours_skips_temporal_decay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Edge with NULL last_active_hours is excluded from temporal decay computation.&quot;&quot;&quot;</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="c1"># Insert edge without last_active_hours (defaults to None/NULL), weight=0.50.</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="c1"># After curate at current=500: NOT in edges_decayed (static prune may apply if weight &lt; 0.10,</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="c1"># but with weight=0.50, edge survives entirely).</span>
+</span></code></pre></div>
+<hr />
+<h2 id="8-edge-cases-and-mitigations">8. Edge Cases and Mitigations<a class="headerlink" href="#8-edge-cases-and-mitigations" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent on holiday (no sessions)</td>
+<td><code>last_active_hours</code> uses session-aware clock. Zero active hours accumulate during the absence. Edges do not decay. ✅ (simulation scenario 6)</td>
+</tr>
+<tr>
+<td><code>current_active_hours &lt; last_active_hours</code></td>
+<td><code>max(0.0, ...)</code> clamp. <code>hours_since</code> is never negative. Weight never amplified above original. ✅</td>
+</tr>
+<tr>
+<td>Very large edge set (&gt;2500)</td>
+<td><code>get_tags_batch()</code> handles batch tag fetch. <code>delete_edges_bulk()</code> iterates pairs. At Phase 1 scale (degree cap=10, ≤500 blocks), ≤2500 edges maximum. Acceptable. ✅</td>
+</tr>
+<tr>
+<td>Both endpoints archived in same cycle</td>
+<td><code>_archive_decayed_blocks()</code> runs first and cascade-deletes edges. <code>_prune_decayed_edges()</code> finds no rows for those endpoints. ✅</td>
+</tr>
+<tr>
+<td>Endpoint block archived between cycles</td>
+<td>FK CASCADE on <code>update_block_status()</code> (explicit delete) removes edges at archival. ✅</td>
+</tr>
+<tr>
+<td>NULL last_active_hours (pre-C2 or legacy callers)</td>
+<td>Skip temporal decay entirely. Static pruning still applies. Gradual transition: edges get timestamps when first co-retrieved. ✅ (simulation scenario 10)</td>
+</tr>
+<tr>
+<td>PERMANENT-PERMANENT edge (constitutional pair)</td>
+<td>λ_edge ≈ 5×10⁻⁶. At 200,000 active hours, effective ≈ 0.368 × weight. Effectively immortal. ✅</td>
+</tr>
+<tr>
+<td>Established threshold hard cutoff (count=9 vs 10)</td>
+<td>Hard threshold is intentional — 10 co-retrievals is a strong signal. Edge at count=9 still survives 400+ hours before threshold is crossed. Acceptable. (simulation scenario 12)</td>
+</tr>
+<tr>
+<td>Agent edge with very low weight</td>
+<td>Weight &lt; static threshold (0.10) AND reinforcement_count=0 → <code>prune_weak_edges()</code> deletes it first. Temporal decay never sees it. ✅</td>
+</tr>
+<tr>
+<td>Outcome confirmation doesn't refresh anchor</td>
+<td>Fixed: <code>upsert_outcome_edge()</code> UPDATE clause now includes <code>last_active_hours</code>. Critical correctness fix from simulation scenario 4. ✅</td>
+</tr>
+<tr>
+<td>Silent domain erosion — agent returns to stale graph</td>
+<td>Mitigated by <code>CurateResult.summary</code> contextual tip and escalation message. Agent always gets actionable guidance when edges decay. (simulation scenario 3)</td>
+</tr>
+<tr>
+<td>Catastrophic mass-decay (1000+ hours of zero co-retrieval)</td>
+<td><code>CurateResult.summary</code> escalates when &gt;25% of graph decayed in one cycle: "run consolidate() to rebuild." Agent is not silent about catastrophic events. (simulation scenario 16)</td>
+</tr>
+<tr>
+<td>Reconsolidation doesn't refresh edge timestamp</td>
+<td>INSERT OR IGNORE is semantically correct — edge age represents last ACTIVE USE, not last similarity check. Documented in <code>insert_edge()</code> docstring. (simulation scenario 9)</td>
+</tr>
+<tr>
+<td>Over-calling curate()</td>
+<td>Idempotent under over-calling. Short elapsed times → near-zero decay. ✅ (simulation scenario 7)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-calibration-reference">9. Calibration Reference<a class="headerlink" href="#9-calibration-reference" title="Permanent link">&para;</a></h2>
+<p><code>EDGE_PRUNE_THRESHOLD = 0.10</code> (existing <code>EDGE_PRUNE_THRESHOLD</code> in <code>curate.py</code>)</p>
+<h3 id="survival-horizon-standard-edge-_edge-0005">Survival horizon: standard edge (λ_edge = 0.005)<a class="headerlink" href="#survival-horizon-standard-edge-_edge-0005" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>hours_since</th>
+<th>weight=0.40</th>
+<th>weight=0.60</th>
+<th>weight=0.80</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>0.242 ✅</td>
+<td>0.364 ✅</td>
+<td>0.485 ✅</td>
+</tr>
+<tr>
+<td>200</td>
+<td>0.147 ✅</td>
+<td>0.220 ✅</td>
+<td>0.293 ✅</td>
+</tr>
+<tr>
+<td>300</td>
+<td>0.089 ❌</td>
+<td>0.134 ✅</td>
+<td>0.178 ✅</td>
+</tr>
+<tr>
+<td>400</td>
+<td>0.054 ❌</td>
+<td>0.081 ❌</td>
+<td>0.108 ✅</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.033 ❌</td>
+<td>0.049 ❌</td>
+<td>0.066 ❌</td>
+</tr>
+</tbody>
+</table>
+<h3 id="established-edge-bonus-_edge-00025">Established edge bonus (λ_edge = 0.0025)<a class="headerlink" href="#established-edge-bonus-_edge-00025" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>hours_since</th>
+<th>weight=0.40</th>
+<th>weight=0.60</th>
+<th>weight=0.80</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>300</td>
+<td>0.187 ✅</td>
+<td>0.280 ✅</td>
+<td>0.374 ✅</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.116 ✅</td>
+<td>0.174 ✅</td>
+<td>0.233 ✅</td>
+</tr>
+<tr>
+<td>800</td>
+<td>0.067 ❌</td>
+<td>0.100 ✅</td>
+<td>0.134 ✅</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.049 ❌</td>
+<td>0.074 ❌</td>
+<td>0.098 ❌</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Takeaway:</strong> Standard edges survive ~200 active hours; established edges ~700 active hours
+before mid-weight edges start falling below threshold. Consistent with biological memory:
+rarely-used associations fade; frequently-reinforced ones persist for months of active use.</p>
+<hr />
+<h2 id="10-consistency-checks">10. Consistency Checks<a class="headerlink" href="#10-consistency-checks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Block decay model parity.</strong> Both use <code>exp(−λ × hours_since)</code>. Both use session-aware
+  active hours. Both use <code>determine_decay_tier()</code> for tier lookup. ✅</li>
+<li><strong>Agent first.</strong> <code>CurateResult.edges_decayed</code> is observable via <code>to_dict()</code> and
+  <code>summary</code>. The agent can act on the signal ("the graph is aging; consider re-connecting
+  key concepts"). ✅</li>
+<li><strong>Fail fast.</strong> No defensive <code>try/except</code>. Division by zero impossible (<code>λ &gt; 0</code> always).
+  <code>math.exp()</code> never raises for finite inputs. ✅</li>
+<li><strong>No new LLM calls.</strong> Pure computation over existing DB data. ✅</li>
+<li><strong>Idempotent.</strong> Running <code>curate()</code> twice at the same <code>current_active_hours</code> is safe —
+  already-decayed edges are gone, so re-running is a no-op. ✅</li>
+<li><strong>Backward compatible.</strong> All changes are additive: new parameters with defaults,
+  new field with default=0, new helper function. Existing tests don't change behavior. ✅</li>
+</ul>
+<hr />
+<h2 id="11-implementation-order">11. Implementation Order<a class="headerlink" href="#11-implementation-order" title="Permanent link">&para;</a></h2>
+<ol>
+<li><code>scoring.py</code> — constant + <code>compute_lambda_edge()</code> extension (pure, testable immediately)</li>
+<li><code>types.py</code> — <code>CurateResult.edges_decayed</code> field</li>
+<li><code>queries.py</code> — <code>get_all_edges()</code>, <code>delete_edges_bulk()</code>, signature updates</li>
+<li><code>consolidate.py</code>, <code>outcome.py</code> — pass <code>last_active_hours</code> at call sites</li>
+<li><code>curate.py</code> — <code>_prune_decayed_edges()</code> + updated <code>curate()</code> call</li>
+<li><code>tests/test_curate.py</code> — <code>TestEdgeTemporalDecay</code> (5 tests)</li>
+</ol>
+<p>Run <code>pytest</code> after each step. Steps 1–4 are individually green. Step 5 adds new
+behavior. Step 6 verifies the new behavior.</p>
+<hr />
+<h2 id="12-success-criteria">12. Success Criteria<a class="headerlink" href="#12-success-criteria" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] <code>compute_lambda_edge(STANDARD, STANDARD, reinforcement_count=10)</code> returns half
+      the value of <code>compute_lambda_edge(STANDARD, STANDARD)</code>.</li>
+<li>[ ] <code>insert_edge()</code> called with <code>last_active_hours=42.0</code> stores 42.0 in DB.</li>
+<li>[ ] <code>upsert_outcome_edge()</code> on an EXISTING edge updates <code>last_active_hours</code> to the
+      passed value (critical fix from simulation scenario 4).</li>
+<li>[ ] Stale similarity edge (weight=0.50, last_active=0.0, current=500) is in
+      <code>result.edges_decayed</code> after <code>curate()</code>.</li>
+<li>[ ] Fresh similarity edge (last_active=490.0, current=500) is NOT pruned.</li>
+<li>[ ] Agent-origin edge survives curate at any staleness level.</li>
+<li>[ ] <code>CurateResult.total_edges_after</code> is populated and non-negative after curate().</li>
+<li>[ ] <code>CurateResult.__str__</code> includes "N edges decayed (M remain)" when N &gt; 0.</li>
+<li>[ ] <code>CurateResult.__str__</code> escalates when decay_fraction &gt; 0.25.</li>
+<li>[ ] All 372 existing tests continue to pass.</li>
+<li>[ ] 5 new tests in <code>TestEdgeTemporalDecay</code> pass.</li>
+</ul>
+<hr />
+<h2 id="13-agent-simulation-reference">13. Agent Simulation Reference<a class="headerlink" href="#13-agent-simulation-reference" title="Permanent link">&para;</a></h2>
+<p>Full scenario analysis: <code>docs/plans/simulation_graph_temporal_decay.md</code></p>
+<p>Key findings that changed the plan:
+- <strong>F2 (critical):</strong> <code>upsert_outcome_edge()</code> must refresh <code>last_active_hours</code> on re-confirmation — without this, outcome-validated edges decay from creation time, ignoring signal strength.
+- <strong>F3 (important):</strong> <code>total_edges_after</code> gives agents a denominator for health assessment.
+- <strong>F1/F6 (UX):</strong> Contextual tip and escalation in <code>CurateResult.summary</code> close the observability gap for domain-shifting agents and catastrophic decay events.
+- <strong>Scenario 9 (validation):</strong> INSERT OR IGNORE behavior for reconsolidation is semantically correct — documented, not fixed.
+- <strong>Scenario 6 (validation):</strong> Session-aware clock confirmed to handle idle agents perfectly.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

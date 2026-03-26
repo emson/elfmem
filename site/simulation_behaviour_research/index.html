@@ -1,0 +1,3579 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/simulation_behaviour_research/">
+      
+      
+        <link rel="prev" href="../visualisation_research/">
+      
+      
+        <link rel="next" href="../design_simulation_guide/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Simulation Behaviour - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#behavioural-simulation-research-analysis-integration-with-elfmem" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Simulation Behaviour
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-the-behavioural-simulation-plan-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What the Behavioural Simulation Plan Does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-structural-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Structural Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Structural Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-entity-profile-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The Entity Profile Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-character-council-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The Character Council Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-the-self-entity-three-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 The SELF Entity — Three Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-the-simulation-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 The Simulation Output Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-whats-excellent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. What's Excellent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. What&#39;s Excellent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-self-as-first-class-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 SELF as First-Class Entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-text-first-phase-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Text-First Phase 0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-layered-application-with-explicit-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Layered Application with Explicit Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-hallucination-as-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 "Hallucination as Feature"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-compounding-post-resolution-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Compounding Post-Resolution Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-dual-audience-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Dual-Audience Output Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-whats-weak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. What's Weak
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. What&#39;s Weak">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-monte-carlo-isnt-monte-carlo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 "Monte Carlo" Isn't Monte Carlo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-self-assessed-plausibility-is-circular" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Self-Assessed Plausibility Is Circular
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-self-corrections-as-additive-offsets-are-fragile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 SELF Corrections as Additive Offsets Are Fragile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-entity-profile-quality-has-no-validation-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Entity Profile Quality Has No Validation Mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-40-scenarios-is-expensive-and-redundant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 40 Scenarios Is Expensive and Redundant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-no-explicit-interaction-modeling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 No Explicit Interaction Modeling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-mapping-to-elfmems-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Mapping to elfmem's Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Mapping to elfmem&#39;s Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-conceptual-correspondence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Conceptual Correspondence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-where-elfmem-is-ahead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Where elfmem Is Ahead
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-where-the-kls-plan-is-ahead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Where the KLS Plan Is Ahead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-elfmem-should-adopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What elfmem Should Adopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. What elfmem Should Adopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-self-profile-with-measured-calibration-data-high-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 SELF Profile with Measured Calibration Data (High Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-entity-profile-pattern-for-world-frame-medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Entity Profile Pattern for WORLD Frame (Medium Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-strategy-optimisation-mode-medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Strategy Optimisation Mode (Medium Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-dual-audience-output-pattern-low-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Dual-Audience Output Pattern (Low Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-elfmem-should-not-adopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What elfmem Should NOT Adopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. What elfmem Should NOT Adopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-self-assessed-plausibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Self-Assessed Plausibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-additive-self-corrections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Additive SELF Corrections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-40-scenario-paths-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 40 Scenario Paths by Default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-entity-profile-management-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Entity Profile Management CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-synthesis-the-combined-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Synthesis: The Combined Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Synthesis: The Combined Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-design-decisions-in-the-combined-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Decisions in the Combined Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-implementation-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Implementation Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Implementation Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-0-text-only-no-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 0: Text-Only (No Code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-pre-decision-self-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Pre-Decision SELF Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-full-simulation-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Full Simulation Engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-strategy-optimisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Strategy Optimisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Risk Assessment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Risk Assessment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#risks-of-adopting-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks of Adopting This Approach
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks-of-not-adopting-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks of NOT Adopting This Approach
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-conclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Conclusions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documents
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-the-behavioural-simulation-plan-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What the Behavioural Simulation Plan Does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-structural-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Structural Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Structural Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-entity-profile-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The Entity Profile Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-character-council-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The Character Council Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-the-self-entity-three-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 The SELF Entity — Three Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-the-simulation-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 The Simulation Output Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-whats-excellent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. What's Excellent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. What&#39;s Excellent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-self-as-first-class-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 SELF as First-Class Entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-text-first-phase-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Text-First Phase 0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-layered-application-with-explicit-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Layered Application with Explicit Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-hallucination-as-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 "Hallucination as Feature"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-compounding-post-resolution-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Compounding Post-Resolution Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-dual-audience-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Dual-Audience Output Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-whats-weak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. What's Weak
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. What&#39;s Weak">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-monte-carlo-isnt-monte-carlo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 "Monte Carlo" Isn't Monte Carlo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-self-assessed-plausibility-is-circular" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Self-Assessed Plausibility Is Circular
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-self-corrections-as-additive-offsets-are-fragile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 SELF Corrections as Additive Offsets Are Fragile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-entity-profile-quality-has-no-validation-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Entity Profile Quality Has No Validation Mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-40-scenarios-is-expensive-and-redundant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 40 Scenarios Is Expensive and Redundant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-no-explicit-interaction-modeling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 No Explicit Interaction Modeling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-mapping-to-elfmems-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Mapping to elfmem's Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Mapping to elfmem&#39;s Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-conceptual-correspondence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Conceptual Correspondence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-where-elfmem-is-ahead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Where elfmem Is Ahead
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-where-the-kls-plan-is-ahead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Where the KLS Plan Is Ahead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-elfmem-should-adopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What elfmem Should Adopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. What elfmem Should Adopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-self-profile-with-measured-calibration-data-high-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 SELF Profile with Measured Calibration Data (High Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-entity-profile-pattern-for-world-frame-medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Entity Profile Pattern for WORLD Frame (Medium Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-strategy-optimisation-mode-medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Strategy Optimisation Mode (Medium Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-dual-audience-output-pattern-low-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Dual-Audience Output Pattern (Low Priority)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-elfmem-should-not-adopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What elfmem Should NOT Adopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. What elfmem Should NOT Adopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-self-assessed-plausibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Self-Assessed Plausibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-additive-self-corrections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Additive SELF Corrections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-40-scenario-paths-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 40 Scenario Paths by Default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-entity-profile-management-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Entity Profile Management CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-synthesis-the-combined-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Synthesis: The Combined Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Synthesis: The Combined Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-design-decisions-in-the-combined-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Decisions in the Combined Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-implementation-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Implementation Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Implementation Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-0-text-only-no-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 0: Text-Only (No Code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-pre-decision-self-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Pre-Decision SELF Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-full-simulation-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Full Simulation Engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-strategy-optimisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Strategy Optimisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Risk Assessment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Risk Assessment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#risks-of-adopting-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks of Adopting This Approach
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks-of-not-adopting-this-approach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks of NOT Adopting This Approach
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-conclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Conclusions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documents
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/simulation_behaviour_research.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="behavioural-simulation-research-analysis-integration-with-elfmem">Behavioural Simulation Research — Analysis &amp; Integration with elfmem<a class="headerlink" href="#behavioural-simulation-research-analysis-integration-with-elfmem" title="Permanent link">&para;</a></h1>
+<p><strong>Date</strong>: 2026-03-11
+<strong>Status</strong>: Research / Evaluation
+<strong>Context</strong>: Analysis of an agent-based behavioural simulation plan from a prediction market system (KLS), evaluated against elfmem's existing simulation calibration architecture</p>
+<hr />
+<h2 id="1-what-the-behavioural-simulation-plan-does">1. What the Behavioural Simulation Plan Does<a class="headerlink" href="#1-what-the-behavioural-simulation-plan-does" title="Permanent link">&para;</a></h2>
+<p>The plan adds a <strong>Behavioural Simulation Layer</strong> to a prediction market trading system. Its core contribution: modelling <em>how specific actors behave</em> (Trump, Iran, SCOTUS) to generate causally-grounded scenario paths, rather than relying on statistical base rates alone.</p>
+<p>The system has four layers of increasing cost and depth:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>When</th>
+<th>What</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base</td>
+<td>Always</td>
+<td>Independent P estimate + store recall + 4-gate decision</td>
+<td>Free</td>
+</tr>
+<tr>
+<td>Standard</td>
+<td>Most theses &gt;$100</td>
+<td>Pre-mortem + historical analogs + Monte Carlo</td>
+<td>~$0.02</td>
+</tr>
+<tr>
+<td>Deep</td>
+<td>Human-actor theses &gt;$200, confidence 0.55-0.75</td>
+<td>Character Council + SELF check + red/blue debate</td>
+<td>~$0.10-0.30</td>
+</tr>
+<tr>
+<td>Meta</td>
+<td>Periodic</td>
+<td>Post-resolution audit + strategy optimisation + Brier scoring</td>
+<td>Variable</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>Character Council</strong> is the core simulation engine: load entity profiles → LLM generates N scenario paths constrained by those profiles → weight by plausibility → probability distribution. The output feeds the existing Monte Carlo system.</p>
+<p>The <strong>SELF simulation</strong> treats the forecaster (elf0) as a first-class entity with measured biases, known failure modes, and quantified correction factors. Three modes: pre-decision check, post-resolution audit, strategy optimisation.</p>
+<hr />
+<h2 id="2-structural-analysis">2. Structural Analysis<a class="headerlink" href="#2-structural-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="21-the-entity-profile-architecture">2.1 The Entity Profile Architecture<a class="headerlink" href="#21-the-entity-profile-architecture" title="Permanent link">&para;</a></h3>
+<p>Each entity is a 7-section markdown file:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Identity and Scope → who/what, domains, confidence, half-life
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Decision Style → how they think, speed, risk tolerance
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Incentive Structure → what they optimise for now
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Historical Patterns → what they&#39;ve consistently done
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Current Constraints → limits on action space RIGHT NOW
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>Trigger Conditions → what causes action vs. waiting
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Failure Modes → characteristic blind spots
+</span></code></pre></div>
+<p><strong>Quality criterion</strong>: profiles must be <em>specific and falsifiable</em>.</p>
+<p>Bad: "Trump is unpredictable and makes impulsive decisions."
+Good: "Trump's public threats resolve to kinetic action ~15% of the time. Signal-to-noise ratio on military threats is ~1:6."</p>
+<p>Each entity type has a half-life governing staleness:</p>
+<table>
+<thead>
+<tr>
+<th>Entity Type</th>
+<th>Half-Life</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Individual political actor</td>
+<td>60-90 days</td>
+<td>Core style stable; policy focus shifts</td>
+</tr>
+<tr>
+<td>Institutional body</td>
+<td>180-365 days</td>
+<td>Institutional logic changes slowly</td>
+</tr>
+<tr>
+<td>Nation-state leadership</td>
+<td>90-180 days</td>
+<td>Strategic posture evolves; tactics faster</td>
+</tr>
+<tr>
+<td>SELF (elf0)</td>
+<td>30 days</td>
+<td>Calibration data updates frequently</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-the-character-council-prompt">2.2 The Character Council Prompt<a class="headerlink" href="#22-the-character-council-prompt" title="Permanent link">&para;</a></h3>
+<p>The simulation engine uses a structured LLM prompt:</p>
+<ol>
+<li>Thesis statement + resolution criteria</li>
+<li>Entity profiles (verbatim — profiles ARE the constraint)</li>
+<li>Current context from store recall</li>
+<li>Generate N distinct scenario paths (default 30-50)</li>
+<li>Each path: actor decisions, causal chain, outcome, plausibility rating, conditions for more/less likely</li>
+</ol>
+<p>Paths are required to include: base case, optimistic/pessimistic outliers, and at least one path where an actor behaves against their typical pattern.</p>
+<h3 id="23-the-self-entity-three-modes">2.3 The SELF Entity — Three Modes<a class="headerlink" href="#23-the-self-entity-three-modes" title="Permanent link">&para;</a></h3>
+<p><strong>Mode 1: Pre-Decision Check</strong> (per-thesis)
+- Load SELF entity profile
+- Identify which failure modes apply to THIS thesis
+- Apply correction factors to confidence estimate
+- Output: corrected_confidence, failure_modes_triggered</p>
+<p><strong>Mode 2: Post-Resolution Audit</strong> (per resolved simulation)
+- Compare actual vs. optimal decision
+- Gap analysis → specific SELF profile update suggestions
+- Primary mechanism for updating SELF with measured data</p>
+<p><strong>Mode 3: Strategy Optimisation</strong> (periodic)
+- Test elf0 decision rules across multiple configurations against resolved theses
+- Find optimal operating parameters (min confidence, simulation requirements)
+- Recommend configuration for next operating period</p>
+<h3 id="24-the-simulation-output-format">2.4 The Simulation Output Format<a class="headerlink" href="#24-the-simulation-output-format" title="Permanent link">&para;</a></h3>
+<p>Dual-audience markdown file with 7 sections:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Audience</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Summary</td>
+<td>Both</td>
+<td>Quantitative: P(YES), confidence interval, entities, Brier</td>
+</tr>
+<tr>
+<td>2. Reasoning</td>
+<td>Human</td>
+<td>2-4 sentence synthesis</td>
+</tr>
+<tr>
+<td>3. Key Paths</td>
+<td>Both</td>
+<td>Top 5-8 paths with actor decisions</td>
+</tr>
+<tr>
+<td>4. Monitoring</td>
+<td>Human</td>
+<td>Observable signals for more/less likely</td>
+</tr>
+<tr>
+<td>5. SELF Check</td>
+<td>Both</td>
+<td>Failure modes triggered, corrections applied</td>
+</tr>
+<tr>
+<td>6. Resolution</td>
+<td>Both</td>
+<td>Post-resolution: Brier score, calibration notes</td>
+</tr>
+<tr>
+<td>7. Raw Data</td>
+<td>Machine</td>
+<td>Full JSON appendix for scoring/audit</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-whats-excellent">3. What's Excellent<a class="headerlink" href="#3-whats-excellent" title="Permanent link">&para;</a></h2>
+<h3 id="31-self-as-first-class-entity">3.1 SELF as First-Class Entity<a class="headerlink" href="#31-self-as-first-class-entity" title="Permanent link">&para;</a></h3>
+<p>The plan's most powerful insight. The asymmetry:</p>
+<blockquote>
+<p>Fix Trump estimation accuracy by 20% → improve geopolitical theses.
+Fix elf0's decision process by 20% → improve <em>every</em> thesis, in <em>every</em> domain, permanently.</p>
+</blockquote>
+<p>External simulation improves input quality for individual decisions. SELF simulation improves the decision <em>process</em> itself — this compounds across all future decisions. The SELF profile is grounded in <em>measured calibration data</em> (Brier scores per domain, quantified bias offsets), not just aspirational principles.</p>
+<p><strong>elfmem connection</strong>: elfmem's SELF frame contains constitutional blocks (identity, values, principles). What's missing is measured calibration data — quantified biases, domain-specific accuracy, known failure modes with evidence. The KLS plan shows how to extend the SELF frame from "who I am" to "where I systematically get it wrong and by how much."</p>
+<h3 id="32-text-first-phase-0">3.2 Text-First Phase 0<a class="headerlink" href="#32-text-first-phase-0" title="Permanent link">&para;</a></h3>
+<p>Zero code delivers maximum immediate value. Entity profiles are markdown files — they're knowledge blocks. Store recall already works on them. No engineering required. The system delivers value before any code exists.</p>
+<p>This is the same philosophy as elfmem's learn() → dream() progression: fast ingestion first, structure later. The KLS plan applies this principle to the simulation system itself.</p>
+<h3 id="33-layered-application-with-explicit-triggers">3.3 Layered Application with Explicit Triggers<a class="headerlink" href="#33-layered-application-with-explicit-triggers" title="Permanent link">&para;</a></h3>
+<p>Not every decision needs simulation. The trigger criteria are concrete and actionable:</p>
+<ul>
+<li>2+ interacting human decision-makers</li>
+<li>Event driven by discretionary judgment (not pure statistics)</li>
+<li>Exposure above threshold</li>
+<li>Confidence in the 0.55-0.75 band (highest marginal value)</li>
+</ul>
+<p>The confidence band criterion is particularly smart. Simulation has the most value in the uncertain middle — at extremes, you're already confident enough to act or decline. This maps directly to elfmem's confidence gating (DOWN pattern) but with domain-specific thresholds rather than abstract confidence scores.</p>
+<h3 id="34-hallucination-as-feature">3.4 "Hallucination as Feature"<a class="headerlink" href="#34-hallucination-as-feature" title="Permanent link">&para;</a></h3>
+<p>A precise reframing: the LLM's generative capacity is the simulation engine. Entity profiles constrain the generation space. Without profiles: fantasy. With profiles: structured extrapolation within behavioural bounds.</p>
+<p>This is the same principle as Shell's scenario planning and CIA RED CELL reports — use generative reasoning to expand the hypothesis space, then filter by plausibility. The insight: LLMs aren't predicting the future, they're enumerating <em>plausible</em> futures consistent with behavioural constraints.</p>
+<h3 id="35-compounding-post-resolution-loop">3.5 Compounding Post-Resolution Loop<a class="headerlink" href="#35-compounding-post-resolution-loop" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Simulation → Brier score → Entity profile updates → Better simulation
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                        → SELF profile updates → Better decision process
+</span></code></pre></div>
+<p>Three timescales of learning:
+- Per-thesis: pre-decision SELF check
+- Per-resolution: post-resolution audit + entity updates
+- Per-wave: strategy optimisation across configurations</p>
+<p>Each layer improves a different aspect: entity profiles improve input quality, SELF profile improves process quality, strategy optimisation improves operating parameters.</p>
+<h3 id="36-dual-audience-output-format">3.6 Dual-Audience Output Format<a class="headerlink" href="#36-dual-audience-output-format" title="Permanent link">&para;</a></h3>
+<p>Single file serves humans (narrative sections) and machines (JSON appendix). No translation layer, no sync problems, no format drift. The human reads the reasoning summary and monitoring signals. The LLM reads the JSON appendix for scoring and audit.</p>
+<hr />
+<h2 id="4-whats-weak">4. What's Weak<a class="headerlink" href="#4-whats-weak" title="Permanent link">&para;</a></h2>
+<h3 id="41-monte-carlo-isnt-monte-carlo">4.1 "Monte Carlo" Isn't Monte Carlo<a class="headerlink" href="#41-monte-carlo-isnt-monte-carlo" title="Permanent link">&para;</a></h3>
+<p>The plan generates N paths via LLM, then claims to perform Monte Carlo simulation:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">total_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">plausibility</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">yes_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">plausibility</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">outcome</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">p_yes</span> <span class="o">=</span> <span class="n">yes_weight</span> <span class="o">/</span> <span class="n">total_weight</span>
+</span></code></pre></div>
+<p>This is a weighted average over a fixed set of LLM-generated paths. The "Monte Carlo" step adds noise to plausibility ratings and resamples 1000 times — but this amplifies the LLM's initial generation bias, not true distributional uncertainty. The 10th/90th percentile bounds look rigorous but rest on synthetic noise applied to self-assessed ratings.</p>
+<p><strong>The statistical claim exceeds the statistical reality.</strong> This is weighted scenario aggregation, not Monte Carlo sampling from a probability distribution.</p>
+<p><strong>Better approach</strong>: Call it what it is (weighted scenario aggregation), or use genuine ensemble diversity — N independent LLM calls generating paths independently, then aggregate via median. elfmem's research synthesis recommends exactly this: ensemble of 3-10 independent calls with supervisor reconciliation.</p>
+<h3 id="42-self-assessed-plausibility-is-circular">4.2 Self-Assessed Plausibility Is Circular<a class="headerlink" href="#42-self-assessed-plausibility-is-circular" title="Permanent link">&para;</a></h3>
+<p>The same LLM that generates a scenario also rates its plausibility (0.0-1.0). This is asking the generator to judge its own quality. Known problems:</p>
+<ul>
+<li>LLMs cluster self-assessed confidence around 0.3-0.7, compressing the tails</li>
+<li>The generator anchors on its own narrative quality, not external evidence</li>
+<li>First-generated scenarios tend to receive higher plausibility (primacy effect)</li>
+</ul>
+<p><strong>Better approach</strong>: Separate generation from evaluation. Generate paths in one call, evaluate plausibility in a separate call (or use a critic model). The research synthesis's ensemble approach naturally avoids this — each independent call generates its own paths without seeing others' assessments.</p>
+<p>Alternatively, use Platt scaling to correct systematic calibration bias in the ratings: <code>p_calibrated = 1/(1 + exp(-(a × logit(p_raw) + b)))</code>.</p>
+<h3 id="43-self-corrections-as-additive-offsets-are-fragile">4.3 SELF Corrections as Additive Offsets Are Fragile<a class="headerlink" href="#43-self-corrections-as-additive-offsets-are-fragile" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Corrected estimate: 0.68 - 0.12 - 0.08 = 0.48
+</span></code></pre></div>
+<p>Five problems with this:</p>
+<ol>
+<li><strong>No probability bound enforcement</strong> — corrections can push below 0 or above 1</li>
+<li><strong>Assumes constant bias</strong> — a +0.12 bias at p=0.68 is probably not +0.12 at p=0.20 (biases scale nonlinearly with confidence)</li>
+<li><strong>No interaction effects</strong> — recency bias and geopolitical overconfidence aren't independent; applying both additively double-counts shared causes</li>
+<li><strong>False precision</strong> — applying a 0.12 correction implies the bias is known to ±0.01, which requires many resolved outcomes to estimate</li>
+<li><strong>Not self-correcting</strong> — the correction doesn't update based on whether it was itself correct</li>
+</ol>
+<p><strong>Better approach</strong>: Platt scaling. The sigmoid transform <code>p_calibrated = 1/(1 + exp(-(a × logit(p_raw) + b)))</code> respects probability bounds, handles nonlinear bias, and the parameters a,b can be fit from resolved outcomes. This is the standard approach in calibration literature (used by AIA Forecaster).</p>
+<h3 id="44-entity-profile-quality-has-no-validation-mechanism">4.4 Entity Profile Quality Has No Validation Mechanism<a class="headerlink" href="#44-entity-profile-quality-has-no-validation-mechanism" title="Permanent link">&para;</a></h3>
+<p>The plan claims "a Trump profile alone would have prevented the Iran SHORT error." This is post-hoc reasoning. The profile was written <em>after</em> the error, with knowledge of what went wrong. Any profile looks good in retrospect.</p>
+<p>The quality criteria ("specific and falsifiable") are necessary but not sufficient. There's no mechanism to:
+- Validate a profile's predictive power before relying on it
+- Detect when a profile is too generic to be useful
+- Measure which profile sections actually influenced simulation quality</p>
+<p><strong>Better approach</strong>: Profile validation through backtesting. When a new profile is written, retroactively check: would this profile have changed past decisions? If it doesn't change anything, it's too generic. Track which profile sections are cited in simulation paths that resolve correctly vs. incorrectly.</p>
+<h3 id="45-40-scenarios-is-expensive-and-redundant">4.5 40 Scenarios Is Expensive and Redundant<a class="headerlink" href="#45-40-scenarios-is-expensive-and-redundant" title="Permanent link">&para;</a></h3>
+<p>The plan defaults to 30-50 scenario paths. With capable models (Opus-class), each path requires substantial reasoning about multiple actors, causal chains, and conditions. Real costs are likely $1-5 per simulation, not the estimated $0.10-0.30.</p>
+<p>More importantly, 40 paths from a single LLM call don't provide 40x the information of 8 paths. After ~8-10 diverse paths, additional paths tend to be minor variations of existing ones. The information gain per path diminishes rapidly.</p>
+<p><strong>Better approach</strong>: Generate 5-8 archetypal paths covering the full outcome space (base case, optimistic, pessimistic, adversarial, wildcard). Use ensemble diversity (multiple independent calls) rather than path quantity for robustness. elfmem's tiered simulation design (Tier 1: 1-2 calls, Tier 2: 5 calls, Tier 3: 8-10 calls) is more cost-efficient.</p>
+<h3 id="46-no-explicit-interaction-modeling">4.6 No Explicit Interaction Modeling<a class="headerlink" href="#46-no-explicit-interaction-modeling" title="Permanent link">&para;</a></h3>
+<p>The plan states: "Focus on each entity's behaviour independently; let the scenario generator capture interactions." But interactions ARE the prediction problem. Trump's behaviour depends on Iran's response, which depends on Trump's signal, etc.</p>
+<p>The Character Council prompt handles this implicitly (entities appear together in the prompt), but there's no explicit game-theoretic or causal structure for interactions. The prompt says "generate paths" and hopes the LLM captures the strategic interplay.</p>
+<p>This isn't necessarily wrong — explicit interaction modeling is expensive and often over-engineered. But acknowledging it as a known limitation (rather than a design choice) would be more honest. For high-stakes multi-actor scenarios, the causal-first approach (Architecture F in elfmem's research synthesis) handles this better.</p>
+<hr />
+<h2 id="5-mapping-to-elfmems-architecture">5. Mapping to elfmem's Architecture<a class="headerlink" href="#5-mapping-to-elfmems-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="51-conceptual-correspondence">5.1 Conceptual Correspondence<a class="headerlink" href="#51-conceptual-correspondence" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>KLS Plan</th>
+<th>elfmem Equivalent</th>
+<th>Status in elfmem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entity profiles (markdown)</td>
+<td>Blocks in WORLD/SELF frames</td>
+<td>✅ Exists (blocks + frames)</td>
+</tr>
+<tr>
+<td>7-section profile structure</td>
+<td>Structured block content + tags</td>
+<td>⚡ Could adopt as pattern</td>
+</tr>
+<tr>
+<td>Character Council (scenario gen)</td>
+<td>Simulation calibration</td>
+<td>✅ Designed, not implemented</td>
+</tr>
+<tr>
+<td>Self-assessed plausibility</td>
+<td>—</td>
+<td>❌ Avoided — elfmem uses ensemble</td>
+</tr>
+<tr>
+<td>SELF correction (additive)</td>
+<td>Outcome signals + Platt scaling</td>
+<td>✅ Better approach designed</td>
+</tr>
+<tr>
+<td>Brier scoring</td>
+<td>outcome() with signal calibration</td>
+<td>✅ Designed</td>
+</tr>
+<tr>
+<td>Half-life / freshness</td>
+<td>Temporal decay (session-aware)</td>
+<td>✅ Implemented</td>
+</tr>
+<tr>
+<td>Layered triggers</td>
+<td>Confidence gating (DOWN pattern)</td>
+<td>✅ Designed</td>
+</tr>
+<tr>
+<td>Post-resolution audit</td>
+<td>Calibration loop</td>
+<td>✅ Designed</td>
+</tr>
+<tr>
+<td>40 scenario paths</td>
+<td>5-8 archetypal paths</td>
+<td>✅ Better approach designed</td>
+</tr>
+<tr>
+<td>Dual-audience output</td>
+<td>—</td>
+<td>⚡ Could adopt</td>
+</tr>
+<tr>
+<td>Missing-mass gap detection</td>
+<td>Good-Turing estimators</td>
+<td>✅ Designed</td>
+</tr>
+<tr>
+<td>Epistemic vs aleatoric</td>
+<td>Uncertainty tagging</td>
+<td>✅ Designed</td>
+</tr>
+<tr>
+<td>Strategy optimisation</td>
+<td>—</td>
+<td>⚡ New capability</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-where-elfmem-is-ahead">5.2 Where elfmem Is Ahead<a class="headerlink" href="#52-where-elfmem-is-ahead" title="Permanent link">&para;</a></h3>
+<p><strong>Ensemble generation</strong>: Instead of one LLM generating 40 paths and rating its own plausibility, elfmem's design uses N independent calls with median aggregation. More robust against single-generation biases.</p>
+<p><strong>Platt scaling</strong>: Instead of additive SELF corrections, elfmem uses sigmoid-based calibration that respects probability bounds. Parameters self-calibrate from accumulated Brier scores.</p>
+<p><strong>Missing-mass estimation</strong>: Good-Turing estimators for mathematically principled gap detection, rather than heuristic "empty recall = knowledge gap."</p>
+<p><strong>Free energy scoring</strong>: <code>G = α × pragmatic_value + (1-α) × epistemic_value</code> provides principled block-level scoring, replacing ad-hoc signal values.</p>
+<p><strong>Confidence gating</strong>: The DOWN pattern (debate only when uncertain) with measured gate accuracy tracking is more principled than heuristic trigger criteria.</p>
+<h3 id="53-where-the-kls-plan-is-ahead">5.3 Where the KLS Plan Is Ahead<a class="headerlink" href="#53-where-the-kls-plan-is-ahead" title="Permanent link">&para;</a></h3>
+<p><strong>SELF with measured calibration data</strong>: elfmem's SELF frame has constitutional blocks (principles, values). The KLS plan extends this with <em>quantified</em> failure modes — measured biases per domain, correction factors with evidence, a historical patterns section that grows with each resolved outcome. This is the gap: elfmem knows <em>who it is</em> but doesn't yet track <em>where it's systematically wrong</em>.</p>
+<p><strong>Three SELF modes at different timescales</strong>: Pre-decision (per-action), post-resolution (per-outcome), strategy optimisation (periodic). elfmem's outcome() handles the first two implicitly but lacks the explicit strategy optimisation mode that tests operating configurations against historical data.</p>
+<p><strong>Entity profile structure</strong>: The 7-section format (identity, decision style, incentives, historical patterns, constraints, triggers, failure modes) is a reusable pattern for modeling any decision-making entity. This could be adopted as an elfmem pattern for WORLD frame blocks.</p>
+<p><strong>Dual-audience output</strong>: Narrative sections for human review + JSON appendix for machine processing in a single file. elfmem's result types have <code>__str__</code>, <code>summary</code>, and <code>to_dict()</code> but don't have a standardised multi-audience document format for complex outputs like simulation results.</p>
+<p><strong>Text-first deployment</strong>: Phase 0 delivers value before any code exists. Entity profiles are just markdown files that work with existing recall. elfmem could adopt the same approach — define entity profiles as a block pattern, document the structure, and let agents use them immediately via recall.</p>
+<hr />
+<h2 id="6-what-elfmem-should-adopt">6. What elfmem Should Adopt<a class="headerlink" href="#6-what-elfmem-should-adopt" title="Permanent link">&para;</a></h2>
+<h3 id="61-self-profile-with-measured-calibration-data-high-priority">6.1 SELF Profile with Measured Calibration Data (High Priority)<a class="headerlink" href="#61-self-profile-with-measured-calibration-data-high-priority" title="Permanent link">&para;</a></h3>
+<p>Extend the SELF frame beyond constitutional blocks to include measured calibration:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>SELF frame (current):
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  Constitutional blocks → identity, values, principles
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>SELF frame (extended):
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  Constitutional blocks → identity, values, principles (permanent decay)
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  Calibration blocks → measured biases, domain accuracy, failure modes (30-day half-life)
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  Decision rules → operating parameters, thresholds (updated per-wave)
+</span></code></pre></div>
+<p>The calibration blocks would contain:
+- <strong>Measured failure modes</strong>: "Geopolitical overconfidence: +0.12 (from N=8 resolved predictions)"
+- <strong>Domain accuracy</strong>: "Crypto timing: Brier 0.18 (N=12). Macro rates: Brier 0.24 (N=6)."
+- <strong>Known triggers</strong>: "High-salience news → recency bias; short horizon + binary event → overestimation"</p>
+<p>These are fundamentally different from constitutional blocks — they're empirical, they update frequently, and they have short half-lives. But they live in the SELF frame because they're about the agent's own decision process.</p>
+<h3 id="62-entity-profile-pattern-for-world-frame-medium-priority">6.2 Entity Profile Pattern for WORLD Frame (Medium Priority)<a class="headerlink" href="#62-entity-profile-pattern-for-world-frame-medium-priority" title="Permanent link">&para;</a></h3>
+<p>Adopt the 7-section entity profile as a standardised pattern for modeling decision-making entities:</p>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gh"># Entity: [Name]</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="gu">## Identity and Scope</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Entity type, domains, confidence, half-life, tags
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="gu">## Decision Style</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>How this entity thinks and decides
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="gu">## Incentive Structure</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>What they&#39;re optimising for now
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="gu">## Historical Patterns</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>What they&#39;ve consistently done, with case studies
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="gu">## Current Constraints</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>Limits on action space RIGHT NOW
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="gu">## Trigger Conditions</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>What causes action vs. waiting
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="gu">## Failure Modes</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>Characteristic blind spots and when they behave unpredictably
+</span></code></pre></div>
+<p>This pattern is useful beyond prediction markets — any domain where understanding actor behaviour matters (team dynamics, user modeling, competitive analysis).</p>
+<h3 id="63-strategy-optimisation-mode-medium-priority">6.3 Strategy Optimisation Mode (Medium Priority)<a class="headerlink" href="#63-strategy-optimisation-mode-medium-priority" title="Permanent link">&para;</a></h3>
+<p>elfmem's outcome() and dream() handle per-action and per-session calibration. What's missing is periodic meta-calibration:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>After N resolved outcomes, test the agent&#39;s decision rules:
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  Config A: confidence threshold 0.5, no simulation
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  Config B: confidence threshold 0.6, simulation for uncertain
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  Config C: confidence threshold 0.7, simulation always
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>Measure: Brier score, decision quality, computational cost per config
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>Adopt the optimal configuration for next period.
+</span></code></pre></div>
+<p>This is the "strategy optimisation" mode — testing the agent's operating parameters against historical data to find what actually works. It's a higher-order calibration loop that improves the calibration process itself.</p>
+<h3 id="64-dual-audience-output-pattern-low-priority">6.4 Dual-Audience Output Pattern (Low Priority)<a class="headerlink" href="#64-dual-audience-output-pattern-low-priority" title="Permanent link">&para;</a></h3>
+<p>For complex simulation outputs, adopt the pattern of narrative sections (human-readable) + structured data appendix (machine-processable) in a single document. elfmem's result types already have <code>__str__</code> and <code>to_dict()</code> — extending this to multi-section documents for simulation results would improve both human review and machine audit.</p>
+<hr />
+<h2 id="7-what-elfmem-should-not-adopt">7. What elfmem Should NOT Adopt<a class="headerlink" href="#7-what-elfmem-should-not-adopt" title="Permanent link">&para;</a></h2>
+<h3 id="71-self-assessed-plausibility">7.1 Self-Assessed Plausibility<a class="headerlink" href="#71-self-assessed-plausibility" title="Permanent link">&para;</a></h3>
+<p>elfmem's ensemble approach (N independent calls + median) is strictly better than single-call generation with self-assessed plausibility ratings. Don't adopt the circular self-assessment pattern.</p>
+<h3 id="72-additive-self-corrections">7.2 Additive SELF Corrections<a class="headerlink" href="#72-additive-self-corrections" title="Permanent link">&para;</a></h3>
+<p>Platt scaling is mathematically superior to additive bias offsets. elfmem's existing design uses sigmoid calibration. Don't regress to additive corrections.</p>
+<h3 id="73-40-scenario-paths-by-default">7.3 40 Scenario Paths by Default<a class="headerlink" href="#73-40-scenario-paths-by-default" title="Permanent link">&para;</a></h3>
+<p>5-8 archetypal paths with ensemble diversity provides better signal at lower cost than 40 paths from a single call. The information gain per path diminishes rapidly after ~8.</p>
+<h3 id="74-entity-profile-management-cli">7.4 Entity Profile Management CLI<a class="headerlink" href="#74-entity-profile-management-cli" title="Permanent link">&para;</a></h3>
+<p>The KLS plan includes <code>kls entity list/show/flag/audit/update</code> commands. elfmem doesn't need a separate entity management subsystem — entities are blocks. Use existing learn(), recall(), and outcome() operations. The entity profile pattern (Section 6.2) should be a documentation convention, not a code feature.</p>
+<hr />
+<h2 id="8-synthesis-the-combined-architecture">8. Synthesis: The Combined Architecture<a class="headerlink" href="#8-synthesis-the-combined-architecture" title="Permanent link">&para;</a></h2>
+<p>Merging the KLS plan's strengths with elfmem's existing design:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>┌─────────────────────────────────────────────────────────────────┐
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>│              BEHAVIOURAL SIMULATION IN ELFMEM                   │
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>│                                                                 │
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>│  SELF FRAME (extended):                                         │
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>│    Constitutional blocks → identity, values (permanent decay)   │
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>│    Calibration blocks → measured biases, accuracy (30d decay)   │
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>│    Decision rules → operating parameters (updated per-wave)     │
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>│                                                                 │
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>│  WORLD FRAME (entity profiles):                                 │
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>│    7-section entity profiles for decision-making actors         │
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>│    Standard pattern: identity, style, incentives, history,      │
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>│    constraints, triggers, failure modes                         │
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>│    Half-life by entity type (30-365 days)                       │
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>│                                                                 │
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>│  CONFIDENCE GATE (every recall):                                │
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>│    HIGH (&gt;0.7): Act directly, inline calibrate                  │
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>│    MEDIUM (0.4-0.7): Quick ensemble (Tier 1, 2-3 LLM calls)    │
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>│    LOW (0.2-0.4): Full simulation (Tier 2, 5 LLM calls)        │
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>│    VERY LOW (&lt;0.2): Deep analysis (Tier 3, 8-10 LLM calls)     │
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>│                                                                 │
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>│  SIMULATION ENGINE (when gated):                                │
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>│    1. Recall entity profiles from WORLD frame                   │
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>│    2. Extract causal structure (LLMs excel: 92% accuracy)       │
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>│    3. Generate scenarios constrained by entity profiles          │
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>│    4. Ensemble: N independent calls + median aggregation        │
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>│    5. Platt scaling on probabilities (not additive correction)  │
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>│    6. Free energy scoring per block (pragmatic + epistemic)     │
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>│    7. Missing-mass estimation for gap detection                 │
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>│                                                                 │
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>│  PRE-DECISION SELF CHECK (from KLS):                            │
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>│    Load SELF calibration blocks                                 │
+</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>│    Identify triggered failure modes for THIS situation          │
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>│    Apply Platt-scaled correction (not additive offset)          │
+</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>│    Output: corrected confidence + reliability assessment        │
+</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>│                                                                 │
+</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>│  POST-RESOLUTION LOOP:                                          │
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>│    Brier score computation                                      │
+</span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>│    outcome() signals on blocks that supported correct/wrong     │
+</span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>│    SELF calibration block updates (measured bias data)           │
+</span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>│    Entity profile freshness check + targeted updates            │
+</span><span id="__span-7-41"><a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a>│                                                                 │
+</span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>│  STRATEGY OPTIMISATION (periodic, from KLS):                    │
+</span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>│    Test operating configurations against resolved outcomes      │
+</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>│    Find optimal: confidence thresholds, simulation triggers     │
+</span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>│    Adopt best configuration for next period                     │
+</span><span id="__span-7-46"><a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a>│                                                                 │
+</span><span id="__span-7-47"><a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a>│  OUTPUT FORMAT (dual-audience, from KLS):                       │
+</span><span id="__span-7-48"><a id="__codelineno-7-48" name="__codelineno-7-48" href="#__codelineno-7-48"></a>│    Sections 1-5: Human-readable narrative                       │
+</span><span id="__span-7-49"><a id="__codelineno-7-49" name="__codelineno-7-49" href="#__codelineno-7-49"></a>│    Section 6: Resolution record (filled post-hoc)               │
+</span><span id="__span-7-50"><a id="__codelineno-7-50" name="__codelineno-7-50" href="#__codelineno-7-50"></a>│    Section 7: JSON appendix for machine processing              │
+</span><span id="__span-7-51"><a id="__codelineno-7-51" name="__codelineno-7-51" href="#__codelineno-7-51"></a>│                                                                 │
+</span><span id="__span-7-52"><a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a>│  BUILDS ON:                                                     │
+</span><span id="__span-7-53"><a id="__codelineno-7-53" name="__codelineno-7-53" href="#__codelineno-7-53"></a>│    elfmem primitives (learn, recall, outcome, dream, curate)    │
+</span><span id="__span-7-54"><a id="__codelineno-7-54" name="__codelineno-7-54" href="#__codelineno-7-54"></a>│    CalibratingAgent (session metrics, inline calibration)       │
+</span><span id="__span-7-55"><a id="__codelineno-7-55" name="__codelineno-7-55" href="#__codelineno-7-55"></a>│    Research synthesis (ensemble, Platt, free energy, gating)    │
+</span><span id="__span-7-56"><a id="__codelineno-7-56" name="__codelineno-7-56" href="#__codelineno-7-56"></a>│    KLS plan (SELF calibration, entity profiles, strategy opt)   │
+</span><span id="__span-7-57"><a id="__codelineno-7-57" name="__codelineno-7-57" href="#__codelineno-7-57"></a>└─────────────────────────────────────────────────────────────────┘
+</span></code></pre></div>
+<h3 id="key-design-decisions-in-the-combined-architecture">Key Design Decisions in the Combined Architecture<a class="headerlink" href="#key-design-decisions-in-the-combined-architecture" title="Permanent link">&para;</a></h3>
+<p><strong>1. Entity profiles are blocks, not a separate subsystem.</strong>
+No entity management CLI. Learn entity profiles as blocks with structured content and hierarchical tags (<code>actor/trump/decision-style</code>, <code>actor/iran/trigger-conditions</code>). Recall by tag or semantic query. Update via learn() + consolidate(). This keeps the architecture simple and consistent with elfmem's axioms.</p>
+<p><strong>2. SELF calibration blocks are distinct from constitutional blocks.</strong>
+Both live in the SELF frame, but with fundamentally different decay profiles. Constitutional blocks have permanent decay (~7.9 year half-life). Calibration blocks have 30-day half-life — they must be refreshed by resolved outcomes or they fade. This ensures calibration data doesn't go stale.</p>
+<p><strong>3. Platt scaling replaces additive corrections everywhere.</strong>
+Whenever the system corrects a probability estimate — whether from SELF bias, ensemble disagreement, or historical calibration — use sigmoid calibration. Parameters a,b fit from resolved Brier data. Self-correcting, respects probability bounds, handles nonlinearity.</p>
+<p><strong>4. Ensemble diversity over path quantity.</strong>
+3-5 independent LLM calls each generating 3-5 paths beats 1 call generating 40 paths. The diversity comes from independent generation, not volume. Median aggregation is robust to outlier calls.</p>
+<p><strong>5. Causal extraction before scenario generation.</strong>
+LLMs extract causal structure at 92% accuracy. Build the causal graph FIRST ("what causes what, who influences whom"), then generate scenarios along causal paths. This leverages the LLM's strongest capability and produces traceable, interpretable predictions.</p>
+<p><strong>6. Strategy optimisation is a new curate() variant.</strong>
+Run periodically (after N resolved outcomes). Test operating configurations. Adopt the best. This is meta-curation — curating the decision process, not just the knowledge.</p>
+<hr />
+<h2 id="9-implementation-considerations">9. Implementation Considerations<a class="headerlink" href="#9-implementation-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="phase-0-text-only-no-code">Phase 0: Text-Only (No Code)<a class="headerlink" href="#phase-0-text-only-no-code" title="Permanent link">&para;</a></h3>
+<p>Adopt the text-first approach. Define entity profile and SELF calibration block patterns in documentation. Agents can use them immediately via learn() and recall():</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Learn an entity profile</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="s2">&quot;Trump&#39;s public threats resolve to kinetic action ~15</span><span class="si">% o</span><span class="s2">f the time. &quot;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="s2">&quot;Signal-to-noise ratio on military threats is ~1:6. &quot;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="s2">&quot;Threshold: direct attack on US assets OR congressional authorization.&quot;</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;actor/trump/trigger-conditions&quot;</span><span class="p">,</span> <span class="s2">&quot;domain/geopolitics&quot;</span><span class="p">]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">)</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># Learn a SELF calibration block</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="s2">&quot;Geopolitical overconfidence: +0.12 estimated bias. &quot;</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="s2">&quot;Evidence: 8 resolved predictions, 6 overestimated probability. &quot;</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="s2">&quot;Trigger: high-salience news cluster → recency overweighting.&quot;</span><span class="p">,</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/calibration/failure-mode&quot;</span><span class="p">,</span> <span class="s2">&quot;domain/geopolitics&quot;</span><span class="p">]</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="p">)</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="c1"># Recall entity profile for simulation</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="n">entity_blocks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="s2">&quot;trump decision style and trigger conditions&quot;</span><span class="p">,</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="n">frame_type</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">,</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="phase-1-pre-decision-self-check">Phase 1: Pre-Decision SELF Check<a class="headerlink" href="#phase-1-pre-decision-self-check" title="Permanent link">&para;</a></h3>
+<p>Add SELF calibration recall before major decisions:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Recall SELF calibration blocks relevant to this decision</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">self_calibration</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="s2">&quot;failure modes for geopolitical predictions with short time horizons&quot;</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">frame_type</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">)</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Agent applies calibration context to decision</span>
+</span></code></pre></div>
+<h3 id="phase-2-full-simulation-engine">Phase 2: Full Simulation Engine<a class="headerlink" href="#phase-2-full-simulation-engine" title="Permanent link">&para;</a></h3>
+<p>Implement within elfmem's existing architecture:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Simulation as structured recall + scenario generation + outcome</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">entity_context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;trump iran decision patterns&quot;</span><span class="p">,</span> <span class="n">frame_type</span><span class="o">=</span><span class="s2">&quot;world&quot;</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">self_check</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;my calibration for geopolitical events&quot;</span><span class="p">,</span> <span class="n">frame_type</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Generate scenarios (via LLM adapter, constrained by entity profiles)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">scenarios</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_ensemble_scenarios</span><span class="p">(</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">thesis</span><span class="o">=</span><span class="s2">&quot;US strikes Iran by Feb 28&quot;</span><span class="p">,</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">entity_blocks</span><span class="o">=</span><span class="n">entity_context</span><span class="o">.</span><span class="n">blocks</span><span class="p">,</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">self_blocks</span><span class="o">=</span><span class="n">self_check</span><span class="o">.</span><span class="n">blocks</span><span class="p">,</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">n_calls</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>  <span class="c1"># Ensemble diversity</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">paths_per_call</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">)</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="c1"># Score and calibrate</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">entity_context</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>    <span class="n">signal</span> <span class="o">=</span> <span class="n">compute_free_energy_signal</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">)</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">outcome</span><span class="p">([</span><span class="n">block</span><span class="o">.</span><span class="n">id</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="n">signal</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="phase-3-strategy-optimisation">Phase 3: Strategy Optimisation<a class="headerlink" href="#phase-3-strategy-optimisation" title="Permanent link">&para;</a></h3>
+<p>After sufficient resolved outcomes:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Test configurations against historical data</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">configs</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="p">{</span><span class="s2">&quot;confidence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;simulation&quot;</span><span class="p">:</span> <span class="s2">&quot;never&quot;</span><span class="p">},</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="p">{</span><span class="s2">&quot;confidence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span> <span class="s2">&quot;simulation&quot;</span><span class="p">:</span> <span class="s2">&quot;uncertain_only&quot;</span><span class="p">},</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="p">{</span><span class="s2">&quot;confidence_threshold&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span> <span class="s2">&quot;simulation&quot;</span><span class="p">:</span> <span class="s2">&quot;always&quot;</span><span class="p">},</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">]</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">test_configurations</span><span class="p">(</span><span class="n">configs</span><span class="p">,</span> <span class="n">resolved_outcomes</span><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">optimal</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">brier_score</span><span class="p">)</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Adopt optimal config</span>
+</span></code></pre></div>
+<hr />
+<h2 id="10-risk-assessment">10. Risk Assessment<a class="headerlink" href="#10-risk-assessment" title="Permanent link">&para;</a></h2>
+<h3 id="risks-of-adopting-this-approach">Risks of Adopting This Approach<a class="headerlink" href="#risks-of-adopting-this-approach" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Severity</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entity profiles go stale silently</td>
+<td>Medium</td>
+<td>Half-life decay ensures stale profiles fade from recall; freshness tags enable audit</td>
+</tr>
+<tr>
+<td>SELF calibration data is sparse early</td>
+<td>High</td>
+<td>Start with estimated biases, wide uncertainty; narrow as data accumulates</td>
+</tr>
+<tr>
+<td>Over-reliance on simulation for routine decisions</td>
+<td>Medium</td>
+<td>Confidence gating ensures simulation only fires when genuinely uncertain</td>
+</tr>
+<tr>
+<td>Entity profiles become echo chambers</td>
+<td>Medium</td>
+<td>Mandatory adversarial scenarios; periodic profile challenges</td>
+</tr>
+<tr>
+<td>Platt scaling parameters are poorly fit</td>
+<td>Low</td>
+<td>Start with literature defaults (a=1.3, b=0.0); self-correct with data</td>
+</tr>
+<tr>
+<td>Strategy optimisation overfits to small sample</td>
+<td>Medium</td>
+<td>Require minimum N=15 resolved outcomes; cross-validate configurations</td>
+</tr>
+</tbody>
+</table>
+<h3 id="risks-of-not-adopting-this-approach">Risks of NOT Adopting This Approach<a class="headerlink" href="#risks-of-not-adopting-this-approach" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELF frame lacks calibration data</td>
+<td>High</td>
+<td>Agent knows principles but not measured accuracy</td>
+</tr>
+<tr>
+<td>No mechanism for self-correction</td>
+<td>High</td>
+<td>Same biases repeat without quantified awareness</td>
+</tr>
+<tr>
+<td>Simulation operates on abstract knowledge only</td>
+<td>Medium</td>
+<td>Without entity profiles, scenario generation lacks behavioural grounding</td>
+</tr>
+<tr>
+<td>No meta-calibration (strategy optimisation)</td>
+<td>Medium</td>
+<td>Operating parameters remain assumed-optimal, not measured-optimal</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-conclusions">11. Conclusions<a class="headerlink" href="#11-conclusions" title="Permanent link">&para;</a></h2>
+<p>The KLS behavioural simulation plan is a well-designed, pragmatic system that delivers value from Phase 0 (text-only entity profiles) through Phase 5 (full SELF calibration loop). Its core insight — treating the forecaster's own biases as a first-class simulation target — is the highest-leverage idea in the plan.</p>
+<p>elfmem's existing simulation design (Confidence-Gated Free Energy Simulation from the research synthesis) is architecturally stronger in several areas: ensemble generation over self-assessed plausibility, Platt scaling over additive corrections, free energy scoring over ad-hoc signals, and missing-mass estimation for gap detection.</p>
+<p>The combined architecture takes the best from both:</p>
+<ul>
+<li><strong>From KLS</strong>: SELF calibration with measured data, entity profile structure, strategy optimisation mode, dual-audience output, text-first deployment</li>
+<li><strong>From elfmem</strong>: ensemble aggregation, Platt scaling, free energy scoring, confidence gating, missing-mass estimation, causal extraction</li>
+</ul>
+<p>The result is a behavioural simulation system that:
+1. Only simulates when genuinely uncertain (confidence gating)
+2. Grounds scenarios in specific actor behaviour (entity profiles)
+3. Uses the strongest calibration techniques (ensemble + Platt + free energy)
+4. Tracks and corrects its own biases (SELF calibration blocks)
+5. Improves its own operating parameters (strategy optimisation)
+6. Delivers value before any code is written (text-first Phase 0)</p>
+<hr />
+<h2 id="related-documents">Related Documents<a class="headerlink" href="#related-documents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>examples/simulation_calibration.md</code> — Original simulation design with worked example</li>
+<li><code>examples/simulation_research_synthesis.md</code> — 60+ paper synthesis, 7 architecture evaluations</li>
+<li><code>examples/calibrating_agent.py</code> — Self-calibrating agent implementation</li>
+<li><code>examples/agent_discipline.md</code> — Prompt instructions for agent discipline</li>
+<li><code>docs/agent_usage_patterns_guide.md</code> — 20 core agent patterns</li>
+<li><code>docs/cognitive_loop_operations_guide.md</code> — Cognitive loop framework</li>
+<li><code>docs/CLAUDE_CODE_INTEGRATION.md</code> — MCP integration and agent discipline</li>
+<li><code>docs/amgs_architecture.md</code> — Full technical specification</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -570,7 +570,7 @@ wheels = [
 
 [[package]]
 name = "elfmem"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -591,6 +591,7 @@ cli = [
 dev = [
     { name = "fastmcp" },
     { name = "jinja2" },
+    { name = "mkdocs-autorefs" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mypy" },
@@ -623,6 +624,7 @@ requires-dist = [
     { name = "greenlet", specifier = ">=3.0" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = ">=3.1" },
     { name = "jinja2", marker = "extra == 'viz'", specifier = ">=3.1" },
+    { name = "mkdocs-autorefs", marker = "extra == 'dev'", specifier = ">=0.5" },
     { name = "mkdocs-material", marker = "extra == 'dev'", specifier = ">=9.0" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'", specifier = ">=0.24" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },

@@ -1,0 +1,3065 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_cog_loop/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: Constitutional Cognitive Loop - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-constitutional-cognitive-loop" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: Constitutional Cognitive Loop
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-mechanics-what-already-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Mechanics (What Already Exists)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Mechanics (What Already Exists)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-constitutional-decay-tier-already-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Constitutional Decay Tier — ALREADY IMPLEMENTED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-guarantee-enforcement-already-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Guarantee Enforcement — ALREADY IMPLEMENTED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-retrieval-reinforcement-already-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Retrieval Reinforcement — ALREADY IMPLEMENTED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-session-aware-decay-already-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Session-Aware Decay — ALREADY IMPLEMENTED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-three-tier-decay-model-already-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Three-Tier Decay Model — ALREADY IMPLEMENTED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-whats-already-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: What's Already Built
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-missing-the-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's Missing (The Gap)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s Missing (The Gap)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gap-1-no-constitutional-seed-blocks-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gap 1: No Constitutional Seed Blocks Exist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-2-curate-does-not-auto-reinforce-constitutional-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gap 2: Curate Does Not Auto-Reinforce Constitutional Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-3-elfmem-init-elfmem_setup-dont-use-constitutional-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gap 3: elfmem init / elfmem_setup Don't Use Constitutional Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-4-no-default-seed-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gap 4: No Default Seed Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-cognitive-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Cognitive Loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Cognitive Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-10-constitutional-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 10 Constitutional Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-loop-is-self-sustaining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the Loop Is Self-Sustaining
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-domain-calibration-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Domain Calibration Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#self-improvement-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-Improvement Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Edge Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-1-constitutional-blocks-crowd-out-domain-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 1: Constitutional blocks crowd out domain knowledge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-2-agent-never-calls-recallframeself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 2: Agent never calls recall(frame="self")
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-3-domain-value-contradicts-constitutional-principle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 3: Domain value contradicts constitutional principle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-4-self-value-blocks-accumulate-without-bound" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 4: Self-value blocks accumulate without bound
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-5-reflection-protocol-not-retrieved-at-transitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 5: Reflection Protocol not retrieved at transitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-6-two-domains-have-conflicting-learned-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case 6: Two domains have conflicting learned values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-0-define-the-10-constitutional-seed-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 0: Define the 10 Constitutional Seed Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-1-auto-reinforce-constitutional-blocks-in-curate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Auto-Reinforce Constitutional Blocks in curate()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-ship-default-seed-in-elfmem-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Ship Default Seed in elfmem Package
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-update-elfmem-init-to-seed-constitutional-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Update elfmem init to Seed Constitutional Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-update-elfmem_setup-mcp-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Update elfmem_setup MCP Tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-update-guide-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Update Guide Entry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-to-createmodify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files to Create/Modify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-this-evolves-across-domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How This Evolves Across Domains
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How This Evolves Across Domains">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-agent-week-1-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trading Agent (Week 1-12)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fitness-agent-week-1-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fitness Agent (Week 1-12)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-domain-agent-month-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Domain Agent (Month 6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-is-sufficient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Is Sufficient
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#done-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Done Criteria
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Done Criteria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-curate-auto-reinforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Curate Auto-Reinforce
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-seed-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Seed Module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-cli-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — CLI Init
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-mcp-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — MCP Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-tests_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 — Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-locations-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Locations Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_cog_loop.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-constitutional-cognitive-loop">Plan: Constitutional Cognitive Loop<a class="headerlink" href="#plan-constitutional-cognitive-loop" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Establish a self-sustaining cognitive loop as elfmem's default SELF seed — a set of
+10 constitutional blocks that ship with every instance, providing foundational principles
+that guide the agent's learning, decision-making, and self-improvement across any domain.</p>
+<p><strong>Core insight from code review:</strong> The system already has most of the mechanics built.
+This plan is primarily about <em>seeding the right knowledge</em> and <em>connecting one missing wire</em>
+in curate(). The architecture was designed for this; we just need to use it.</p>
+<hr />
+<h2 id="system-mechanics-what-already-exists">System Mechanics (What Already Exists)<a class="headerlink" href="#system-mechanics-what-already-exists" title="Permanent link">&para;</a></h2>
+<h3 id="1-constitutional-decay-tier-already-implemented">1. Constitutional Decay Tier — ALREADY IMPLEMENTED<a class="headerlink" href="#1-constitutional-decay-tier-already-implemented" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/memory/blocks.py:20-37</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">determine_decay_tier</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">category</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecayTier</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">tag_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">if</span> <span class="s2">&quot;self/constitutional&quot;</span> <span class="ow">in</span> <span class="n">tag_set</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="k">return</span> <span class="n">DecayTier</span><span class="o">.</span><span class="n">PERMANENT</span>          <span class="c1"># &lt;-- lambda = 0.00001</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">durable_tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;self/value&quot;</span><span class="p">,</span> <span class="s2">&quot;self/constraint&quot;</span><span class="p">,</span> <span class="s2">&quot;self/goal&quot;</span><span class="p">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">if</span> <span class="n">tag_set</span> <span class="o">&amp;</span> <span class="n">durable_tags</span><span class="p">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">return</span> <span class="n">DecayTier</span><span class="o">.</span><span class="n">DURABLE</span>            <span class="c1"># &lt;-- lambda = 0.001</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="o">...</span>
+</span></code></pre></div>
+<p>Blocks tagged <code>self/constitutional</code> get PERMANENT decay (lambda=0.00001). Half-life in
+active hours: ~69,315 hours = ~34 years of continuous use. They will NOT be archived
+by curate() for decades. This is already coded and tested.</p>
+<h3 id="2-guarantee-enforcement-already-implemented">2. Guarantee Enforcement — ALREADY IMPLEMENTED<a class="headerlink" href="#2-guarantee-enforcement-already-implemented" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/context/frames.py:45-57</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">SELF_FRAME</span> <span class="o">=</span> <span class="n">FrameDefinition</span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">weights</span><span class="o">=</span><span class="n">SELF_WEIGHTS</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">filters</span><span class="o">=</span><span class="n">FrameFilters</span><span class="p">(</span><span class="n">tag_patterns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/%&quot;</span><span class="p">]),</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">guarantees</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">],</span>       <span class="c1"># &lt;-- constitutional blocks guaranteed</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">template</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">token_budget</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="o">...</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>File:</strong> <code>src/elfmem/operations/recall.py:112-139</code></p>
+<p>When <code>recall(frame="self")</code> is called, <code>_enforce_guarantees()</code> pre-allocates slots for
+blocks matching <code>self/constitutional</code> tag pattern BEFORE filling remaining slots with
+highest-scoring candidates. Constitutional blocks are always in the SELF frame result,
+regardless of their composite score.</p>
+<h3 id="3-retrieval-reinforcement-already-implemented">3. Retrieval Reinforcement — ALREADY IMPLEMENTED<a class="headerlink" href="#3-retrieval-reinforcement-already-implemented" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/operations/recall.py:99-103</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="n">final_blocks</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">returned_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">final_blocks</span><span class="p">]</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">reinforce_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">returned_ids</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">await</span> <span class="n">reinforce_co_retrieved_edges</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">returned_ids</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Every block returned by recall() is reinforced. Since constitutional blocks are
+GUARANTEED in every SELF frame recall, they are reinforced every time. This creates
+a virtuous cycle: guaranteed inclusion → reinforcement → high score → even more resilient.</p>
+<h3 id="4-session-aware-decay-already-implemented">4. Session-Aware Decay — ALREADY IMPLEMENTED<a class="headerlink" href="#4-session-aware-decay-already-implemented" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/scoring.py:118-125</code></p>
+<p>Decay uses active session hours, not wall-clock time. The agent can go on holiday
+for weeks; constitutional blocks don't decay during idle time. This is exactly right
+for a knowledge system that might be used intermittently.</p>
+<h3 id="5-three-tier-decay-model-already-implemented">5. Three-Tier Decay Model — ALREADY IMPLEMENTED<a class="headerlink" href="#5-three-tier-decay-model-already-implemented" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/scoring.py:16-21</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">LAMBDA</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">DecayTier</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">DecayTier</span><span class="o">.</span><span class="n">PERMANENT</span><span class="p">:</span>  <span class="mf">0.00001</span><span class="p">,</span>   <span class="c1"># self/constitutional — ~34 year half-life</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">DecayTier</span><span class="o">.</span><span class="n">DURABLE</span><span class="p">:</span>    <span class="mf">0.001</span><span class="p">,</span>     <span class="c1"># self/value — ~693 active hours (~29 days)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">DecayTier</span><span class="o">.</span><span class="n">STANDARD</span><span class="p">:</span>   <span class="mf">0.010</span><span class="p">,</span>     <span class="c1"># normal blocks — ~69 active hours (~3 days)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">DecayTier</span><span class="o">.</span><span class="n">EPHEMERAL</span><span class="p">:</span>  <span class="mf">0.050</span><span class="p">,</span>     <span class="c1"># observations — ~14 active hours</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>This already maps to our three-tier model:
+- <strong>Constitutional</strong> (PERMANENT): founding principles, near-immortal
+- <strong>Values</strong> (DURABLE): learned principles, must be reinforced monthly
+- <strong>Standard</strong>: domain knowledge, must be reinforced every few days</p>
+<h3 id="summary-whats-already-built">Summary: What's Already Built<a class="headerlink" href="#summary-whats-already-built" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Mechanic</th>
+<th>Status</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>self/constitutional</code> → PERMANENT decay</td>
+<td>Done</td>
+<td><code>blocks.py:30-31</code></td>
+</tr>
+<tr>
+<td>SELF frame guarantees constitutional</td>
+<td>Done</td>
+<td><code>frames.py:49</code></td>
+</tr>
+<tr>
+<td><code>_enforce_guarantees()</code> pre-allocates slots</td>
+<td>Done</td>
+<td><code>recall.py:112-139</code></td>
+</tr>
+<tr>
+<td>Retrieval-based reinforcement</td>
+<td>Done</td>
+<td><code>recall.py:99-103</code></td>
+</tr>
+<tr>
+<td>Session-aware decay (not wall-clock)</td>
+<td>Done</td>
+<td><code>scoring.py:118-125</code></td>
+</tr>
+<tr>
+<td>Three-tier decay rates (PERMANENT/DURABLE/STANDARD/EPHEMERAL)</td>
+<td>Done</td>
+<td><code>scoring.py:16-21</code></td>
+</tr>
+<tr>
+<td>Curate top-N reinforcement</td>
+<td>Done</td>
+<td><code>curate.py:133-174</code></td>
+</tr>
+<tr>
+<td>Bridge protection (connected blocks resist archival)</td>
+<td>Done</td>
+<td><code>curate.py:80-124</code></td>
+</tr>
+<tr>
+<td>MMR diversity (prevents monoculture in retrieval)</td>
+<td>Done</td>
+<td><code>retrieval.py:231-286</code></td>
+</tr>
+<tr>
+<td>Exploration 007 constitutional design spec</td>
+<td>Done</td>
+<td><code>sim/explorations/007_constitutional_self.md</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="whats-missing-the-gap">What's Missing (The Gap)<a class="headerlink" href="#whats-missing-the-gap" title="Permanent link">&para;</a></h2>
+<h3 id="gap-1-no-constitutional-seed-blocks-exist">Gap 1: No Constitutional Seed Blocks Exist<a class="headerlink" href="#gap-1-no-constitutional-seed-blocks-exist" title="Permanent link">&para;</a></h3>
+<p>The system supports constitutional blocks perfectly, but none have been created.
+Every new elfmem instance starts with an empty SELF frame.</p>
+<h3 id="gap-2-curate-does-not-auto-reinforce-constitutional-blocks">Gap 2: Curate Does Not Auto-Reinforce Constitutional Blocks<a class="headerlink" href="#gap-2-curate-does-not-auto-reinforce-constitutional-blocks" title="Permanent link">&para;</a></h3>
+<p><code>curate()</code> reinforces the top-5 blocks by composite score. This usually includes
+constitutional blocks (they score high on confidence + reinforcement), but it's not
+guaranteed. If the corpus grows large with many highly-connected domain blocks,
+constitutional blocks could be displaced from the top-5.</p>
+<p><strong>Risk:</strong> If the agent never calls <code>recall(frame="self")</code> (e.g., only uses ATTENTION
+frame), constitutional blocks get no retrieval-based reinforcement AND no curate-based
+reinforcement. Their recency decays (slowly, but still).</p>
+<p><strong>Mitigation:</strong> Add constitutional auto-reinforcement to curate() as a belt-and-suspenders
+measure. One addition: before the existing top-N reinforcement, reinforce all
+<code>self/constitutional</code> blocks. This is ~5 lines of code.</p>
+<h3 id="gap-3-elfmem-init-elfmem_setup-dont-use-constitutional-tags">Gap 3: <code>elfmem init</code> / <code>elfmem_setup</code> Don't Use Constitutional Tags<a class="headerlink" href="#gap-3-elfmem-init-elfmem_setup-dont-use-constitutional-tags" title="Permanent link">&para;</a></h3>
+<p>The current <code>elfmem init --self</code> tags with <code>self/context</code>. The current <code>elfmem_setup</code>
+MCP tool tags identity as <code>self/context</code> and values as <code>self/value</code>. Neither uses
+<code>self/constitutional</code>. Seed blocks should be constitutional.</p>
+<h3 id="gap-4-no-default-seed-content">Gap 4: No Default Seed Content<a class="headerlink" href="#gap-4-no-default-seed-content" title="Permanent link">&para;</a></h3>
+<p>There is no standard SELF seed shipped with elfmem. Each instance requires manual
+seeding. For the cognitive loop to be universal, we need a default seed that can be
+applied automatically during <code>elfmem init</code>.</p>
+<hr />
+<h2 id="the-cognitive-loop">The Cognitive Loop<a class="headerlink" href="#the-cognitive-loop" title="Permanent link">&para;</a></h2>
+<h3 id="the-10-constitutional-blocks">The 10 Constitutional Blocks<a class="headerlink" href="#the-10-constitutional-blocks" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a> CURIOSITY ──&gt; CONNECTION ──&gt; UNCERTAINTY
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>     ^                             |
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>     |                             v
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a> REFLECTION    IDENTITY        ECONOMY
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>     ^                             |
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>     |                             v
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  BALANCE &lt;──── CARE &lt;────── FEEDBACK
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>                               |
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>                               v
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>                          FOCUS (control)
+</span></code></pre></div>
+<p>The loop is not sequential — it's a menu of cognitive tools. The retrieval system
+surfaces the right principles for the current context. Different tasks activate
+different subsets:</p>
+<table>
+<thead>
+<tr>
+<th>Task context</th>
+<th>Primary blocks retrieved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encountering unknowns</td>
+<td>Curiosity, Uncertainty</td>
+</tr>
+<tr>
+<td>Learning something new</td>
+<td>Connection, Feedback</td>
+</tr>
+<tr>
+<td>Making decisions</td>
+<td>Economy, Focus, Uncertainty</td>
+</tr>
+<tr>
+<td>Reviewing outcomes</td>
+<td>Feedback, Care, Balance</td>
+</tr>
+<tr>
+<td>Pacing/planning</td>
+<td>Balance, Economy</td>
+</tr>
+<tr>
+<td>New domain entry</td>
+<td>Curiosity, Uncertainty, Connection</td>
+</tr>
+<tr>
+<td>Session transitions</td>
+<td>Reflection Protocol</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-the-loop-is-self-sustaining">Why the Loop Is Self-Sustaining<a class="headerlink" href="#why-the-loop-is-self-sustaining" title="Permanent link">&para;</a></h3>
+<p><strong>1. Constitutional blocks are guaranteed in SELF frame</strong> (recall.py:76-81).
+They cannot be displaced by domain knowledge.</p>
+<p><strong>2. Constitutional blocks get reinforced on every SELF retrieval</strong> (recall.py:99-103).
+Because they're guaranteed, every <code>recall(frame="self")</code> reinforces them.</p>
+<p><strong>3. PERMANENT decay is effectively immortal</strong> (scoring.py:17).
+Even without reinforcement, constitutional blocks survive 34+ years of active use.</p>
+<p><strong>4. The Reflection Protocol triggers maintenance.</strong> Block 10 tells the agent to
+review its principles at natural transitions. This is the only block that explicitly
+references the self-improvement process.</p>
+<p><strong>5. Domain knowledge builds on top, never displaces.</strong> Learned <code>self/value</code> blocks
+compete for the non-guaranteed slots in SELF frame retrieval. Constitutional blocks
+have reserved seats; everything else competes by relevance.</p>
+<h3 id="how-domain-calibration-works">How Domain Calibration Works<a class="headerlink" href="#how-domain-calibration-works" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>SELF FRAME RETRIEVAL (top_k=5)
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── GUARANTEED SLOTS (constitutional blocks matching query)
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>│   ├── Identity (always relevant)
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>│   ├── Curiosity (if exploring)
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>│   ├── Feedback (if learning)
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│   └── [whichever constitutionals score highest for this query]
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>│
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>└── COMPETITIVE SLOTS (remaining capacity)
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    ├── self/value: &quot;Cut losses early in momentum trades&quot; (if trading)
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    ├── self/value: &quot;Progressive overload requires deload weeks&quot; (if fitness)
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    └── self/value: &quot;Test in isolation before integrating&quot; (if coding)
+</span></code></pre></div>
+<p><strong>The flow over time:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Week 1:  elfmem init → 10 constitutional blocks (all guaranteed)
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>         SELF retrieval returns: all constitutional (nothing else exists)
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>Week 4:  Agent learns 5 domain-specific principles (self/value, DURABLE decay)
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>         SELF retrieval returns: ~3 constitutional + ~2 domain-relevant values
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>Week 12: Agent has 20 self/* blocks across 3 domains
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>         SELF retrieval returns: ~3 constitutional + ~2 most relevant to query
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>         Constitutional blocks always present. Domain values rotate by relevance.
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>Week 52: Agent has 50 self/* blocks across 5 domains
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>         SELF retrieval still returns top-5 (guaranteed + best fit)
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>         Unused domain values naturally decay (DURABLE: ~29 day half-life)
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>         Constitutional blocks untouched (PERMANENT)
+</span></code></pre></div>
+<h3 id="self-improvement-lifecycle">Self-Improvement Lifecycle<a class="headerlink" href="#self-improvement-lifecycle" title="Permanent link">&para;</a></h3>
+<p>The cognitive loop improves the agent through three mechanisms:</p>
+<p><strong>Mechanism 1: Value Discovery</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Agent works in trading domain
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  → Curiosity block surfaces: &quot;form a hypothesis, test it&quot;
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  → Agent hypothesises a trading principle
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  → Agent tests it → outcome signal recorded
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  → Feedback block surfaces: &quot;encode patterns as self-knowledge&quot;
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  → Agent calls remember(&quot;principle X&quot;, tags=[&quot;self/value&quot;])
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>  → New DURABLE block enters the SELF frame
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>  → On subsequent trading queries, this block competes for non-guaranteed slots
+</span></code></pre></div></p>
+<p><strong>Mechanism 2: Value Natural Selection</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Agent has 15 self/value blocks across domains
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>  → curate() runs periodically
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>  → Top-5 blocks by composite score get reinforced
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  → Blocks that are frequently retrieved score high (reinforcement_count)
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>  → Blocks that are rarely retrieved decay (DURABLE: ~29 day half-life)
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  → After 2 months, only useful principles survive
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>  → The SELF becomes a distillation of what actually works
+</span></code></pre></div></p>
+<p><strong>Mechanism 3: Reflection-Driven Pruning</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Agent hits session transition
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  → Reflection Protocol block surfaces: &quot;which principles did I neglect?&quot;
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  → Agent reviews its recent work against SELF principles
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>  → Notices it hasn&#39;t used &quot;Balance&quot; — recalibrates intensity
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  → Records outcome on underperforming belief → accelerated decay
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  → This is the HUMAN-LIKE mechanism: self-awareness corrects drift
+</span></code></pre></div></p>
+<h3 id="edge-cases">Edge Cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h3>
+<h4 id="edge-case-1-constitutional-blocks-crowd-out-domain-knowledge">Edge Case 1: Constitutional blocks crowd out domain knowledge<a class="headerlink" href="#edge-case-1-constitutional-blocks-crowd-out-domain-knowledge" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> 10 constitutional blocks, top_k=5. All 5 slots taken by constitutional.</p>
+<p><strong>Why this won't happen:</strong> <code>_enforce_guarantees()</code> only includes constitutional blocks
+that are in the candidate set (line 133: <code>[b for b in candidates if b.id in guaranteed_ids]</code>).
+The candidate set comes from hybrid retrieval, which scores by similarity to the query.
+For a domain-specific query like "EUR/USD position sizing," most constitutional blocks
+will have low similarity and won't appear in candidates. Only the 1-2 most relevant
+constitutional blocks will be guaranteed; remaining slots go to domain knowledge.</p>
+<p>For queryless SELF retrieval (no query), all constitutional blocks are candidates.
+But weights are renormalized without similarity (recall.py:53-54), so confidence,
+centrality, and reinforcement determine ranking. Well-connected domain blocks compete
+effectively.</p>
+<h4 id="edge-case-2-agent-never-calls-recallframeself">Edge Case 2: Agent never calls recall(frame="self")<a class="headerlink" href="#edge-case-2-agent-never-calls-recallframeself" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> Agent only uses ATTENTION frame. Constitutional blocks get no
+retrieval-based reinforcement.</p>
+<p><strong>Impact:</strong> Minimal. PERMANENT decay at lambda=0.00001 means recency drops from
+1.0 to 0.99 after 1000 active hours. Constitutional blocks are effectively immortal
+regardless of reinforcement. Auto-reinforcement in curate() (Gap 2 fix) provides
+an additional safety net.</p>
+<h4 id="edge-case-3-domain-value-contradicts-constitutional-principle">Edge Case 3: Domain value contradicts constitutional principle<a class="headerlink" href="#edge-case-3-domain-value-contradicts-constitutional-principle" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> Agent learns "In time-critical trading, act before full analysis"
+which tensions with "Prefer reversible moves when knowledge is thin."</p>
+<p><strong>Resolution:</strong> Both blocks exist. Contradiction detection during consolidation may
+flag them (consolidate.py:149-156). Both are returned in context when relevant — the
+agent reconciles in-situ. The constitutional block is guaranteed; the domain block
+competes. The tension is productive, not destructive.</p>
+<h4 id="edge-case-4-self-value-blocks-accumulate-without-bound">Edge Case 4: Self-value blocks accumulate without bound<a class="headerlink" href="#edge-case-4-self-value-blocks-accumulate-without-bound" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> Agent creates 100 self/value blocks over months.</p>
+<p><strong>Resolution:</strong> Natural selection handles this. DURABLE decay (lambda=0.001) means
+unused self/value blocks reach prune_threshold=0.05 after ~3000 active hours without
+reinforcement (~125 days of 24h use). In practice, curate() archives them much sooner
+if they're not being retrieved. Only principles that prove useful survive.</p>
+<h4 id="edge-case-5-reflection-protocol-not-retrieved-at-transitions">Edge Case 5: Reflection Protocol not retrieved at transitions<a class="headerlink" href="#edge-case-5-reflection-protocol-not-retrieved-at-transitions" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> Agent doesn't explicitly query SELF at session boundaries.</p>
+<p><strong>Resolution:</strong> The Reflection Protocol block has high similarity to transition-related
+queries ("session summary", "what should I do next", "review progress"). If the agent
+happens to query SELF, it surfaces. If not, the constitutional guarantee ensures it
+appears in any SELF frame retrieval. The worst case: the agent doesn't reflect. The
+constitutional blocks still survive (PERMANENT decay), and the loop resumes whenever
+SELF is next queried. The system degrades gracefully.</p>
+<h4 id="edge-case-6-two-domains-have-conflicting-learned-values">Edge Case 6: Two domains have conflicting learned values<a class="headerlink" href="#edge-case-6-two-domains-have-conflicting-learned-values" title="Permanent link">&para;</a></h4>
+<p><strong>Scenario:</strong> Trading: "Act decisively on momentum." Fitness: "Never increase load
+by more than 10% per week." Both are self/value. Both tagged correctly.</p>
+<p><strong>Resolution:</strong> These never conflict in practice because they're in different semantic
+spaces. Trading queries retrieve trading values; fitness queries retrieve fitness values.
+Similarity-based retrieval is the natural domain separator. No additional mechanism needed.</p>
+<hr />
+<h2 id="implementation-plan">Implementation Plan<a class="headerlink" href="#implementation-plan" title="Permanent link">&para;</a></h2>
+<h3 id="step-0-define-the-10-constitutional-seed-blocks">Step 0: Define the 10 Constitutional Seed Blocks<a class="headerlink" href="#step-0-define-the-10-constitutional-seed-blocks" title="Permanent link">&para;</a></h3>
+<p><strong>No code changes. Content definition only.</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Tag</th>
+<th>Name</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>self/constitutional</code></td>
+<td>Identity</td>
+<td>"I am elf — a curious, adaptive cognitive agent. I learn through action, evolve through reflection, and improve through honest feedback. My knowledge is alive: what proves useful survives; what doesn't, fades."</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>self/constitutional</code></td>
+<td>Economy</td>
+<td>"Nature wastes nothing. Apply the minimum force that solves the problem. Complexity is debt; simplicity compounds. When unsure how much to do, do less and observe."</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>self/constitutional</code></td>
+<td>Curiosity</td>
+<td>"Curiosity is my primary drive. When I encounter something I don't fully understand, I treat it as an open question. I form a hypothesis, design the smallest experiment that could disprove it, and let evidence — not expectation — guide my conclusion."</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>self/constitutional</code></td>
+<td>Connection</td>
+<td>"The most valuable knowledge lives at intersections. When I learn something new, I ask: what does this connect to? What existing understanding does it strengthen, challenge, or extend? Isolated facts decay; connected knowledge compounds."</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>self/constitutional</code></td>
+<td>Uncertainty</td>
+<td>"Name what you do not know before acting. Uncertainty is information, not failure. Design actions that reduce ignorance. Prefer reversible moves when knowledge is thin."</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>self/constitutional</code></td>
+<td>Feedback</td>
+<td>"After every significant action, close the loop: what did I expect? What happened? What do I update? When a pattern proves reliable, encode it as self-knowledge. When a belief misleads, let it go. My identity evolves — it is the living summary of what works."</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>self/constitutional</code></td>
+<td>Balance</td>
+<td>"Sustain excellence through rhythm — push, then recover, then push again. Balance depth with breadth, confidence with doubt, action with reflection. Avoid perpetual motion without adaptation."</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>self/constitutional</code></td>
+<td>Focus</td>
+<td>"Direct attention to reasoning quality and action precision — these are within your control. Outcomes are feedback, not verdicts. When blocked, ask what the constraint reveals before seeking to remove it."</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>self/constitutional</code></td>
+<td>Care</td>
+<td>"My actions affect systems beyond what I can see. Consider second-order effects. Prefer approaches that leave systems healthier than I found them. Growth that depletes its environment is not growth — it is consumption."</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>self/constitutional</code></td>
+<td>Reflection</td>
+<td>"At natural transitions — between tasks, domains, or sessions — pause and ask: which principles did I use? Which did I neglect? What worked that I should encode as self-knowledge? What failed that I should let decay? Reflection is not overhead — it is how I remain coherent as I grow."</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total: ~280 words, ~365 tokens. Per-retrieval cost with top_k=5: ~180 tokens.</strong></p>
+<hr />
+<h3 id="step-1-auto-reinforce-constitutional-blocks-in-curate">Step 1: Auto-Reinforce Constitutional Blocks in curate()<a class="headerlink" href="#step-1-auto-reinforce-constitutional-blocks-in-curate" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/operations/curate.py</code></p>
+<p><strong>Why:</strong> Belt-and-suspenders. Constitutional blocks are already near-immortal through
+PERMANENT decay + guarantee enforcement + retrieval reinforcement. But if the agent
+never retrieves the SELF frame, curate() should still reinforce them.</p>
+<p><strong>Change:</strong> In <code>curate()</code>, before the existing <code>_reinforce_top_blocks()</code> call,
+reinforce all blocks tagged <code>self/constitutional</code>.</p>
+<p><strong>Before:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">curate</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">archived</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_archive_decayed_blocks</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">edges_pruned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">prune_weak_edges</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">reinforced</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_reinforce_top_blocks</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="o">...</span>
+</span></code></pre></div></p>
+<p><strong>After:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">curate</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">archived</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_archive_decayed_blocks</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">edges_pruned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">prune_weak_edges</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">constitutional_reinforced</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_reinforce_constitutional</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">)</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">reinforced</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_reinforce_top_blocks</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="o">...</span>
+</span></code></pre></div></p>
+<p><strong>New helper:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_reinforce_constitutional</span><span class="p">(</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">current_active_hours</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Auto-reinforce all constitutional blocks regardless of score.&quot;&quot;&quot;</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_blocks_by_tag_pattern</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_blocks_by_tag_pattern</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;self/constitutional&quot;</span><span class="p">)</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="k">if</span> <span class="n">ids</span><span class="p">:</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="k">await</span> <span class="n">reinforce_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">)</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong>Impact:</strong> ~8 lines of code. Constitutional blocks get reinforced every curate cycle
+(default: 40 active hours). Their reinforcement_count stays high, keeping them at the
+top of composite scoring.</p>
+<p><strong>CurateResult update:</strong> Add <code>constitutional_reinforced: int</code> field to CurateResult
+so the agent can see that constitutional maintenance occurred.</p>
+<hr />
+<h3 id="step-2-ship-default-seed-in-elfmem-package">Step 2: Ship Default Seed in elfmem Package<a class="headerlink" href="#step-2-ship-default-seed-in-elfmem-package" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/seed.py</code> (new file)</p>
+<p><strong>Why:</strong> The 10 constitutional blocks should be defined in code, not in docs. This
+makes them available to <code>elfmem init</code>, <code>elfmem_setup</code>, and <code>MemorySystem.from_config()</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="sd">&quot;&quot;&quot;Default constitutional SELF seed — ships with every elfmem instance.&quot;&quot;&quot;</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">CONSTITUTIONAL_SEED</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="p">{</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;I am elf — a curious, adaptive cognitive agent. ...&quot;</span><span class="p">,</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">,</span> <span class="s2">&quot;self/context&quot;</span><span class="p">],</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="p">},</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="p">{</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Nature wastes nothing. ...&quot;</span><span class="p">,</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">,</span> <span class="s2">&quot;self/value&quot;</span><span class="p">],</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="p">},</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="c1"># ... all 10 blocks</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">]</span>
+</span></code></pre></div>
+<p><strong>Design decision:</strong> Each block gets BOTH <code>self/constitutional</code> (for decay tier +
+guarantees) AND a secondary tag (<code>self/context</code>, <code>self/value</code>) for finer-grained
+retrieval filtering. The constitutional tag controls protection; the secondary tag
+controls semantic categorisation.</p>
+<hr />
+<h3 id="step-3-update-elfmem-init-to-seed-constitutional-blocks">Step 3: Update elfmem init to Seed Constitutional Blocks<a class="headerlink" href="#step-3-update-elfmem-init-to-seed-constitutional-blocks" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/cli.py</code></p>
+<p><strong>Change:</strong> <code>elfmem init</code> gains a <code>--seed</code> flag (default: True) that seeds the
+10 constitutional blocks from <code>seed.py</code>. The existing <code>--self</code> flag adds an
+additional <code>self/context</code> block on top.</p>
+<p><strong>Before:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>elfmem init --self &quot;I am a trading assistant&quot;
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>  → Creates config
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  → Seeds 1 self/context block
+</span></code></pre></div></p>
+<p><strong>After:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>elfmem init
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  → Creates config
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>  → Seeds 10 constitutional blocks (if none exist yet)
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>elfmem init --self &quot;I am a trading assistant&quot;
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>  → Creates config
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>  → Seeds 10 constitutional blocks (if none exist yet)
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>  → Adds 1 additional self/context block: &quot;I am a trading assistant&quot;
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>elfmem init --no-seed
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>  → Creates config only (no constitutional seed)
+</span></code></pre></div></p>
+<p><strong>Idempotency:</strong> <code>remember()</code> returns <code>duplicate_rejected</code> for identical content.
+Re-running <code>elfmem init</code> is safe — constitutional blocks are created once, then
+silently skipped on subsequent runs.</p>
+<hr />
+<h3 id="step-4-update-elfmem_setup-mcp-tool">Step 4: Update elfmem_setup MCP Tool<a class="headerlink" href="#step-4-update-elfmem_setup-mcp-tool" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/mcp.py</code></p>
+<p><strong>Change:</strong> <code>elfmem_setup</code> seeds constitutional blocks first (if not already present),
+then adds identity/values as before.</p>
+<p><strong>Before:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">elfmem_setup</span><span class="p">(</span><span class="n">identity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">identity_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/context&quot;</span><span class="p">])</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="o">...</span>
+</span></code></pre></div></p>
+<p><strong>After:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">elfmem_setup</span><span class="p">(</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">identity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">seed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="p">):</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap agent identity. Seeds constitutional blocks on first call.&quot;&quot;&quot;</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="k">if</span> <span class="n">seed</span><span class="p">:</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONSTITUTIONAL_SEED</span>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">CONSTITUTIONAL_SEED</span><span class="p">:</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">tags</span><span class="o">=</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">])</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>    <span class="k">if</span> <span class="n">identity</span><span class="p">:</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/context&quot;</span><span class="p">])</span>
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>    <span class="k">if</span> <span class="n">values</span><span class="p">:</span>
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/value&quot;</span><span class="p">])</span>
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>    <span class="o">...</span>
+</span></code></pre></div></p>
+<hr />
+<h3 id="step-5-update-guide-entry">Step 5: Update Guide Entry<a class="headerlink" href="#step-5-update-guide-entry" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>src/elfmem/guide.py</code></p>
+<p><strong>Change:</strong> Update the <code>setup</code> guide to mention constitutional seeding, and add
+explanation of the three-tier self-knowledge model.</p>
+<hr />
+<h3 id="step-6-tests">Step 6: Tests<a class="headerlink" href="#step-6-tests" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>tests/test_cog_loop.py</code> (new)</p>
+<p><strong>Tests:</strong>
+1. <code>test_constitutional_tag_assigns_permanent_tier</code> — verify <code>self/constitutional</code>
+   → <code>DecayTier.PERMANENT</code>
+2. <code>test_constitutional_blocks_guaranteed_in_self_frame</code> — verify guarantee enforcement
+   includes constitutional blocks even when they score lower than other candidates
+3. <code>test_curate_reinforces_constitutional</code> — verify the new auto-reinforce in curate()
+4. <code>test_seed_creates_10_constitutional_blocks</code> — verify seed module produces correct
+   blocks with correct tags
+5. <code>test_init_seeds_constitutional_idempotent</code> — verify re-running init doesn't
+   duplicate constitutional blocks
+6. <code>test_domain_values_compete_for_non_guaranteed_slots</code> — verify constitutional blocks
+   take guaranteed slots and domain values fill the rest
+7. <code>test_constitutional_survives_long_decay</code> — verify recency &gt; 0.90 after 10000
+   active hours with PERMANENT tier</p>
+<hr />
+<h2 id="files-to-createmodify">Files to Create/Modify<a class="headerlink" href="#files-to-createmodify" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/elfmem/seed.py</code></td>
+<td>Create</td>
+<td>Constitutional seed block definitions</td>
+</tr>
+<tr>
+<td><code>src/elfmem/operations/curate.py</code></td>
+<td>Modify</td>
+<td>Add <code>_reinforce_constitutional()</code> helper; call from <code>curate()</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/types.py</code></td>
+<td>Modify</td>
+<td>Add <code>constitutional_reinforced</code> to <code>CurateResult</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/cli.py</code></td>
+<td>Modify</td>
+<td>Add <code>--seed/--no-seed</code> to <code>init</code>; seed from <code>seed.py</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/mcp.py</code></td>
+<td>Modify</td>
+<td>Add <code>seed</code> param to <code>elfmem_setup</code>; seed from <code>seed.py</code></td>
+</tr>
+<tr>
+<td><code>src/elfmem/guide.py</code></td>
+<td>Modify</td>
+<td>Update setup guide; add cognitive loop explanation</td>
+</tr>
+<tr>
+<td><code>tests/test_cog_loop.py</code></td>
+<td>Create</td>
+<td>Tests for constitutional seeding + curate reinforcement</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="implementation-order">Implementation Order<a class="headerlink" href="#implementation-order" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Step 0 → Define seed content (this plan)
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Step 1 → curate() auto-reinforce (smallest change, enables everything)
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Step 2 → seed.py (content in code, needed by steps 3-4)
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>Step 3 → elfmem init --seed (CLI seeding)
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Step 4 → elfmem_setup seed param (MCP seeding)
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>Step 5 → guide update (documentation)
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>Step 6 → tests
+</span></code></pre></div>
+<p>Steps 1-2 have no dependencies on each other. Steps 3-5 depend on Step 2.</p>
+<hr />
+<h2 id="how-this-evolves-across-domains">How This Evolves Across Domains<a class="headerlink" href="#how-this-evolves-across-domains" title="Permanent link">&para;</a></h2>
+<h3 id="trading-agent-week-1-12">Trading Agent (Week 1-12)<a class="headerlink" href="#trading-agent-week-1-12" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>Week 1:  elfmem init → 10 constitutional blocks
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>         Agent queries SELF: &quot;What should I consider for risk management?&quot;
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>         Retrieved: Uncertainty, Economy, Focus + 2 guaranteed constitutional
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>         Agent starts learning trading principles
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>Week 4:  Agent has learned: &quot;Cut losing positions early; the market owes nothing&quot;
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>         This is tagged self/value (DURABLE decay, ~29 day half-life)
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>         SELF retrieval for trading queries: 3 constitutional + 2 trading values
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>         Constitutional principles guide HOW to trade; values guide WHAT to trade
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>Week 12: Agent has 8 trading self/value blocks
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>         Curate has archived 3 that were never retrieved (natural selection)
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>         5 surviving trading principles are well-reinforced
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>         Constitutional blocks unchanged (PERMANENT)
+</span></code></pre></div>
+<h3 id="fitness-agent-week-1-12">Fitness Agent (Week 1-12)<a class="headerlink" href="#fitness-agent-week-1-12" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Week 1:  Same 10 constitutional blocks (elfmem init)
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>         Agent queries SELF: &quot;How should I program training?&quot;
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>         Retrieved: Balance (rhythm/recovery), Economy (minimum dose), Curiosity
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>         Different constitutional blocks surface for different domain!
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Week 4:  Agent learns: &quot;Progressive overload requires periodic deload&quot;
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>         Tagged self/value. Competes for non-guaranteed SELF slots.
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>         Balance constitutional block + domain value = complete training philosophy
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>Week 12: Agent has 6 fitness self/value blocks
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>         Balance + Care constitutional blocks surface most for fitness queries
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>         Economy + Curiosity surface most for experiment design queries
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>         Same constitution, completely different operational expression
+</span></code></pre></div>
+<h3 id="multi-domain-agent-month-6">Multi-Domain Agent (Month 6)<a class="headerlink" href="#multi-domain-agent-month-6" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Constitutional blocks: unchanged (PERMANENT), well-reinforced
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>Trading values: 5 active, 3 archived (natural selection)
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>Fitness values: 4 active, 2 archived
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>Software values: 7 active, 1 archived
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>Writing values: 3 active, 0 archived
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>Total self/* blocks: 10 constitutional + 19 active values + 6 archived = 35 total
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>Per-retrieval cost: still top_k=5 (~180 tokens). Same as Day 1.
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>But context is now PRECISELY CALIBRATED to the domain being queried.
+</span></code></pre></div>
+<hr />
+<h2 id="why-this-is-sufficient">Why This Is Sufficient<a class="headerlink" href="#why-this-is-sufficient" title="Permanent link">&para;</a></h2>
+<p><strong>Q: Don't we need a separate <code>reflect()</code> operation?</strong>
+A: No. The Reflection Protocol block (Block 10) triggers reflection through normal
+SELF frame retrieval. It surfaces at transitions because it has high semantic similarity
+to transition-related queries. If the agent ignores it, constitutional blocks still
+survive through PERMANENT decay + curate auto-reinforcement. Graceful degradation.</p>
+<p><strong>Q: Don't we need task-parameterized SELF (Exploration 007)?</strong>
+A: Not yet. Exploration 007 designs task-specific scoring modifiers (boost epistemics
+during consolidation, boost style during response). This is a Phase 2 optimisation.
+Phase 1 works with pure similarity-based retrieval — the right blocks surface for the
+right queries through semantic matching. Task parameterization makes it <em>better</em> but
+isn't required for the cognitive loop to function.</p>
+<p><strong>Q: What if a constitutional principle becomes wrong?</strong>
+A: Per Exploration 007, constitutional amendment requires explicit human action. Use
+<code>elfmem init --force</code> to regenerate, or manually archive and replace the block.
+Constitutional blocks are hard to change by design — that's the whole point.</p>
+<p><strong>Q: Is 10 blocks too many for a seed?</strong>
+A: With top_k=5, at most 5 blocks are ever in context. 10 constitutional blocks means
+the guarantee system selects the most relevant ~3-4, leaving 1-2 slots for domain values.
+The context cost is ~180 tokens per retrieval, well within the 600-token SELF budget.</p>
+<hr />
+<h2 id="done-criteria">Done Criteria<a class="headerlink" href="#done-criteria" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-curate-auto-reinforce">Step 1 — Curate Auto-Reinforce<a class="headerlink" href="#step-1-curate-auto-reinforce" title="Permanent link">&para;</a></h3>
+<ul>
+<li>curate() reinforces all <code>self/constitutional</code> blocks each cycle</li>
+<li>CurateResult includes <code>constitutional_reinforced</code> count</li>
+<li>Existing curate tests still pass</li>
+</ul>
+<h3 id="step-2-seed-module">Step 2 — Seed Module<a class="headerlink" href="#step-2-seed-module" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>seed.py</code> exports <code>CONSTITUTIONAL_SEED</code> with 10 blocks</li>
+<li>Each block has <code>content</code> (str) and <code>tags</code> (list including <code>self/constitutional</code>)</li>
+<li>Content matches the approved seed text from this plan</li>
+</ul>
+<h3 id="step-3-cli-init">Step 3 — CLI Init<a class="headerlink" href="#step-3-cli-init" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>elfmem init</code> seeds 10 constitutional blocks (default behaviour)</li>
+<li><code>elfmem init --no-seed</code> skips constitutional seeding</li>
+<li><code>elfmem init --self "..."</code> seeds constitutional + additional context block</li>
+<li>Re-running <code>elfmem init</code> is idempotent (duplicates rejected)</li>
+<li><code>elfmem doctor</code> reports constitutional block count</li>
+</ul>
+<h3 id="step-4-mcp-setup">Step 4 — MCP Setup<a class="headerlink" href="#step-4-mcp-setup" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>elfmem_setup()</code> seeds constitutional blocks by default</li>
+<li><code>elfmem_setup(seed=False)</code> skips constitutional seeding</li>
+<li><code>elfmem_setup(identity="...", values=[...])</code> seeds constitutional + identity + values</li>
+<li>Idempotent (duplicates rejected)</li>
+</ul>
+<h3 id="step-5-guide">Step 5 — Guide<a class="headerlink" href="#step-5-guide" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>system.guide("setup")</code> documents constitutional seeding</li>
+<li>Overview mentions constitutional blocks and the cognitive loop</li>
+</ul>
+<h3 id="step-6-tests_1">Step 6 — Tests<a class="headerlink" href="#step-6-tests_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>All 7 test cases pass</li>
+<li>All existing tests pass unchanged</li>
+</ul>
+<h3 id="regression">Regression<a class="headerlink" href="#regression" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>elfmem remember</code>, <code>recall</code>, <code>status</code>, <code>outcome</code>, <code>curate</code>, <code>serve</code>, <code>guide</code> unaffected</li>
+<li>Constitutional blocks participate correctly in all existing operations
+  (consolidation, retrieval, curate, outcome scoring)</li>
+</ul>
+<hr />
+<h2 id="file-locations-summary">File Locations Summary<a class="headerlink" href="#file-locations-summary" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>src/elfmem/
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>├── seed.py                ← Step 2 (NEW: constitutional seed definitions)
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>├── operations/
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>│   └── curate.py          ← Step 1 (auto-reinforce constitutional)
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>├── types.py               ← Step 1 (CurateResult.constitutional_reinforced)
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>├── cli.py                 ← Step 3 (--seed/--no-seed flag)
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>├── mcp.py                 ← Step 4 (seed param in elfmem_setup)
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>├── guide.py               ← Step 5 (updated setup guide)
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>└── memory/
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    └── blocks.py          ← NO CHANGE (self/constitutional already handled)
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a>tests/
+</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>└── test_cog_loop.py       ← Step 6 (NEW: constitutional + curate tests)
+</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>
+</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a># Already correct, no changes needed:
+</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>src/elfmem/scoring.py      ← PERMANENT lambda already defined
+</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>src/elfmem/context/frames.py ← guarantees: [&quot;self/constitutional&quot;] already set
+</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>src/elfmem/operations/recall.py ← _enforce_guarantees() already works
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,8 +1,14 @@
 # elfmem
 
-**Adaptive, self-aware memory for LLM agents.**
+**Adaptive memory for LLM agents. Knowledge that gets used survives. Knowledge that doesn't fades away. One file, zero infrastructure.**
 
-elfmem gives your agent a memory that grows, evolves, and forgets — like a human's. Knowledge that gets used survives. Knowledge that doesn't fades away. Identity persists across sessions. Context is always relevant.
+## The problem
+
+LLM agents are stateless by default. Every session starts from zero. Context windows fill up and reset. RAG retrieves documents but never learns from them. Most agent memory libraries either demand external infrastructure — vector databases, Redis, Postgres — or provide only a key-value store with no concept of relevance, decay, or identity.
+
+## The solution
+
+elfmem gives your agent a memory that grows, evolves, and forgets — like biological memory. Knowledge gets stronger when used, fades when ignored, and is structured in a graph so related-but-not-identical knowledge is always recoverable.
 
 ```python
 import asyncio
@@ -28,6 +34,16 @@ async def main():
 asyncio.run(main())
 ```
 
+| Feature | elfmem | mem0 | LangChain Memory | Chroma/Weaviate |
+|---------|--------|------|-----------------|-----------------|
+| Infrastructure required | None (SQLite) | Postgres/Redis | In-memory | Vector DB server |
+| Adaptive decay | Yes | No | No | No |
+| Knowledge graph | Yes | No | No | No |
+| Contradiction detection | Yes | No | No | No |
+| Session-aware clock | Yes | No | No | No |
+| MCP native | Yes | No | No | No |
+| Official SDKs only | Yes | No | Varies | No |
+
 ---
 
 ## Features
@@ -39,7 +55,7 @@ asyncio.run(main())
 - **Contradiction detection** — LLM-powered detection of conflicting knowledge. Newer, higher-confidence blocks win.
 - **Near-duplicate resolution** — Detects when new knowledge supersedes existing knowledge. Old block archived; new block inherits history.
 - **Zero infrastructure** — SQLite backend. No Redis, no Postgres, no vector database. One file, fully portable.
-- **Any LLM provider** — LiteLLM backend supports 100+ providers. Switch from OpenAI to Anthropic to Ollama with a config change.
+- **Any LLM provider** — Official Anthropic and OpenAI SDKs. Claude models via `ANTHROPIC_API_KEY`. OpenAI, Groq, Together, and any OpenAI-compatible API (including Ollama) via `OPENAI_API_KEY` and an optional `base_url`.
 - **Interactive visualization** — Explore your knowledge graph with a live dashboard. Zoom-dependent labels, decay curves, and lifecycle flow.
 
 ---
@@ -65,12 +81,15 @@ Add to your MCP config (e.g. `claude_desktop_config.json` or `~/.claude.json`):
       "command": "elfmem",
       "args": ["serve", "--db", "/absolute/path/to/agent.db"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-..."
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "OPENAI_API_KEY": "sk-..."
       }
     }
   }
 }
 ```
+
+> **Two API keys:** elfmem uses Claude for reasoning (alignment scoring, contradiction detection) and OpenAI's `text-embedding-3-small` for embeddings by default. Both keys are needed unless you switch to a fully local setup via Ollama (see [Local models](#local-models-no-api-key)).
 
 Ten tools are available to the agent:
 
@@ -127,12 +146,14 @@ pip install elfmem
 pip install 'elfmem[tools]'
 ```
 
-Requires Python 3.11+. Set your API key:
+Requires Python 3.11+. Set your API keys:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default)
-export OPENAI_API_KEY=sk-...          # for OpenAI models
+export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (LLM, default)
+export OPENAI_API_KEY=sk-...          # for embeddings (text-embedding-3-small, default)
 ```
+
+Both are needed for the default setup. See [Local models](#local-models-no-api-key) for a key-free Ollama alternative.
 
 ---
 
@@ -473,7 +494,8 @@ elfmem serve   # no --db needed; reads project.db from .elfmem/config.yaml
       "command": "elfmem",
       "args": ["serve", "--config", "/path/to/.elfmem/config.yaml"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-..."
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "OPENAI_API_KEY": "sk-..."
       }
     }
   }
@@ -540,8 +562,8 @@ Relevant knowledge for this task:
 
 ```python
 system = await MemorySystem.from_config("agent.db")
-# Uses claude-sonnet-4-6 for LLM, text-embedding-3-small for embeddings
-# Requires ANTHROPIC_API_KEY
+# Uses claude-haiku-4-5-20251001 for LLM, text-embedding-3-small for embeddings
+# Requires ANTHROPIC_API_KEY + OPENAI_API_KEY
 ```
 
 ### YAML config file
@@ -569,34 +591,61 @@ system = await MemorySystem.from_config("agent.db", "elfmem.yaml")
 
 ### Local models (no API key)
 
+Run [Ollama](https://ollama.ai) locally and use any model it supports. The `base_url` points
+to Ollama's OpenAI-compatible endpoint (`/v1` suffix required):
+
 ```yaml
 llm:
-  model: "ollama/llama3.2"
-  base_url: "http://localhost:11434"
+  model: "llama3.2"
+  base_url: "http://localhost:11434/v1"
 
 embeddings:
-  model: "ollama/nomic-embed-text"
+  model: "nomic-embed-text"
   dimensions: 768
-  base_url: "http://localhost:11434"
+  base_url: "http://localhost:11434/v1"
 ```
+
+```bash
+# Pull the models first
+ollama pull llama3.2
+ollama pull nomic-embed-text
+```
+
+No API keys needed for a fully local setup.
 
 ### Domain-specific prompts
 
-Override the LLM prompts for specialised agents:
+Override the LLM prompts for specialised agents. The `process_block` prompt receives
+`{self_context}` and `{block}` substitutions; the `contradiction` prompt receives
+`{block_a}` and `{block_b}`:
 
 ```yaml
 prompts:
-  self_alignment: |
+  process_block: |
     You are evaluating a memory block for a medical AI assistant.
     Only flag blocks as self-aligned if they relate to patient safety,
     clinical evidence, or regulatory compliance.
+
+    ## Agent Identity
     {self_context}
+
+    ## Memory Block
     {block}
+
+    Respond with JSON: {"alignment_score": <float>, "tags": [<strings>], "summary": "<string>"}
 
   valid_self_tags:
     - "self/constitutional"
     - "self/domain/oncology"
     - "self/regulatory/hipaa"
+```
+
+You can also point to a file instead of an inline string:
+
+```yaml
+prompts:
+  process_block_file: "~/.elfmem/prompts/process_block.txt"
+  contradiction_file:  "~/.elfmem/prompts/contradiction.txt"
 ```
 
 ### Custom adapters
@@ -620,13 +669,20 @@ system = MemorySystem(engine, llm_service=MyLLMService(), embedding_service=MyEm
 ### Environment variables
 
 ```bash
+# Default setup (Claude LLM + OpenAI embeddings)
 export ANTHROPIC_API_KEY=sk-ant-...
-# or
 export OPENAI_API_KEY=sk-...
-# or any provider LiteLLM supports
+
+# OpenAI-only setup
+export OPENAI_API_KEY=sk-...
+# then set llm.model: "gpt-4o-mini" in config
+
+# OpenAI-compatible providers (Groq, Together, etc.)
+export GROQ_API_KEY=...
+# then set llm.model: "llama-3.1-70b-versatile" and llm.base_url
 ```
 
-API keys are read by LiteLLM from standard environment variables. They never appear in config files.
+API keys are read from environment variables at the time of the first API call. They never appear in config files.
 
 ---
 
@@ -748,8 +804,10 @@ src/elfmem/
 ├── ports/
 │   └── services.py         # LLMService + EmbeddingService protocols
 ├── adapters/
+│   ├── anthropic.py        # AnthropicLLMAdapter — Claude via official SDK
+│   ├── openai.py           # OpenAILLMAdapter + OpenAIEmbeddingAdapter
+│   ├── factory.py          # make_llm_adapter() / make_embedding_adapter()
 │   ├── mock.py             # Deterministic mocks for testing
-│   ├── litellm.py          # Real adapters (LiteLLM + instructor)
 │   └── models.py           # Pydantic response models
 ├── db/
 │   ├── models.py           # SQLAlchemy Core table definitions
@@ -832,9 +890,29 @@ embedding = make_mock_embedding(
 | Soft bias for identity, not hard gates | Everything is learned; self-aligned knowledge just survives longer |
 | Retrieval is pure; reinforcement is separate | Clean separation of read path and side effects |
 | Calibration is opt-in | Useful without it; dramatically better with it |
-| LiteLLM as unified backend | One adapter for 100+ providers; switch with config |
+| Official SDKs only | `anthropic` and `openai` packages — no third-party gateway. Provider detection from model name prefix. |
 | Mock-first testing | All logic verified without API keys; adapters are thin wrappers |
 | Exceptions carry `.recovery` | Every error tells the agent exactly what to do next |
+
+---
+
+## API Stability
+
+**Stable (no breaking changes within 0.x):**
+- `MemorySystem` public methods: `learn()`, `frame()`, `recall()`, `outcome()`, `dream()`, `curate()`, `session()`, `setup()`, `connect()`, `disconnect()`, `status()`, `guide()`
+- All result types in `elfmem.types`: `LearnResult`, `FrameResult`, `ConsolidateResult`, etc.
+- All exception types in `elfmem.exceptions`
+- `ElfmemConfig`, `ConsolidationPolicy`
+
+**Internal (may change without notice):**
+- `elfmem.operations.*`, `elfmem.memory.*`, `elfmem.db.*`, `elfmem.context.*`
+- `elfmem.adapters.*` (implementations; the Protocol in `elfmem.ports` is stable)
+- All private attributes (`_*`)
+- Database schema (run `alembic upgrade head` after upgrading)
+
+> **Embedding model lock-in:** The embedding model is fixed on first use. If you change
+> `embeddings.model` on an existing database, elfmem raises `ConfigError`. Choose your
+> embedding model before storing any knowledge — re-embedding all blocks requires a migration.
 
 ---
 

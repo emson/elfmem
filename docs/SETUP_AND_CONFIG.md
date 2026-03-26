@@ -44,7 +44,7 @@ elfmem serve
 ```bash
 # Use Ollama (local)
 export ELFMEM_DB=~/.elfmem/agent.db
-export ELFMEM_LLM_MODEL="ollama/llama3.2"
+export ELFMEM_LLM_MODEL="llama3.2"
 export ELFMEM_LLM_BASE_URL="http://localhost:11434"
 
 elfmem serve --db $ELFMEM_DB
@@ -128,7 +128,7 @@ Safe to call multiple times — exact duplicates are silently rejected.
 
 ## Environment Variables
 
-All env vars are **optional**. LiteLLM reads provider API keys from standard env vars automatically.
+All env vars are **optional**. Provider API keys are read by the Anthropic and OpenAI SDKs from standard env vars at the time of the first API call.
 
 ### Database & Config Paths
 
@@ -141,7 +141,7 @@ All env vars are **optional**. LiteLLM reads provider API keys from standard env
 
 | Variable | Default | Example | Notes |
 |----------|---------|---------|-------|
-| `ELFMEM_LLM_MODEL` | `claude-sonnet-4-6` | `gpt-4o-mini`, `ollama/llama3.2` | LiteLLM model string |
+| `ELFMEM_LLM_MODEL` | `claude-sonnet-4-6` | `gpt-4o-mini`, `ollama/llama3.2` | Model name (no provider prefix for Ollama) |
 | `ELFMEM_LLM_BASE_URL` | `None` | `http://localhost:11434` | Optional: proxy/local endpoint |
 
 ### Embedding Configuration
@@ -152,7 +152,7 @@ All env vars are **optional**. LiteLLM reads provider API keys from standard env
 | `ELFMEM_EMBEDDING_DIMENSIONS` | `1536` | `768` | Must match model output |
 | `ELFMEM_EMBEDDING_BASE_URL` | `None` | `http://localhost:11434` | Ollama or proxy endpoint |
 
-### Provider API Keys (LiteLLM Format)
+### Provider API Keys
 
 | Provider | Env Var | Example |
 |----------|---------|---------|
@@ -160,7 +160,7 @@ All env vars are **optional**. LiteLLM reads provider API keys from standard env
 | Anthropic | `ANTHROPIC_API_KEY` | `sk-ant-...` |
 | Groq | `GROQ_API_KEY` | `gsk_...` |
 
-LiteLLM automatically reads these standard env vars. No additional setup needed.
+The Anthropic and OpenAI SDKs read these standard env vars automatically. No additional setup needed.
 
 ---
 
@@ -252,7 +252,7 @@ embeddings:
 ```yaml
 # config-ollama.yaml
 llm:
-  model: "ollama/llama3.2"
+  model: "llama3.2"
   base_url: "http://localhost:11434"
   temperature: 0.0
   max_tokens: 512
@@ -516,7 +516,7 @@ ollama serve
 # 3. Create config (in another terminal)
 cat > ollama-config.yaml <<EOF
 llm:
-  model: "ollama/llama3.2"
+  model: "llama3.2"
   base_url: "http://localhost:11434"
 
 embeddings:
@@ -680,7 +680,6 @@ env | grep ELFMEM
 
 # Check if API keys are available to LiteLLM
 export OPENAI_API_KEY=sk-test
-python -c "import litellm; litellm.embedding_cost = True; print('LiteLLM OK')"
 ```
 
 ---
@@ -697,7 +696,6 @@ echo $ELFMEM_LLM_MODEL
 echo $ANTHROPIC_API_KEY | head -c 10
 
 # 3. Verify LiteLLM supports it
-python -c "import litellm; print(litellm.model_list)"
 ```
 
 ### "Embedding dimensions mismatch" error
