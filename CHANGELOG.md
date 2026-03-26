@@ -7,7 +7,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.2.0] — 2026-03-26
+
+> First public release. Version 0.1.0 was pre-publication only.
+
 
 ### Added
 - Interactive knowledge graph visualization dashboard (`elfmem[viz]`)
@@ -38,12 +41,23 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - `curate()` now purges staging entries for archived blocks (prevents zombie accumulation)
 - `scripts/visualise.py` replaces `demo_visualise.py`
 
+### Removed
+- **LiteLLM and instructor dependencies removed** (security concerns, large transitive tree).
+  Replaced by two official SDK adapters: `AnthropicLLMAdapter` (Anthropic SDK) and
+  `OpenAILLMAdapter` + `OpenAIEmbeddingAdapter` (OpenAI SDK). Provider is auto-detected
+  from the model name: `claude-*` → Anthropic, all others → OpenAI-compatible.
+  OpenAI-compatible APIs (Ollama, Groq, Together, Mistral) work via `base_url`.
+- **`SmartMemory` removed.** `MemorySystem` owns the full API directly.
+  `MemorySystem.managed()` replaces `SmartMemory.managed()`.
+
 ### Fixed
 - Empty query string crash in `frame()` when called with `query=""`
 - Schema backward compatibility: visualization works with databases created before schema migrations
 - `LearnResult.to_dict()` return type corrected to `dict[str, Any]`
 - `EmbeddingService` protocol now includes `embed_batch` method
 - Ruff E501, SIM105, B904, B905, B007, F841, E402 violations resolved
+- `OpenAILLMAdapter` and `OpenAIEmbeddingAdapter` create their SDK clients lazily so that
+  operations like `status()` succeed even when `OPENAI_API_KEY` is not set
 
 ---
 
@@ -68,5 +82,5 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - `ElfmemError` exception hierarchy with `.recovery` field
 - 386 tests, all passing with deterministic mocks
 
-[Unreleased]: https://github.com/emson/elfmem/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/emson/elfmem/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/emson/elfmem/releases/tag/v0.1.0
