@@ -1,0 +1,104 @@
+site_name: elfmem
+site_description: Adaptive memory for LLM agents — knowledge that gets used survives.
+site_url: https://emson.github.io/elfmem
+repo_url: https://github.com/emson/elfmem
+repo_name: emson/elfmem
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+    - announce.dismiss
+
+plugins:
+  - search:
+      lang: en
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.snippets
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Getting Started:
+    - Configuration: SETUP_AND_CONFIG.md
+    - Claude Code: CLAUDE_CODE_INTEGRATION.md
+    - MCP Server: MCP_SERVER_SETUP.md
+    - Multiple MCP Instances: MULTIPLE_MCP_QUICK_REFERENCE.md
+    - MCP Steps Reference: multiple_mcp_steps.md
+    - Local Dev Setup: dev_setup.md
+  - Building Agents:
+    - Agent Patterns: agent_usage_patterns_guide.md
+    - Cognitive Loop: cognitive_loop_operations_guide.md
+    - Operationalizing Memory: operationalize_cognitive_loop.md
+  - Architecture:
+    - Technical Specification: amgs_architecture.md
+    - Design Philosophy: simulation_overview.md
+    - Dreaming System: dreaming_architecture.md
+    - Graph & Connections: graph_connect_design.md
+    - Agent-First Principles: agent_friendly_principles.md
+  - MCP Reference:
+    - Tool Documentation: MCP_DOCUMENTATION_INDEX.md
+    - elfmem Tool Spec: elfmem_tool.md
+  - Research:
+    - Graph Improvements: graph_improvement_research.md
+    - Agent Pattern Research: research_agent_patterns.md
+    - Visualisation Research: visualisation_research.md
+    - Simulation Behaviour: simulation_behaviour_research.md
+    - Simulation Guide: design_simulation_guide.md
+    - Simulation Quick Reference: design_simulation_quick_ref.md
+  - Contributing:
+    - Code Style: coding_principles.md
+    - Testing: testing_principles.md
+  - Design History:
+    - Implementation Plans: plans/README.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/emson/elfmem
+      name: elfmem on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/elfmem
+      name: elfmem on PyPI

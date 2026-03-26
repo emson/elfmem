@@ -77,7 +77,7 @@ async with system.session():
     print(result.text)  # inject into prompt
 ```
 
-See [QUICKSTART.md](../QUICKSTART.md) for the full guide.
+See [QUICKSTART.md](quickstart.md) for the full guide.
 
 ---
 
@@ -1063,10 +1063,10 @@ async with system.session():
 
 ## See Also
 
-- **[QUICKSTART.md](../QUICKSTART.md)** — 5-minute walkthrough
-- **[SIMULATION_OVERVIEW.md](../SIMULATION_OVERVIEW.md)** — Philosophy and design principles
+- **[QUICKSTART.md](quickstart.md)** — 5-minute walkthrough
+- **[SIMULATION_OVERVIEW.md](simulation_overview.md)** — Philosophy and design principles
 - **[docs/amgs_architecture.md](./amgs_architecture.md)** — Technical deep dive
-- **[sim/EXPLORATIONS.md](../sim/EXPLORATIONS.md)** — Index of 26 design decisions
+- **[sim/EXPLORATIONS.md](https://github.com/emson/elfmem/blob/main/sim/EXPLORATIONS.md)** — Index of 26 design decisions
 
 ---
 
@@ -1074,6 +1074,6 @@ async with system.session():
 
 - **Questions?** Check `elfmem guide` or the examples above
 - **Found a bug?** Open an issue on GitHub
-- **Want to integrate?** See the Python library documentation in [QUICKSTART.md](../QUICKSTART.md)
+- **Want to integrate?** See the Python library documentation in [QUICKSTART.md](quickstart.md)
 
 Happy remembering! 🧠

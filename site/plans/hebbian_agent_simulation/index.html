@@ -1,0 +1,2241 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/hebbian_agent_simulation/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Hebbian Co-Retrieval — Agent Simulation & Improvement Analysis - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#hebbian-co-retrieval-agent-simulation-improvement-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Hebbian Co-Retrieval — Agent Simulation &amp; Improvement Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#framing-what-does-an-agent-actually-experience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Framing: What Does an Agent Actually Experience?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-1-the-agentic-assistant-steady-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 1: The Agentic Assistant (Steady-State)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-2-the-identity-loop-critical-bug-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 2: The Identity Loop — CRITICAL BUG FOUND
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-3-the-burst-session-vs-cross-session-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 3: The Burst Session vs. Cross-Session Signal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-4-the-focused-domain-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 4: The Focused Domain Agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-5-the-long-running-agent-with-concept-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 5: The Long-Running Agent with Concept Drift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-6-the-multi-frame-loop-cross-frame-blind-spot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 6: The Multi-Frame Loop — Cross-Frame Blind Spot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-7-the-agent-that-mostly-uses-recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 7: The Agent That Mostly Uses recall()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-8-the-fresh-start-staging-lost-on-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 8: The Fresh Start — Staging Lost on Restart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-9-the-self-frame-constitutional-noise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 9: The SELF Frame — Constitutional Noise
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-10-observability-the-silent-promotion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario 10: Observability — The Silent Promotion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issues-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issues Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixes-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes Implemented
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fixes Implemented">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fix-1-cache-aware-staging-bug-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix 1: Cache-Aware Staging (Bug Fix)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-2-per-session-deduplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix 2: Per-Session Deduplication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-3-zombie-cleanup-in-curate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix 3: Zombie Cleanup in curate()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-4-frameresultedges_promoted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix 4: FrameResult.edges_promoted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Insights
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Insights">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-c1-does-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What C1 does well
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-c1-cannot-do-by-design-not-bugs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What C1 cannot do (by design, not bugs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-tension-immediate-vs-deferred-promotion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design tension: Immediate vs. Deferred Promotion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/hebbian_agent_simulation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="hebbian-co-retrieval-agent-simulation-improvement-analysis">Hebbian Co-Retrieval — Agent Simulation &amp; Improvement Analysis<a class="headerlink" href="#hebbian-co-retrieval-agent-simulation-improvement-analysis" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-03-09
+<strong>Scope:</strong> C1 implementation stress-tested against 10 agent scenarios
+<strong>Result:</strong> 4 issues found (1 critical bug, 2 semantic flaws, 1 observability gap) → 4 targeted fixes</p>
+<hr />
+<h2 id="framing-what-does-an-agent-actually-experience">Framing: What Does an Agent Actually Experience?<a class="headerlink" href="#framing-what-does-an-agent-actually-experience" title="Permanent link">&para;</a></h2>
+<p>An elf agent operates in a tight loop:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>loop:
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  ctx = await system.frame(&quot;attention&quot;, query=current_task)   ← C1 STAGES HERE
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  response = llm(ctx.text + user_message)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  await system.learn(insights_from_response)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  if should_signal: await system.outcome(block_ids, signal)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  if system.should_dream: await system.dream()
+</span></code></pre></div>
+<p>C1 Hebbian staging fires on every <code>frame()</code> call. The agent never calls it directly — it just happens. This "invisible learning" is a strength (zero ceremony) but also where subtle failures hide.</p>
+<hr />
+<h2 id="scenario-1-the-agentic-assistant-steady-state">Scenario 1: The Agentic Assistant (Steady-State)<a class="headerlink" href="#scenario-1-the-agentic-assistant-steady-state" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent processes user queries all day. Each loop: <code>frame("attention", query=user_msg)</code>.</p>
+<p><strong>Trace:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Query 1: &quot;python list comprehensions&quot; → [A, B, C]  staging: {(A,B):1, (A,C):1, (B,C):1}
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Query 2: &quot;python performance tips&quot;   → [A, B, D]  staging: {(A,B):2, ...}
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Query 3: &quot;optimising python code&quot;    → [A, B, E]  staging: {(A,B):3} → PROMOTED to co_occurs edge
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Query 4+: A and B now connected → graph expansion returns both together even when only A matches
+</span></code></pre></div></p>
+<p><strong>Assessment: Works correctly.</strong> Blocks that consistently co-appear in semantically related queries form edges. The graph learns the agent's domain topology.</p>
+<p><strong>Minor concern:</strong> Queries 1-3 all asking variations of "python performance" may or may not represent genuinely independent signals. The agent called the same mental concept three ways in one session — is that 3 independent confirmations? See Issue 2.</p>
+<hr />
+<h2 id="scenario-2-the-identity-loop-critical-bug-found">Scenario 2: The Identity Loop — CRITICAL BUG FOUND<a class="headerlink" href="#scenario-2-the-identity-loop-critical-bug-found" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent wraps every LLM call with SELF frame for identity grounding:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">conversation</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">self_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>         <span class="c1"># identity context</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">attn_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">self_ctx</span><span class="o">.</span><span class="n">text</span> <span class="o">+</span> <span class="n">attn_ctx</span><span class="o">.</span><span class="n">text</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>SELF frame has a 1-hour TTL cache</strong> (confirmed in <code>context/frames.py: CachePolicy(ttl_seconds=3600)</code>).</p>
+<p><strong>What actually happens:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Call 1 (t=0):   frame(&quot;self&quot;) → DB query → [A, B, C, D, E]  cached=False → STAGES all pairs
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Call 2 (t=1s):  frame(&quot;self&quot;) → CACHE HIT → [A, B, C, D, E] cached=True  → STAGES AGAIN (bug!)
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Call 3 (t=2s):  frame(&quot;self&quot;) → CACHE HIT → [A, B, C, D, E] cached=True  → (A,B) count=3 → PROMOTE!
+</span></code></pre></div></p>
+<p><strong>Result:</strong> With threshold=3, the first 3 consecutive calls to <code>frame("self")</code> — happening in literal seconds — promote ALL C(N,2) constitutional block pairs to co_occurs edges via pure cache hits. No genuine independent retrieval occurred. This fires in 3 seconds rather than 3 distinct usage sessions.</p>
+<p><strong>This is a critical bug.</strong> Cached results carry no new signal — they are the same DB query result served from memory. Staging on a cache hit means a loop calling <code>frame("self")</code> every iteration creates the entire constitutional graph within seconds of the first real retrieval.</p>
+<p><strong>Fix:</strong> Guard staging with <code>if not result.cached</code>.</p>
+<hr />
+<h2 id="scenario-3-the-burst-session-vs-cross-session-signal">Scenario 3: The Burst Session vs. Cross-Session Signal<a class="headerlink" href="#scenario-3-the-burst-session-vs-cross-session-signal" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Two patterns produce identical staging counts:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Pattern A (burst): Same session, 3 calls in 3 seconds
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=1
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=2
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → PROMOTED
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>Pattern B (cross-session): 3 separate day-long sessions
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  Session 1: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=1
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  Session 2: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=2
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  Session 3: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → PROMOTED
+</span></code></pre></div>
+<p><strong>Pattern B is strongly meaningful.</strong> A and B co-appear across 3 separate agent runs = genuine functional relationship.</p>
+<p><strong>Pattern A is noise.</strong> Three calls in one session = probably the same task iteration, possibly even the same query. The threshold=3 rationale ("once is coincidence, twice is pattern, three times is signal") assumes independence, which burst patterns violate.</p>
+<p><strong>The plan explicitly says:</strong> "Cross-session patterns are the most reliable Hebbian signal." But nothing in the current implementation enforces this. A threshold=3 burst session produces the same outcome as threshold=3 cross-session usage.</p>
+<p><strong>Fix:</strong> Per-session deduplication. Each pair can contribute at most 1 count per <code>begin_session()</code> cycle. This makes the threshold semantically mean "N distinct sessions" not "N calls."</p>
+<hr />
+<h2 id="scenario-4-the-focused-domain-agent">Scenario 4: The Focused Domain Agent<a class="headerlink" href="#scenario-4-the-focused-domain-agent" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> A trading assistant always retrieves the same 8 core knowledge blocks for every query:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>{risk_management, position_sizing, correlation, volatility, kelly_criterion,
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a> drawdown, sharpe_ratio, mean_reversion}
+</span></code></pre></div>
+<p>Every <code>frame("attention")</code> call returns these 8 blocks (tight domain, specific vocabulary).</p>
+<p><strong>Without per-session dedup:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Call 1 (Session 1): C(8,2) = 28 pairs staged, all count=1
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Call 2 (Session 1): same 28 pairs staged again, all count=2
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Call 3 (Session 1): same 28 pairs → ALL 28 pairs promoted to edges
+</span></code></pre></div></p>
+<p><strong>Result:</strong> 28 edges created in one session after 3 calls. The agent's graph becomes a complete subgraph for these 8 nodes. No degree cap enforcement in Phase 1, so each node gets 7 co_retrieval edges immediately.</p>
+<p><strong>With per-session dedup (Fix 2):</strong> Each pair counts once per session. Three separate sessions needed. The graph grows more slowly but more meaningfully.</p>
+<p><strong>Assessment:</strong> The fix is essential for domain-focused agents. Without it, highly correlated retrieval creates graph noise rather than signal.</p>
+<hr />
+<h2 id="scenario-5-the-long-running-agent-with-concept-drift">Scenario 5: The Long-Running Agent with Concept Drift<a class="headerlink" href="#scenario-5-the-long-running-agent-with-concept-drift" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent processes Topic A for 100 sessions, then shifts to Topic B. Topic A blocks are rarely retrieved again.</p>
+<p><strong>State after 100 Topic A sessions:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>staging = {
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  (block_a1, block_a2): 2,   # 2/3 toward promotion — one more session needed
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  (block_a3, block_a4): 1,   # 1/3 toward promotion
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  ... (dozens more)
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>}
+</span></code></pre></div></p>
+<p><strong>After shift to Topic B:</strong>
+- Topic A blocks decay → eventually archived by curate()
+- Their pairs stay in staging dict forever: <code>{(archived_id, archived_id): count}</code>
+- These pairs never promote (archived blocks can't be retrieved)
+- Eviction only fires when <code>len(staging) &gt; 1000</code> — at Phase 1 scale, this may never happen</p>
+<p><strong>Zombie entry accumulation:</strong> With 500 blocks, 40 pairs per recall, 100 sessions → staging could hold 200+ zombie entries for archived blocks, consuming 20% of the cap while providing no value.</p>
+<p><strong>Fix:</strong> Curate-time cleanup. When <code>curate()</code> archives blocks, scan staging dict and remove pairs where either block is no longer active. The active block set is already fetched inside <code>curate()</code> — free O(n) intersection.</p>
+<hr />
+<h2 id="scenario-6-the-multi-frame-loop-cross-frame-blind-spot">Scenario 6: The Multi-Frame Loop — Cross-Frame Blind Spot<a class="headerlink" href="#scenario-6-the-multi-frame-loop-cross-frame-blind-spot" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent calls all three frames per loop:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">identity</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>          <span class="c1"># returns constitutional blocks [C1..C10]</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">goals</span>    <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">)</span>          <span class="c1"># returns goal blocks [G1, G2, G3]</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">context</span>  <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>  <span class="c1"># returns knowledge [K1..K5]</span>
+</span></code></pre></div>
+<p><strong>What stages:</strong>
+- <code>frame("self")</code>: pairs among {C1..C10}
+- <code>frame("task")</code>: pairs among {G1..G3}
+- <code>frame("attention")</code>: pairs among {K1..K5}</p>
+<p><strong>What does NOT stage:</strong> C1 and K1 — even if they're always both relevant to the agent's reasoning in the same loop iteration, they appear in different <code>frame()</code> calls and are never co-staged.</p>
+<p><strong>Assessment:</strong> This is a design limitation, not a bug. Cross-frame co-use is a real signal (the agent uses SELF and ATTENTION context together for every prompt) but the current design can't capture it. The <code>_session_block_ids</code> breadcrumb already tracks all blocks seen in a session — a future "session-level Hebbian" enhancement could stage cross-frame pairs.</p>
+<p><strong>Current mitigation:</strong> Frame templates render separate contexts; the LLM combines them. Cross-frame semantic relationships are still discoverable via consolidation similarity or outcome signals. C1 enriches the graph, not replaces it.</p>
+<p><strong>Phase 2 opportunity:</strong> After session ends, run staging across <code>session_block_ids</code> pairs. Low priority — consolidation already handles semantic similarity; C1 targets usage-proved functional relationship.</p>
+<hr />
+<h2 id="scenario-7-the-agent-that-mostly-uses-recall">Scenario 7: The Agent That Mostly Uses recall()<a class="headerlink" href="#scenario-7-the-agent-that-mostly-uses-recall" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent uses <code>recall()</code> for quick lookups and only calls <code>frame()</code> for final context injection before LLM calls.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Exploration phase (no staging)</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;position sizing concepts&quot;</span><span class="p">)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">specific</span>   <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;Kelly criterion formula&quot;</span><span class="p">)</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Context injection (staging fires here)</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;current trade decision&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Result:</strong> C1 correctly doesn't stage on <code>recall()</code> calls. The API contract is clean. Only <code>frame()</code> — the "I am about to use this context for real reasoning" call — triggers staging.</p>
+<p><strong>Assessment: Works as designed.</strong> The distinction between <code>recall()</code> (exploration, no side effects) and <code>frame()</code> (context injection, learning side effects) is meaningful and correctly implemented.</p>
+<hr />
+<h2 id="scenario-8-the-fresh-start-staging-lost-on-restart">Scenario 8: The Fresh Start — Staging Lost on Restart<a class="headerlink" href="#scenario-8-the-fresh-start-staging-lost-on-restart" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent runs for 2 sessions. Pair (A,B) reaches count=2 (threshold=3). Process restarts.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Session 1: (A,B) staged, count=1
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>Session 2: (A,B) staged, count=2
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>[RESTART]
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>Session 3: staging = {} — count=0 again
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>Session 4: count=1
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>Session 5: count=2
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>Session 6: count=3 → PROMOTED — but it took 6 sessions instead of 3
+</span></code></pre></div>
+<p><strong>Assessment:</strong> Acceptable for Phase 1. The plan explicitly acknowledges this. The longer it takes, the more confident the eventual edge. "Patterns that survive restarts reform quickly in active usage" — true for genuinely important relationships.</p>
+<p><strong>When this matters:</strong> Short-lived agents (serverless, per-request spawning). For these agents, staging never accumulates and C1 never fires. The design implicitly assumes medium-to-long-lived processes. This should be documented.</p>
+<hr />
+<h2 id="scenario-9-the-self-frame-constitutional-noise">Scenario 9: The SELF Frame — Constitutional Noise<a class="headerlink" href="#scenario-9-the-self-frame-constitutional-noise" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent calls <code>frame("self")</code> once per conversation turn for identity grounding.</p>
+<p><strong>The SELF frame guarantees</strong> blocks tagged <code>self/constitutional</code> always appear (via <code>_enforce_guarantees()</code>). If 8 constitutional blocks exist, they appear in EVERY <code>frame("self")</code> result, regardless of query.</p>
+<p><strong>Combined with Scenario 2 fix (no staging on cache hit):</strong>
+The fix makes this scenario safer. Without the fix, the 8 constitutional blocks would form a complete subgraph (28 edges) after 3 <code>frame("self")</code> calls in seconds. With the fix, they form it after 3 distinct sessions.</p>
+<p><strong>Is this desirable?</strong> The constitutional blocks ARE always co-used — they collectively define identity. So these edges are semantically correct. They just shouldn't form immediately.</p>
+<p><strong>Remaining concern:</strong> With per-session dedup, all 28 constitutional pairs reach threshold in exactly N_threshold sessions. Every session forms 28 new staging counts at once. This front-loads the constitutional graph creation.</p>
+<p><strong>Mitigation:</strong> The edges form correctly, just faster than average pairs (because constitutional blocks appear in 100% of SELF retrievals). They'll also be reinforced by <code>reinforce_co_retrieved_edges()</code> after creation, growing their <code>reinforcement_count</code> quickly — giving them C2 LTD protection (λ halved). Constitutional blocks forming a dense, durable subgraph is correct behavior.</p>
+<hr />
+<h2 id="scenario-10-observability-the-silent-promotion">Scenario 10: Observability — The Silent Promotion<a class="headerlink" href="#scenario-10-observability-the-silent-promotion" title="Permanent link">&para;</a></h2>
+<p><strong>Setup:</strong> Agent wants to know when its graph changes due to its own behavior.</p>
+<p><strong>Current state:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;risk management&quot;</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># Did this just promote an edge? Unknown. Agent can&#39;t tell.</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># staging_count changed from 3 to 0? Agent might notice if polling.</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># But no per-call signal.</span>
+</span></code></pre></div></p>
+<p><strong>The gap:</strong> Graph promotions are silent. The agent can infer a promotion happened by watching <code>status().co_retrieval_staging_count</code> drop, but this requires polling and comparison, which is awkward in an event-driven loop.</p>
+<p><strong>Why it matters:</strong> An agent that knows edge promotion just happened can:
+- Log it for introspection
+- Trigger a recall() with <code>expand=True</code> to immediately benefit from the new edge
+- Record the graph evolution as a learning event</p>
+<p><strong>Fix:</strong> Add <code>edges_promoted: int = 0</code> to <code>FrameResult</code>. Zero most of the time; non-zero when staging crosses threshold. No polling needed.</p>
+<hr />
+<h2 id="issues-summary">Issues Summary<a class="headerlink" href="#issues-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Severity</th>
+<th>Issue</th>
+<th>Root Cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Critical bug</strong></td>
+<td>Cached SELF frame triggers staging</td>
+<td><code>result.cached</code> not checked before staging</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Semantic flaw</strong></td>
+<td>Burst session = cross-session (threshold doesn't enforce independence)</td>
+<td>No per-session dedup in staging</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Operational</strong></td>
+<td>Zombie staging entries from archived blocks</td>
+<td>Staging dict never cleaned up without cap eviction</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Observability</strong></td>
+<td>Agent can't see per-call promotion signal</td>
+<td>FrameResult has no <code>edges_promoted</code> field</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="fixes-implemented">Fixes Implemented<a class="headerlink" href="#fixes-implemented" title="Permanent link">&para;</a></h2>
+<h3 id="fix-1-cache-aware-staging-bug-fix">Fix 1: Cache-Aware Staging (Bug Fix)<a class="headerlink" href="#fix-1-cache-aware-staging-bug-fix" title="Permanent link">&para;</a></h3>
+<p>In <code>api.py.frame()</code>:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Before (bug):</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">if</span> <span class="n">recalled_ids</span><span class="p">:</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="k">await</span> <span class="n">stage_and_promote_co_retrievals</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="c1"># After:</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">if</span> <span class="n">recalled_ids</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">cached</span><span class="p">:</span>  <span class="c1"># cache hits carry no new signal</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="k">await</span> <span class="n">stage_and_promote_co_retrievals</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></code></pre></div></p>
+<h3 id="fix-2-per-session-deduplication">Fix 2: Per-Session Deduplication<a class="headerlink" href="#fix-2-per-session-deduplication" title="Permanent link">&para;</a></h3>
+<p>Add <code>self._co_retrieval_session_seen: set[tuple[str, str]] = set()</code> to <code>MemorySystem.__init__()</code>.
+Clear in <code>begin_session()</code>.
+Pass to <code>stage_and_promote_co_retrievals()</code> as <code>session_seen</code> parameter.</p>
+<p>Each pair contributes at most 1 count per session. Threshold becomes "N distinct sessions" semantically.</p>
+<p><strong>Behavioral change:</strong> Tests using threshold=2 now require 2 <code>begin_session()</code> cycles. This is the correct semantics.</p>
+<h3 id="fix-3-zombie-cleanup-in-curate">Fix 3: Zombie Cleanup in curate()<a class="headerlink" href="#fix-3-zombie-cleanup-in-curate" title="Permanent link">&para;</a></h3>
+<p>In <code>api.py.curate()</code>, after <code>_curate()</code> returns: scan staging dict, remove pairs where either block_id is not in the active set.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># After _curate():</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span><span class="p">:</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="n">active</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_active_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">active_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">active</span><span class="p">}</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>        <span class="n">pair</span><span class="p">:</span> <span class="n">count</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="k">for</span> <span class="n">pair</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="k">if</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">active_ids</span> <span class="ow">and</span> <span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">active_ids</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="p">}</span>
+</span></code></pre></div>
+<h3 id="fix-4-frameresultedges_promoted">Fix 4: FrameResult.edges_promoted<a class="headerlink" href="#fix-4-frameresultedges_promoted" title="Permanent link">&para;</a></h3>
+<p>Add <code>edges_promoted: int = 0</code> to <code>FrameResult</code> dataclass.
+Capture promotion count from <code>stage_and_promote_co_retrievals()</code> return value.
+Set on result before returning from <code>frame()</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">promoted_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">if</span> <span class="n">recalled_ids</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">cached</span><span class="p">:</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">promoted_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">stage_and_promote_co_retrievals</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">result</span><span class="o">.</span><span class="n">edges_promoted</span> <span class="o">=</span> <span class="n">promoted_count</span>
+</span></code></pre></div>
+<hr />
+<h2 id="design-insights">Design Insights<a class="headerlink" href="#design-insights" title="Permanent link">&para;</a></h2>
+<h3 id="what-c1-does-well">What C1 does well<a class="headerlink" href="#what-c1-does-well" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Zero agent ceremony — Hebbian learning is invisible infrastructure</li>
+<li>API contract is clean: <code>frame()</code> = learning side effects, <code>recall()</code> = pure</li>
+<li>The <code>co_retrieval_staging_count</code> in <code>status()</code> gives non-zero signal when learning is active</li>
+<li><code>co_occurs</code> edges in <code>_EVICTION_ORDER</code> — displaced by semantic agent edges, correct priority</li>
+<li>C2 temporal decay self-corrects burst-promoted edges (they weaken without continued use)</li>
+</ul>
+<h3 id="what-c1-cannot-do-by-design-not-bugs">What C1 cannot do (by design, not bugs)<a class="headerlink" href="#what-c1-cannot-do-by-design-not-bugs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Cross-frame staging (SELF + ATTENTION co-used blocks)</li>
+<li>Persistent staging across process restarts (Phase 1 limitation)</li>
+<li>Weighted staging (pair co-retrieved 5 times in one session counts same as 5 separate sessions, post-fix)</li>
+</ul>
+<h3 id="design-tension-immediate-vs-deferred-promotion">Design tension: Immediate vs. Deferred Promotion<a class="headerlink" href="#design-tension-immediate-vs-deferred-promotion" title="Permanent link">&para;</a></h3>
+<p>The plan chose immediate promotion (at recall time, not at curate time) for real-time graph availability. This is correct for agent-first design — the edge is available on the very next <code>frame()</code> call.</p>
+<p>The cost: promotion is transactional overhead on every <code>frame()</code>. At top_k=20 and 190 pairs, this is bounded and acceptable at Phase 1 scale.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
