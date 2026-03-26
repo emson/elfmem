@@ -12,11 +12,10 @@ from pydantic import BaseModel, Field
 class LLMConfig(BaseModel):
     """Configuration for the LLM service.
 
-    API keys are NOT stored here — they come from environment variables.
-    LiteLLM reads standard env vars automatically:
-      OpenAI     → OPENAI_API_KEY
+    API keys are NOT stored here — they come from environment variables:
       Anthropic  → ANTHROPIC_API_KEY
-      Groq       → GROQ_API_KEY
+      OpenAI     → OPENAI_API_KEY
+      Groq/other → provider-specific env var (OpenAI-compatible adapters)
     """
 
     model: str = "claude-haiku-4-5-20251001"
@@ -110,9 +109,9 @@ class PromptsConfig(BaseModel):
     """Configuration for LLM prompt templates.
 
     Three levels of override:
-    1. Inline string (self_alignment, self_tags, contradiction)
-    2. File path (self_alignment_file, etc.) — resolved relative to cwd
-    3. Subclassing LiteLLMAdapter (escape hatch for full control)
+    1. Inline string (process_block, contradiction)
+    2. File path (process_block_file, contradiction_file) — resolved relative to cwd
+    3. Custom LLMService implementation passed directly to MemorySystem.__init__()
 
     Inline takes priority over file. If neither is set, library defaults
     from elfmem.prompts are used.

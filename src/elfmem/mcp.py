@@ -12,9 +12,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from elfmem.api import MemorySystem
+from elfmem.api import MemorySystem, format_recall_response
 from elfmem.policy import ConsolidationPolicy
-from elfmem.smart import format_recall_response
 
 _memory: MemorySystem | None = None
 _db_path: str = ""

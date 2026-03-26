@@ -1,7 +1,8 @@
 """Default prompt templates and valid self-tag vocabulary for elfmem.
 
-These are importable constants. The LiteLLMAdapter uses them as defaults
-when no overrides are configured via PromptsConfig.
+These are importable constants used as defaults when no overrides are
+configured via PromptsConfig. The adapter factory resolves these once
+at construction time via cfg.prompts.resolve_process_block() etc.
 """
 
 from __future__ import annotations

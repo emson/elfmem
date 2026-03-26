@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Learn cognitive loop operational concepts into elfmem."""
 import asyncio
-from elfmem.smart import SmartMemory
+from elfmem.api import MemorySystem
 
 COGNITIVE_LOOP_OPERATIONS = [
     # Core Operational Loop
@@ -209,7 +209,7 @@ COGNITIVE_LOOP_OPERATIONS = [
 
 async def learn_operations(db_path: str, config_path: str | None = None) -> None:
     """Learn cognitive loop operations into elfmem."""
-    async with SmartMemory.managed(db_path, config=config_path) as mem:
+    async with MemorySystem.managed(db_path, config=config_path) as mem:
         print(f"Learning {len(COGNITIVE_LOOP_OPERATIONS)} cognitive loop operations...\n")
 
         for i, op in enumerate(COGNITIVE_LOOP_OPERATIONS, 1):

@@ -41,10 +41,9 @@ except ImportError:
     ) from None
 
 from elfmem import project as _project
-from elfmem.api import MemorySystem
+from elfmem.api import MemorySystem, format_recall_response
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
-from elfmem.smart import format_recall_response
 from elfmem.types import CurateResult, FrameResult, LearnResult, OutcomeResult, SystemStatus
 
 app = typer.Typer(

@@ -1,4 +1,4 @@
-"""Pydantic response models for structured LLM output via instructor."""
+"""Pydantic response models for structured LLM output."""
 
 from __future__ import annotations
 
@@ -6,10 +6,11 @@ from pydantic import BaseModel, Field
 
 
 class BlockAnalysisModel(BaseModel):
-    """Instructor-structured response for combined block analysis.
+    """Structured response model for combined block analysis.
 
-    Used internally by LiteLLMAdapter.process_block(). The adapter
-    converts this to types.BlockAnalysis after filtering tags.
+    Used by AnthropicLLMAdapter (tool use input_schema) and
+    OpenAILLMAdapter (Pydantic JSON parse). Converted to
+    types.BlockAnalysis after filtering tags against VALID_SELF_TAGS.
     """
 
     alignment_score: float = Field(

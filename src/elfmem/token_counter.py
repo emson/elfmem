@@ -1,9 +1,10 @@
 """Mutable token accumulator — internal use only.
 
 ``TokenCounter`` is owned by ``MemorySystem`` and shared (by reference) with
-the LiteLLM adapters. The adapters call ``record_llm`` / ``record_embedding``
-after each API call. ``MemorySystem`` calls ``snapshot()`` to read the current
-session total or ``reset()`` to capture-and-zero at session end.
+the LLM and embedding adapters. The adapters call ``record_llm`` /
+``record_embedding`` after each API call. ``MemorySystem`` calls ``snapshot()``
+to read the current session total or ``reset()`` to capture-and-zero at
+session end.
 
 ``TokenUsage`` (the immutable snapshot type) lives in ``types.py`` because it
 is part of the public API surface (exported from ``__init__.py``).
@@ -20,9 +21,9 @@ class TokenCounter:
     Thread safety: Python's GIL protects simple integer increments, so
     concurrent async coroutines sharing one counter are safe without locks.
 
-    Owned by ``MemorySystem``; injected into both LiteLLM adapters at
-    construction. Mock adapters receive no counter (counter stays ``None``
-    in those paths — all counts appear as zero in ``status()``).
+    Owned by ``MemorySystem``; injected into both adapters at construction.
+    Mock adapters receive no counter (counter stays ``None`` in those paths —
+    all counts appear as zero in ``status()``).
     """
 
     def __init__(self) -> None:

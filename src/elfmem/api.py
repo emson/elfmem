@@ -13,7 +13,7 @@ from typing import Any, Literal
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from elfmem.adapters.litellm import LiteLLMAdapter, LiteLLMEmbeddingAdapter
+from elfmem.adapters.factory import make_embedding_adapter, make_llm_adapter
 from elfmem.config import ElfmemConfig
 from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
@@ -190,28 +190,8 @@ class MemorySystem:
         # MemorySystem reads it in status() and manages its lifecycle.
         counter = TokenCounter()
 
-        llm_svc = LiteLLMAdapter(
-            model=cfg.llm.model,
-            temperature=cfg.llm.temperature,
-            max_tokens=cfg.llm.max_tokens,
-            timeout=cfg.llm.timeout,
-            max_retries=cfg.llm.max_retries,
-            base_url=cfg.llm.base_url,
-            process_block_model=cfg.llm.process_block_model,
-            contradiction_model=cfg.llm.contradiction_model,
-            process_block_prompt=cfg.prompts.resolve_process_block(),
-            contradiction_prompt=cfg.prompts.resolve_contradiction(),
-            valid_self_tags=cfg.prompts.resolve_valid_tags(),
-            token_counter=counter,
-        )
-
-        embedding_svc = LiteLLMEmbeddingAdapter(
-            model=cfg.embeddings.model,
-            dimensions=cfg.embeddings.dimensions,
-            timeout=cfg.embeddings.timeout,
-            base_url=cfg.embeddings.base_url,
-            token_counter=counter,
-        )
+        llm_svc = make_llm_adapter(cfg, counter)
+        embedding_svc = make_embedding_adapter(cfg, counter)
 
         return cls(
             engine=engine,
@@ -1505,6 +1485,36 @@ def _resolve_config(
         return ElfmemConfig.model_validate(config)
     return config
 
+
+# ── Presentation helpers (used by CLI and MCP) ───────────────────────────────
+
+
+def format_recall_response(result: FrameResult) -> dict[str, Any]:
+    """Format a FrameResult for agent tool responses.
+
+    FrameResult.to_dict() is compact and omits per-block detail intentionally.
+    Agents calling outcome() need block IDs — this function surfaces them.
+    Used by both the MCP server and CLI --json output.
+    """
+    return {
+        "text": result.text,
+        "frame_name": result.frame_name,
+        "cached": result.cached,
+        "blocks": [_format_block(b) for b in result.blocks],
+    }
+
+
+def _format_block(block: ScoredBlock) -> dict[str, Any]:
+    """Extract the agent-relevant fields from a ScoredBlock."""
+    return {
+        "id": block.id,
+        "content": block.content,
+        "score": round(block.score, 3),
+        "tags": block.tags,
+    }
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
 
 _TOKEN_USAGE_FIELDS = frozenset(
     {"llm_input_tokens", "llm_output_tokens", "embedding_tokens", "llm_calls", "embedding_calls"}

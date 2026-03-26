@@ -144,9 +144,9 @@ class TestPolicyEdgeCases:
         assert policy.stats.avg_promotion_rate == 0.0
 
     def test_should_consolidate_with_policy_not_set(self) -> None:
-        """SmartMemory without policy uses simple threshold."""
-        # This test verifies fallback behavior in should_dream property
-        assert True  # Verified through SmartMemory integration tests
+        """MemorySystem without policy uses simple inbox_threshold."""
+        # Verified through MemorySystem integration tests in test_agent_api.py
+        assert True
 
 
 class TestPolicyStats:
