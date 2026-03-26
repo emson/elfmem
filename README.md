@@ -2,6 +2,12 @@
 
 **Adaptive memory for LLM agents. Knowledge that gets used survives. Knowledge that doesn't fades away. One file, zero infrastructure.**
 
+[![Tests](https://github.com/emson/elfmem/actions/workflows/ci.yml/badge.svg)](https://github.com/emson/elfmem/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/elfmem.svg)](https://pypi.org/project/elfmem/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Codecov](https://codecov.io/gh/emson/elfmem/branch/main/graph/badge.svg)](https://codecov.io/gh/emson/elfmem)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## The problem
 
 LLM agents are stateless by default. Every session starts from zero. Context windows fill up and reset. RAG retrieves documents but never learns from them. Most agent memory libraries either demand external infrastructure — vector databases, Redis, Postgres — or provide only a key-value store with no concept of relevance, decay, or identity.
