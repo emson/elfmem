@@ -17,6 +17,8 @@ import json
 
 import numpy as np
 import openai
+from openai.types.chat import ChatCompletionMessageParam
+from openai.types.shared_params import ResponseFormatJSONObject
 from pydantic import ValidationError
 
 from elfmem.adapters.models import BlockAnalysisModel, ContradictionScore
@@ -111,7 +113,7 @@ class OpenAILLMAdapter:
         JSON mode detection is cached per adapter instance so BadRequestError
         is raised at most once regardless of how many calls are made.
         """
-        messages = [{"role": "user", "content": prompt}]
+        messages: list[ChatCompletionMessageParam] = [{"role": "user", "content": prompt}]
         client = self._get_client
         if self._json_mode_supported is not False:
             try:
@@ -119,8 +121,8 @@ class OpenAILLMAdapter:
                     model=model,
                     temperature=self._temperature,
                     max_tokens=self._max_tokens,
-                    messages=messages,  # type: ignore[arg-type]
-                    response_format={"type": "json_object"},  # type: ignore[arg-type]
+                    messages=messages,
+                    response_format=ResponseFormatJSONObject(type="json_object"),
                 )
                 self._json_mode_supported = True
                 self._record_usage(response.usage)
@@ -132,7 +134,7 @@ class OpenAILLMAdapter:
             model=model,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
-            messages=messages,  # type: ignore[arg-type]
+            messages=messages,
         )
         self._record_usage(response.usage)
         return response.choices[0].message.content or ""

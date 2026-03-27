@@ -32,11 +32,7 @@ from elfmem.db.queries import (
     update_block_status,
 )
 from elfmem.memory.blocks import decay_lambda_for_tier, determine_decay_tier
-from elfmem.memory.dedup import (
-    EXACT_DUP_THRESHOLD,
-    NEAR_DUP_THRESHOLD,
-    cosine_similarity,
-)
+from elfmem.memory.dedup import cosine_similarity
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.scoring import (
     CROSS_CATEGORY_SCORE,
@@ -270,7 +266,7 @@ async def _collect_decisions(
                 llm.process_block(content, ""),
                 timeout=_LLM_PROCESS_TIMEOUT,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             analysis = _fallback_analysis()
 
         inferred_tags = analysis.tags or []
@@ -315,7 +311,7 @@ async def _collect_decisions(
                     llm.detect_contradiction(content, a_block["content"]),
                     timeout=_LLM_CONTRADICT_TIMEOUT,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             if c_score >= contradiction_threshold:
                 a_id = min(block_id, a_block["id"])
@@ -369,7 +365,9 @@ async def _apply_decisions(
             continue
 
         if d.action == "supersede" and d.supersedes_id:
-            await update_block_status(conn, d.supersedes_id, "archived", archive_reason="superseded")
+            await update_block_status(
+                conn, d.supersedes_id, "archived", archive_reason="superseded"
+            )
             deduplicated += 1
 
         if d.inferred_tags:
