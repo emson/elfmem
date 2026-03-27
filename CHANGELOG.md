@@ -7,6 +7,48 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+- `consolidate()` restructured into read-then-compute-then-write phases. LLM and
+  embedding calls now happen before the first database write, so they run under
+  a shared WAL read lock instead of the exclusive write lock. Write lock window
+  reduced from O(n × LLM_latency) to milliseconds. Behaviour and public signature
+  unchanged; all existing callers unaffected.
+- `curate()` auto-trigger inside `consolidate()` now runs in its own separate
+  transaction after consolidation commits. A `curate()` failure no longer rolls back
+  a successful consolidation. Migration: no change required.
+- `total_active_hours` is now incremented via an atomic SQL `UPDATE ... SET value =
+  CAST(value AS REAL) + delta`, eliminating a lost-update race when two sessions
+  end concurrently in a multi-process deployment.
+
+### Added
+- `PRAGMA busy_timeout=10000`: write contention now surfaces as a clear
+  `OperationalError` after 10 s instead of hanging indefinitely.
+- `PRAGMA wal_autocheckpoint=500`: WAL file is checkpointed every 500 pages
+  (down from 1000) to prevent unbounded disk growth under sustained write load.
+- `PRAGMA wal_checkpoint(PASSIVE)` runs inside each triggered `curate()` to
+  reclaim WAL disk space at a natural maintenance boundary.
+- `asyncio.timeout()` on every LLM call inside `consolidate()` (30 s per block
+  analysis, 15 s per contradiction check). Timed-out blocks are promoted with
+  neutral defaults (confidence 0.50, no tags) and will be re-scored on the next
+  consolidation cycle.
+- `increment_total_active_hours(conn, delta)` query function for atomic
+  active-hours accumulation.
+- `co_retrieval_staging` table persists Hebbian co-retrieval counts across
+  process restarts. Counts are now durable: an MCP server restart no longer
+  resets Hebbian staging to zero. FK CASCADE on `blocks.id` automatically
+  removes stale rows when a block is archived, replacing the previous manual
+  zombie-cleanup pass in `curate()`.
+- `upsert_co_retrieval_count`, `load_co_retrieval_staging`,
+  `delete_co_retrieval_pair` query functions for co-retrieval staging
+  persistence.
+- `MemorySystem.__init__` accepts `initial_co_retrieval_staging` to seed
+  in-memory staging from a DB snapshot on startup. `from_config()` populates
+  this automatically.
+
+---
+
 ## [0.3.0] — 2026-03-26
 
 > Package and documentation hardening for public release.

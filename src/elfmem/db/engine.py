@@ -17,6 +17,12 @@ _PRODUCTION_PRAGMAS = [
     "PRAGMA synchronous=NORMAL",
     "PRAGMA cache_size=-32000",
     "PRAGMA temp_store=MEMORY",
+    # Fail fast on write contention rather than hanging indefinitely.
+    # 10s is enough for brief collisions (learn + connect); real hangs surface promptly.
+    "PRAGMA busy_timeout=10000",
+    # Checkpoint every 500 WAL pages (half the default) to bound WAL disk growth
+    # under sustained write load without blocking writers.
+    "PRAGMA wal_autocheckpoint=500",
 ]
 
 _TEST_PRAGMAS = [

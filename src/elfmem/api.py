@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Any, Literal
 
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from elfmem.adapters.factory import make_embedding_adapter, make_llm_adapter
@@ -19,11 +21,12 @@ from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
 from elfmem.db.models import metadata
 from elfmem.db.queries import (
-    get_active_blocks,
     get_block_counts,
     get_config,
     get_inbox_count,
     get_total_active_hours,
+    load_co_retrieval_staging,
+    prune_stale_co_retrieval_staging,
     seed_builtin_data,
     set_config,
 )
@@ -91,6 +94,7 @@ class MemorySystem:
         token_counter: TokenCounter | None = None,
         policy: ConsolidationPolicy | None = None,
         initial_pending: int = 0,
+        initial_co_retrieval_staging: dict[tuple[str, str], int] | None = None,
     ) -> None:
         self._engine = engine
         self._llm = llm_service
@@ -114,8 +118,11 @@ class MemorySystem:
         # Hebbian co-retrieval staging — accumulates across sessions, never reset.
         # Maps canonical (from_id, to_id) → co-retrieval count without existing edge.
         # Promotes to permanent co_occurs edge at co_retrieval_edge_threshold.
-        # In-memory only; resets on process restart (Phase 1 acceptable).
-        self._co_retrieval_staging: dict[tuple[str, str], int] = {}
+        # Persisted to DB (co_retrieval_staging table) and restored on startup via
+        # from_config(). FK CASCADE on blocks keeps the table self-consistent.
+        self._co_retrieval_staging: dict[tuple[str, str], int] = (
+            initial_co_retrieval_staging or {}
+        )
         # Per-session dedup set — cleared on begin_session() so each pair
         # contributes at most 1 count per session. Makes threshold semantically
         # mean "N distinct sessions" not "N calls in one session."
@@ -178,6 +185,9 @@ class MemorySystem:
             # Seed _pending from DB so the advisory is accurate on restart.
             # Blocks that survived a crash or process restart are counted.
             initial_pending = await get_inbox_count(conn)
+            # Restore Hebbian staging so multi-session counts survive process restarts.
+            # FK CASCADE on blocks.id ensures stale rows are auto-cleaned on archival.
+            co_retrieval_staging = await load_co_retrieval_staging(conn)
             # Restore persisted policy threshold so adaptive learning continues
             # across restarts. Clamped to [min, max] by restore_threshold().
             if policy is not None:
@@ -201,6 +211,7 @@ class MemorySystem:
             token_counter=counter,
             policy=policy,
             initial_pending=initial_pending,
+            initial_co_retrieval_staging=co_retrieval_staging,
         )
 
     @classmethod
@@ -674,12 +685,22 @@ class MemorySystem:
                 edge_degree_cap=mem.edge_degree_cap,
                 contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
             )
+            await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
-            if await should_curate(
+        self._pending = 0
+        self._frame_cache.clear()
+
+        async with self._engine.connect() as conn:
+            run_curate = await should_curate(
                 conn,
                 current_hours,
                 curate_interval_hours=mem.curate_interval_hours,
-            ):
+            )
+
+        # Curate runs in its own transaction so its failure cannot roll back
+        # the consolidation committed above.
+        if run_curate:
+            async with self._engine.begin() as conn:
                 await _curate(
                     conn,
                     current_active_hours=current_hours,
@@ -687,13 +708,11 @@ class MemorySystem:
                     edge_prune_threshold=mem.edge_prune_threshold,
                     reinforce_top_n=mem.curate_reinforce_top_n,
                 )
+                # Passive checkpoint at a natural maintenance boundary.
+                # OperationalError is expected on in-memory databases (no WAL).
+                with suppress(OperationalError):
+                    await conn.execute(text("PRAGMA wal_checkpoint(PASSIVE)"))
 
-            # Record consolidation timestamp for status() reporting
-            await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
-
-        # Transaction committed: inbox is empty, active memory changed.
-        self._pending = 0
-        self._frame_cache.clear()
         self._record_op("consolidate", result.summary)
         return result
 
@@ -1018,7 +1037,7 @@ class MemorySystem:
         if frame_def.filters.tag_patterns:
             tag_filter = frame_def.filters.tag_patterns[0]
 
-        async with self._engine.begin() as conn:
+        async with self._engine.connect() as conn:
             blocks = await hybrid_retrieve(
                 conn,
                 embedding_svc=self._embedding,
@@ -1399,18 +1418,15 @@ class MemorySystem:
                 edge_prune_threshold=mem.edge_prune_threshold,
                 reinforce_top_n=mem.curate_reinforce_top_n,
             )
-        # Zombie staging cleanup: remove pairs where either block was archived.
-        # Archived blocks can't be retrieved, so their staged pairs never promote.
-        # Runs after _curate() so archival decisions are already committed.
+        # Sync in-memory staging after archival. Two-step:
+        # 1. Prune rows where either block was archived (status != 'active').
+        #    FK CASCADE handles physical deletions; this handles the normal
+        #    archival case where the block row stays with status='archived'.
+        # 2. Reload the now-clean staging into memory.
         if self._co_retrieval_staging:
-            async with self._engine.connect() as conn:
-                active = await get_active_blocks(conn)
-            active_ids = {b["id"] for b in active}
-            self._co_retrieval_staging = {
-                pair: count
-                for pair, count in self._co_retrieval_staging.items()
-                if pair[0] in active_ids and pair[1] in active_ids
-            }
+            async with self._engine.begin() as conn:
+                await prune_stale_co_retrieval_staging(conn)
+                self._co_retrieval_staging = await load_co_retrieval_staging(conn)
         self._record_op("curate", result.summary)
         return result
 
