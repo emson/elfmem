@@ -473,7 +473,7 @@ class BlockAnalysis:
 
     alignment_score: float  # [0.0, 1.0] — how strongly identity-aligned
     tags: list[str]         # self/* tags, already filtered to valid vocabulary
-    summary: str            # factual distillation of raw content
+    summary: str | None     # factual distillation of raw content; None on LLM timeout
 
 
 @dataclass

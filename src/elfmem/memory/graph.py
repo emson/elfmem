@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db import queries
+from elfmem.db.queries import delete_co_retrieval_pair, upsert_co_retrieval_count
 
 EDGE_REINFORCE_DELTA = 0.10
 EDGE_WEIGHT_CAP = 1.0
@@ -164,9 +165,11 @@ async def stage_and_promote_co_retrievals(
                 last_active_hours=current_active_hours,
             )
             staging.pop(pair, None)
+            await delete_co_retrieval_pair(conn, pair)
             promoted += 1
         else:
             staging[pair] = count
+            await upsert_co_retrieval_count(conn, pair, count)
 
     # Evict when over cap — preserve pairs closest to promotion (highest count)
     if len(staging) > staging_max:
