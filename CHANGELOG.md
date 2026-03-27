@@ -23,8 +23,6 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **BREAKING** `EDGE_DEGREE_CAP` reduced from 10 to 5. Each newly promoted block
   creates at most 5 edges during consolidation (previously 10). Migration: callers
   passing an explicit `edge_degree_cap` should review their value.
-
-### Changed
 - `consolidate()` restructured into read-then-compute-then-write phases. LLM and
   embedding calls now happen before the first database write, so they run under
   a shared WAL read lock instead of the exclusive write lock. Write lock window
