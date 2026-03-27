@@ -43,8 +43,8 @@ from elfmem.scoring import (
 from elfmem.types import BlockAnalysis, ConsolidateResult, Edge
 
 SELF_ALIGNMENT_THRESHOLD = 0.70
-EDGE_SCORE_THRESHOLD = 0.40
-EDGE_DEGREE_CAP = 10
+EDGE_SCORE_THRESHOLD = 0.45
+EDGE_DEGREE_CAP = 5
 CONTRADICTION_THRESHOLD = 0.80
 NEAR_DUP_EXACT_THRESHOLD = 0.95   # similarity >= this → silent reject
 NEAR_DUP_NEAR_THRESHOLD = 0.90    # similarity >= this → supersede existing
@@ -108,10 +108,10 @@ def _composite_edge_score(
     Cosine is clamped to [0.0, 1.0] — negative cosine contributes 0 rather
     than penalising contextually related blocks.
 
-    Hard guard: returns 0.0 if cosine < MINIMUM_COSINE_FOR_EDGE.
+    Hard guard: returns 0.0 if cosine < MINIMUM_COSINE_FOR_EDGE (0.50).
     Without this guard, same-session + same-category context (non-cosine floor
-    ≈ 0.25) would allow cosine ≈ 0.27 to form edges — below the semantic floor
-    for meaningful relatedness. Spurious edges corrupt recall via graph expansion.
+    ≈ 0.25) would allow very low cosine pairs to form edges. 0.50 ensures
+    genuine semantic similarity before contextual signals contribute.
     """
     w_cos, w_tag, w_cat, w_temp = 0.55, 0.20, 0.15, 0.10
     cos = max(0.0, cosine_similarity(vec_a, vec_b))
@@ -165,7 +165,7 @@ def _compute_edge_decisions(
             if score >= edge_score_threshold:
                 candidates.append((a_block["id"], score))
 
-        # heapq.nlargest: O(n log k) vs sort's O(n log n); k = EDGE_DEGREE_CAP = 10
+        # heapq.nlargest: O(n log k) vs sort's O(n log n); k = EDGE_DEGREE_CAP
         for other_id, score in heapq.nlargest(edge_degree_cap, candidates, key=lambda x: x[1]):
             from_id, to_id = Edge.canonical(block_id, other_id)
             decisions.append(_EdgeDecision(from_id=from_id, to_id=to_id, weight=score))

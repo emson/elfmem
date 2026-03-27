@@ -92,15 +92,14 @@ class TestCompositeEdgeIntegration:
     """Composite edge scoring behaviour observed through consolidate()."""
 
     async def test_shared_tags_form_edge_at_moderate_cosine(self, db) -> None:
-        """Blocks with shared tags form an edge at cosine=0.55.
+        """Blocks with shared tags form an edge at cosine=0.65.
 
-        Old cosine-only scoring (threshold=0.60) would reject this pair.
-        With shared tags the composite score comfortably exceeds 0.40.
+        With shared tags the composite score comfortably exceeds 0.45.
         """
         llm = MockLLMService(default_tags=["frame-selection"])
         embedding = MockEmbeddingService(
             similarity_overrides={
-                frozenset({"frame heuristic alpha", "frame heuristic beta"}): 0.55
+                frozenset({"frame heuristic alpha", "frame heuristic beta"}): 0.65
             }
         )
         async with db.begin() as conn:
@@ -113,15 +112,15 @@ class TestCompositeEdgeIntegration:
         assert cr.edges_created >= 1
 
     async def test_minimum_cosine_guard_prevents_spurious_edge(self, db) -> None:
-        """Cosine=0.25 < MINIMUM_COSINE_FOR_EDGE: no edge even with same session and category.
+        """Cosine=0.45 < MINIMUM_COSINE_FOR_EDGE (0.50): no edge even with same category.
 
         Without the guard, same-session + same-category context gives a non-cosine
-        floor of 0.25, allowing cosine≈0.27 to form spurious edges that corrupt
-        graph expansion during recall.
+        floor of 0.25, allowing weakly related blocks to form spurious edges that
+        corrupt graph expansion during recall.
         """
         embedding = MockEmbeddingService(
             similarity_overrides={
-                frozenset({"python async patterns", "sql query optimization"}): 0.25
+                frozenset({"python async patterns", "sql query optimization"}): 0.45
             }
         )
         llm = MockLLMService(default_tags=[])

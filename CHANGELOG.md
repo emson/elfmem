@@ -10,6 +10,21 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- **BREAKING** `MINIMUM_COSINE_FOR_EDGE` raised from 0.30 to 0.50. Blocks must now
+  share genuine semantic similarity before contextual signals (category, temporal
+  proximity) can push a pair past the edge threshold. Previously, same-category,
+  same-session blocks with cosine as low as 0.30 formed edges, polluting the graph
+  with spurious connections. Migration: no code changes needed; existing edges are
+  unaffected, but fewer new similarity edges will be created on consolidation.
+- **BREAKING** `EDGE_SCORE_THRESHOLD` raised from 0.40 to 0.45. Combined with the
+  higher cosine guard, this tightens the quality bar for new similarity edges.
+  Migration: callers passing an explicit `edge_score_threshold` should review their
+  value against the new default.
+- **BREAKING** `EDGE_DEGREE_CAP` reduced from 10 to 5. Each newly promoted block
+  creates at most 5 edges during consolidation (previously 10). Migration: callers
+  passing an explicit `edge_degree_cap` should review their value.
+
+### Changed
 - `consolidate()` restructured into read-then-compute-then-write phases. LLM and
   embedding calls now happen before the first database write, so they run under
   a shared WAL read lock instead of the exclusive write lock. Write lock window
