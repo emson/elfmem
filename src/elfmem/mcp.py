@@ -3,6 +3,12 @@
 Start:  elfmem serve --db agent.db
         elfmem serve --db agent.db --config elfmem.yaml
         elfmem serve --db agent.db --adaptive-policy
+
+Tool implementation pattern
+---------------------------
+Each public tool (elfmem_*) is a thin @mcp.tool() wrapper that delegates to a
+private _tool_* coroutine. This keeps the business logic directly callable and
+independently testable without going through FastMCP's FunctionTool machinery.
 """
 from __future__ import annotations
 
@@ -44,6 +50,99 @@ def _mem() -> MemorySystem:
     return _memory
 
 
+# ── Tool implementations (directly callable, used by tests) ──────────────────
+
+
+async def _tool_remember(
+    content: str,
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    mem = _mem()
+    result = await mem.remember(content, tags=tags)
+    response = result.to_dict()
+    response["should_dream"] = mem.should_dream
+    return response
+
+
+async def _tool_recall(
+    query: str,
+    top_k: int = 5,
+    frame: str = "attention",
+) -> dict[str, Any]:
+    mem = _mem()
+    await mem.begin_session()  # idempotent — no-op if session already active
+    result = await mem.frame(frame, query=query or None, top_k=top_k)
+    return format_recall_response(result)
+
+
+async def _tool_status() -> dict[str, Any]:
+    result = await _mem().status()
+    return result.to_dict()
+
+
+async def _tool_outcome(
+    block_ids: list[str],
+    signal: float,
+    weight: float = 1.0,
+    source: str = "",
+) -> dict[str, Any]:
+    result = await _mem().outcome(block_ids, signal, weight=weight, source=source)
+    return result.to_dict()
+
+
+async def _tool_curate() -> dict[str, Any]:
+    result = await _mem().curate()
+    return result.to_dict()
+
+
+async def _tool_dream() -> dict[str, Any]:
+    result = await _mem().dream()
+    if result is None:
+        return {"message": "No pending blocks to consolidate", "status": "idle"}
+    return result.to_dict()
+
+
+async def _tool_setup(
+    identity: str | None = None,
+    values: list[str] | None = None,
+    seed: bool = True,
+) -> dict[str, Any]:
+    result = await _mem().setup(identity=identity, values=values, seed=seed)
+    return result.to_dict()
+
+
+async def _tool_connect(
+    source: str,
+    target: str,
+    relation: str = "similar",
+    note: str | None = None,
+    if_exists: str = "reinforce",
+) -> dict[str, Any]:
+    result = await _mem().connect(
+        source, target, relation=relation, note=note, if_exists=if_exists  # type: ignore[arg-type]
+    )
+    return result.to_dict()
+
+
+async def _tool_disconnect(
+    source: str,
+    target: str,
+    guard_relation: str | None = None,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    result = await _mem().disconnect(
+        source, target, guard_relation=guard_relation, reason=reason
+    )
+    return result.to_dict()
+
+
+async def _tool_guide(method: str | None = None) -> str:
+    return _mem().guide(method)
+
+
+# ── MCP tool registrations (thin wrappers, one line each) ─────────────────────
+
+
 @mcp.tool()
 async def elfmem_remember(
     content: str,
@@ -58,11 +157,7 @@ async def elfmem_remember(
     If should_dream is True, consolidation (embedding, alignment, contradictions)
     will benefit from running soon via elfmem_dream.
     """
-    mem = _mem()
-    result = await mem.remember(content, tags=tags)
-    response = result.to_dict()
-    response["should_dream"] = mem.should_dream
-    return response
+    return await _tool_remember(content, tags=tags)
 
 
 @mcp.tool()
@@ -77,17 +172,13 @@ async def elfmem_recall(
     can be passed to elfmem_outcome to record outcome feedback later.
     frame: "attention" (query-driven, default) | "self" (identity) | "task" (goals).
     """
-    mem = _mem()
-    await mem.begin_session()  # idempotent — no-op if session already active
-    result = await mem.frame(frame, query=query or None, top_k=top_k)
-    return format_recall_response(result)
+    return await _tool_recall(query, top_k=top_k, frame=frame)
 
 
 @mcp.tool()
 async def elfmem_status() -> dict[str, Any]:
     """Memory health snapshot. Check the suggestion field for recommended action."""
-    result = await _mem().status()
-    return result.to_dict()
+    return await _tool_status()
 
 
 @mcp.tool()
@@ -102,8 +193,7 @@ async def elfmem_outcome(
     signal: 0.0-1.0. Use block IDs from a previous elfmem_recall response.
     0.8-1.0 reinforces (decay resets). 0.2-0.8 neutral. 0.0-0.2 penalises.
     """
-    result = await _mem().outcome(block_ids, signal, weight=weight, source=source)
-    return result.to_dict()
+    return await _tool_outcome(block_ids, signal, weight=weight, source=source)
 
 
 @mcp.tool()
@@ -113,8 +203,7 @@ async def elfmem_curate() -> dict[str, Any]:
     Runs automatically on schedule after consolidation.
     Call manually only if retrieval quality visibly degrades.
     """
-    result = await _mem().curate()
-    return result.to_dict()
+    return await _tool_curate()
 
 
 @mcp.tool()
@@ -127,10 +216,7 @@ async def elfmem_dream() -> dict[str, Any]:
     Embedding & LLM calls per pending block. Slow if many pending.
     Returns: blocks processed, promoted, dedup'd, edges created.
     """
-    result = await _mem().dream()
-    if result is None:
-        return {"message": "No pending blocks to consolidate", "status": "idle"}
-    return result.to_dict()
+    return await _tool_dream()
 
 
 @mcp.tool()
@@ -156,8 +242,7 @@ async def elfmem_setup(
 
     Returns blocks_created and total_attempted counts.
     """
-    result = await _mem().setup(identity=identity, values=values, seed=seed)
-    return result.to_dict()
+    return await _tool_setup(identity=identity, values=values, seed=seed)
 
 
 @mcp.tool()
@@ -178,10 +263,7 @@ async def elfmem_connect(
               | 'co_occurs' | 'outcome' | <custom>
     if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'
     """
-    result = await _mem().connect(
-        source, target, relation=relation, note=note, if_exists=if_exists  # type: ignore[arg-type]
-    )
-    return result.to_dict()
+    return await _tool_connect(source, target, relation=relation, note=note, if_exists=if_exists)
 
 
 @mcp.tool()
@@ -196,10 +278,7 @@ async def elfmem_disconnect(
     guard_relation: Only remove if current relation type matches this value (safety check).
     Returns action: 'removed' | 'not_found' | 'guarded'.
     """
-    result = await _mem().disconnect(
-        source, target, guard_relation=guard_relation, reason=reason
-    )
-    return result.to_dict()
+    return await _tool_disconnect(source, target, guard_relation=guard_relation, reason=reason)
 
 
 @mcp.tool()
@@ -208,7 +287,7 @@ async def elfmem_guide(method: str | None = None) -> str:
 
     method: e.g. "remember", "recall", "outcome". None returns overview table.
     """
-    return _mem().guide(method)
+    return await _tool_guide(method)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

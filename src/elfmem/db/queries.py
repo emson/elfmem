@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import Float, and_, cast, delete, func, or_, select, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -18,6 +18,7 @@ from elfmem.db.models import (
     block_outcomes,
     block_tags,
     blocks,
+    co_retrieval_staging,
     contradictions,
     edges,
     frames,
@@ -902,6 +903,111 @@ async def get_total_active_hours(conn: AsyncConnection) -> float:
 async def set_total_active_hours(conn: AsyncConnection, hours: float) -> None:
     """Update the total_active_hours counter."""
     await set_config(conn, "total_active_hours", str(hours))
+
+
+async def increment_total_active_hours(conn: AsyncConnection, delta_hours: float) -> None:
+    """Atomically increment total_active_hours by delta_hours.
+
+    USE WHEN: Ending a session. Atomic SQL UPDATE prevents the lost-update race
+    that occurs when two sessions end concurrently in a multi-process scenario.
+    DON'T USE WHEN: Setting an absolute value — use set_total_active_hours() instead.
+    COST: One SQL UPDATE (no prior read required).
+    RETURNS: None.
+    NEXT: Call after computing session duration to persist the active-hours clock.
+    """
+    await conn.execute(
+        update(system_config)
+        .where(system_config.c.key == "total_active_hours")
+        .values(value=cast(system_config.c.value, Float) + delta_hours)
+    )
+
+
+# ── Co-retrieval staging ──────────────────────────────────────────────────────
+
+
+async def upsert_co_retrieval_count(
+    conn: AsyncConnection,
+    pair: tuple[str, str],
+    count: int,
+) -> None:
+    """Insert or update a co-retrieval staging count for a canonical pair.
+
+    USE WHEN: Incrementing Hebbian staging after a co-retrieval event.
+    DON'T USE WHEN: Promoting to edge — use delete_co_retrieval_pair() instead.
+    COST: One SQL upsert.
+    RETURNS: None.
+    NEXT: Call delete_co_retrieval_pair() when count reaches the promotion threshold.
+    """
+    stmt = insert(co_retrieval_staging).values(
+        from_id=pair[0], to_id=pair[1], count=count
+    )
+    await conn.execute(
+        stmt.on_conflict_do_update(
+            index_elements=["from_id", "to_id"],
+            set_={"count": count},
+        )
+    )
+
+
+async def load_co_retrieval_staging(
+    conn: AsyncConnection,
+) -> dict[tuple[str, str], int]:
+    """Load all co-retrieval staging rows into an in-memory dict.
+
+    USE WHEN: Restoring Hebbian staging on process startup.
+    DON'T USE WHEN: Checking a single pair — read from the in-memory dict instead.
+    COST: One full-table scan (table is typically small, capped at staging_max rows).
+    RETURNS: Dict mapping (from_id, to_id) → count.
+    NEXT: Assign the result to MemorySystem._co_retrieval_staging.
+    """
+    result = await conn.execute(select(co_retrieval_staging))
+    return {
+        (row["from_id"], row["to_id"]): row["count"]
+        for row in result.mappings()
+    }
+
+
+async def delete_co_retrieval_pair(
+    conn: AsyncConnection,
+    pair: tuple[str, str],
+) -> None:
+    """Delete a co-retrieval staging row after the pair is promoted to an edge.
+
+    USE WHEN: A pair reaches the promotion threshold and an edge is created.
+    COST: One SQL DELETE.
+    RETURNS: None.
+    """
+    await conn.execute(
+        delete(co_retrieval_staging).where(
+            and_(
+                co_retrieval_staging.c.from_id == pair[0],
+                co_retrieval_staging.c.to_id == pair[1],
+            )
+        )
+    )
+
+
+async def prune_stale_co_retrieval_staging(conn: AsyncConnection) -> int:
+    """Delete staging rows where either block is no longer active.
+
+    USE WHEN: After curate() archives blocks, to purge staging rows that can
+    never be promoted (archived blocks are never retrieved).
+    FK CASCADE handles rows pointing to physically-deleted blocks; this handles
+    the normal archival case where the block row remains with status='archived'.
+    COST: One SQL DELETE with two subselects.
+    RETURNS: Number of rows deleted.
+    NEXT: Call load_co_retrieval_staging() to refresh the in-memory dict.
+    """
+    active_ids = select(blocks.c.id).where(blocks.c.status == "active")
+    result = await conn.execute(
+        delete(co_retrieval_staging).where(
+            or_(
+                co_retrieval_staging.c.from_id.not_in(active_ids),
+                co_retrieval_staging.c.to_id.not_in(active_ids),
+            )
+        )
+    )
+    return result.rowcount
 
 
 # ── Seed data ─────────────────────────────────────────────────────────────────

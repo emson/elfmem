@@ -12,7 +12,7 @@ from elfmem.db.queries import (
 )
 from elfmem.db.queries import (
     get_total_active_hours,
-    set_total_active_hours,
+    increment_total_active_hours,
     start_session,
 )
 
@@ -62,9 +62,10 @@ async def end_session(
         base_hours: total_active_hours snapshot taken at session start.
     """
     duration_hours = _elapsed_hours(wall_start)
-    new_total = base_hours + duration_hours
 
-    await set_total_active_hours(conn, new_total)
+    # Atomic SQL increment prevents a lost-update race when two sessions end
+    # concurrently in a multi-process scenario. No read required.
+    await increment_total_active_hours(conn, duration_hours)
     await _db_end_session(conn, session_id)
 
     return duration_hours
