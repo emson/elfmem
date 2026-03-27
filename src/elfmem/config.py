@@ -61,8 +61,8 @@ class MemoryConfig(BaseModel):
     near_dup_near_threshold: float = 0.90
 
     # Graph
-    edge_score_threshold: float = 0.40
-    edge_degree_cap: int = 10
+    edge_score_threshold: float = 0.45
+    edge_degree_cap: int = 5
     edge_prune_threshold: float = 0.10
     edge_reinforce_delta: float = 0.10
 

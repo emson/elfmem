@@ -181,10 +181,12 @@ CROSS_CATEGORY_SCORE: float = 0.30
 # Hard minimum cosine before composite scoring is attempted.
 # Same-session + same-category context contributes a fixed non-cosine
 # floor of ≥0.25 (temporal=1.0 × 0.10 + category=1.0 × 0.15 = 0.25).
-# Without this guard, blocks at cosine ≈ 0.27 would form edges purely
-# from shared session context — causing recall poisoning via spurious
-# graph expansion. 0.30 is the semantic floor for "might be related".
-MINIMUM_COSINE_FOR_EDGE: float = 0.30
+# At the old guard of 0.30, the composite score was 0.415 for same-cat,
+# same-session pairs with zero tag overlap, meaning nearly any block pair
+# that shared a category and session would form an edge regardless of
+# semantic content. 0.50 ensures genuine semantic similarity before
+# contextual signals can boost a pair past the edge threshold.
+MINIMUM_COSINE_FOR_EDGE: float = 0.50
 
 
 def jaccard_similarity(tags_a: list[str], tags_b: list[str]) -> float:

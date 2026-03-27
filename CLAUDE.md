@@ -74,6 +74,9 @@ observable effect on users do not need an entry.
 - Breaking changes go in `### Changed` or `### Removed` and **must** describe the migration path.
 - Never edit a released version section (anything with a date). Only add to `[Unreleased]`.
 - The release workflow versions `[Unreleased]` to `[x.y.z] — YYYY-MM-DD` and tags the commit.
+- **Version sync on release**: When releasing, ensure `pyproject.toml` version (line 7) matches
+  the version being released. Update CHANGELOG.md `[Unreleased]` header to `[x.y.z] — YYYY-MM-DD`.
+  Git tag must be `vx.y.z` (must match).
 
 ## Public API
 

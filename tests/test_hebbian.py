@@ -8,7 +8,7 @@ at the configured threshold, with four correctness properties:
   4. edges_promoted surfaced on FrameResult
 
 Tests use threshold=2 and cosine_override=0.10 between test blocks to prevent
-consolidation from creating a similarity edge (MINIMUM_COSINE_FOR_EDGE=0.30).
+consolidation from creating a similarity edge (MINIMUM_COSINE_FOR_EDGE=0.50).
 """
 
 from __future__ import annotations
