@@ -10,27 +10,32 @@ Covers:
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 import pytest
 
-from elfmem.adapters.mock import make_mock_embedding, make_mock_llm
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
+
+from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.db.queries import (
+    delete_co_retrieval_pair,
     insert_block,
     load_co_retrieval_staging,
     prune_stale_co_retrieval_staging,
-    upsert_co_retrieval_count,
-    delete_co_retrieval_pair,
     update_block_status,
+    upsert_co_retrieval_count,
 )
 from elfmem.memory.graph import stage_and_promote_co_retrievals
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 
 @pytest.fixture
-async def system(test_engine, mock_llm, mock_embedding) -> MemorySystem:
+async def system(
+    test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService
+) -> AsyncIterator[MemorySystem]:
     """MemorySystem with threshold=2 so promotion is easy to trigger."""
     cfg = ElfmemConfig(
         memory=MemoryConfig(
@@ -55,7 +60,7 @@ class TestCoRetrievalQueries:
     """upsert / load / delete round-trip correctly."""
 
     @pytest.mark.asyncio
-    async def test_upsert_inserts_new_pair(self, db_conn):
+    async def test_upsert_inserts_new_pair(self, db_conn: AsyncConnection) -> None:
         await insert_block(db_conn, block_id="a1", content="A", category="knowledge", source="t")
         await insert_block(db_conn, block_id="b1", content="B", category="knowledge", source="t")
 
@@ -65,7 +70,7 @@ class TestCoRetrievalQueries:
         assert staging[("a1", "b1")] == 1
 
     @pytest.mark.asyncio
-    async def test_upsert_updates_existing_count(self, db_conn):
+    async def test_upsert_updates_existing_count(self, db_conn: AsyncConnection) -> None:
         await insert_block(db_conn, block_id="a2", content="A2", category="knowledge", source="t")
         await insert_block(db_conn, block_id="b2", content="B2", category="knowledge", source="t")
 
@@ -76,7 +81,7 @@ class TestCoRetrievalQueries:
         assert staging[("a2", "b2")] == 2
 
     @pytest.mark.asyncio
-    async def test_delete_removes_pair(self, db_conn):
+    async def test_delete_removes_pair(self, db_conn: AsyncConnection) -> None:
         await insert_block(db_conn, block_id="a3", content="A3", category="knowledge", source="t")
         await insert_block(db_conn, block_id="b3", content="B3", category="knowledge", source="t")
 
@@ -87,7 +92,7 @@ class TestCoRetrievalQueries:
         assert ("a3", "b3") not in staging
 
     @pytest.mark.asyncio
-    async def test_load_returns_empty_dict_when_no_rows(self, db_conn):
+    async def test_load_returns_empty_dict_when_no_rows(self, db_conn: AsyncConnection) -> None:
         staging = await load_co_retrieval_staging(db_conn)
         assert staging == {}
 
@@ -103,7 +108,7 @@ class TestPruneStaleStaging:
     """
 
     @pytest.mark.asyncio
-    async def test_prune_removes_row_when_from_block_archived(self, db_conn):
+    async def test_prune_removes_row_when_from_block_archived(self, db_conn: AsyncConnection) -> None:
         await insert_block(db_conn, block_id="x1", content="X1", category="knowledge", source="t")
         await insert_block(db_conn, block_id="y1", content="Y1", category="knowledge", source="t")
         await upsert_co_retrieval_count(db_conn, ("x1", "y1"), 1)
@@ -115,7 +120,7 @@ class TestPruneStaleStaging:
         assert ("x1", "y1") not in staging
 
     @pytest.mark.asyncio
-    async def test_prune_removes_row_when_to_block_archived(self, db_conn):
+    async def test_prune_removes_row_when_to_block_archived(self, db_conn: AsyncConnection) -> None:
         await insert_block(db_conn, block_id="x2", content="X2", category="knowledge", source="t")
         await insert_block(db_conn, block_id="y2", content="Y2", category="knowledge", source="t")
         await upsert_co_retrieval_count(db_conn, ("x2", "y2"), 1)
@@ -127,9 +132,13 @@ class TestPruneStaleStaging:
         assert ("x2", "y2") not in staging
 
     @pytest.mark.asyncio
-    async def test_prune_leaves_active_pair_untouched(self, db_conn):
-        await insert_block(db_conn, block_id="x3", content="X3", category="knowledge", source="t", status="active")
-        await insert_block(db_conn, block_id="y3", content="Y3", category="knowledge", source="t", status="active")
+    async def test_prune_leaves_active_pair_untouched(self, db_conn: AsyncConnection) -> None:
+        await insert_block(
+            db_conn, block_id="x3", content="X3", category="knowledge", source="t", status="active"
+        )
+        await insert_block(
+            db_conn, block_id="y3", content="Y3", category="knowledge", source="t", status="active"
+        )
         await upsert_co_retrieval_count(db_conn, ("x3", "y3"), 2)
 
         await prune_stale_co_retrieval_staging(db_conn)
@@ -145,9 +154,13 @@ class TestStageAndPromote:
     """stage_and_promote_co_retrievals() persists counts and cleans up on promotion."""
 
     @pytest.mark.asyncio
-    async def test_staging_count_written_to_db(self, db_conn, mock_embedding):
-        await insert_block(db_conn, block_id="p1", content="P1", category="knowledge", source="t", status="active")
-        await insert_block(db_conn, block_id="q1", content="Q1", category="knowledge", source="t", status="active")
+    async def test_staging_count_written_to_db(self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService) -> None:
+        await insert_block(
+            db_conn, block_id="p1", content="P1", category="knowledge", source="t", status="active"
+        )
+        await insert_block(
+            db_conn, block_id="q1", content="Q1", category="knowledge", source="t", status="active"
+        )
 
         in_memory: dict[tuple[str, str], int] = {}
         await stage_and_promote_co_retrievals(
@@ -163,9 +176,13 @@ class TestStageAndPromote:
         assert staging.get(("p1", "q1"), 0) == 1
 
     @pytest.mark.asyncio
-    async def test_promotion_deletes_staging_row(self, db_conn, mock_embedding):
-        await insert_block(db_conn, block_id="p2", content="P2", category="knowledge", source="t", status="active")
-        await insert_block(db_conn, block_id="q2", content="Q2", category="knowledge", source="t", status="active")
+    async def test_promotion_deletes_staging_row(self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService) -> None:
+        await insert_block(
+            db_conn, block_id="p2", content="P2", category="knowledge", source="t", status="active"
+        )
+        await insert_block(
+            db_conn, block_id="q2", content="Q2", category="knowledge", source="t", status="active"
+        )
 
         in_memory: dict[tuple[str, str], int] = {}
         # Two calls with threshold=2 → second call promotes the pair
@@ -191,11 +208,15 @@ class TestRestartPersistence:
     """MemorySystem initialised with pre-loaded staging reflects DB state."""
 
     @pytest.mark.asyncio
-    async def test_staging_restored_into_memory_system(self, test_engine, mock_llm, mock_embedding):
+    async def test_staging_restored_into_memory_system(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
         """Staging loaded at startup is reflected in status()."""
         async with test_engine.begin() as conn:
-            await insert_block(conn, block_id="r1", content="R1", category="knowledge", source="t", status="active")
-            await insert_block(conn, block_id="s1", content="S1", category="knowledge", source="t", status="active")
+            await insert_block(
+                conn, block_id="r1", content="R1", category="knowledge", source="t", status="active"
+            )
+            await insert_block(
+                conn, block_id="s1", content="S1", category="knowledge", source="t", status="active"
+            )
             await upsert_co_retrieval_count(conn, ("r1", "s1"), 2)
 
         async with test_engine.connect() as conn:
@@ -216,7 +237,7 @@ class TestRestartPersistence:
             await mem.close()
 
     @pytest.mark.asyncio
-    async def test_empty_staging_on_fresh_start(self, test_engine, mock_llm, mock_embedding):
+    async def test_empty_staging_on_fresh_start(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
         """No staging rows → in-memory dict starts empty."""
         async with test_engine.connect() as conn:
             restored = await load_co_retrieval_staging(conn)
@@ -241,9 +262,7 @@ class TestCurateStaginSync:
     """After curate(), in-memory staging matches DB state."""
 
     @pytest.mark.asyncio
-    async def test_curate_syncs_staging_after_archival(
-        self, test_engine, mock_llm, mock_embedding
-    ):
+    async def test_curate_syncs_staging_after_archival(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
         """Blocks archived by curate() have their staging rows removed via CASCADE.
         curate() then reloads staging so _co_retrieval_staging is consistent.
         """
