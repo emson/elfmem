@@ -7,7 +7,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.4.0] — 2026-03-27
 
 ### Changed
 - **BREAKING** `MINIMUM_COSINE_FOR_EDGE` raised from 0.30 to 0.50. Blocks must now
