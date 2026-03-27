@@ -192,7 +192,7 @@ def resolve_db(
 def _read_project_db(config_path: str) -> str:
     """Read project.db from a config YAML file. Returns '' on any error."""
     try:
-        import yaml  # type: ignore[import-untyped]  # already a dependency
+        import yaml
         with open(config_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         return str((data.get("project") or {}).get("db", ""))
