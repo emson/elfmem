@@ -118,6 +118,16 @@ block_outcomes = Table(
     Column("created_at", Text, nullable=False),
 )
 
+co_retrieval_staging = Table(
+    "co_retrieval_staging",
+    metadata,
+    # Canonical order: from_id < to_id — enforced at the application layer.
+    Column("from_id", Text, ForeignKey("blocks.id", ondelete="CASCADE"), nullable=False),
+    Column("to_id", Text, ForeignKey("blocks.id", ondelete="CASCADE"), nullable=False),
+    Column("count", Integer, nullable=False, default=1),
+    UniqueConstraint("from_id", "to_id", name="uq_co_retrieval_staging"),
+)
+
 Index("idx_blocks_status", blocks.c.status)
 Index("idx_blocks_last_reinforced", blocks.c.last_reinforced_at)
 Index("idx_block_tags_tag", block_tags.c.tag)
