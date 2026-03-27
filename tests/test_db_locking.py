@@ -15,20 +15,17 @@ import asyncio
 import pytest
 from sqlalchemy import text
 
-from elfmem.adapters.mock import MockLLMService, make_mock_embedding, make_mock_llm
+from elfmem.adapters.mock import MockLLMService, make_mock_llm
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
-from elfmem.db.engine import create_engine, create_test_engine
+from elfmem.db.engine import create_engine
 from elfmem.db.queries import (
     get_inbox_blocks,
     get_total_active_hours,
     increment_total_active_hours,
     insert_block,
-    seed_builtin_data,
-    update_block_status,
 )
-from elfmem.operations.consolidate import consolidate
-
+from elfmem.operations.consolidate import _LLM_PROCESS_TIMEOUT, consolidate
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -151,13 +148,15 @@ class TestCurateIsolation:
         await mem.learn("Block that should survive curate failure")
         await mem.learn("Another block that should survive")
 
-        with patch(
-            "elfmem.api._curate",
-            new_callable=AsyncMock,
-            side_effect=RuntimeError("curate failed"),
+        with (
+            patch(
+                "elfmem.api._curate",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("curate failed"),
+            ),
+            pytest.raises(RuntimeError, match="curate failed"),
         ):
-            with pytest.raises(RuntimeError, match="curate failed"):
-                await mem.consolidate()
+            await mem.consolidate()
 
         # consolidation committed before curate was called — blocks are active
         status = await mem.status()
@@ -256,7 +255,6 @@ class TestLLMTimeoutFallback:
     @pytest.mark.asyncio
     async def test_block_promoted_on_llm_timeout(self, db_conn, mock_embedding):
         """A block is still promoted when process_block() times out."""
-        import asyncio
 
         class SlowLLM(MockLLMService):
             async def process_block(self, block: str, self_context: str):
@@ -271,8 +269,6 @@ class TestLLMTimeoutFallback:
             category="knowledge",
             source="test",
         )
-
-        from elfmem.operations.consolidate import _LLM_PROCESS_TIMEOUT, consolidate
 
         original_timeout = _LLM_PROCESS_TIMEOUT
 

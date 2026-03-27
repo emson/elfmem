@@ -13,7 +13,6 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
@@ -108,7 +107,9 @@ class TestPruneStaleStaging:
     """
 
     @pytest.mark.asyncio
-    async def test_prune_removes_row_when_from_block_archived(self, db_conn: AsyncConnection) -> None:
+    async def test_prune_removes_row_when_from_block_archived(
+        self, db_conn: AsyncConnection
+    ) -> None:
         await insert_block(db_conn, block_id="x1", content="X1", category="knowledge", source="t")
         await insert_block(db_conn, block_id="y1", content="Y1", category="knowledge", source="t")
         await upsert_co_retrieval_count(db_conn, ("x1", "y1"), 1)
@@ -154,7 +155,9 @@ class TestStageAndPromote:
     """stage_and_promote_co_retrievals() persists counts and cleans up on promotion."""
 
     @pytest.mark.asyncio
-    async def test_staging_count_written_to_db(self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService) -> None:
+    async def test_staging_count_written_to_db(
+        self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService
+    ) -> None:
         await insert_block(
             db_conn, block_id="p1", content="P1", category="knowledge", source="t", status="active"
         )
@@ -176,7 +179,9 @@ class TestStageAndPromote:
         assert staging.get(("p1", "q1"), 0) == 1
 
     @pytest.mark.asyncio
-    async def test_promotion_deletes_staging_row(self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService) -> None:
+    async def test_promotion_deletes_staging_row(
+        self, db_conn: AsyncConnection, mock_embedding: MockEmbeddingService
+    ) -> None:
         await insert_block(
             db_conn, block_id="p2", content="P2", category="knowledge", source="t", status="active"
         )
@@ -208,7 +213,12 @@ class TestRestartPersistence:
     """MemorySystem initialised with pre-loaded staging reflects DB state."""
 
     @pytest.mark.asyncio
-    async def test_staging_restored_into_memory_system(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
+    async def test_staging_restored_into_memory_system(
+        self,
+        test_engine: AsyncEngine,
+        mock_llm: MockLLMService,
+        mock_embedding: MockEmbeddingService,
+    ) -> None:
         """Staging loaded at startup is reflected in status()."""
         async with test_engine.begin() as conn:
             await insert_block(
@@ -237,7 +247,12 @@ class TestRestartPersistence:
             await mem.close()
 
     @pytest.mark.asyncio
-    async def test_empty_staging_on_fresh_start(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
+    async def test_empty_staging_on_fresh_start(
+        self,
+        test_engine: AsyncEngine,
+        mock_llm: MockLLMService,
+        mock_embedding: MockEmbeddingService,
+    ) -> None:
         """No staging rows → in-memory dict starts empty."""
         async with test_engine.connect() as conn:
             restored = await load_co_retrieval_staging(conn)
@@ -262,7 +277,12 @@ class TestCurateStaginSync:
     """After curate(), in-memory staging matches DB state."""
 
     @pytest.mark.asyncio
-    async def test_curate_syncs_staging_after_archival(self, test_engine: AsyncEngine, mock_llm: MockLLMService, mock_embedding: MockEmbeddingService) -> None:
+    async def test_curate_syncs_staging_after_archival(
+        self,
+        test_engine: AsyncEngine,
+        mock_llm: MockLLMService,
+        mock_embedding: MockEmbeddingService,
+    ) -> None:
         """Blocks archived by curate() have their staging rows removed via CASCADE.
         curate() then reloads staging so _co_retrieval_staging is consistent.
         """
