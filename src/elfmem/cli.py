@@ -388,7 +388,7 @@ def doctor(
     project_name_str = ""
     if config_path and Path(config_path).exists():
         try:
-            import yaml  # type: ignore[import-untyped]
+            import yaml
             with open(config_path, encoding="utf-8") as f:
                 raw = yaml.safe_load(f) or {}
             proj = raw.get("project") or {}

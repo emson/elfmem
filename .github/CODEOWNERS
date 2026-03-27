@@ -1,0 +1,9 @@
+# Code owners for elfmem
+
+# Default owner for everything
+*  @emson
+
+# Explicitly document ownership of key areas
+/src/     @emson
+/tests/   @emson
+/docs/    @emson
