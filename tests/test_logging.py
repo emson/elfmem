@@ -227,31 +227,38 @@ class TestConfigureLogging:
         assert logger.level == logging.WARNING
 
     def test_configure_logging_with_json_format(self):
-        """configure_logging(format_type="json") sets StructuredFormatter."""
+        """configure_logging(format_type="json") installs StructuredFormatter.
+
+        Tests two concerns separately:
+        1. configure_logging attaches a StructuredFormatter to the logger
+        2. StructuredFormatter produces valid JSON with expected fields
+
+        Does NOT read from sys.stderr — pytest replaces it with EncodedFile
+        (a write-only sink) so getvalue() would always raise AttributeError.
+        """
         configure_logging(level="INFO", format_type="json")
 
-        logger = logging.getLogger("elfmem")
-        # Capture from the configured handler
-        assert len(logger.handlers) > 0, "configure_logging should add handler"
+        root_logger = logging.getLogger("elfmem")
+        assert len(root_logger.handlers) > 0, "configure_logging should add a handler"
 
-        # Get the actual handler's stream
-        handler = logger.handlers[0]
-        if hasattr(handler, "stream"):
-            stream = handler.stream
-        else:
-            # Fall back to capturing stderr
-            from io import StringIO as SIO
-            stream = SIO()
-            handler = logging.StreamHandler(stream)
-            logger.handlers = [handler]
+        # Assert configure_logging set the right formatter type
+        formatter = root_logger.handlers[0].formatter
+        assert isinstance(formatter, StructuredFormatter), (
+            f"Expected StructuredFormatter, got {type(formatter).__name__}"
+        )
 
-        logger.info("Test", extra={"test_field": "value"})
-        handler.flush()
+        # Assert the formatter produces valid JSON using a controlled stream
+        # (avoids any dependency on sys.stderr or pytest's EncodedFile wrapper)
+        stream = StringIO()
+        test_handler = logging.StreamHandler(stream)
+        test_handler.setFormatter(formatter)
+        root_logger.addHandler(test_handler)
 
-        output = stream.getvalue()
-        assert output, f"No output captured; logger has {len(logger.handlers)} handlers"
+        root_logger.info("Test", extra={"test_field": "value"})
+        test_handler.flush()
+        root_logger.removeHandler(test_handler)
 
-        data = json.loads(output.strip())
+        data = json.loads(stream.getvalue().strip())
         assert data["level"] == "INFO"
         assert data["message"] == "Test"
 
