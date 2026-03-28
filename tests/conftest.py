@@ -1,6 +1,13 @@
 """Shared test fixtures for elfmem test suite."""
 
+import logging
+import logging.handlers
+import os
+
 import pytest
+
+# Suppress logging in tests by default (zero noise)
+os.environ.setdefault("ELFMEM_LOG_LEVEL", "CRITICAL")
 
 from elfmem.adapters.mock import (
     MockEmbeddingService,
@@ -48,3 +55,24 @@ async def db_conn(test_engine):
 def db_path_str(tmp_path):
     """A temporary database file path as a string."""
     return str(tmp_path / "test.db")
+
+
+@pytest.fixture
+def log_capture():
+    """Capture logs emitted during test.
+
+    USE WHEN: Test needs to verify logging behavior
+    RETURNS: List of log records (LogRecord objects)
+
+    Example::
+
+        async def test_learn_logs_event(system, log_capture):
+            os.environ["ELFMEM_LOG_LEVEL"] = "INFO"
+            await system.learn("test")
+            assert any(r.event == "block_created" for r in log_capture)
+    """
+    handler = logging.handlers.MemoryHandler(capacity=1000)
+    logger = logging.getLogger("elfmem")
+    logger.addHandler(handler)
+    yield handler.buffer
+    logger.removeHandler(handler)

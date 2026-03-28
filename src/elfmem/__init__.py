@@ -18,7 +18,7 @@ Agent self-documentation::
 """
 
 from elfmem.api import MemorySystem
-from elfmem.config import ElfmemConfig
+from elfmem.config import ElfmemConfig, LoggingConfig
 from elfmem.exceptions import (
     BlockNotActiveError,
     ConfigError,
@@ -54,6 +54,7 @@ __all__ = [
     # Core
     "MemorySystem",
     "ElfmemConfig",
+    "LoggingConfig",
     "ConsolidationPolicy",
     # Result types
     "LearnResult",

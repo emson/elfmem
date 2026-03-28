@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -170,6 +171,26 @@ def _check_vars(template: str, required: list[str], name: str) -> None:
         )
 
 
+class LoggingConfig(BaseModel):
+    """Configuration for structured logging.
+
+    Logging is disabled by default (CRITICAL level). Enable via:
+    - Environment: ELFMEM_LOG_LEVEL=INFO
+    - Config file: logging.level: INFO
+    - Code: configure_logging(level="DEBUG")
+    """
+
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "CRITICAL"
+    format: Literal["text", "json", "compact"] = "text"
+    file: str | None = None  # Log file path; None = stderr
+    modules: dict[str, str] | None = None  # Per-module overrides
+
+    # Advanced tuning
+    slow_query_threshold_ms: int = 100
+    lock_contention_threshold_ms: int = 50
+    sample_rate: float = 1.0  # For high-volume systems (1.0 = all, 0.1 = 10%)
+
+
 class ProjectConfig(BaseModel):
     """Project metadata written by ``elfmem init``, read by ``elfmem doctor``.
 
@@ -201,6 +222,7 @@ class ElfmemConfig(BaseModel):
     embeddings: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:
@@ -297,6 +319,14 @@ def render_default_config(project: ProjectConfig | None = None) -> str:
           outcome_prior_strength: {d.memory.outcome_prior_strength}
           outcome_reinforce_threshold: {d.memory.outcome_reinforce_threshold}
           penalize_threshold: {d.memory.penalize_threshold}
+
+        # Logging configuration (optional — uncomment to enable)
+        # logging:
+        #   level: INFO
+        #   format: json
+        #   file: ~/.elfmem/elfmem.log
+        #   modules:
+        #     elfmem.operations.consolidate: DEBUG
 
         # Custom prompts (optional — uncomment to override library defaults):
         # prompts:
