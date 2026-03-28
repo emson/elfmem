@@ -7,7 +7,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.5.0] — 2026-03-28
 
 ### Added
 - **Logging infrastructure (Phase 1):** Structured, minimal-by-default logging with JSON/text/compact formatters. Disabled by default (CRITICAL level); enable via `ELFMEM_LOG_LEVEL=INFO` or config. Includes `LoggingConfig`, context variables for operation/session IDs, and `configure_logging()` factory. Zero overhead when disabled.
