@@ -78,6 +78,33 @@ observable effect on users do not need an entry.
   the version being released. Update CHANGELOG.md `[Unreleased]` header to `[x.y.z] — YYYY-MM-DD`.
   Git tag must be `vx.y.z` (must match).
 
+## Git Workflow (Protected Main)
+
+**NEVER commit directly to `main` branch.** All work happens on feature branches.
+
+**Workflow:**
+1. Create feature branch: `git checkout -b feature-name`
+2. Make all commits on the feature branch
+3. Push feature branch: `git push origin feature-name`
+4. Create PR: `feature-name` → `main` (requires review)
+5. After PR merge, tag on main:
+   ```bash
+   git fetch origin
+   git checkout main
+   git reset --hard origin/main  # Ensure local main == origin/main
+   git tag -a vX.Y.Z -m "Release X.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+**If you accidentally diverge main:**
+```bash
+git fetch origin
+git checkout main
+git reset --hard origin/main  # Discard local-only commits
+```
+
+**Why:** Protected main ensures all changes go through code review (PR), prevents accidental commits, and keeps release tags clean and authoritative.
+
 ## Public API
 
 ```python
