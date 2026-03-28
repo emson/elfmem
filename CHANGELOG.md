@@ -19,10 +19,6 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ### Added
 - **Logging infrastructure (Phase 1):** Structured, minimal-by-default logging with JSON/text/compact formatters. Disabled by default (CRITICAL level); enable via `ELFMEM_LOG_LEVEL=INFO` or config. Includes `LoggingConfig`, context variables for operation/session IDs, and `configure_logging()` factory. Zero overhead when disabled.
 
----
-
-## [0.4.0] — 2026-03-27
-
 ### Changed
 - **BREAKING** `MINIMUM_COSINE_FOR_EDGE` raised from 0.30 to 0.50. Blocks must now
   share genuine semantic similarity before contextual signals (category, temporal
