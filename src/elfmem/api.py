@@ -32,6 +32,7 @@ from elfmem.db.queries import (
 )
 from elfmem.exceptions import ElfmemError, FrameError
 from elfmem.guide import get_guide
+from elfmem.logging_config import configure_logging
 from elfmem.memory.graph import stage_and_promote_co_retrievals
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.operations.connect import do_connect, do_disconnect
@@ -177,6 +178,14 @@ class MemorySystem:
             system = await MemorySystem.from_config("agent.db", policy=ConsolidationPolicy())
         """
         cfg = _resolve_config(config)
+
+        # Configure logging (zero overhead if disabled)
+        configure_logging(
+            level=cfg.logging.level,
+            format_type=cfg.logging.format,
+            file_path=cfg.logging.file,
+            module_overrides=cfg.logging.modules,
+        )
 
         engine = await create_engine(db_path)
         async with engine.begin() as conn:
