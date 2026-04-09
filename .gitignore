@@ -13,3 +13,5 @@ wheels/
 .claude/
 tmp/
 .env
+.elfmem
+

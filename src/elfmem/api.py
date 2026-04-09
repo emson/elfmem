@@ -661,7 +661,7 @@ class MemorySystem:
         self._record_op("learn", result.summary)
         return result
 
-    async def consolidate(self) -> ConsolidateResult:
+    async def consolidate(self, *, skip_llm: bool = False) -> ConsolidateResult:
         """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
 
         USE WHEN: After a batch of learn() calls, or explicitly before
@@ -672,7 +672,8 @@ class MemorySystem:
         Avoid calling in a tight loop; one call processes all pending blocks.
 
         COST: LLM call per block (alignment scoring + tag inference). Slow for
-        large inboxes; fast when inbox is small.
+        large inboxes; fast when inbox is small. Use skip_llm=True to bypass
+        all LLM calls (embed + promote only) for bulk ingestion or benchmarks.
 
         RETURNS: ConsolidateResult with counts: processed, promoted,
         deduplicated, edges_created. processed=0 means inbox was empty.
@@ -693,6 +694,7 @@ class MemorySystem:
                 edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
                 contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
+                skip_llm=skip_llm,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
