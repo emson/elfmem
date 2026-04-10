@@ -51,13 +51,20 @@ class ExampleResult:
 
 
 class _BM25Index:
-    """BM25 index over ingested chunks for keyword retrieval."""
+    """BM25 index over block content for keyword-boosted retrieval.
+
+    Built after consolidation from elfmem's active block content (summaries
+    when available, raw content otherwise). Stores block IDs so RRF merge
+    can match by ID rather than approximate content-prefix heuristics.
+    """
 
     def __init__(self) -> None:
+        self._ids: list[str] = []
         self._contents: list[str] = []
         self._bm25: BM25Okapi | None = None
 
-    def add(self, content: str) -> None:
+    def add(self, block_id: str, content: str) -> None:
+        self._ids.append(block_id)
         self._contents.append(content)
 
     def build(self) -> None:
@@ -65,12 +72,15 @@ class _BM25Index:
             tokenized = [c.lower().split() for c in self._contents]
             self._bm25 = BM25Okapi(tokenized)
 
-    def search(self, query: str, top_k: int = 10) -> list[tuple[str, float]]:
+    def search(self, query: str, top_k: int = 10) -> list[tuple[str, str, float]]:
+        """Return (block_id, content, bm25_score) triples ranked by score."""
         if self._bm25 is None:
             return []
         scores = self._bm25.get_scores(query.lower().split())
         ranked = sorted(
-            zip(self._contents, scores), key=lambda x: x[1], reverse=True,
+            zip(self._ids, self._contents, scores),
+            key=lambda x: x[2],
+            reverse=True,
         )
         return ranked[:top_k]
 
@@ -144,33 +154,31 @@ def build_elfmem_config(config: MABenchConfig) -> ElfmemConfig:
 
 
 def _rrf_merge(
-    vector_blocks: list, bm25_results: list[tuple[str, float]], top_k: int, k: int = 60,
+    vector_blocks: list,
+    bm25_results: list[tuple[str, str, float]],
+    top_k: int,
+    k: int = 60,
 ) -> tuple[list, str]:
-    """Merge vector search and BM25 results via Reciprocal Rank Fusion."""
+    """Merge vector search and BM25 results via Reciprocal Rank Fusion.
+
+    BM25 results carry block IDs (from _BM25Index.search), so matching is
+    exact — no content-prefix heuristics, no supplementary raw-chunk fallback.
+    Both retrieval paths use the same block content (summaries or raw text),
+    so the merged context is consistent.
+    """
     block_scores: dict[str, float] = {}
     block_map: dict[str, object] = {}
     for rank, block in enumerate(vector_blocks):
         block_scores[block.id] = 1.0 / (k + rank)
         block_map[block.id] = block
 
-    supplementary: list[str] = []
-    for rank, (content, _score) in enumerate(bm25_results):
-        bm25_rrf = 1.0 / (k + rank)
-        # Check if any vector block contains this BM25 content (approximate match)
-        matched = False
-        for bid, block in block_map.items():
-            if content[:50] in block.content:
-                block_scores[bid] += bm25_rrf
-                matched = True
-                break
-        if not matched and len(supplementary) < 5:
-            supplementary.append(content)
+    for rank, (block_id, _content, _score) in enumerate(bm25_results):
+        if block_id in block_map:
+            block_scores[block_id] += 1.0 / (k + rank)
 
     ranked = sorted(block_map.values(), key=lambda b: block_scores[b.id], reverse=True)
     trimmed = ranked[:top_k]
-    context_lines = [b.content for b in trimmed]
-    context_lines.extend(supplementary)
-    return trimmed, "\n\n".join(context_lines)
+    return trimmed, "\n\n".join(b.content for b in trimmed)
 
 
 async def process_example(
@@ -202,7 +210,6 @@ async def process_example(
         # Phase 1: Chunk and ingest context
         start_ingest = time.monotonic()
         chunks = chunk_text(context, config.chunk_size)
-        bm25_index = _BM25Index()
         total_promoted = 0
 
         # CR needs contradiction detection — elfmem's core capability.
@@ -217,8 +224,6 @@ async def process_example(
                 category="knowledge",
                 source="memoryagentbench",
             )
-            bm25_index.add(chunk)
-
             # Consolidate periodically
             if (i + 1) % config.consolidate_every_n_chunks == 0:
                 await system.end_session()
@@ -235,7 +240,22 @@ async def process_example(
         total_promoted += result.promoted
         await system.end_session()
 
+        # Build BM25 from active block content after consolidation.
+        # With skip_llm=False (CR), blocks carry LLM-generated summaries —
+        # the same content used by elfmem's vector retrieval. This ensures
+        # BM25 and vector search are consistent, enabling exact ID-based RRF
+        # merging without heuristic content-prefix matching.
+        # With skip_llm=True (other competencies), content falls back to the
+        # raw chunk text — same as the previous raw-chunk approach.
+        await system.begin_session(task_type="retrieval")
+        index_frame = await system.frame("attention", query=None, top_k=10000)
+        await system.end_session()
+
+        bm25_index = _BM25Index()
+        for block in index_frame.blocks:
+            bm25_index.add(block.id, block.content)
         bm25_index.build()
+
         ingestion_time = time.monotonic() - start_ingest
         log.info(f"  Ingested {len(chunks)} chunks, {total_promoted} promoted in {ingestion_time:.1f}s")
 
