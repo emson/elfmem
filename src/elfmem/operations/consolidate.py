@@ -22,7 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db.queries import (
     add_tags,
+    bytes_to_embedding,
     get_active_blocks,
+    get_active_blocks_with_embeddings,
     get_inbox_blocks,
     get_tags_batch,
     insert_contradiction,
@@ -221,19 +223,36 @@ async def _collect_decisions(
     if not inbox:
         return [], [], [], 0
 
-    active_blocks = await get_active_blocks(conn)
+    # Load active blocks and build their embedding vectors.
+    #
+    # When skip_llm=True: summary falls back to content, so the stored embedding
+    # (written by update_block_scoring) equals embed(content). We load directly
+    # from the database — zero API calls. This reduces embedding work from O(n²)
+    # across all consolidation batches to O(n): each block is embedded once on
+    # inbox entry, then its vector is reused from storage forever after.
+    #
+    # When skip_llm=False: the stored embedding is embed(summary), which differs
+    # from embed(content). Near-dup and contradiction checks compare content
+    # embeddings, so we must re-embed active blocks via the embedding service to
+    # keep the vectors on the same semantic basis as inbox blocks.
+    if skip_llm:
+        active_blocks = await get_active_blocks_with_embeddings(conn)
+        active_vecs: dict[str, tuple[dict[str, Any], np.ndarray]] = {}
+        for a_block in active_blocks:
+            vec = bytes_to_embedding(a_block["embedding"])
+            active_vecs[a_block["content"].strip().lower()] = (a_block, vec)
+    else:
+        active_blocks = await get_active_blocks(conn)
+        active_vecs = {}
+        if active_blocks:
+            active_texts = [a["content"].strip().lower() for a in active_blocks]
+            vecs_list = await embedding_svc.embed_batch(active_texts)
+            for a_block, vec in zip(active_blocks, vecs_list, strict=False):
+                active_vecs[a_block["content"].strip().lower()] = (a_block, vec)
 
     # Load tags for all blocks upfront — needed for decay tier and edge scoring.
     all_ids = [b["id"] for b in active_blocks] + [b["id"] for b in inbox]
     tags_map: dict[str, list[str]] = await get_tags_batch(conn, all_ids)
-
-    # Batch embed active blocks; warm inbox embedding cache in reverse order.
-    active_vecs: dict[str, tuple[dict[str, Any], np.ndarray]] = {}
-    if active_blocks:
-        active_texts = [a["content"].strip().lower() for a in active_blocks]
-        vecs_list = await embedding_svc.embed_batch(active_texts)
-        for a_block, vec in zip(active_blocks, vecs_list, strict=False):
-            active_vecs[a_block["content"].strip().lower()] = (a_block, vec)
 
     inbox_texts_rev = [b["content"].strip().lower() for b in reversed(inbox)]
     if inbox_texts_rev:
