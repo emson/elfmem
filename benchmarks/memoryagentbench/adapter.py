@@ -268,9 +268,12 @@ async def process_example(
             frame_result = await system.frame("attention", query=question, top_k=config.top_k)
             await system.end_session()
 
-            # BM25 hybrid merge
+            # Build context from blocks directly, bypassing the frame's hardcoded
+            # token_budget (2000 tokens in the attention frame definition).  Both
+            # the BM25 and no-BM25 paths are now bounded only by _context_budget_words,
+            # which is derived from config.context_window_tokens.
             blocks = frame_result.blocks
-            context_text = frame_result.text
+            context_text = "\n\n".join(b.content for b in blocks)
             bm25_hits = bm25_index.search(question, top_k=config.top_k)
             if bm25_hits:
                 blocks, context_text = _rrf_merge(blocks, bm25_hits, config.top_k)

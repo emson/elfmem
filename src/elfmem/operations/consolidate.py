@@ -73,6 +73,7 @@ class _BlockDecision:
     summary_embedding: np.ndarray | None = None
     decay_lambda: float = 0.01
     token_count: int = 0
+    embedding_model: str = "unknown"
 
 
 @dataclass
@@ -342,6 +343,7 @@ async def _collect_decisions(
             summary_embedding=summary_vec,
             decay_lambda=decay_lambda_for_tier(tier),
             token_count=max(1, len(content) // 4),
+            embedding_model=embedding_svc.model_name,
         ))
 
         # Contradiction detection — LLM, shared lock, with timeout.
@@ -431,7 +433,7 @@ async def _apply_decisions(
             self_alignment=d.alignment_score,
             decay_lambda=d.decay_lambda,
             embedding=d.summary_embedding,
-            embedding_model="mock",  # TODO: expose model name from EmbeddingService protocol
+            embedding_model=d.embedding_model,
             token_count=d.token_count,
             summary=d.summary,
         )
