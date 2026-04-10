@@ -39,6 +39,10 @@ class MABenchConfig:
     answer_model: str = "google/gemma-4-26b-a4b"
     answer_max_tokens: int = 100
 
+    # Model context window — used to derive the answer-context budget.
+    # Set this to your LM Studio model's actual context window (e.g. 2048, 4096, 8192).
+    context_window_tokens: int = 4096
+
     # Execution
     max_examples: int | None = None
     resume: bool = False
