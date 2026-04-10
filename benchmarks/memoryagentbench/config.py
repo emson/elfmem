@@ -39,6 +39,13 @@ class MABenchConfig:
     answer_model: str = "google/gemma-4-26b-a4b"
     answer_max_tokens: int = 100
 
+    # Model context window — must match LM Studio's Context Length setting.
+    # Gemma 4 26B-A4B supports up to 262144 tokens, but the loaded context
+    # depends on your GPU offload and VRAM. Check Model Settings → Context Length
+    # in LM Studio and set this to match (default load is often 4096 with partial
+    # GPU offload; increase in LM Studio first, then update this value).
+    context_window_tokens: int = 4096
+
     # Execution
     max_examples: int | None = None
     resume: bool = False

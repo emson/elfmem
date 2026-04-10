@@ -99,6 +99,24 @@ def chunk_text(text: str, chunk_size: int = 1024) -> list[str]:
     return chunks
 
 
+def _context_budget_words(config: MABenchConfig) -> int:
+    """Answer-context word budget derived from the model's context window.
+
+    Subtracts fixed prompt overhead from context_window_tokens, then converts
+    to words at a conservative 1.4 tokens/word (English prose skews high).
+
+    Overhead breakdown:
+      system_prompt: ~160 tokens
+      QA template:    ~55 tokens
+      question:       ~30 tokens
+      answer_max:     config.answer_max_tokens
+      safety margin:   50 tokens
+    """
+    overhead = 160 + 55 + 30 + config.answer_max_tokens + 50
+    token_budget = config.context_window_tokens - overhead
+    return max(100, int(token_budget / 1.4))
+
+
 def build_elfmem_config(config: MABenchConfig) -> ElfmemConfig:
     """Build ElfmemConfig from benchmark config."""
     return ElfmemConfig.model_validate({
@@ -187,6 +205,10 @@ async def process_example(
         bm25_index = _BM25Index()
         total_promoted = 0
 
+        # CR needs contradiction detection — elfmem's core capability.
+        # Other competencies use skip_llm for speed (embedding-only retrieval).
+        skip_llm = not is_conflict_resolution
+
         await system.begin_session(task_type="ingestion")
         for i, chunk in enumerate(chunks):
             await system.learn(
@@ -201,9 +223,7 @@ async def process_example(
             if (i + 1) % config.consolidate_every_n_chunks == 0:
                 await system.end_session()
                 await system.begin_session(task_type="consolidation")
-                # TODO: use full consolidation for CR once performance is validated
-                # For now, skip_llm=True to verify pipeline end-to-end
-                result = await system.consolidate(skip_llm=True)
+                result = await system.consolidate(skip_llm=skip_llm)
                 total_promoted += result.promoted
                 await system.end_session()
                 await system.begin_session(task_type="ingestion")
@@ -211,7 +231,7 @@ async def process_example(
 
         # Final consolidation for remaining chunks
         await system.begin_session(task_type="consolidation")
-        result = await system.consolidate(skip_llm=True)
+        result = await system.consolidate(skip_llm=skip_llm)
         total_promoted += result.promoted
         await system.end_session()
 
@@ -235,9 +255,10 @@ async def process_example(
             if bm25_hits:
                 blocks, context_text = _rrf_merge(blocks, bm25_hits, config.top_k)
 
-            # Truncate context to fit LM Studio's 4096 token window
-            # (~3500 tokens for context, leaving room for prompt + response)
-            max_context_words = 2000
+            # Truncate context to fit the model's context window.
+            # Budget is derived from config.context_window_tokens minus
+            # system prompt, template, question, and answer overhead.
+            max_context_words = _context_budget_words(config)
             words = context_text.split()
             if len(words) > max_context_words:
                 context_text = " ".join(words[:max_context_words])
