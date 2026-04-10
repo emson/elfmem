@@ -40,8 +40,10 @@ class MABenchConfig:
     answer_max_tokens: int = 100
 
     # Model context window — used to derive the answer-context budget.
-    # Set this to your LM Studio model's actual context window (e.g. 2048, 4096, 8192).
-    context_window_tokens: int = 4096
+    # Gemma 4 26B-A4B natively supports 256K; LM Studio defaults to 48K (49152).
+    # Match this to what LM Studio shows in Model Settings → Context Length.
+    # Common values: 49152 (LM Studio default), 131072, 262144 (full 256K).
+    context_window_tokens: int = 49152
 
     # Execution
     max_examples: int | None = None
