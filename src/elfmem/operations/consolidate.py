@@ -207,6 +207,7 @@ async def _collect_decisions(
     edge_score_threshold: float,
     edge_degree_cap: int,
     skip_llm: bool = False,
+    skip_contradictions: bool = False,
 ) -> tuple[list[_BlockDecision], list[_EdgeDecision], list[_ContradictionDecision], int]:
     """Read inbox, embed, score with LLM, and compute all decisions.
 
@@ -328,8 +329,9 @@ async def _collect_decisions(
         # Reuses cached cosine similarities from the near-dup pass above.
         # New items added to evolving_vecs (from earlier batch promotions) are
         # not in sim_cache; their similarity is computed on demand.
-        # Skipped entirely when skip_llm=True (benchmark / bulk ingestion mode).
-        if skip_llm:
+        # Skipped when skip_llm=True (no LLM at all) or skip_contradictions=True
+        # (keeps process_block summaries but avoids the O(n²) contradiction loop).
+        if skip_llm or skip_contradictions:
             evolving_vecs[norm_content] = (block, vec)
             newly_promoted.append((block, vec))
             continue
@@ -462,6 +464,7 @@ async def consolidate(
     edge_degree_cap: int = EDGE_DEGREE_CAP,
     contradiction_similarity_prefilter: float = CONTRADICTION_SIMILARITY_PREFILTER,
     skip_llm: bool = False,
+    skip_contradictions: bool = False,
 ) -> ConsolidateResult:
     """Promote all inbox blocks through the full consolidation pipeline.
 
@@ -490,6 +493,7 @@ async def consolidate(
             edge_score_threshold=edge_score_threshold,
             edge_degree_cap=edge_degree_cap,
             skip_llm=skip_llm,
+            skip_contradictions=skip_contradictions,
         )
     )
 

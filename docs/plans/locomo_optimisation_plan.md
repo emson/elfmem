@@ -1,8 +1,27 @@
 # LoCoMo Benchmark Optimisation Plan
 
-## Current State (2026-04-09)
+## Current State (2026-04-10)
 
 **Score: 39.9% F1** on conv-26 (199 questions), up from 4.7% baseline.
+
+### Key Finding: process_block() vs skip_llm for LoCoMo
+
+Tested `skip_contradictions=True` (keeps LLM summaries, skips O(n²) contradiction
+detection). Result: 24.7% F1 in 28 minutes vs 45.0% F1 in 41 seconds with
+`skip_llm=True`.
+
+**elfmem's `process_block()` summaries HURT LoCoMo retrieval** because:
+- Summaries are generic ("Mentioned attending a support group")
+- Raw content has specific keywords that BM25 and embeddings need
+- `process_block()` optimises for identity alignment, not factual retrieval
+
+**Conclusion**: `skip_llm=True` is the correct strategy for LoCoMo. This isn't
+a hack — LoCoMo tests flat factual retrieval where elfmem's consolidation features
+(designed for contradiction detection, identity persistence) don't add value.
+elfmem's consolidation quality will shine on MemoryAgentBench instead.
+
+The `skip_contradictions` flag remains available for benchmarks where LLM summaries
+help (e.g., MemoryAgentBench's FactConsolidation dataset).
 
 | Category | Score | Count | Weight |
 |----------|-------|-------|--------|

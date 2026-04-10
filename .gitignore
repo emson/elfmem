@@ -15,3 +15,6 @@ tmp/
 .env
 .elfmem
 
+# Benchmark results (generated, large)
+benchmarks/*/results/*.json
+

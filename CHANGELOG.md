@@ -10,6 +10,12 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **LoCoMo benchmark harness:** Complete benchmark suite for evaluating elfmem against LoCoMo (ACL 2024) — 10 conversations, 1,986 QA pairs, 5 categories. Includes metrics (Porter-stemmed F1), typed data loading, BM25 hybrid retrieval, observation transform, and CLI runner with `--test`, `--baselines`, `--resume`, `--top-k`, `--category` flags. Results conform to `benchmark_report_spec.md`.
+- **`consolidate(skip_llm=True)`:** Bypass all LLM calls during consolidation (embed + promote only). Reduces ingestion from hours to seconds for bulk import and benchmarks.
+- **`consolidate(skip_contradictions=True)`:** Keep LLM summaries and alignment scoring but skip O(n²) contradiction detection. Best for large batches where contradiction checking is unnecessary.
+- **`_extract_json()` in OpenAI adapter:** Strips markdown code fences from LLM responses. Fixes compatibility with local models (Gemma, Ollama) that wrap JSON in ` ```json ``` ` fences.
+- **Tags in ScoredBlock during retrieval:** Fixed retrieval pipeline to load block tags from database into ScoredBlock objects (was hardcoded to empty list).
+- **Benchmark guides and strategy:** `benchmark_report_spec.md` (standard output format), `benchmark_strategy.md` (MemoryAgentBench → LoCoMo → LongMemEval priority), `locomo_benchmark_guide.md`, `memoryagentbench_guide.md`, `longmemeval_benchmark_guide.md`.
 - **Git workflow documentation:** Protected main branch policy. All work happens on feature branches with PR-based review. Release tags created on main after merge, never before. Documented in CLAUDE.md.
 
 ---

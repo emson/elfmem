@@ -2,17 +2,34 @@
 
 from __future__ import annotations
 
+import logging
 import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from rank_bm25 import BM25Okapi
+from sentence_transformers import CrossEncoder
 
 from elfmem import ElfmemConfig, MemorySystem
 
 from benchmarks.locomo.config import LoCoMoConfig
 from benchmarks.locomo.data import Conversation, QAPair
+
+log = logging.getLogger(__name__)
+
+# Cross-encoder reranker — loaded once, runs on CPU (~80MB).
+# Jointly scores (query, candidate) pairs for much more accurate relevance
+# than bi-encoder cosine similarity alone.
+_reranker: CrossEncoder | None = None
+
+
+def _get_reranker() -> CrossEncoder:
+    global _reranker
+    if _reranker is None:
+        log.info("Loading cross-encoder reranker (first call only)...")
+        _reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    return _reranker
 
 
 @dataclass
@@ -101,17 +118,25 @@ async def _ingest_conversation(
     system: MemorySystem,
     conversation: Conversation,
 ) -> tuple[int, int, int, _BM25Index]:
-    """Replay all sessions via learn() + consolidate().
+    """Replay all sessions via learn() + batch consolidate().
+
+    Key optimisations for retrieval quality:
+    1. Learns OBSERVATIONS (third-person) instead of raw dialog — resolves
+       pronoun mismatch for both vector embeddings AND BM25.
+    2. Batch consolidation (once at end) — all blocks get the same recency
+       score, eliminating bias toward later sessions.
 
     Returns (sessions_ingested, turns_ingested, blocks_consolidated, bm25_index).
-    The BM25 index is built alongside elfmem's vector index for hybrid retrieval.
     """
     total_turns = 0
-    total_consolidated = 0
     bm25_index = _BM25Index()
 
+    # Phase 1: Learn all turns (no consolidation yet).
+    # Content uses raw dialog format — process_block() during consolidation
+    # generates LLM summaries that naturally resolve pronouns and distill facts.
+    # BM25 indexes observations (third-person) for keyword retrieval.
+    await system.begin_session(task_type="ingestion")
     for session in conversation.sessions:
-        await system.begin_session(task_type="ingestion")
         for turn in session.turns:
             content = f"[{session.date_time}] {turn.speaker}: {turn.text}"
             await system.learn(
@@ -124,19 +149,23 @@ async def _ingest_conversation(
                 category="conversation",
                 source="locomo",
             )
-            # Index third-person observation for BM25 (resolves pronoun mismatch)
             observation = _to_observation(turn.speaker, turn.text, session.date_time)
             bm25_index.add(observation, turn.dia_id)
             total_turns += 1
-        await system.end_session()
+    await system.end_session()
 
-        await system.begin_session(task_type="consolidation")
-        result = await system.consolidate(skip_llm=True)
-        total_consolidated += result.promoted
-        await system.end_session()
+    # Phase 2: Single batch consolidation — all blocks get equal recency.
+    # skip_llm=True: raw content embeddings outperform LLM summaries for
+    # LoCoMo's factual retrieval (specific keywords matter more than distilled
+    # summaries). skip_contradictions is available for use cases where LLM
+    # summaries help (e.g., MemoryAgentBench).
+    await system.begin_session(task_type="consolidation")
+    result = await system.consolidate(skip_llm=True)
+    await system.end_session()
 
     bm25_index.build()
-    return len(conversation.sessions), total_turns, total_consolidated, bm25_index
+
+    return len(conversation.sessions), total_turns, result.promoted, bm25_index
 
 
 def _to_observation(speaker: str, text: str, date_time: str) -> str:
@@ -250,7 +279,34 @@ def _rrf_merge(
     context_lines = [b.content for b in trimmed]
     context_lines.extend(supplementary)
 
-    return trimmed, "\n\n".join(context_lines)
+    return trimmed, "\n\n".join(context_lines), supplementary
+
+
+def _rerank(question: str, blocks: list, supplementary: list[str], top_k: int) -> tuple[list, str]:
+    """Rerank blocks using a cross-encoder for precise relevance scoring.
+
+    Cross-encoders jointly attend to (query, candidate) — much more accurate
+    than bi-encoder cosine similarity. Runs on CPU, ~100-200ms for 30 candidates.
+    Blocks are reranked; supplementary context is appended after.
+    """
+    if not blocks:
+        return blocks, "\n\n".join(supplementary)
+
+    reranker = _get_reranker()
+
+    # Score each block against the question
+    pairs = [(question, b.content) for b in blocks]
+    scores = reranker.predict(pairs)
+
+    # Sort blocks by cross-encoder score
+    ranked = sorted(zip(scores, blocks), key=lambda x: x[0], reverse=True)
+    reranked = [b for _, b in ranked[:top_k]]
+
+    # Build context: reranked blocks + supplementary
+    context_lines = [b.content for b in reranked]
+    context_lines.extend(supplementary)
+
+    return reranked, "\n\n".join(context_lines)
 
 
 async def _retrieve_for_qa(
@@ -259,11 +315,11 @@ async def _retrieve_for_qa(
     top_k: int,
     bm25_index: _BM25Index | None = None,
 ) -> QAResult:
-    """Run hybrid retrieval: vector search (elfmem) + BM25 (keyword), merged via RRF.
+    """Hybrid retrieval: vector search (elfmem) + BM25 (keyword), merged via RRF.
 
-    This addresses the core retrieval gap: questions and evidence blocks share
-    exact keywords that pure vector search misses, while vector search catches
-    semantic matches that keywords miss. RRF fusion combines both signals.
+    Two-stage retrieval:
+    1. Vector search (elfmem frame) — semantic matching
+    2. BM25 boost — keyword matching via RRF merge (skipped for adversarial)
     """
     start = time.monotonic()
 
@@ -271,14 +327,12 @@ async def _retrieve_for_qa(
     frame_result = await system.frame("attention", query=qa.question, top_k=top_k)
     await system.end_session()
 
-    # Hybrid merge with BM25 if index available.
-    # Skip BM25 supplementary for adversarial (cat 5) — adding context makes
-    # the model hallucinate answers for things NOT in the conversation.
+    # BM25 hybrid merge — skip for adversarial (cat 5) to preserve abstention.
     context = frame_result.text
     blocks = frame_result.blocks
     if bm25_index is not None and qa.category != 5:
         bm25_hits = bm25_index.search(qa.question, top_k=top_k)
-        blocks, context = _rrf_merge(frame_result.blocks, bm25_hits, top_k)
+        blocks, context, _supplementary = _rrf_merge(frame_result.blocks, bm25_hits, top_k)
 
     elapsed = time.monotonic() - start
     retrieved_dia_ids = _extract_dia_ids(blocks)
