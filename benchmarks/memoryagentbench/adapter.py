@@ -201,10 +201,9 @@ async def process_example(
             if (i + 1) % config.consolidate_every_n_chunks == 0:
                 await system.end_session()
                 await system.begin_session(task_type="consolidation")
-                if is_conflict_resolution:
-                    result = await system.consolidate()  # FULL — contradiction detection ON
-                else:
-                    result = await system.consolidate(skip_llm=True)
+                # TODO: use full consolidation for CR once performance is validated
+                # For now, skip_llm=True to verify pipeline end-to-end
+                result = await system.consolidate(skip_llm=True)
                 total_promoted += result.promoted
                 await system.end_session()
                 await system.begin_session(task_type="ingestion")
@@ -212,10 +211,7 @@ async def process_example(
 
         # Final consolidation for remaining chunks
         await system.begin_session(task_type="consolidation")
-        if is_conflict_resolution:
-            result = await system.consolidate()
-        else:
-            result = await system.consolidate(skip_llm=True)
+        result = await system.consolidate(skip_llm=True)
         total_promoted += result.promoted
         await system.end_session()
 
@@ -238,6 +234,13 @@ async def process_example(
             bm25_hits = bm25_index.search(question, top_k=config.top_k)
             if bm25_hits:
                 blocks, context_text = _rrf_merge(blocks, bm25_hits, config.top_k)
+
+            # Truncate context to fit LM Studio's 4096 token window
+            # (~3500 tokens for context, leaving room for prompt + response)
+            max_context_words = 2000
+            words = context_text.split()
+            if len(words) > max_context_words:
+                context_text = " ".join(words[:max_context_words])
 
             # Ensure answer_list is a list of strings
             if isinstance(answer_list, str):
