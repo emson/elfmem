@@ -21,6 +21,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **MemoryAgentBench context budget derived from `context_window_tokens`:** Replaced the hardcoded `max_context_words=2000` band-aid (which still overflows 2048-context models) with `_context_budget_words(config)` — a pure function that subtracts prompt overhead from `MABenchConfig.context_window_tokens` and converts to words at 1.4 tokens/word.
 - **MemoryAgentBench runner logging silenced by datasets library:** `datasets` sets up root-logger handlers on import, making `logging.basicConfig()` a no-op and swallowing all INFO/ERROR output including caught exceptions. Fixed: `force=True` on `basicConfig` in `runner.main()`.
 
+
 ### Added
 - **`MABenchConfig.context_window_tokens`:** New config field (default 4096) representing the LM Studio model's context window. All answer-context truncation derives from this value; set to 2048 for smaller models.
 
