@@ -1,0 +1,3521 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/claude_teams_guide/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Claude Code Agent Teams (Swarms) — Definitive Prompt & Orchestration Guide - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#claude-code-agent-teams-swarms-definitive-prompt-orchestration-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Claude Code Agent Teams (Swarms) — Definitive Prompt &amp; Orchestration Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-agent-teams-are-and-arent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What Agent Teams Are (And Aren't)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-when-to-use-teams-vs-subagents-vs-solo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. When to Use Teams vs Subagents vs Solo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. When to Use Teams vs Subagents vs Solo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#decision-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Framework
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strongest-use-cases-for-agent-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strongest Use Cases for Agent Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-setup-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Setup &amp; Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Setup &amp; Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-agent-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable Agent Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#display-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-core-architecture-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Core Architecture &amp; Primitives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Core Architecture &amp; Primitives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-seven-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Seven Primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task States
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#communication-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-prompt-engineering-for-agent-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Prompt Engineering for Agent Teams
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Prompt Engineering for Agent Teams">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-golden-rule-plan-first-parallelise-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The Golden Rule: Plan First, Parallelise Second
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 The Golden Rule: Plan First, Parallelise Second">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-two-step-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Two-Step Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-how-to-prompt-the-lead-your-entry-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 How to Prompt the Lead (Your Entry Point)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.2 How to Prompt the Lead (Your Entry Point)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#template-natural-language-team-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template: Natural Language Team Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-examples-that-work-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real Examples That Work Well
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-how-to-write-teammate-spawn-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 How to Write Teammate Spawn Prompts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.3 How to Write Teammate Spawn Prompts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-five-elements-of-an-effective-teammate-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Five Elements of an Effective Teammate Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-teammate-spawn-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template: Teammate Spawn Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bad-vs-good-teammate-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bad vs Good Teammate Prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-designing-task-descriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Designing Task Descriptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-advanced-prompt-techniques" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Advanced Prompt Techniques
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.5 Advanced Prompt Techniques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#technique-1-the-debate-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technique 1: The Debate Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technique-2-swarm-worker-self-organisation-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technique 2: Swarm Worker Self-Organisation Prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technique-3-model-selection-in-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technique 3: Model Selection in Prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technique-4-dependency-wave-planning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technique 4: Dependency Wave Planning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technique-5-context-window-hygiene-in-agent-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technique 5: Context Window Hygiene in Agent Prompts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-six-orchestration-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The Six Orchestration Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The Six Orchestration Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-parallel-specialists-leader-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Parallel Specialists (Leader Pattern)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-pipeline-sequential-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Pipeline (Sequential Dependencies)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-swarm-self-organising-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Swarm (Self-Organising Workers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-research-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Research + Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-5-plan-approval-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 5: Plan Approval Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-6-competing-hypotheses-debate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 6: Competing Hypotheses (Debate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-claudemd-configuration-for-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. CLAUDE.md Configuration for Teams
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. CLAUDE.md Configuration for Teams">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-claudemd-structure-for-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended CLAUDE.md Structure for Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-principles-for-claudemd-in-team-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Principles for CLAUDE.md in Team Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-cost-optimisation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Cost Optimisation Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Cost Optimisation Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-cost-by-approach-approximate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Cost by Approach (Approximate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimisation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimisation Strategies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-lessons-from-anthropics-c-compiler-16-agent-case-study" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Lessons from Anthropic's C Compiler (16-Agent Case Study)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Lessons from Anthropic&#39;s C Compiler (16-Agent Case Study)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-lessons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Lessons
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Lessons">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-write-extremely-high-quality-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Write Extremely High-Quality Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-design-the-environment-for-llms-not-humans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Design the Environment for LLMs, Not Humans
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-make-parallelism-structurally-easy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Make Parallelism Structurally Easy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-use-specialised-agent-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Use Specialised Agent Roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-git-based-coordination-works-at-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Git-Based Coordination Works at Scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-production-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Production Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Production Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-flight-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Flight Checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#during-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        During Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shutdown-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown &amp; Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-8020-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 80/20 Rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-anti-patterns-to-avoid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Anti-Patterns to Avoid
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Anti-Patterns to Avoid">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-me-an-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ "Build me an app"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-teammates-editing-the-same-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Two Teammates Editing the Same File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skipping-the-plan-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Skipping the Plan Step
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#over-broadcasting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Over-Broadcasting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#under-specifying-teammate-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Under-Specifying Teammate Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-teams-for-simple-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Using Teams for Simple Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-token-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Ignoring Token Costs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-pre-approving-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Not Pre-Approving Permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-quick-reference-cheat-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Quick Reference Cheat Sheet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Quick Reference Cheat Sheet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-agent-teams_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable Agent Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn-a-subagent-no-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spawn a Subagent (No Team)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-team-spawn-teammate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a Team + Spawn Teammate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-task-with-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create Task with Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-a-teammate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message a Teammate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#broadcast-to-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Broadcast to All
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shutdown-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown Sequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#built-in-agent-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Agent Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-selection-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Selection Guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-the-10-commandments-of-agent-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: The 10 Commandments of Agent Teams
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/claude_teams_guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="claude-code-agent-teams-swarms-definitive-prompt-orchestration-guide">Claude Code Agent Teams (Swarms) — Definitive Prompt &amp; Orchestration Guide<a class="headerlink" href="#claude-code-agent-teams-swarms-definitive-prompt-orchestration-guide" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Version:</strong> February 2026<br />
+<strong>Sources:</strong> Anthropic official docs, Anthropic engineering blog (C compiler case study), community practitioners (Addy Osmani, alexop.dev, kieranklaassen), real-world production case studies.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#1-what-agent-teams-are-and-arent">What Agent Teams Are (And Aren't)</a></li>
+<li><a href="#2-when-to-use-teams-vs-subagents-vs-solo">When to Use Teams vs Subagents vs Solo</a></li>
+<li><a href="#3-setup--configuration">Setup &amp; Configuration</a></li>
+<li><a href="#4-core-architecture--primitives">Core Architecture &amp; Primitives</a></li>
+<li><a href="#5-prompt-engineering-for-agent-teams">Prompt Engineering for Agent Teams</a></li>
+<li><a href="#6-the-six-orchestration-patterns">The Six Orchestration Patterns</a></li>
+<li><a href="#7-claudemd-configuration-for-teams">CLAUDE.md Configuration for Teams</a></li>
+<li><a href="#8-cost-optimisation-strategies">Cost Optimisation Strategies</a></li>
+<li><a href="#9-lessons-from-anthropics-c-compiler-16-agent-case-study">Lessons from Anthropic's C Compiler (16-Agent Case Study)</a></li>
+<li><a href="#10-production-best-practices">Production Best Practices</a></li>
+<li><a href="#11-anti-patterns-to-avoid">Anti-Patterns to Avoid</a></li>
+<li><a href="#12-quick-reference-cheat-sheet">Quick Reference Cheat Sheet</a></li>
+</ol>
+<hr />
+<h2 id="1-what-agent-teams-are-and-arent">1. What Agent Teams Are (And Aren't)<a class="headerlink" href="#1-what-agent-teams-are-and-arent" title="Permanent link">&para;</a></h2>
+<p>Agent teams coordinate <strong>multiple Claude Code instances</strong> working in parallel, each with its own context window. One session acts as the <strong>team lead</strong> (orchestrator), spawning <strong>teammates</strong> (workers) that can:</p>
+<ul>
+<li>Work independently on separate tasks</li>
+<li>Communicate directly with each other via messaging (not just back to the lead)</li>
+<li>Share a task list with dependency tracking</li>
+<li>Self-organise by claiming available work</li>
+</ul>
+<p><strong>The core insight:</strong> LLMs perform worse as context expands. Instead of one agent accumulating a bloated context window, each teammate gets a fresh, focused context. A task that takes one agent 2 hours might take a team 30 minutes — not because agents are faster, but because they work simultaneously on different parts.</p>
+<p><strong>What they are NOT:</strong></p>
+<ul>
+<li>A magic productivity multiplier for simple tasks (coordination overhead is real)</li>
+<li>A replacement for clear specifications (garbage in, garbage out — amplified by N agents)</li>
+<li>Free — each teammate is a full Claude session consuming tokens independently</li>
+</ul>
+<hr />
+<h2 id="2-when-to-use-teams-vs-subagents-vs-solo">2. When to Use Teams vs Subagents vs Solo<a class="headerlink" href="#2-when-to-use-teams-vs-subagents-vs-solo" title="Permanent link">&para;</a></h2>
+<h3 id="decision-framework">Decision Framework<a class="headerlink" href="#decision-framework" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Is the task small/focused?
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → YES → Solo session
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Can work be parallelised but workers don&#39;t need to talk?
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  → YES → Subagents (Task tool without team_name)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Do workers need to share findings, challenge each other, or coordinate?
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  → YES → Agent Teams
+</span></code></pre></div>
+<h3 id="comparison-table">Comparison Table<a class="headerlink" href="#comparison-table" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Solo Session</th>
+<th>Subagents</th>
+<th>Agent Teams</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Context</strong></td>
+<td>Single window</td>
+<td>Own window, results return to parent</td>
+<td>Own window, fully independent</td>
+</tr>
+<tr>
+<td><strong>Communication</strong></td>
+<td>N/A</td>
+<td>Report to parent only</td>
+<td>Message each other directly</td>
+</tr>
+<tr>
+<td><strong>Coordination</strong></td>
+<td>You manage</td>
+<td>Parent manages</td>
+<td>Shared task list, self-claim</td>
+</tr>
+<tr>
+<td><strong>Token cost</strong></td>
+<td>~200k</td>
+<td>~440k (3 agents)</td>
+<td>~800k+ (3 agents)</td>
+</tr>
+<tr>
+<td><strong>Best for</strong></td>
+<td>Focused work</td>
+<td>Research, exploration, quick checks</td>
+<td>Complex multi-track work</td>
+</tr>
+</tbody>
+</table>
+<h3 id="strongest-use-cases-for-agent-teams">Strongest Use Cases for Agent Teams<a class="headerlink" href="#strongest-use-cases-for-agent-teams" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Research &amp; Review:</strong> Multiple investigators examine different aspects in parallel, then challenge each other's findings</li>
+<li><strong>New Features / Modules:</strong> Teammates each own a separate piece (API, UI, tests) without stepping on each other</li>
+<li><strong>Debugging with Competing Hypotheses:</strong> Teammates test different theories in parallel and converge on the answer via debate</li>
+<li><strong>Cross-Layer Coordination:</strong> Changes spanning frontend, backend, and tests — each owned by a different teammate</li>
+<li><strong>QA Swarms:</strong> Multiple agents testing different quality dimensions simultaneously</li>
+</ol>
+<hr />
+<h2 id="3-setup-configuration">3. Setup &amp; Configuration<a class="headerlink" href="#3-setup-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="enable-agent-teams">Enable Agent Teams<a class="headerlink" href="#enable-agent-teams" title="Permanent link">&para;</a></h3>
+<p>Add to your <code>settings.json</code> (or shell environment):</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// ~/.claude/settings.json</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">&quot;CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Or via shell:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS</span><span class="o">=</span><span class="m">1</span>
+</span></code></pre></div>
+<h3 id="display-backends">Display Backends<a class="headerlink" href="#display-backends" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>How It Works</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>in-process</strong> (default)</td>
+<td>All teammates in same Node.js process, invisible</td>
+<td>Fast startup, CI/CD</td>
+</tr>
+<tr>
+<td><strong>tmux</strong></td>
+<td>Separate panes per teammate, visible</td>
+<td>Debugging, monitoring</td>
+</tr>
+<tr>
+<td><strong>iterm2</strong></td>
+<td>Split panes in iTerm2 (macOS only)</td>
+<td>Visual debugging</td>
+</tr>
+</tbody>
+</table>
+<p>Force a specific backend:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CLAUDE_CODE_SPAWN_BACKEND</span><span class="o">=</span>tmux<span class="w">   </span><span class="c1"># or in-process, iterm2</span>
+</span></code></pre></div>
+<h3 id="permission-settings">Permission Settings<a class="headerlink" href="#permission-settings" title="Permanent link">&para;</a></h3>
+<p>Teammates inherit the lead's permission settings. For autonomous operation, pre-approve common operations to avoid permission prompt floods:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># For maximum autonomy (use with caution):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>claude<span class="w"> </span>--dangerously-skip-permissions
+</span></code></pre></div>
+<hr />
+<h2 id="4-core-architecture-primitives">4. Core Architecture &amp; Primitives<a class="headerlink" href="#4-core-architecture-primitives" title="Permanent link">&para;</a></h2>
+<h3 id="the-seven-primitives">The Seven Primitives<a class="headerlink" href="#the-seven-primitives" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Primitive</th>
+<th>Purpose</th>
+<th>Disk Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Team</strong></td>
+<td>Named group of agents</td>
+<td><code>~/.claude/teams/{name}/config.json</code></td>
+</tr>
+<tr>
+<td><strong>Leader</strong></td>
+<td>Creates team, coordinates, synthesises</td>
+<td>First member in config</td>
+</tr>
+<tr>
+<td><strong>Teammate</strong></td>
+<td>Executes tasks, reports findings</td>
+<td>Listed in team config</td>
+</tr>
+<tr>
+<td><strong>Task</strong></td>
+<td>Work item with status, owner, dependencies</td>
+<td><code>~/.claude/tasks/{team}/N.json</code></td>
+</tr>
+<tr>
+<td><strong>Inbox</strong></td>
+<td>Per-agent message queue</td>
+<td><code>~/.claude/teams/{name}/inboxes/{agent}.json</code></td>
+</tr>
+<tr>
+<td><strong>Message</strong></td>
+<td>JSON object between agents</td>
+<td>Stored in inbox files</td>
+</tr>
+<tr>
+<td><strong>Backend</strong></td>
+<td>How teammates run (in-process/tmux/iterm2)</td>
+<td>Auto-detected</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>1. Create Team  →  2. Create Tasks  →  3. Spawn Teammates
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>      ↓                                        ↓
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>4. Work (claim, execute, complete)  ←→  5. Coordinate (message, sync)
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>      ↓
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>6. Shutdown (request → approve)  →  7. Cleanup
+</span></code></pre></div>
+<h3 id="task-states">Task States<a class="headerlink" href="#task-states" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>PENDING  →  IN_PROGRESS  →  COMPLETED
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>                ↑
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>          (teammate claims
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>           or lead assigns)
+</span></code></pre></div>
+<p>Tasks with <code>blockedBy</code> dependencies auto-unblock when their blockers complete.</p>
+<h3 id="communication-channels">Communication Channels<a class="headerlink" href="#communication-channels" title="Permanent link">&para;</a></h3>
+<p>Teammates share information via two mechanisms only:
+1. <strong>Task files on disk</strong> — the shared task list
+2. <strong>SendMessage / Inbox</strong> — direct peer-to-peer messaging</p>
+<p>There is <strong>no shared memory</strong>. Teammates load project context (CLAUDE.md, MCP servers, skills) but do NOT inherit the lead's conversation history.</p>
+<hr />
+<h2 id="5-prompt-engineering-for-agent-teams">5. Prompt Engineering for Agent Teams<a class="headerlink" href="#5-prompt-engineering-for-agent-teams" title="Permanent link">&para;</a></h2>
+<p>This is the most critical section. The quality of your prompts determines whether your team produces brilliant work or expensive chaos.</p>
+<h3 id="51-the-golden-rule-plan-first-parallelise-second">5.1 The Golden Rule: Plan First, Parallelise Second<a class="headerlink" href="#51-the-golden-rule-plan-first-parallelise-second" title="Permanent link">&para;</a></h3>
+<p>The single most effective pattern across all practitioners:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Step 1: Use plan mode to create a detailed implementation plan (~10k tokens)
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>Step 2: Review and approve the plan
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>Step 3: Hand the plan to a team for parallel execution
+</span></code></pre></div>
+<p><strong>Why this matters:</strong> A team that goes in the wrong direction costs 500k+ tokens. A plan costs ~10k. The plan gives you a checkpoint before committing heavy resources.</p>
+<h4 id="example-two-step-prompt">Example Two-Step Prompt<a class="headerlink" href="#example-two-step-prompt" title="Permanent link">&para;</a></h4>
+<p><strong>Step 1 — Planning prompt:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Plan the refactor of our authentication module. I want to split the
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>monolithic auth.ts into separate files for JWT handling, session
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>management, and middleware. Show me the plan before doing anything.
+</span></code></pre></div>
+<p><strong>Step 2 — Execution prompt (after approving plan):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Now execute this plan using an agent team. Parallelise where possible:
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>- Steps 1-3 can run in parallel (independent extractions)
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>- Step 4-5 depends on 1-3
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>- Step 6 depends on everything
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Use Sonnet for the teammates.
+</span></code></pre></div>
+<h3 id="52-how-to-prompt-the-lead-your-entry-point">5.2 How to Prompt the Lead (Your Entry Point)<a class="headerlink" href="#52-how-to-prompt-the-lead-your-entry-point" title="Permanent link">&para;</a></h3>
+<p>When you talk to Claude Code with agent teams enabled, you're talking to the <strong>team lead</strong>. Your prompt should communicate:</p>
+<ol>
+<li><strong>The goal</strong> — What you're trying to achieve</li>
+<li><strong>The team structure</strong> — What roles/specialisations you want</li>
+<li><strong>File ownership</strong> — Who owns what (critical for avoiding conflicts)</li>
+<li><strong>Coordination expectations</strong> — How teammates should interact</li>
+<li><strong>Output expectations</strong> — What the final deliverable looks like</li>
+</ol>
+<h4 id="template-natural-language-team-prompt">Template: Natural Language Team Prompt<a class="headerlink" href="#template-natural-language-team-prompt" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>[GOAL]
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>Build/Review/Refactor [X]. 
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>[TEAM STRUCTURE]
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>Create an agent team with:
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>- Teammate &quot;name-1&quot; focusing on [scope/files]
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>- Teammate &quot;name-2&quot; focusing on [scope/files]
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>- Teammate &quot;name-3&quot; focusing on [scope/files]
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>[COORDINATION]
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>They should coordinate on [shared interface/API contract/data schema].
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>[name-1] should message [name-2] when [condition].
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>[CONSTRAINTS]
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>Use Sonnet for teammates. Require plan approval before changes.
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>Each teammate should report findings to the lead when done.
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>[OUTPUT]
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>Synthesise all findings into [report/PR/summary].
+</span></code></pre></div>
+<h4 id="real-examples-that-work-well">Real Examples That Work Well<a class="headerlink" href="#real-examples-that-work-well" title="Permanent link">&para;</a></h4>
+<p><strong>Research &amp; Debate:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Users report the app exits after one message instead of staying connected.
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Spawn 5 agent teammates to investigate different hypotheses. Have them
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>talk to each other to try to disprove each other&#39;s theories, like a
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>scientific debate. Update the findings doc with whatever consensus emerges.
+</span></code></pre></div>
+<p><strong>Feature Build:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Create an agent team with two teammates. Teammate &quot;backend&quot; should
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>implement the new /api/users endpoint in src/routes/. Teammate &quot;frontend&quot;
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>should build the user profile component in src/components/. They should
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>coordinate on the API contract.
+</span></code></pre></div>
+<p><strong>QA Swarm:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Use a team of agents that will do QA against my app running at
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>http://localhost:3000/. Have one focus on security, one on performance,
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>one on accessibility, one on broken links, and one on SEO.
+</span></code></pre></div>
+<p><strong>Code Review (Parallel Specialists):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Review this PR from multiple perspectives. Create an agent team with:
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>- &quot;security&quot; reviewing for vulnerabilities (SQL injection, XSS, auth bypass)
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>- &quot;performance&quot; reviewing for N+1 queries, memory leaks, inefficiencies
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>- &quot;architecture&quot; reviewing for SOLID principles and design patterns
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>Synthesise all findings into a prioritised review.
+</span></code></pre></div>
+<h3 id="53-how-to-write-teammate-spawn-prompts">5.3 How to Write Teammate Spawn Prompts<a class="headerlink" href="#53-how-to-write-teammate-spawn-prompts" title="Permanent link">&para;</a></h3>
+<p>When the lead spawns teammates, the <strong>prompt</strong> field is their entire world. They get no conversation history from the lead. This prompt IS their context.</p>
+<h4 id="the-five-elements-of-an-effective-teammate-prompt">The Five Elements of an Effective Teammate Prompt<a class="headerlink" href="#the-five-elements-of-an-effective-teammate-prompt" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>1. IDENTITY — Who you are and your role
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>2. CONTEXT — What the project is, what matters
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>3. SCOPE — Exactly what files/areas you own
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>4. TASK — Step-by-step what to do
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>5. REPORTING — How to communicate results
+</span></code></pre></div>
+<h4 id="template-teammate-spawn-prompt">Template: Teammate Spawn Prompt<a class="headerlink" href="#template-teammate-spawn-prompt" title="Permanent link">&para;</a></h4>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>You are [ROLE NAME] on team [TEAM_NAME].
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>CONTEXT:
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>- This is a [project type] located at [path]
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>- Key conventions: [list relevant conventions]
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>- Important files: [list key files for this role]
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>YOUR SCOPE:
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>- You own: [specific files/directories]
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>- Do NOT modify: [files owned by other teammates]
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>TASKS:
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>1. [Specific action with expected outcome]
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>2. [Specific action with expected outcome]
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>3. [Specific action with expected outcome]
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>WHEN DONE:
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>- Mark your tasks as completed via TaskUpdate
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>- Send a structured summary to team-lead via Teammate write
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>- Include: what you found, what you changed, any issues for other teammates
+</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
+</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>COORDINATION:
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>- If you need [X], message teammate &quot;[name]&quot;
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>- If you discover issues in [other area], message the lead, don&#39;t fix it yourself
+</span></code></pre></div>
+<h4 id="bad-vs-good-teammate-prompts">Bad vs Good Teammate Prompts<a class="headerlink" href="#bad-vs-good-teammate-prompts" title="Permanent link">&para;</a></h4>
+<p><strong>BAD — Too vague:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>prompt: &quot;Review the code&quot;
+</span></code></pre></div>
+<p><strong>BAD — No reporting instructions:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>prompt: &quot;Check the authentication module for security issues&quot;
+</span></code></pre></div>
+<p><strong>GOOD — Complete context:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>prompt: `
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  You are security-reviewer on team pr-review.
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  Review all files in app/services/auth/ for security vulnerabilities.
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>  Focus on:
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>  - SQL injection in query construction
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>  - XSS in any rendered output
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>  - Authentication bypass in middleware
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>  - Sensitive data exposure in logs or responses
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>  For each issue found, note:
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>  - File and line number
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>  - Severity (critical/high/medium/low)
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>  - Suggested fix
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>  Send your findings to team-lead via:
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>  Teammate({ operation: &quot;write&quot;, target_agent_id: &quot;team-lead&quot;, 
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>    value: &quot;Your structured findings here&quot; })
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>`
+</span></code></pre></div>
+<h3 id="54-designing-task-descriptions">5.4 Designing Task Descriptions<a class="headerlink" href="#54-designing-task-descriptions" title="Permanent link">&para;</a></h3>
+<p>Task descriptions are prompts for the agent that claims them. Pack in detail.</p>
+<p><strong>BAD:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fix auth&quot;</span><span class="p">,</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fix the authentication&quot;</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>GOOD:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Refactor User model: extract auth concern&quot;</span><span class="p">,</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extract authentication methods from app/models/user.rb into a new AuthenticatableUser concern at app/models/concerns/authenticatable_user.rb. Methods to extract: #authenticate, #generate_token, #refresh_token, #revoke_all_tokens. Ensure User model includes the concern. Run existing auth specs to verify nothing breaks. Mark task complete and notify team-lead with a summary of extracted methods.&quot;</span><span class="p">,</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">&quot;activeForm&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extracting auth concern from User model...&quot;</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="55-advanced-prompt-techniques">5.5 Advanced Prompt Techniques<a class="headerlink" href="#55-advanced-prompt-techniques" title="Permanent link">&para;</a></h3>
+<h4 id="technique-1-the-debate-pattern">Technique 1: The Debate Pattern<a class="headerlink" href="#technique-1-the-debate-pattern" title="Permanent link">&para;</a></h4>
+<p>Force teammates to challenge each other's findings for higher quality results:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>Spawn 5 agent teammates to investigate [problem]. Have them talk to
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>each other to try to disprove each other&#39;s theories, like a scientific
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>debate. The theory that survives active challenge is more likely correct.
+</span></code></pre></div>
+<p>This works because sequential investigation suffers from <strong>anchoring bias</strong> — once one theory is explored, subsequent investigation is biased toward it. Parallel independent investigators with active disproval produce better results.</p>
+<h4 id="technique-2-swarm-worker-self-organisation-prompt">Technique 2: Swarm Worker Self-Organisation Prompt<a class="headerlink" href="#technique-2-swarm-worker-self-organisation-prompt" title="Permanent link">&para;</a></h4>
+<p>For pools of independent tasks, use this self-organising worker prompt:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>You are a swarm worker. Your job:
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>1. Call TaskList to see available tasks
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>2. Find a task with status &#39;pending&#39; and no owner
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>3. Claim it with TaskUpdate (set owner to your name)
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>4. Start it with TaskUpdate (set status to in_progress)
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>5. Do the work
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>6. Mark it completed with TaskUpdate
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>7. Send findings to team-lead via Teammate write
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>8. Repeat until no tasks remain
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>9. If no tasks available, send idle notification and exit
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>Your name is $CLAUDE_CODE_AGENT_NAME — use it when claiming tasks.
+</span></code></pre></div>
+<h4 id="technique-3-model-selection-in-prompts">Technique 3: Model Selection in Prompts<a class="headerlink" href="#technique-3-model-selection-in-prompts" title="Permanent link">&para;</a></h4>
+<p>Use expensive models for coordination, cheap models for execution:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Create an agent team. Use Opus for the team lead (coordination matters).
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>Use Sonnet for all teammates (they&#39;re doing focused execution work).
+</span></code></pre></div>
+<p>In spawn calls:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Task({
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>  team_name: &quot;my-team&quot;,
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>  name: &quot;worker-1&quot;,
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  model: &quot;sonnet&quot;,    // Cheaper model for focused work
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>  ...
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>})
+</span></code></pre></div>
+<h4 id="technique-4-dependency-wave-planning">Technique 4: Dependency Wave Planning<a class="headerlink" href="#technique-4-dependency-wave-planning" title="Permanent link">&para;</a></h4>
+<p>Structure prompts to exploit dependency-based parallelism:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>Create these tasks with dependencies:
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>Wave 1 (parallel): Research, Design, Audit current code
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>Wave 2 (after wave 1): Implementation plan (needs research + design)
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>Wave 3 (after wave 2): Backend impl, Frontend impl, Test impl (parallel)
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>Wave 4 (after wave 3): Integration testing, Final review
+</span></code></pre></div>
+<h4 id="technique-5-context-window-hygiene-in-agent-prompts">Technique 5: Context Window Hygiene in Agent Prompts<a class="headerlink" href="#technique-5-context-window-hygiene-in-agent-prompts" title="Permanent link">&para;</a></h4>
+<p>Based on Anthropic's C compiler learnings, design for LLM limitations:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>IMPORTANT CONSTRAINTS FOR YOUR WORK:
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>- Keep logs concise. Print at most a few lines of output per operation.
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>- Log errors with ERROR prefix on the same line as the reason (for grep).
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>- Pre-compute summary statistics rather than dumping raw data.
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>- Use --fast flags for test runs (sample 10%) during development.
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>- Save detailed output to files rather than printing to terminal.
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>- Update the progress doc after each significant milestone.
+</span></code></pre></div>
+<hr />
+<h2 id="6-the-six-orchestration-patterns">6. The Six Orchestration Patterns<a class="headerlink" href="#6-the-six-orchestration-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-1-parallel-specialists-leader-pattern">Pattern 1: Parallel Specialists (Leader Pattern)<a class="headerlink" href="#pattern-1-parallel-specialists-leader-pattern" title="Permanent link">&para;</a></h3>
+<p>Multiple specialists work simultaneously on different aspects of the same codebase.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>YOU: &quot;Review this PR from security, performance, and architecture angles&quot;
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>LEAD spawns:
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>  security-reviewer  → focuses on vulnerabilities
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>  perf-reviewer      → focuses on N+1, memory, algorithms
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>  arch-reviewer      → focuses on SOLID, patterns, testability
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>All work in parallel → findings to lead → synthesised report
+</span></code></pre></div>
+<p><strong>Best for:</strong> Code reviews, audits, multi-dimensional analysis.</p>
+<h3 id="pattern-2-pipeline-sequential-dependencies">Pattern 2: Pipeline (Sequential Dependencies)<a class="headerlink" href="#pattern-2-pipeline-sequential-dependencies" title="Permanent link">&para;</a></h3>
+<p>Each stage depends on the previous, work flows through a pipeline.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Research → Plan → Implement → Test → Review
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>TaskUpdate({ taskId: &quot;2&quot;, addBlockedBy: [&quot;1&quot;] })
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>TaskUpdate({ taskId: &quot;3&quot;, addBlockedBy: [&quot;2&quot;] })
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>TaskUpdate({ taskId: &quot;4&quot;, addBlockedBy: [&quot;3&quot;] })
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>TaskUpdate({ taskId: &quot;5&quot;, addBlockedBy: [&quot;4&quot;] })
+</span></code></pre></div>
+<p><strong>Best for:</strong> Feature development with clear phases, migration workflows.</p>
+<h3 id="pattern-3-swarm-self-organising-workers">Pattern 3: Swarm (Self-Organising Workers)<a class="headerlink" href="#pattern-3-swarm-self-organising-workers" title="Permanent link">&para;</a></h3>
+<p>A pool of identical workers racing to claim independent tasks.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Tasks: Review file A, Review file B, Review file C, ... (no dependencies)
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>Workers: worker-1, worker-2, worker-3 (same prompt, self-organising)
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>Workers poll TaskList → claim pending tasks → complete → claim next
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>Natural load balancing: faster workers handle more tasks
+</span></code></pre></div>
+<p><strong>Best for:</strong> Bulk file processing, independent reviews, codebase-wide changes.</p>
+<h3 id="pattern-4-research-implementation">Pattern 4: Research + Implementation<a class="headerlink" href="#pattern-4-research-implementation" title="Permanent link">&para;</a></h3>
+<p>Synchronous research phase feeds into parallel implementation.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Step 1: Subagent researches best practices (synchronous, returns result)
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>Step 2: Research feeds into team prompt for parallel implementation
+</span></code></pre></div>
+<p><strong>Best for:</strong> Greenfield features, technology evaluations, informed decisions.</p>
+<h3 id="pattern-5-plan-approval-workflow">Pattern 5: Plan Approval Workflow<a class="headerlink" href="#pattern-5-plan-approval-workflow" title="Permanent link">&para;</a></h3>
+<p>Requires explicit plan approval before any implementation begins.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Architect teammate creates plan → Lead reviews → Approve/Reject with feedback
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>Only after approval does implementation proceed
+</span></code></pre></div>
+<p><strong>Best for:</strong> High-stakes changes, regulated environments, architectural decisions.</p>
+<h3 id="pattern-6-competing-hypotheses-debate">Pattern 6: Competing Hypotheses (Debate)<a class="headerlink" href="#pattern-6-competing-hypotheses-debate" title="Permanent link">&para;</a></h3>
+<p>Multiple agents investigate independently and challenge each other.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>5 agents investigate a bug → each proposes a theory
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>→ agents try to disprove each other&#39;s theories
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>→ surviving theory is likely the root cause
+</span></code></pre></div>
+<p><strong>Best for:</strong> Complex debugging, root cause analysis, design decisions.</p>
+<hr />
+<h2 id="7-claudemd-configuration-for-teams">7. CLAUDE.md Configuration for Teams<a class="headerlink" href="#7-claudemd-configuration-for-teams" title="Permanent link">&para;</a></h2>
+<p>Your project's <code>CLAUDE.md</code> is automatically loaded by ALL teammates. Use it to provide persistent team-wide guidance.</p>
+<h3 id="recommended-claudemd-structure-for-teams">Recommended CLAUDE.md Structure for Teams<a class="headerlink" href="#recommended-claudemd-structure-for-teams" title="Permanent link">&para;</a></h3>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="gh"># Project: [Name]</span>
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="gu">## Architecture</span>
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>[Brief description of project structure and key directories]
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="gu">## Agent Team Configuration</span>
+</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>
+</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>When working on this project with multiple agents, use these role definitions:
+</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>
+</span><span id="__span-34-10"><a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Backend Agent**</span>: Focuses on /src/server/. Follows Express middleware patterns.
+</span><span id="__span-34-11"><a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>  Uses TypeORM for database operations.
+</span><span id="__span-34-12"><a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Frontend Agent**</span>: Focuses on /src/client/. Uses component library in
+</span><span id="__span-34-13"><a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a>  /src/client/components/shared/. Follows Tailwind conventions.
+</span><span id="__span-34-14"><a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Test Agent**</span>: Writes tests in /tests/. Uses Jest with custom utilities
+</span><span id="__span-34-15"><a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a>  in /tests/helpers/.
+</span><span id="__span-34-16"><a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Review Agent**</span>: Reviews all output for security vulnerabilities, type safety,
+</span><span id="__span-34-17"><a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a>  and adherence to ESLint configuration.
+</span><span id="__span-34-18"><a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a>
+</span><span id="__span-34-19"><a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a><span class="gu">## File Ownership Boundaries</span>
+</span><span id="__span-34-20"><a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a><span class="k">-</span><span class="w"> </span>/src/server/ → backend agents only
+</span><span id="__span-34-21"><a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a><span class="k">-</span><span class="w"> </span>/src/client/ → frontend agents only
+</span><span id="__span-34-22"><a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a><span class="k">-</span><span class="w"> </span>/tests/ → test agents only
+</span><span id="__span-34-23"><a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a><span class="k">-</span><span class="w"> </span>/src/shared/ → coordinate via lead before modifying
+</span><span id="__span-34-24"><a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a>
+</span><span id="__span-34-25"><a id="__codelineno-34-25" name="__codelineno-34-25" href="#__codelineno-34-25"></a><span class="gu">## Coding Conventions</span>
+</span><span id="__span-34-26"><a id="__codelineno-34-26" name="__codelineno-34-26" href="#__codelineno-34-26"></a><span class="k">-</span><span class="w"> </span>Prefer small diffs; no unrequested refactors
+</span><span id="__span-34-27"><a id="__codelineno-34-27" name="__codelineno-34-27" href="#__codelineno-34-27"></a><span class="k">-</span><span class="w"> </span>Add/modify tests for all changed logic
+</span><span id="__span-34-28"><a id="__codelineno-34-28" name="__codelineno-34-28" href="#__codelineno-34-28"></a><span class="k">-</span><span class="w"> </span>Conventional commits; one issue per PR
+</span><span id="__span-34-29"><a id="__codelineno-34-29" name="__codelineno-34-29" href="#__codelineno-34-29"></a><span class="k">-</span><span class="w"> </span>Keep solutions minimal and focused
+</span><span id="__span-34-30"><a id="__codelineno-34-30" name="__codelineno-34-30" href="#__codelineno-34-30"></a>
+</span><span id="__span-34-31"><a id="__codelineno-34-31" name="__codelineno-34-31" href="#__codelineno-34-31"></a><span class="gu">## DX Commands</span>
+</span><span id="__span-34-32"><a id="__codelineno-34-32" name="__codelineno-34-32" href="#__codelineno-34-32"></a><span class="k">-</span><span class="w"> </span><span class="sb">`npm run dev`</span> — start dev server
+</span><span id="__span-34-33"><a id="__codelineno-34-33" name="__codelineno-34-33" href="#__codelineno-34-33"></a><span class="k">-</span><span class="w"> </span><span class="sb">`npm test`</span> — run test suite
+</span><span id="__span-34-34"><a id="__codelineno-34-34" name="__codelineno-34-34" href="#__codelineno-34-34"></a><span class="k">-</span><span class="w"> </span><span class="sb">`npm run lint`</span> — check linting
+</span><span id="__span-34-35"><a id="__codelineno-34-35" name="__codelineno-34-35" href="#__codelineno-34-35"></a><span class="k">-</span><span class="w"> </span><span class="sb">`npm run build`</span> — production build
+</span><span id="__span-34-36"><a id="__codelineno-34-36" name="__codelineno-34-36" href="#__codelineno-34-36"></a>
+</span><span id="__span-34-37"><a id="__codelineno-34-37" name="__codelineno-34-37" href="#__codelineno-34-37"></a><span class="gu">## Definition of Done</span>
+</span><span id="__span-34-38"><a id="__codelineno-34-38" name="__codelineno-34-38" href="#__codelineno-34-38"></a><span class="k">-</span><span class="w"> </span>Tests pass; coverage not lower
+</span><span id="__span-34-39"><a id="__codelineno-34-39" name="__codelineno-34-39" href="#__codelineno-34-39"></a><span class="k">-</span><span class="w"> </span>Lint passes
+</span><span id="__span-34-40"><a id="__codelineno-34-40" name="__codelineno-34-40" href="#__codelineno-34-40"></a><span class="k">-</span><span class="w"> </span>Types check
+</span><span id="__span-34-41"><a id="__codelineno-34-41" name="__codelineno-34-41" href="#__codelineno-34-41"></a><span class="k">-</span><span class="w"> </span>PR description includes summary, rationale, and test notes
+</span><span id="__span-34-42"><a id="__codelineno-34-42" name="__codelineno-34-42" href="#__codelineno-34-42"></a>
+</span><span id="__span-34-43"><a id="__codelineno-34-43" name="__codelineno-34-43" href="#__codelineno-34-43"></a><span class="gu">## Agent Instructions</span>
+</span><span id="__span-34-44"><a id="__codelineno-34-44" name="__codelineno-34-44" href="#__codelineno-34-44"></a><span class="k">-</span><span class="w"> </span>Before coding: propose a plan in bullets; wait for approval
+</span><span id="__span-34-45"><a id="__codelineno-34-45" name="__codelineno-34-45" href="#__codelineno-34-45"></a><span class="k">-</span><span class="w"> </span>Avoid over-engineering
+</span><span id="__span-34-46"><a id="__codelineno-34-46" name="__codelineno-34-46" href="#__codelineno-34-46"></a><span class="k">-</span><span class="w"> </span>When you complete work, send a structured summary to the lead
+</span><span id="__span-34-47"><a id="__codelineno-34-47" name="__codelineno-34-47" href="#__codelineno-34-47"></a><span class="k">-</span><span class="w"> </span>If you discover issues outside your scope, message the lead — don&#39;t fix it yourself
+</span></code></pre></div>
+<h3 id="key-principles-for-claudemd-in-team-context">Key Principles for CLAUDE.md in Team Context<a class="headerlink" href="#key-principles-for-claudemd-in-team-context" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Define file ownership boundaries explicitly</strong> — prevents two teammates editing the same file</li>
+<li><strong>Include DX commands</strong> — teammates need to know how to run tests, lint, build</li>
+<li><strong>Set conventions</strong> — every teammate reads these, ensuring consistency</li>
+<li><strong>Keep it under ~2,500 tokens</strong> — it's loaded into EVERY teammate's context</li>
+<li><strong>Include agent-specific instructions</strong> — reporting expectations, coordination rules</li>
+</ol>
+<hr />
+<h2 id="8-cost-optimisation-strategies">8. Cost Optimisation Strategies<a class="headerlink" href="#8-cost-optimisation-strategies" title="Permanent link">&para;</a></h2>
+<p>Agent teams are token-hungry. Every teammate is a full Claude session.</p>
+<h3 id="token-cost-by-approach-approximate">Token Cost by Approach (Approximate)<a class="headerlink" href="#token-cost-by-approach-approximate" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Tokens (3 workers)</th>
+<th>Relative Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solo session</td>
+<td>~200k</td>
+<td>1x</td>
+</tr>
+<tr>
+<td>3 Subagents</td>
+<td>~440k</td>
+<td>~2.2x</td>
+</tr>
+<tr>
+<td>3-person team</td>
+<td>~800k</td>
+<td>~4x</td>
+</tr>
+<tr>
+<td>5-person team</td>
+<td>~1.2M+</td>
+<td>~6x</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optimisation-strategies">Optimisation Strategies<a class="headerlink" href="#optimisation-strategies" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>Use Sonnet for workers, Opus for lead.</strong> The lead needs strong reasoning for coordination. Workers doing focused execution can use cheaper models.</p>
+</li>
+<li>
+<p><strong>Size tasks appropriately.</strong> Aim for 5-6 tasks per teammate. Too granular = coordination overhead dominates. Too broad = you lose parallelism benefits.</p>
+</li>
+<li>
+<p><strong>Use <code>write</code> not <code>broadcast</code>.</strong> Broadcasting sends N messages for N teammates. Target specific teammates with <code>write</code>.</p>
+</li>
+<li>
+<p><strong>Plan before parallelising.</strong> A plan costs ~10k tokens. A misdirected team costs 500k+.</p>
+</li>
+<li>
+<p><strong>Use subagents for simple delegation.</strong> If workers don't need to talk to each other, subagents are cheaper.</p>
+</li>
+<li>
+<p><strong>Pre-approve permissions.</strong> Permission prompt floods waste tokens and time on back-and-forth.</p>
+</li>
+<li>
+<p><strong>Keep CLAUDE.md concise.</strong> It's loaded into every teammate's context. Bloated CLAUDE.md multiplied by N teammates = significant overhead.</p>
+</li>
+</ol>
+<hr />
+<h2 id="9-lessons-from-anthropics-c-compiler-16-agent-case-study">9. Lessons from Anthropic's C Compiler (16-Agent Case Study)<a class="headerlink" href="#9-lessons-from-anthropics-c-compiler-16-agent-case-study" title="Permanent link">&para;</a></h2>
+<p>Anthropic researcher Nicholas Carlini tasked 16 parallel Claude agents with building a Rust-based C compiler from scratch — 100,000 lines of code, capable of compiling the Linux kernel. This is the most ambitious public agent team deployment and its lessons are invaluable.</p>
+<h3 id="key-lessons">Key Lessons<a class="headerlink" href="#key-lessons" title="Permanent link">&para;</a></h3>
+<h4 id="1-write-extremely-high-quality-tests">1. Write Extremely High-Quality Tests<a class="headerlink" href="#1-write-extremely-high-quality-tests" title="Permanent link">&para;</a></h4>
+<p>The test harness is your <strong>surrogate supervision</strong>. Without human oversight, agents will solve whatever the tests reward. If your tests are imperfect, agents solve the wrong problem.</p>
+<p><strong>Practical application:</strong> Before launching a team, invest heavily in your verification layer — tests, linters, type checks. These are what keep agents on track.</p>
+<h4 id="2-design-the-environment-for-llms-not-humans">2. Design the Environment for LLMs, Not Humans<a class="headerlink" href="#2-design-the-environment-for-llms-not-humans" title="Permanent link">&para;</a></h4>
+<p>Claude has specific limitations that your environment must account for:</p>
+<ul>
+<li><strong>Context window pollution:</strong> Test output should be minimal — a few lines, not thousands. Log details to files. Pre-compute summary statistics.</li>
+<li><strong>Time blindness:</strong> Claude can't tell time and will happily spend hours on tests. Include <code>--fast</code> options that run 10% samples. Print progress infrequently.</li>
+<li><strong>Orientation cost:</strong> Each agent starts fresh. Include extensive READMEs and progress files that get updated frequently with current status.</li>
+</ul>
+<h4 id="3-make-parallelism-structurally-easy">3. Make Parallelism Structurally Easy<a class="headerlink" href="#3-make-parallelism-structurally-easy" title="Permanent link">&para;</a></h4>
+<p>When there are many independent failing tests, parallelism is trivial — each agent picks a different one. But when there's one giant task, all agents pile onto the same problem.</p>
+<p><strong>Solution:</strong> Use techniques that decompose monolithic tasks into independent units. In the compiler case, they used GCC as an oracle to randomly assign different file subsets to different agents.</p>
+<p><strong>Practical application:</strong> Structure your work so each agent can claim a distinct, non-overlapping unit. File-based ownership is the simplest approach.</p>
+<h4 id="4-use-specialised-agent-roles">4. Use Specialised Agent Roles<a class="headerlink" href="#4-use-specialised-agent-roles" title="Permanent link">&para;</a></h4>
+<p>Not all agents need to do the same thing. The compiler project used:</p>
+<ul>
+<li><strong>Feature agents</strong> — implementing new compiler features</li>
+<li><strong>Deduplication agent</strong> — finding and coalescing duplicate code</li>
+<li><strong>Performance agent</strong> — optimising the compiler itself</li>
+<li><strong>Code quality agent</strong> — structural improvements and Rust idioms</li>
+<li><strong>Documentation agent</strong> — maintaining docs</li>
+<li><strong>Code critique agent</strong> — reviewing from a Rust expert perspective</li>
+</ul>
+<p><strong>Practical application:</strong> Think about what roles a human team would have, then create agent roles to match.</p>
+<h4 id="5-git-based-coordination-works-at-scale">5. Git-Based Coordination Works at Scale<a class="headerlink" href="#5-git-based-coordination-works-at-scale" title="Permanent link">&para;</a></h4>
+<p>The 16-agent system used a simple git-based locking mechanism:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>1. Agent writes a lock file to current_tasks/ (e.g., current_tasks/parse_if_statement.txt)
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>2. Agent works on the task
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>3. Agent pulls, merges, pushes, removes the lock
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>4. If two agents claim the same task, git sync forces the second to pick another
+</span></code></pre></div>
+<p>Merge conflicts are frequent but Claude handles them well.</p>
+<hr />
+<h2 id="10-production-best-practices">10. Production Best Practices<a class="headerlink" href="#10-production-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="pre-flight-checklist">Pre-Flight Checklist<a class="headerlink" href="#pre-flight-checklist" title="Permanent link">&para;</a></h3>
+<p>Before launching a team:</p>
+<ul>
+<li>[ ] Is the task complex enough to warrant a team? (If not, use solo or subagents)</li>
+<li>[ ] Do you have a clear plan with task decomposition?</li>
+<li>[ ] Are file ownership boundaries defined?</li>
+<li>[ ] Are tests and verification in place?</li>
+<li>[ ] Is CLAUDE.md configured with team conventions?</li>
+<li>[ ] Are permissions pre-approved for common operations?</li>
+<li>[ ] Have you chosen the right model for each role?</li>
+</ul>
+<h3 id="during-execution">During Execution<a class="headerlink" href="#during-execution" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Monitor actively.</strong> Use split-pane mode (tmux) to catch teammates going off-track early.</li>
+<li><strong>Steer early.</strong> Course-correcting a teammate at 20% completion costs far less than at 80%.</li>
+<li><strong>Check the task list.</strong> Use <code>TaskList()</code> or read <code>~/.claude/tasks/{team}/*.json</code> to track progress.</li>
+<li><strong>Watch inboxes.</strong> <code>cat ~/.claude/teams/{team}/inboxes/team-lead.json | jq '.'</code></li>
+</ol>
+<h3 id="shutdown-cleanup">Shutdown &amp; Cleanup<a class="headerlink" href="#shutdown-cleanup" title="Permanent link">&para;</a></h3>
+<p>Always follow the graceful shutdown sequence:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>1. requestShutdown for ALL teammates
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>2. Wait for shutdown approvals
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>3. Verify no active members remain
+</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>4. Call cleanup to remove team files
+</span></code></pre></div>
+<p>Never leave orphaned teams. If a teammate crashes, wait for the 5-minute heartbeat timeout, then its tasks can be reclaimed.</p>
+<h3 id="the-8020-rule">The 80/20 Rule<a class="headerlink" href="#the-8020-rule" title="Permanent link">&para;</a></h3>
+<p>Successful teams allocate <strong>80% to planning and review, 20% to execution</strong>. The better your specs, the better the agent output. This is the single strongest predictor of team success.</p>
+<hr />
+<h2 id="11-anti-patterns-to-avoid">11. Anti-Patterns to Avoid<a class="headerlink" href="#11-anti-patterns-to-avoid" title="Permanent link">&para;</a></h2>
+<h3 id="build-me-an-app">❌ "Build me an app"<a class="headerlink" href="#build-me-an-app" title="Permanent link">&para;</a></h3>
+<p>Vague prompts burn tokens while agents flail. Always provide specific, scoped tasks.</p>
+<h3 id="two-teammates-editing-the-same-file">❌ Two Teammates Editing the Same File<a class="headerlink" href="#two-teammates-editing-the-same-file" title="Permanent link">&para;</a></h3>
+<p>This leads to overwrites and merge conflicts. Break work so each teammate owns different files. Same boundary-setting you'd do with a human team.</p>
+<h3 id="skipping-the-plan-step">❌ Skipping the Plan Step<a class="headerlink" href="#skipping-the-plan-step" title="Permanent link">&para;</a></h3>
+<p>Jumping straight to a team without a plan means the lead has to figure out task decomposition on the fly — which it can do, but you lose the chance to steer it.</p>
+<h3 id="over-broadcasting">❌ Over-Broadcasting<a class="headerlink" href="#over-broadcasting" title="Permanent link">&para;</a></h3>
+<p><code>broadcast</code> sends N messages for N teammates. Use <code>write</code> for targeted communication. Reserve broadcast for critical issues only.</p>
+<h3 id="under-specifying-teammate-context">❌ Under-Specifying Teammate Context<a class="headerlink" href="#under-specifying-teammate-context" title="Permanent link">&para;</a></h3>
+<p>Teammates start with a blank conversation. Whatever context they need, the lead MUST provide in the spawn prompt. Skimping on context is the number one reason teammates produce mediocre work.</p>
+<h3 id="using-teams-for-simple-tasks">❌ Using Teams for Simple Tasks<a class="headerlink" href="#using-teams-for-simple-tasks" title="Permanent link">&para;</a></h3>
+<p>If a single agent can handle it in one context window, don't add coordination overhead. Teams should only be used when parallelism genuinely adds value.</p>
+<h3 id="ignoring-token-costs">❌ Ignoring Token Costs<a class="headerlink" href="#ignoring-token-costs" title="Permanent link">&para;</a></h3>
+<p>Agent teams use significantly more tokens than single sessions. Don't use Opus for every worker. Match model capability to task complexity.</p>
+<h3 id="not-pre-approving-permissions">❌ Not Pre-Approving Permissions<a class="headerlink" href="#not-pre-approving-permissions" title="Permanent link">&para;</a></h3>
+<p>Each teammate generates permission prompts independently. Without pre-approval, you'll spend more time clicking "allow" than reviewing actual work.</p>
+<hr />
+<h2 id="12-quick-reference-cheat-sheet">12. Quick Reference Cheat Sheet<a class="headerlink" href="#12-quick-reference-cheat-sheet" title="Permanent link">&para;</a></h2>
+<h3 id="enable-agent-teams_1">Enable Agent Teams<a class="headerlink" href="#enable-agent-teams_1" title="Permanent link">&para;</a></h3>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="spawn-a-subagent-no-team">Spawn a Subagent (No Team)<a class="headerlink" href="#spawn-a-subagent-no-team" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>Task({ subagent_type: &quot;Explore&quot;, description: &quot;Find files&quot;, prompt: &quot;...&quot; })
+</span></code></pre></div>
+<h3 id="create-a-team-spawn-teammate">Create a Team + Spawn Teammate<a class="headerlink" href="#create-a-team-spawn-teammate" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Teammate({ operation: &quot;spawnTeam&quot;, team_name: &quot;my-team&quot; })
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>Task({
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>  team_name: &quot;my-team&quot;,
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>  name: &quot;worker-1&quot;,
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>  subagent_type: &quot;general-purpose&quot;,
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>  model: &quot;sonnet&quot;,
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>  prompt: &quot;Your detailed instructions here...&quot;,
+</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>  run_in_background: true
+</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>})
+</span></code></pre></div>
+<h3 id="create-task-with-dependencies">Create Task with Dependencies<a class="headerlink" href="#create-task-with-dependencies" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>TaskCreate({ subject: &quot;Step 1: Research&quot;, description: &quot;...&quot; })
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>TaskCreate({ subject: &quot;Step 2: Implement&quot;, description: &quot;...&quot; })
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>TaskUpdate({ taskId: &quot;2&quot;, addBlockedBy: [&quot;1&quot;] })
+</span></code></pre></div>
+<h3 id="message-a-teammate">Message a Teammate<a class="headerlink" href="#message-a-teammate" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Teammate({ operation: &quot;write&quot;, target_agent_id: &quot;worker-1&quot;, value: &quot;...&quot; })
+</span></code></pre></div>
+<h3 id="broadcast-to-all">Broadcast to All<a class="headerlink" href="#broadcast-to-all" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Teammate({ operation: &quot;broadcast&quot;, name: &quot;team-lead&quot;, value: &quot;Status check&quot; })
+</span></code></pre></div>
+<h3 id="shutdown-sequence">Shutdown Sequence<a class="headerlink" href="#shutdown-sequence" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Teammate({ operation: &quot;requestShutdown&quot;, target_agent_id: &quot;worker-1&quot; })
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>// Wait for approval...
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>Teammate({ operation: &quot;cleanup&quot; })
+</span></code></pre></div>
+<h3 id="debug-commands">Debug Commands<a class="headerlink" href="#debug-commands" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c1"># Check team config</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/config.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.members[] | {name, agentType}&#39;</span>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="c1"># Check inboxes</span>
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/inboxes/team-lead.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.&#39;</span>
+</span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a>
+</span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="c1"># List tasks</span>
+</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>cat<span class="w"> </span>~/.claude/tasks/<span class="o">{</span>team<span class="o">}</span>/*.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;{id, subject, status, owner}&#39;</span>
+</span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a>
+</span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a><span class="c1"># Watch for messages</span>
+</span><span id="__span-44-11"><a id="__codelineno-44-11" name="__codelineno-44-11" href="#__codelineno-44-11"></a>tail<span class="w"> </span>-f<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/inboxes/team-lead.json
+</span></code></pre></div>
+<h3 id="built-in-agent-types">Built-in Agent Types<a class="headerlink" href="#built-in-agent-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Tools</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Explore</code></td>
+<td>Read-only, fast (Haiku)</td>
+<td>Codebase exploration, searches</td>
+</tr>
+<tr>
+<td><code>Plan</code></td>
+<td>Read-only</td>
+<td>Architecture, implementation planning</td>
+</tr>
+<tr>
+<td><code>Bash</code></td>
+<td>Bash only</td>
+<td>Git ops, commands, system tasks</td>
+</tr>
+<tr>
+<td><code>general-purpose</code></td>
+<td>All tools</td>
+<td>Implementation, multi-step work</td>
+</tr>
+<tr>
+<td><code>claude-code-guide</code></td>
+<td>Read + Web</td>
+<td>Questions about Claude Code itself</td>
+</tr>
+</tbody>
+</table>
+<h3 id="model-selection-guide">Model Selection Guide<a class="headerlink" href="#model-selection-guide" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Recommended Model</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Team Lead</td>
+<td>Opus</td>
+<td>Best reasoning for coordination</td>
+</tr>
+<tr>
+<td>Feature Implementer</td>
+<td>Sonnet</td>
+<td>Good balance of capability and cost</td>
+</tr>
+<tr>
+<td>Researcher / Explorer</td>
+<td>Haiku</td>
+<td>Fast, cheap for read-only work</td>
+</tr>
+<tr>
+<td>Code Reviewer</td>
+<td>Sonnet</td>
+<td>Needs reasoning but focused scope</td>
+</tr>
+<tr>
+<td>Test Writer</td>
+<td>Sonnet</td>
+<td>Needs to understand code and write tests</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="summary-the-10-commandments-of-agent-teams">Summary: The 10 Commandments of Agent Teams<a class="headerlink" href="#summary-the-10-commandments-of-agent-teams" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Plan first, parallelise second.</strong> A 10k-token plan saves you from a 500k-token wrong direction.</li>
+<li><strong>Give teammates rich context.</strong> They start with nothing but your spawn prompt and CLAUDE.md.</li>
+<li><strong>Define file ownership boundaries.</strong> Two agents editing the same file = chaos.</li>
+<li><strong>Size tasks at 5-6 per teammate.</strong> The sweet spot between coordination overhead and parallelism.</li>
+<li><strong>Use cheap models for workers, expensive models for coordination.</strong></li>
+<li><strong>Write high-quality tests.</strong> Tests are your surrogate supervision — they keep agents on track.</li>
+<li><strong>Design your environment for LLMs.</strong> Concise output, progress files, summary statistics.</li>
+<li><strong>Always clean up.</strong> Shutdown all teammates, then cleanup. Never leave orphaned teams.</li>
+<li><strong>Monitor and steer early.</strong> Course-correcting at 20% is much cheaper than at 80%.</li>
+<li><strong>Know when NOT to use teams.</strong> If a solo session can handle it, don't add coordination overhead.</li>
+</ol>
+<hr />
+<p><em>Guide compiled from: Anthropic official documentation, Anthropic engineering blog (C compiler case study by Nicholas Carlini), Addy Osmani's analysis, alexop.dev practical patterns, kieranklaassen's Swarm Orchestration Skill, SitePoint guide, Starmorph production case studies, and community practitioner reports. February 2026.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
