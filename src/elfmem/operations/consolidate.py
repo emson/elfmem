@@ -132,6 +132,24 @@ def _fallback_analysis() -> BlockAnalysis:
     return BlockAnalysis(alignment_score=0.5, tags=[], summary=None)
 
 
+def _strip_metadata_prefix(content: str) -> str:
+    """Strip metadata prefixes from content for cleaner embedding.
+
+    Handles common formats like "[date] speaker: text" or "speaker: text".
+    Returns the text portion only, which produces better semantic embeddings
+    by removing noise from dates, speakers, and bracketed metadata.
+    Falls back to original content if no prefix is detected.
+    """
+    # Strip leading bracketed metadata: [anything] rest → rest
+    text = content
+    if text.startswith("[") and "] " in text:
+        text = text.split("] ", 1)[1]
+    # Strip speaker prefix: "Name: text" → "text"
+    if ": " in text:
+        text = text.split(": ", 1)[1]
+    return text or content
+
+
 def _compute_edge_decisions(
     newly_promoted: list[tuple[dict[str, Any], np.ndarray]],
     all_active: list[tuple[dict[str, Any], np.ndarray]],
@@ -188,6 +206,8 @@ async def _collect_decisions(
     contradiction_similarity_prefilter: float,
     edge_score_threshold: float,
     edge_degree_cap: int,
+    skip_llm: bool = False,
+    skip_contradictions: bool = False,
 ) -> tuple[list[_BlockDecision], list[_EdgeDecision], list[_ContradictionDecision], int]:
     """Read inbox, embed, score with LLM, and compute all decisions.
 
@@ -261,13 +281,20 @@ async def _collect_decisions(
             evolving_vecs.pop(best_active["content"].strip().lower(), None)
 
         # LLM scoring — external I/O with timeout, shared lock only.
-        try:
-            analysis = await asyncio.wait_for(
-                llm.process_block(content, ""),
-                timeout=_LLM_PROCESS_TIMEOUT,
-            )
-        except TimeoutError:
+        # skip_llm: bypass LLM calls entirely (embed + promote only).
+        # Blocks are promoted with neutral scoring. Useful for benchmarks
+        # and bulk ingestion where retrieval speed matters more than
+        # alignment scoring or contradiction detection.
+        if skip_llm:
             analysis = _fallback_analysis()
+        else:
+            try:
+                analysis = await asyncio.wait_for(
+                    llm.process_block(content, ""),
+                    timeout=_LLM_PROCESS_TIMEOUT,
+                )
+            except TimeoutError:
+                analysis = _fallback_analysis()
 
         inferred_tags = analysis.tags or []
         all_block_tags = list({*tags_map.get(block_id, []), *inferred_tags})
@@ -302,6 +329,12 @@ async def _collect_decisions(
         # Reuses cached cosine similarities from the near-dup pass above.
         # New items added to evolving_vecs (from earlier batch promotions) are
         # not in sim_cache; their similarity is computed on demand.
+        # Skipped when skip_llm=True (no LLM at all) or skip_contradictions=True
+        # (keeps process_block summaries but avoids the O(n²) contradiction loop).
+        if skip_llm or skip_contradictions:
+            evolving_vecs[norm_content] = (block, vec)
+            newly_promoted.append((block, vec))
+            continue
         for _, (a_block, a_vec) in evolving_vecs.items():
             sim = sim_cache.get(a_block["id"]) or cosine_similarity(vec, a_vec)
             if sim < contradiction_similarity_prefilter:
@@ -430,6 +463,8 @@ async def consolidate(
     edge_score_threshold: float = EDGE_SCORE_THRESHOLD,
     edge_degree_cap: int = EDGE_DEGREE_CAP,
     contradiction_similarity_prefilter: float = CONTRADICTION_SIMILARITY_PREFILTER,
+    skip_llm: bool = False,
+    skip_contradictions: bool = False,
 ) -> ConsolidateResult:
     """Promote all inbox blocks through the full consolidation pipeline.
 
@@ -457,6 +492,8 @@ async def consolidate(
             contradiction_similarity_prefilter=contradiction_similarity_prefilter,
             edge_score_threshold=edge_score_threshold,
             edge_degree_cap=edge_degree_cap,
+            skip_llm=skip_llm,
+            skip_contradictions=skip_contradictions,
         )
     )
 

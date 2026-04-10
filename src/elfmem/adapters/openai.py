@@ -14,6 +14,7 @@ Embedding (OpenAIEmbeddingAdapter):
 from __future__ import annotations
 
 import json
+import re
 
 import numpy as np
 import openai
@@ -25,6 +26,22 @@ from elfmem.adapters.models import BlockAnalysisModel, ContradictionScore
 from elfmem.prompts import BLOCK_ANALYSIS_PROMPT, CONTRADICTION_PROMPT, VALID_SELF_TAGS
 from elfmem.token_counter import TokenCounter
 from elfmem.types import BlockAnalysis
+
+_MARKDOWN_JSON_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+
+
+def _extract_json(text: str) -> str:
+    """Strip markdown code fences from LLM responses.
+
+    Many local models (Gemma via LM Studio, Ollama) wrap JSON in markdown
+    fences even when asked for raw JSON. This breaks model_validate_json().
+    Strips fences if present; no-op for clean JSON.
+    """
+    stripped = text.strip()
+    match = _MARKDOWN_JSON_RE.search(stripped)
+    if match:
+        return match.group(1).strip()
+    return stripped
 
 
 class OpenAILLMAdapter:
@@ -126,7 +143,7 @@ class OpenAILLMAdapter:
                 )
                 self._json_mode_supported = True
                 self._record_usage(response.usage)
-                return response.choices[0].message.content or ""
+                return _extract_json(response.choices[0].message.content or "")
             except openai.BadRequestError:
                 # Provider does not support JSON mode — remember and use plain text.
                 self._json_mode_supported = False
@@ -137,7 +154,7 @@ class OpenAILLMAdapter:
             messages=messages,
         )
         self._record_usage(response.usage)
-        return response.choices[0].message.content or ""
+        return _extract_json(response.choices[0].message.content or "")
 
     async def process_block(self, block: str, self_context: str) -> BlockAnalysis:
         """Analyse a memory block: alignment score, self-tags, and summary.

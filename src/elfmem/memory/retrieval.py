@@ -87,6 +87,7 @@ async def hybrid_retrieve(
     all_ids = [b["id"] for b, _, _ in scored_inputs]
     centralities = await compute_centrality(conn, all_ids)
     max_reinforcement = max((b["reinforcement_count"] for b, _, _ in scored_inputs), default=0)
+    tags_map = await queries.get_tags_batch(conn, all_ids)
 
     # Build embedding map for Stage 5 MMR (extracted before stage 4 scoring)
     embedding_map: dict[str, Any] = {
@@ -102,6 +103,7 @@ async def hybrid_retrieve(
         centralities=centralities,
         max_reinforcement_count=max_reinforcement,
         top_k=top_k,
+        tags_map=tags_map,
     )
 
     # Stage 5: MMR diversity reordering (query-aware retrievals with embeddings only)
@@ -178,6 +180,7 @@ def _stage_4_composite_score(
     centralities: dict[str, float],
     max_reinforcement_count: int,
     top_k: int,
+    tags_map: dict[str, list[str]] | None = None,
 ) -> list[ScoredBlock]:
     """Stage 4: Compute composite score for all candidates.
 
@@ -211,7 +214,7 @@ def _stage_4_composite_score(
             ScoredBlock(
                 id=block_id,
                 content=block.get("summary") or block.get("content", ""),
-                tags=[],
+                tags=tags_map.get(block_id, []) if tags_map else [],
                 similarity=similarity,
                 confidence=confidence,
                 recency=recency,
