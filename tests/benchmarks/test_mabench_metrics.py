@@ -1,6 +1,10 @@
 """Tests for MemoryAgentBench metrics."""
 
-from benchmarks.memoryagentbench.metrics import (
+import pytest
+
+pytest.importorskip("rouge_score", reason="benchmark dependency — install with: uv pip install rouge-score")
+
+from benchmarks.memoryagentbench.metrics import (  # noqa: E402
     exact_match,
     f1_score,
     normalize_answer,
