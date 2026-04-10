@@ -2,9 +2,9 @@
 
 import pytest
 
-nltk = pytest.importorskip("nltk", reason="benchmark dependency — install with: uv pip install nltk")
+nltk = pytest.importorskip("nltk", reason="nltk not installed")
 
-from benchmarks.locomo.metrics import (  # noqa: E402
+from benchmarks.locomo.metrics import (
     adversarial_score,
     f1_score,
     multihop_f1,

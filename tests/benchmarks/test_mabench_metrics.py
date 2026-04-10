@@ -2,9 +2,9 @@
 
 import pytest
 
-pytest.importorskip("rouge_score", reason="benchmark dependency — install with: uv pip install rouge-score")
+pytest.importorskip("rouge_score", reason="rouge-score not installed")
 
-from benchmarks.memoryagentbench.metrics import (  # noqa: E402
+from benchmarks.memoryagentbench.metrics import (
     exact_match,
     f1_score,
     normalize_answer,
