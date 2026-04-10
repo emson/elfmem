@@ -275,7 +275,9 @@ class TestConsolidateSkipLLM:
         """TC-L-008: skip_llm=True sets confidence to 0.50 (no alignment scoring)."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
-            await learn(conn, content="neutral confidence block", category="knowledge", source="api")
+            await learn(
+                conn, content="neutral confidence block", category="knowledge", source="api"
+            )
             await consolidate(
                 conn, llm=mock_llm, embedding_svc=mock_embedding,
                 current_active_hours=1.0, skip_llm=True,
