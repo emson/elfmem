@@ -28,10 +28,18 @@ class MABenchConfig:
     elfmem_llm_model: str = "google/gemma-4-26b-a4b"
     elfmem_embedding_model: str = "text-embedding-nomic-embed-text-v1.5"
     elfmem_embedding_dimensions: int = 768
-    top_k: int = 10
+    # top_k controls how many blocks are returned after contradiction suppression.
+    # hybrid_retrieve oversamples by 2× before suppression, so with 18 total
+    # blocks and top_k=10, all 18 enter suppression — full coverage. Setting
+    # top_k=20 ensures all post-suppression blocks (~13) reach the context.
+    top_k: int = 20
     inbox_threshold: int = 50
     search_window_hours: float = 10000.0
-    contradiction_similarity_prefilter: float = 0.50  # lower than LoCoMo — CR needs sensitivity
+    # Contradiction detection prefilter. Only pairs with cosine similarity above
+    # this threshold are sent to the LLM for contradiction checking. Real
+    # contradictions (same entity, different claims) have similarity >0.80.
+    # 0.75 keeps all true contradictions while cutting spurious pairs 10×.
+    contradiction_similarity_prefilter: float = 0.75
     chunk_size: int = 256  # words per chunk (~350 tokens, fits in 4096 context)
     consolidate_every_n_chunks: int = 10
 

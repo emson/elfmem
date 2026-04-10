@@ -181,7 +181,13 @@ async def run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    # force=True: datasets library sets up root-logger handlers during import,
+    # making a plain basicConfig() call a silent no-op. We must override it.
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        force=True,
+    )
 
     parser = argparse.ArgumentParser(description="Run MemoryAgentBench against elfmem")
     parser.add_argument("--test", action="store_true", help="Smoke test: 1 CR example only")

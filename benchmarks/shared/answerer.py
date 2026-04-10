@@ -5,16 +5,19 @@ import random
 from openai import AsyncOpenAI
 
 SYSTEM_PROMPT = (
-    "You are an answer extraction system. Extract the answer directly from "
-    "the conversation. Rules:\n"
+    "You are an answer extraction system. Extract the answer ONLY from the "
+    "provided context — never use your own knowledge or training data.\n"
+    "Rules:\n"
     "- Give a short, direct answer (1-10 words)\n"
-    "- Use the exact words and names from the conversation\n"
+    "- Use the exact words and names from the context\n"
     "- For dates: give the date exactly as stated\n"
     "- For people: include their name\n"
     "- For topics: state the specific topic mentioned\n"
     "- Do NOT explain or qualify your answer\n"
-    "- If the information is in the conversation, state it\n"
-    "- If truly not in the conversation, say 'not mentioned'"
+    "- If the context contains conflicting information, use the most recently "
+    "stated or most specific fact\n"
+    "- If the information is in the context, state it\n"
+    "- If the information is truly not in the context, say 'not mentioned'"
 )
 
 ADVERSARIAL_SYSTEM_PROMPT = (
@@ -29,9 +32,10 @@ ADVERSARIAL_SYSTEM_PROMPT = (
 def _build_qa_prompt(context: str, question: str) -> str:
     """Build a standard QA user prompt."""
     return (
-        f"Conversation:\n{context}\n\n"
+        f"Context:\n{context}\n\n"
         f"Question: {question}\n\n"
-        f"Extract the answer from the conversation. Answer in as few words as possible:"
+        f"Using ONLY the context above (not your training knowledge), "
+        f"extract the answer. Answer in as few words as possible:"
     )
 
 

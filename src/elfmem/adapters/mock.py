@@ -161,6 +161,10 @@ class MockEmbeddingService:
         self._cache: dict[str, np.ndarray] = {}
         self.embed_calls: int = 0
 
+    @property
+    def model_name(self) -> str:
+        return "mock"
+
     def _hash_vector(self, text: str) -> np.ndarray:
         # Use uint8 → float32 conversion to avoid NaN/Inf from raw float32 bytes.
         # Each dimension gets one byte of the extended hash, mapped to [-1, 1].

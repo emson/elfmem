@@ -256,6 +256,78 @@ class TestConsolidateOperation:
             assert consolidate_result.deduplicated >= 1
 
 
+class TestConsolidateSkipLLM:
+    """consolidate(skip_llm=True) — embedding-only promotion path."""
+
+    async def test_skip_llm_promotes_block(self, system_setup) -> None:
+        """TC-L-007: skip_llm=True promotes blocks to active without LLM calls."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            await learn(conn, content="skip llm knowledge", category="knowledge", source="api")
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=1.0, skip_llm=True,
+            )
+        assert result.promoted == 1
+        assert mock_llm.process_block_calls == 0
+
+    async def test_skip_llm_promotes_neutral_confidence(self, system_setup) -> None:
+        """TC-L-008: skip_llm=True sets confidence to 0.50 (no alignment scoring)."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            await learn(
+                conn, content="neutral confidence block", category="knowledge", source="api"
+            )
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=1.0, skip_llm=True,
+            )
+            active = await get_active_blocks(conn)
+        assert len(active) == 1
+        assert abs(active[0]["confidence"] - 0.50) < TOL
+
+    async def test_skip_llm_second_batch_with_active_blocks(self, system_setup) -> None:
+        """TC-L-009: skip_llm=True second consolidation batch correctly handles
+        active blocks promoted by the first batch (stored-embedding path)."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            # Batch 1: learn + consolidate
+            await learn(conn, content="first knowledge block", category="knowledge", source="api")
+            result1 = await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=1.0, skip_llm=True,
+            )
+            assert result1.promoted == 1
+
+            # Batch 2: learn a different block + consolidate again
+            await learn(conn, content="second knowledge block", category="knowledge", source="api")
+            result2 = await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=2.0, skip_llm=True,
+            )
+
+        assert result2.promoted == 1
+        async with engine.begin() as conn:
+            active = await get_active_blocks(conn)
+        assert len(active) == 2
+
+    async def test_skip_llm_exact_duplicate_still_rejected(self, system_setup) -> None:
+        """TC-L-010: skip_llm=True still rejects exact duplicates via embeddings."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            await learn(conn, content="duplicate content", category="knowledge", source="api")
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=1.0, skip_llm=True,
+            )
+            await learn(conn, content="duplicate content", category="knowledge", source="api")
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=2.0, skip_llm=True,
+            )
+        assert result.deduplicated >= 1
+
+
 class TestSessionManagement:
     """Session lifecycle and active hours tracking."""
 

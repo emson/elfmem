@@ -241,6 +241,10 @@ class OpenAIEmbeddingAdapter:
         self._client: openai.AsyncOpenAI | None = None
 
     @property
+    def model_name(self) -> str:
+        return self._model
+
+    @property
     def _get_client(self) -> openai.AsyncOpenAI:
         if self._client is None:
             self._client = openai.AsyncOpenAI(**self._client_kwargs)  # type: ignore[arg-type]

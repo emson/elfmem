@@ -37,6 +37,12 @@ class LLMService(Protocol):
 class EmbeddingService(Protocol):
     """Embedding operations required by the elfmem memory system."""
 
+    @property
+    def model_name(self) -> str:
+        """Identifier for the embedding model (e.g. 'text-embedding-nomic-embed-text-v1.5').
+        Stored alongside block embeddings so the DB records which model produced them."""
+        ...
+
     async def embed(self, text: str) -> np.ndarray:
         """Return a normalised float32 embedding vector for the given text."""
         ...
