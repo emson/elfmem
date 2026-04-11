@@ -1,9 +1,12 @@
-"""elfmem adapter for MemoryAgentBench — chunk ingestion + retrieval.
+"""elfmem adapter for MemoryAgentBench — document ingestion + retrieval.
 
 Key difference from LoCoMo: MemoryAgentBench's Conflict Resolution competency
 tests contradiction detection — elfmem's primary moat. For CR, we use FULL
 consolidation (contradiction detection ON). For other competencies, we use
-skip_contradictions for speed.
+skip_llm for speed.
+
+BM25 hybrid retrieval is handled natively by elfmem's retrieval pipeline
+(stage 2b in hybrid_retrieve). No adapter-level BM25 or RRF needed.
 """
 
 from __future__ import annotations
@@ -11,17 +14,14 @@ from __future__ import annotations
 import logging
 import tempfile
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import nltk
 
-from rank_bm25 import BM25Okapi
-
-from elfmem import ElfmemConfig, MemorySystem
-
 from benchmarks.memoryagentbench.config import MABenchConfig
+from elfmem import ElfmemConfig, MemorySystem
 
 nltk.download("punkt_tab", quiet=True)
 
@@ -48,65 +48,6 @@ class ExampleResult:
     blocks_promoted: int
     qa_results: list[QAResult]
     ingestion_seconds: float
-
-
-class _BM25Index:
-    """BM25 index over block content for keyword-boosted retrieval.
-
-    Built after consolidation from elfmem's active block content (summaries
-    when available, raw content otherwise). Stores block IDs so RRF merge
-    can match by ID rather than approximate content-prefix heuristics.
-    """
-
-    def __init__(self) -> None:
-        self._ids: list[str] = []
-        self._contents: list[str] = []
-        self._bm25: BM25Okapi | None = None
-
-    def add(self, block_id: str, content: str) -> None:
-        self._ids.append(block_id)
-        self._contents.append(content)
-
-    def build(self) -> None:
-        if self._contents:
-            tokenized = [c.lower().split() for c in self._contents]
-            self._bm25 = BM25Okapi(tokenized)
-
-    def search(self, query: str, top_k: int = 10) -> list[tuple[str, str, float]]:
-        """Return (block_id, content, bm25_score) triples ranked by score."""
-        if self._bm25 is None:
-            return []
-        scores = self._bm25.get_scores(query.lower().split())
-        ranked = sorted(
-            zip(self._ids, self._contents, scores),
-            key=lambda x: x[2],
-            reverse=True,
-        )
-        return ranked[:top_k]
-
-
-def chunk_text(text: str, chunk_size: int = 1024) -> list[str]:
-    """Split text into sentence-aligned chunks of ~chunk_size words.
-
-    Uses NLTK sentence tokenization for clean boundaries.
-    """
-    sentences = nltk.sent_tokenize(text)
-    chunks: list[str] = []
-    current: list[str] = []
-    current_len = 0
-
-    for sentence in sentences:
-        sent_len = len(sentence.split())
-        if current_len + sent_len > chunk_size and current:
-            chunks.append(" ".join(current))
-            current = []
-            current_len = 0
-        current.append(sentence)
-        current_len += sent_len
-
-    if current:
-        chunks.append(" ".join(current))
-    return chunks
 
 
 def _context_budget_words(config: MABenchConfig) -> int:
@@ -153,34 +94,6 @@ def build_elfmem_config(config: MABenchConfig) -> ElfmemConfig:
     })
 
 
-def _rrf_merge(
-    vector_blocks: list,
-    bm25_results: list[tuple[str, str, float]],
-    top_k: int,
-    k: int = 60,
-) -> tuple[list, str]:
-    """Merge vector search and BM25 results via Reciprocal Rank Fusion.
-
-    BM25 results carry block IDs (from _BM25Index.search), so matching is
-    exact — no content-prefix heuristics, no supplementary raw-chunk fallback.
-    Both retrieval paths use the same block content (summaries or raw text),
-    so the merged context is consistent.
-    """
-    block_scores: dict[str, float] = {}
-    block_map: dict[str, object] = {}
-    for rank, block in enumerate(vector_blocks):
-        block_scores[block.id] = 1.0 / (k + rank)
-        block_map[block.id] = block
-
-    for rank, (block_id, _content, _score) in enumerate(bm25_results):
-        if block_id in block_map:
-            block_scores[block_id] += 1.0 / (k + rank)
-
-    ranked = sorted(block_map.values(), key=lambda b: block_scores[b.id], reverse=True)
-    trimmed = ranked[:top_k]
-    return trimmed, "\n\n".join(b.content for b in trimmed)
-
-
 async def process_example(
     example: dict[str, Any],
     competency: str,
@@ -199,6 +112,7 @@ async def process_example(
 
     # Conflict Resolution needs contradiction detection — elfmem's moat
     is_conflict_resolution = competency == "Conflict_Resolution"
+    skip_llm = not is_conflict_resolution
 
     elfmem_cfg = build_elfmem_config(config)
 
@@ -207,80 +121,32 @@ async def process_example(
 
     system = await MemorySystem.from_config(db_path, config=elfmem_cfg)
     try:
-        # Phase 1: Chunk and ingest context
+        # Phase 1: Ingest document via learn_document()
         start_ingest = time.monotonic()
-        chunks = chunk_text(context, config.chunk_size)
-        total_promoted = 0
-
-        # CR needs contradiction detection — elfmem's core capability.
-        # Other competencies use skip_llm for speed (embedding-only retrieval).
-        skip_llm = not is_conflict_resolution
-
-        await system.begin_session(task_type="ingestion")
-        for i, chunk in enumerate(chunks):
-            await system.learn(
-                content=chunk,
-                tags=[f"chunk:{i}"],
-                category="knowledge",
-                source="memoryagentbench",
-            )
-            # Consolidate periodically
-            if (i + 1) % config.consolidate_every_n_chunks == 0:
-                await system.end_session()
-                await system.begin_session(task_type="consolidation")
-                result = await system.consolidate(skip_llm=skip_llm)
-                total_promoted += result.promoted
-                await system.end_session()
-                await system.begin_session(task_type="ingestion")
-        await system.end_session()
-
-        # Final consolidation for remaining chunks
-        await system.begin_session(task_type="consolidation")
-        result = await system.consolidate(skip_llm=skip_llm)
-        total_promoted += result.promoted
-        await system.end_session()
-
-        # Build BM25 from active block content after consolidation.
-        # With skip_llm=False (CR), blocks carry LLM-generated summaries —
-        # the same content used by elfmem's vector retrieval. This ensures
-        # BM25 and vector search are consistent, enabling exact ID-based RRF
-        # merging without heuristic content-prefix matching.
-        # With skip_llm=True (other competencies), content falls back to the
-        # raw chunk text — same as the previous raw-chunk approach.
-        await system.begin_session(task_type="retrieval")
-        index_frame = await system.frame("attention", query=None, top_k=10000)
-        await system.end_session()
-
-        bm25_index = _BM25Index()
-        for block in index_frame.blocks:
-            bm25_index.add(block.id, block.content)
-        bm25_index.build()
-
+        doc_result = await system.learn_document(
+            context,
+            chunk_size=config.chunk_size,
+            chunker=nltk.sent_tokenize,
+            source="memoryagentbench",
+            skip_llm=skip_llm,
+        )
         ingestion_time = time.monotonic() - start_ingest
-        log.info(f"  Ingested {len(chunks)} chunks, {total_promoted} promoted in {ingestion_time:.1f}s")
+        log.info(
+            f"  Ingested {doc_result.chunks_total} chunks, "
+            f"{doc_result.blocks_promoted} promoted in {ingestion_time:.1f}s"
+        )
 
         # Phase 2: Answer each question
         qa_results: list[QAResult] = []
-        for q_idx, (question, answer_list) in enumerate(zip(questions, answers)):
+        for _q_idx, (question, answer_list) in enumerate(zip(questions, answers, strict=False)):
             q_start = time.monotonic()
 
-            await system.begin_session(task_type="retrieval")
-            frame_result = await system.frame("attention", query=question, top_k=config.top_k)
-            await system.end_session()
-
-            # Build context from blocks directly, bypassing the frame's hardcoded
-            # token_budget (2000 tokens in the attention frame definition).  Both
-            # the BM25 and no-BM25 paths are now bounded only by _context_budget_words,
-            # which is derived from config.context_window_tokens.
-            blocks = frame_result.blocks
+            # elfmem's recall() includes BM25 (stage 2b) + graph expansion
+            # + contradiction suppression natively.
+            blocks = await system.recall(query=question, top_k=config.top_k)
             context_text = "\n\n".join(b.content for b in blocks)
-            bm25_hits = bm25_index.search(question, top_k=config.top_k)
-            if bm25_hits:
-                blocks, context_text = _rrf_merge(blocks, bm25_hits, config.top_k)
 
             # Truncate context to fit the model's context window.
-            # Budget is derived from config.context_window_tokens minus
-            # system prompt, template, question, and answer overhead.
             max_context_words = _context_budget_words(config)
             words = context_text.split()
             if len(words) > max_context_words:
@@ -304,8 +170,8 @@ async def process_example(
         return ExampleResult(
             source=source,
             competency=competency,
-            chunks_ingested=len(chunks),
-            blocks_promoted=total_promoted,
+            chunks_ingested=doc_result.chunks_total,
+            blocks_promoted=doc_result.blocks_promoted,
             qa_results=qa_results,
             ingestion_seconds=ingestion_time,
         )

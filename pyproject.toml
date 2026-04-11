@@ -58,6 +58,7 @@ Changelog = "https://github.com/emson/elfmem/blob/main/CHANGELOG.md"
 Security = "https://github.com/emson/elfmem/blob/main/SECURITY.md"
 
 [project.optional-dependencies]
+bm25 = ["rank_bm25>=0.2.2"]
 mcp = ["fastmcp>=2.0"]
 cli = ["typer>=0.12"]
 tools = ["fastmcp>=2.0", "typer>=0.12"]
