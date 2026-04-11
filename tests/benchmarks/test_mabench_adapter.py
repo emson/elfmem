@@ -1,5 +1,9 @@
 """Tests for MemoryAgentBench adapter utilities."""
 
+import pytest
+
+pytest.importorskip("nltk", reason="nltk not installed")
+
 from benchmarks.memoryagentbench.adapter import _context_budget_words, build_elfmem_config
 from benchmarks.memoryagentbench.config import MABenchConfig
 
