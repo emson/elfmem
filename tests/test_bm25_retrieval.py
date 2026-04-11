@@ -8,6 +8,9 @@ from elfmem import ElfmemConfig, MemorySystem
 from elfmem.config import MemoryConfig
 from elfmem.memory import retrieval
 
+# BM25 stage tests require rank_bm25; skip gracefully in CI.
+_has_bm25 = pytest.importorskip("rank_bm25", reason="rank_bm25 not installed")
+
 
 @pytest.fixture
 async def system(test_engine, mock_llm, mock_embedding) -> MemorySystem:
