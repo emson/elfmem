@@ -198,7 +198,7 @@ def _stage_2b_bm25_search(
         return []
     contents = [b.get("summary") or b.get("content", "") for b in candidates]
     tokenized = [c.lower().split() for c in contents]
-    bm25 = BM25Okapi(tokenized)  # type: ignore[possibly-undefined]
+    bm25 = BM25Okapi(tokenized)
     scores = bm25.get_scores(query.lower().split())
     ranked = sorted(zip(candidates, scores, strict=False), key=lambda x: x[1], reverse=True)
     return ranked[:n_seeds]
