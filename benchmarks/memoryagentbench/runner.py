@@ -11,12 +11,12 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from datasets import load_dataset
 
-from benchmarks.memoryagentbench.adapter import ExampleResult, process_example
+from benchmarks.memoryagentbench.adapter import process_example
 from benchmarks.memoryagentbench.config import MABenchConfig
 from benchmarks.memoryagentbench.metrics import score_question
 from benchmarks.shared.answerer import generate_answer
@@ -32,6 +32,39 @@ COMPETENCY_ORDER = [
     "Test_Time_Learning",
     "Long_Range_Understanding",
 ]
+
+
+# ── Resume helpers ───────────────────────────────────────────────────────────
+
+
+def _example_id(source: str, index: int) -> str:
+    """Composite ID for an example: 'source/index'."""
+    return f"{source}/{index}"
+
+
+def _get_completed_example_ids(output_path: Path) -> set[str]:
+    """Load set of example IDs already written to output JSON."""
+    if not output_path.exists():
+        return set()
+    data = json.loads(output_path.read_text())
+    return {q["example_id"] for q in data.get("questions", []) if "example_id" in q}
+
+
+def _append_example_results(
+    output_path: Path, new_questions: list[dict],
+) -> None:
+    """Atomically append question results to the output JSON.
+
+    Uses tmpfile + rename for crash safety on POSIX filesystems.
+    """
+    existing = json.loads(output_path.read_text()) if output_path.exists() else {"questions": []}
+    existing["questions"].extend(new_questions)
+    tmp = output_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(existing, indent=2, default=str))
+    tmp.rename(output_path)
+
+
+# ── Scoring ──────────────────────────────────────────────────────────────────
 
 
 async def _answer_and_score(
@@ -56,6 +89,9 @@ async def _answer_and_score(
     }
 
 
+# ── Main runner ──────────────────────────────────────────────────────────────
+
+
 async def run(args: argparse.Namespace) -> None:
     """Run the benchmark."""
     config = MABenchConfig()
@@ -73,9 +109,16 @@ async def run(args: argparse.Namespace) -> None:
         config.resume = True
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     output_path = args.output or config.output_dir / f"{timestamp}_mabench_elfmem.json"
     output_path = Path(output_path)
+
+    # Resume: load previously completed examples
+    completed_ids: set[str] = set()
+    if config.resume:
+        completed_ids = _get_completed_example_ids(output_path)
+        if completed_ids:
+            log.info(f"Resuming: {len(completed_ids)} example(s) already completed")
 
     log.info("Loading MemoryAgentBench dataset from HuggingFace...")
     ds = load_dataset("ai-hyz/MemoryAgentBench")
@@ -104,18 +147,32 @@ async def run(args: argparse.Namespace) -> None:
         for ex_idx, example in enumerate(examples):
             metadata = example.get("metadata", {})
             source = metadata.get("source", "unknown") if isinstance(metadata, dict) else "unknown"
+            ex_id = _example_id(source, ex_idx)
             n_questions = len(example["questions"])
+
+            # Resume: skip completed examples
+            if ex_id in completed_ids:
+                log.info(f"  [{ex_idx+1}/{len(examples)}] {source}: skipped (resumed)")
+                continue
+
             log.info(f"\n  [{ex_idx+1}/{len(examples)}] {source}: {n_questions} questions")
 
             try:
                 ex_result = await process_example(example, competency, config)
 
+                example_questions: list[dict] = []
                 for qa in ex_result.qa_results:
                     scored = await _answer_and_score(qa, config)
                     scored["competency"] = competency
                     scored["source"] = source
-                    all_results.append(scored)
+                    scored["example_id"] = ex_id
+                    example_questions.append(scored)
                     comp_f1s.append(scored["f1"])
+
+                all_results.extend(example_questions)
+
+                # Atomic write after each example — crash-safe resume
+                _append_example_results(output_path, example_questions)
 
                 avg_f1 = sum(comp_f1s[-n_questions:]) / n_questions if n_questions else 0
                 log.info(f"    {n_questions} Qs answered | avg F1={avg_f1:.3f}")
@@ -125,7 +182,7 @@ async def run(args: argparse.Namespace) -> None:
 
         competency_scores[competency] = comp_f1s
 
-    # Build report
+    # Build final report (overwrites with complete metadata)
     duration = time.monotonic() - start_time
     scores_by_comp: dict[str, dict] = {}
     all_f1s: list[float] = []
@@ -142,11 +199,18 @@ async def run(args: argparse.Namespace) -> None:
     except ImportError:
         elfmem_version = "unknown"
 
+    # Merge any previously completed results with this run's results
+    if output_path.exists():
+        existing = json.loads(output_path.read_text())
+        all_questions = existing.get("questions", [])
+    else:
+        all_questions = all_results
+
     report = {
         "meta": {
             "benchmark": "memoryagentbench",
             "version": "1.0",
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "duration_seconds": round(duration, 1),
             "elfmem_version": elfmem_version,
             "models": {
@@ -170,7 +234,7 @@ async def run(args: argparse.Namespace) -> None:
             "overall": round(overall * 100, 1),
             "by_competency": scores_by_comp,
         },
-        "questions": all_results,
+        "questions": all_questions,
     }
 
     output_path.write_text(json.dumps(report, indent=2, default=str))

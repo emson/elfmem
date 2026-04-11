@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from collections import deque
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -56,6 +57,7 @@ from elfmem.types import (
     CurateResult,
     DisconnectResult,
     FrameResult,
+    LearnDocumentResult,
     LearnResult,
     OperationRecord,
     OutcomeResult,
@@ -64,6 +66,33 @@ from elfmem.types import (
     SystemStatus,
     TokenUsage,
 )
+
+# ── Document chunking helpers ────────────────────────────────────────────────
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _default_chunker(text: str) -> list[str]:
+    """Split text into sentences at [.!?] followed by whitespace."""
+    return [s.strip() for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
+
+
+def _assemble_chunks(sentences: list[str], chunk_size: int) -> list[str]:
+    """Combine sentences into chunks of ~chunk_size words."""
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for sentence in sentences:
+        sent_len = len(sentence.split())
+        if current_len + sent_len > chunk_size and current:
+            chunks.append(" ".join(current))
+            current = []
+            current_len = 0
+        current.append(sentence)
+        current_len += sent_len
+    if current:
+        chunks.append(" ".join(current))
+    return chunks
 
 
 class MemorySystem:
@@ -696,6 +725,9 @@ class MemorySystem:
                 embedding_svc=self._embedding,
                 current_active_hours=current_hours,
                 self_alignment_threshold=mem.self_alignment_threshold,
+                contradiction_threshold=mem.contradiction_threshold,
+                near_dup_exact_threshold=mem.near_dup_exact_threshold,
+                near_dup_near_threshold=mem.near_dup_near_threshold,
                 edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
                 contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
@@ -774,7 +806,93 @@ class MemorySystem:
         await self.begin_session()
         return await self.learn(content, tags=tags, category=category, source=source)
 
-    async def dream(self) -> ConsolidateResult | None:
+    async def learn_document(
+        self,
+        text: str,
+        *,
+        chunk_size: int = 256,
+        chunker: Callable[[str], list[str]] | None = None,
+        tags: list[str] | None = None,
+        category: str = "knowledge",
+        source: str = "document",
+        skip_llm: bool = False,
+    ) -> LearnDocumentResult:
+        """Ingest a document: chunk, learn each chunk, auto-consolidate.
+
+        USE WHEN: Ingesting a document, article, or long-form text. Handles
+        chunking, learning, and consolidation in one call.
+
+        DON'T USE WHEN: Ingesting a single fact or short observation — use
+        learn() instead.
+
+        COST: O(chunks) learn() calls + dream() at inbox_threshold intervals.
+        With skip_llm=True, dream() runs the fast embedding-only path.
+
+        RETURNS: LearnDocumentResult with chunk and consolidation counts.
+
+        NEXT: recall() or frame() to query the ingested knowledge.
+
+        Args:
+            text: The full document text to ingest.
+            chunk_size: Target words per chunk (default 256).
+            chunker: Sentence splitter function. Receives the full text,
+                returns a list of sentences. Default splits at [.!?]
+                followed by whitespace. Pass ``nltk.sent_tokenize`` for
+                better accuracy with abbreviations and edge cases.
+            tags: Tags applied to every chunk (in addition to ``chunk:N``).
+            category: Block category (default "knowledge").
+            source: Block source identifier (default "document").
+            skip_llm: Forward to dream() — bypass LLM calls during
+                consolidation (embed + promote only).
+
+        Example::
+
+            result = await system.learn_document(article_text, chunk_size=200)
+            print(result)  # Ingested 12 chunks: 12 created, 2 consolidations, 10 promoted.
+        """
+        split_fn = chunker or _default_chunker
+        sentences = split_fn(text)
+        chunks = _assemble_chunks(sentences, chunk_size)
+
+        created = 0
+        duplicates = 0
+        consolidations = 0
+        promoted = 0
+
+        for i, chunk in enumerate(chunks):
+            result = await self.learn(
+                content=chunk,
+                tags=[f"chunk:{i}", *(tags or [])],
+                category=category,
+                source=source,
+            )
+            if result.status == "created":
+                created += 1
+            elif result.status == "duplicate_rejected":
+                duplicates += 1
+
+            if self.should_dream:
+                dr = await self.dream(skip_llm=skip_llm)
+                if dr is not None:
+                    consolidations += 1
+                    promoted += dr.promoted
+
+        doc_result = LearnDocumentResult(
+            chunks_total=len(chunks),
+            chunks_created=created,
+            chunks_duplicate=duplicates,
+            consolidations=consolidations,
+            blocks_promoted=promoted,
+        )
+        self._record_op("learn_document", doc_result.summary)
+        return doc_result
+
+    async def dream(
+        self,
+        *,
+        skip_llm: bool = False,
+        skip_contradictions: bool = False,
+    ) -> ConsolidateResult | None:
         """Consolidate pending blocks at a natural pause point.
 
         The breathing rhythm: learn fast (remember), process deliberately (dream).
@@ -785,8 +903,8 @@ class MemorySystem:
 
         DON'T USE WHEN: In a tight loop. One call processes all pending blocks.
 
-        COST: LLM call per pending block. Returns None immediately (zero cost)
-        if inbox is empty.
+        COST: LLM call per pending block (unless skip_llm=True). Returns None
+        immediately (zero cost) if inbox is empty.
 
         RETURNS: ConsolidateResult if blocks were processed; None if inbox was
         empty. None is not an error — it means "nothing needed doing."
@@ -797,6 +915,12 @@ class MemorySystem:
         Note: _pending is an advisory counter. If blocks were added externally
         (e.g., another process), dream() may return None despite inbox having
         items. Call status() for DB-accurate inbox_count.
+
+        Args:
+            skip_llm: Bypass all LLM calls (embed + promote only). Fastest path
+                for bulk ingestion where alignment scoring isn't needed.
+            skip_contradictions: Keep LLM summaries but skip O(n²) contradiction
+                detection. Good balance of quality and speed.
 
         Example::
 
@@ -809,7 +933,9 @@ class MemorySystem:
         """
         if self._pending == 0:
             return None
-        result = await self.consolidate()
+        result = await self.consolidate(
+            skip_llm=skip_llm, skip_contradictions=skip_contradictions,
+        )
         # Feed policy so it can adapt the threshold for the next cycle,
         # then persist the new threshold so it survives process restarts.
         # Persistence is best-effort: a DB failure here is non-fatal —

@@ -146,6 +146,34 @@ GUIDES: dict[str, AgentGuide] = {
             "print(result)  # Stored block a1b2c3d4. Status: created."
         ),
     ),
+    "learn_document": AgentGuide(
+        name="learn_document",
+        what="Ingest a document: chunk, learn each chunk, auto-consolidate.",
+        when=(
+            "The agent needs to ingest a document, article, or long-form text. "
+            "Handles chunking, learning, and consolidation in one call."
+        ),
+        when_not=(
+            "Single facts or short observations — use learn() instead. "
+            "Already-chunked data — use learn() in a loop."
+        ),
+        cost=(
+            "O(chunks) learn() calls + dream() at inbox_threshold intervals. "
+            "With skip_llm=True, dream() uses the fast embedding-only path."
+        ),
+        returns=(
+            "LearnDocumentResult with chunks_total, chunks_created, "
+            "chunks_duplicate, consolidations, blocks_promoted."
+        ),
+        next=(
+            "recall() or frame() to query the ingested knowledge. "
+            "Consolidation happened automatically during ingestion."
+        ),
+        example=(
+            "result = await system.learn_document(article_text, chunk_size=200)\n"
+            "print(result)  # Ingested 12 chunks: 12 created, 2 consolidations."
+        ),
+    ),
     "consolidate": AgentGuide(
         name="consolidate",
         what="Process inbox blocks: score, embed, deduplicate, and promote to active memory.",

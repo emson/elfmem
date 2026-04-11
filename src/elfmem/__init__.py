@@ -41,6 +41,7 @@ from elfmem.types import (
     DisconnectResult,
     DisplacedEdge,
     FrameResult,
+    LearnDocumentResult,
     LearnResult,
     OperationRecord,
     OutcomeResult,
@@ -58,6 +59,7 @@ __all__ = [
     "ConsolidationPolicy",
     # Result types
     "LearnResult",
+    "LearnDocumentResult",
     "ConsolidateResult",
     "FrameResult",
     "CurateResult",

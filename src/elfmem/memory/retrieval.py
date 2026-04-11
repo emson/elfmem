@@ -1,7 +1,13 @@
-"""4-stage hybrid retrieval pipeline — pure (no side effects)."""
+"""6-stage hybrid retrieval pipeline — pure (no side effects).
+
+Stages: pre-filter → vector → BM25 → graph expand → composite score → MMR.
+BM25 (stage 2b) requires the optional ``rank_bm25`` package. When not installed,
+the stage is silently skipped and retrieval works as a 5-stage vector-only pipeline.
+"""
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import Any
 
@@ -18,6 +24,16 @@ from elfmem.scoring import (
     log_normalise_reinforcement,
 )
 from elfmem.types import ScoredBlock
+
+# Soft dependency — retrieval works without it.
+try:
+    from rank_bm25 import BM25Okapi
+
+    _HAS_BM25 = True
+except ImportError:  # pragma: no cover
+    _HAS_BM25 = False
+
+log = logging.getLogger(__name__)
 
 N_SEEDS_MULTIPLIER = 4
 CONTRADICTION_OVERSAMPLE = 2
@@ -37,13 +53,14 @@ async def hybrid_retrieve(
     tag_filter: str | None = None,
     search_window_hours: float = DEFAULT_SEARCH_WINDOW_HOURS,
 ) -> list[ScoredBlock]:
-    """Execute the 5-stage hybrid retrieval pipeline.
+    """Execute the 6-stage hybrid retrieval pipeline.
 
-    Stage 1 — Pre-filter: active blocks within search window.
-    Stage 2 — Vector search: cosine similarity → top N_seeds. (Skipped if no query.)
-    Stage 3 — Graph expand: 1-hop neighbours of seeds. (Skipped if no query.)
-    Stage 4 — Composite score: rank all candidates.
-    Stage 5 — MMR diversity: reorder for relevance + diversity. (Query-aware only.)
+    Stage 1  — Pre-filter: active blocks within search window.
+    Stage 2  — Vector search: cosine similarity → top N_seeds. (Skipped if no query.)
+    Stage 2b — BM25 keyword search: term overlap → top N_bm25. (Requires rank_bm25.)
+    Stage 3  — Graph expand: 1-hop neighbours of seeds. (Skipped if no query.)
+    Stage 4  — Composite score: rank all candidates.
+    Stage 5  — MMR diversity: reorder for relevance + diversity. (Query-aware only.)
 
     Returns top_k * CONTRADICTION_OVERSAMPLE ScoredBlocks for contradiction headroom.
     """
@@ -64,11 +81,23 @@ async def hybrid_retrieve(
             candidates,
             n_seeds=top_k * N_SEEDS_MULTIPLIER,
         )
+
+        # Stage 2b: BM25 keyword candidates (additive — discovers blocks
+        # that vector search missed due to vocabulary mismatch).
+        seed_ids_set = {b["id"] for b, _ in seed_pairs}
+        bm25_pairs = _stage_2b_bm25_search(
+            candidates, query, n_seeds=top_k * N_SEEDS_MULTIPLIER,
+        )
+        for block, _bm25_score in bm25_pairs:
+            if block["id"] not in seed_ids_set:
+                seed_pairs.append((block, 0.0))
+                seed_ids_set.add(block["id"])
+
         seed_ids = [b["id"] for b, _ in seed_pairs]
         expanded = await _stage_3_graph_expand(
             conn,
             seed_ids=seed_ids,
-            existing_candidate_ids={b["id"] for b, _ in seed_pairs},
+            existing_candidate_ids=seed_ids_set,
         )
 
         # candidates for scoring: (block, similarity, was_expanded)
@@ -152,6 +181,27 @@ async def _stage_2_vector_search(
 
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored[:n_seeds]
+
+
+def _stage_2b_bm25_search(
+    candidates: list[dict[str, Any]],
+    query: str,
+    n_seeds: int,
+) -> list[tuple[dict[str, Any], float]]:
+    """Stage 2b: BM25 keyword search over pre-filtered candidates.
+
+    Discovers blocks with strong term overlap that vector search may miss
+    (vocabulary mismatch, exact entity names, etc.). Requires the optional
+    ``rank_bm25`` package — returns ``[]`` when not installed.
+    """
+    if not _HAS_BM25 or not candidates:
+        return []
+    contents = [b.get("summary") or b.get("content", "") for b in candidates]
+    tokenized = [c.lower().split() for c in contents]
+    bm25 = BM25Okapi(tokenized)
+    scores = bm25.get_scores(query.lower().split())
+    ranked = sorted(zip(candidates, scores, strict=False), key=lambda x: x[1], reverse=True)
+    return ranked[:n_seeds]
 
 
 async def _stage_3_graph_expand(

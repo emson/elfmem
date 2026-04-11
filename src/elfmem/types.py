@@ -131,6 +131,48 @@ class LearnResult:
 
 
 @dataclass
+class LearnDocumentResult:
+    """Result of ingesting a document via learn_document().
+
+    USE WHEN: Inspecting how a document was ingested.
+    DON'T USE WHEN: You need per-block detail — check individual LearnResults.
+    COST: Zero — this is a pure summary.
+    RETURNS: Chunk and consolidation counts.
+    NEXT: recall() or frame() to query the ingested knowledge.
+    """
+
+    chunks_total: int
+    chunks_created: int
+    chunks_duplicate: int
+    consolidations: int
+    blocks_promoted: int
+
+    @property
+    def summary(self) -> str:
+        if self.chunks_total == 0:
+            return "No chunks to ingest (empty document)."
+        parts = [f"{self.chunks_created} created"]
+        if self.chunks_duplicate:
+            parts.append(f"{self.chunks_duplicate} duplicate")
+        if self.consolidations:
+            parts.append(f"{self.consolidations} consolidations")
+            parts.append(f"{self.blocks_promoted} promoted")
+        return f"Ingested {self.chunks_total} chunks: {', '.join(parts)}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "chunks_total": self.chunks_total,
+            "chunks_created": self.chunks_created,
+            "chunks_duplicate": self.chunks_duplicate,
+            "consolidations": self.consolidations,
+            "blocks_promoted": self.blocks_promoted,
+        }
+
+
+@dataclass
 class ConsolidateResult:
     processed: int
     promoted: int
