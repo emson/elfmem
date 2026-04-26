@@ -7,7 +7,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.6.0] — 2026-04-26
 
 ### Fixed
 - **`EmbeddingService` protocol gains `model_name` property:** `consolidate()` was storing `embedding_model="mock"` (hardcoded string, TODO since inception). `OpenAIEmbeddingAdapter` exposes `model_name → self._model`; `MockEmbeddingService` exposes `model_name → "mock"`. `_BlockDecision` carries the model name and `_apply_decisions` writes it via `d.embedding_model`. All stored block embeddings now record their actual source model.
