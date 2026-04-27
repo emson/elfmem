@@ -276,22 +276,31 @@ class MemorySystem:
         config: ElfmemConfig | str | dict[str, Any] | None = None,
         *,
         policy: ConsolidationPolicy | None = None,
+        auto_dream: bool = True,
     ) -> AsyncIterator[MemorySystem]:
-        """Full lifecycle context manager: open → session → yield → dream → close.
+        """Full lifecycle context manager: open → session → yield → close.
 
         USE WHEN: Scripts, CLI commands, and short-lived agents that need a
         complete open-and-close lifecycle in one block. Starts a session on
         entry so active-hours tracking and frame scoring are always correct.
-        Consolidates any pending blocks before closing (safety net).
 
         DON'T USE WHEN: Long-running processes that reuse the same
         MemorySystem across many requests — call from_config() once, then
         use begin_session()/end_session() or session() as needed.
 
-        COST: from_config() on entry (fast). dream() on exit only if pending.
+        COST: from_config() on entry (fast). dream() on exit only when
+        auto_dream=True and blocks are pending.
 
         NEXT: After the block exits, the engine is disposed and all DB
-        connections are closed.
+        connections are closed. Check ``should_dream`` before exiting if
+        you passed ``auto_dream=False``.
+
+        Args:
+            auto_dream: When True (default), consolidates pending blocks on
+                exit as a safety net. Set to False for CLI commands and
+                other contexts where implicit consolidation would cause
+                unexpected delays. Unconsolidated blocks remain safely in
+                the inbox for the next explicit ``dream()`` call.
 
         Example::
 
@@ -306,8 +315,7 @@ class MemorySystem:
         try:
             yield mem
         finally:
-            # Safety net: consolidate any pending blocks before closing.
-            if mem.should_dream:
+            if auto_dream and mem.should_dream:
                 await mem.dream()
             await mem.end_session()
             await mem.close()

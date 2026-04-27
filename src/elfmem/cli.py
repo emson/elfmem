@@ -519,10 +519,17 @@ def remember(
     """Store knowledge for future retrieval."""
     db_path, config_path = _resolve_paths(db, config)
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
-    result: LearnResult = _run(
+    result, should_dream = _run(
         _remember(db_path, config_path, content, tag_list, category)
     )
-    _json(result.to_dict()) if json_output else typer.echo(str(result))
+    if json_output:
+        data = result.to_dict()
+        data["should_dream"] = should_dream
+        _json(data)
+    else:
+        typer.echo(str(result))
+        if should_dream:
+            typer.echo("Inbox full — run 'elfmem dream' to consolidate.")
 
 
 @app.command()
@@ -698,9 +705,10 @@ async def _remember(
     content: str,
     tags: list[str] | None,
     category: str,
-) -> LearnResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
-        return await mem.remember(content, tags=tags, category=category)
+) -> tuple[LearnResult, bool]:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        result = await mem.remember(content, tags=tags, category=category)
+        return result, mem.should_dream
 
 
 async def _recall(
@@ -710,12 +718,12 @@ async def _recall(
     top_k: int,
     frame: str,
 ) -> FrameResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.frame(frame, query=query or None, top_k=top_k)
 
 
 async def _status(db_path: str, config: str | None) -> SystemStatus:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.status()
 
 
@@ -727,18 +735,18 @@ async def _outcome(
     weight: float,
     source: str,
 ) -> OutcomeResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
 
 
 async def _dream(db_path: str, config: str | None) -> Any:
     """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.dream()
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.curate()
 
 
@@ -752,7 +760,7 @@ async def _init_seed(
     if template:
         blocks = blocks + get_template(template)
 
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         results = []
         for block in blocks:
             r = await mem.remember(
@@ -765,7 +773,7 @@ async def _init_seed(
 
 async def _init_self(db_path: str, config: str, content: str) -> LearnResult:
     """Store an identity block tagged self/context. Used by elfmem init --self."""
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.remember(content, tags=["self/context"])
 
 

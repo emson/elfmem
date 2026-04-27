@@ -7,6 +7,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **CLI commands no longer hang due to implicit consolidation:** `MemorySystem.managed()` gains `auto_dream` parameter (default `True` for backward compatibility). All CLI commands now pass `auto_dream=False`, preventing surprise `dream()` calls on context exit that blocked for minutes with local LLM backends. Unconsolidated blocks remain safely in the inbox — run `elfmem dream` explicitly when ready. `elfmem remember` now prints an advisory when inbox hits threshold.
+
+### Changed
+- **`MemorySystem.managed(auto_dream=...)` parameter:** New keyword-only parameter controls whether pending blocks are consolidated on exit. Default is `True` (preserves existing behaviour for scripts). Pass `False` for CLI tools and contexts where implicit consolidation would cause unexpected delays.
+
 ## [0.6.0] — 2026-04-26
 
 ### Fixed
