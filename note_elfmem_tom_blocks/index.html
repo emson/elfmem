@@ -1,0 +1,2352 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/note_elfmem_tom_blocks/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Proposal: Theory of Mind blocks for elfmem (week-1 build) - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#proposal-theory-of-mind-blocks-for-elfmem-week-1-build" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Proposal: Theory of Mind blocks for elfmem (week-1 build)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-why-elf-needs-explicit-mind-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Problem: Why elf Needs Explicit Mind Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-solution-theory-of-mind-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Solution: Theory of Mind Blocks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-plugs-into-existing-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Plugs Into Existing Systems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How It Plugs Into Existing Systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-the-simulate-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With the Simulate Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-multi-scale-learning-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With Multi-Scale Learning Loops
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-we-actually-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Actually Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tom-block-content-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ToM Block Content Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ToM Block Content Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frontmatter-structured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frontmatter (structured)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#body-markdown-human-readable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body (markdown, human-readable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-example-elfs-customer-tom-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real Example: elf's Customer ToM Block
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-simulate-frame-multi-scale-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with Simulate Frame + Multi-Scale Loops
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-cases-and-mitigations-with-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Cases and Mitigations (with examples)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#three-alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three Alternatives Considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#falsifiable-success-and-kill-criteria-phase-0-discipline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Falsifiable Success and Kill Criteria (Phase 0 discipline)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-sequence-week-1-5-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Sequence (week 1, ~5 days)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-we-explicitly-do-not-build-in-week-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What We Explicitly Do NOT Build in Week 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions-for-the-elfmem-maintainer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open Questions for the Elfmem Maintainer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alignment-with-project-axioms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alignment with Project Axioms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/note_elfmem_tom_blocks.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="proposal-theory-of-mind-blocks-for-elfmem-week-1-build">Proposal: Theory of Mind blocks for elfmem (week-1 build)<a class="headerlink" href="#proposal-theory-of-mind-blocks-for-elfmem-week-1-build" title="Permanent link">&para;</a></h1>
+<h2 id="the-problem-why-elf-needs-explicit-mind-models">The Problem: Why elf Needs Explicit Mind Models<a class="headerlink" href="#the-problem-why-elf-needs-explicit-mind-models" title="Permanent link">&para;</a></h2>
+<p>elf operates under the entrepreneurial mandate: help Ben identify and act on wealth-building opportunities. This requires making predictions about what others will do and want.</p>
+<p><strong>The current gap:</strong> elf's understanding of other minds is implicit. It lives scattered across:
+- Ben's feedback blocks ("Ben values shipping over synthesising")
+- Vault content about customers (guesses from research sources)
+- Embedding similarity (if customer archetype X is similar to Y, they probably want Z)</p>
+<p>This approach has three weaknesses:</p>
+<ol>
+<li>
+<p><strong>Predictions are not falsifiable.</strong> When elf says "this customer will want a hosted model over files," that claim lives as semantic similarity, not as a checkable hypothesis. No <code>verify_at</code> date. No way to know if the prediction was right. No learning signal.</p>
+</li>
+<li>
+<p><strong>Other minds are modelled implicitly through Ben's narrative.</strong> If Ben hasn't mentioned what customers fear, elf has no model of customer fear. elf cannot ask "what would change their mind?" because elf has no mind to reason about. </p>
+</li>
+<li>
+<p><strong>Calibration is impossible.</strong> Multi-scale learning loops (just designed) can close on outcomes and reinforce/decay constitutional SELF blocks. But they cannot calibrate a model of Ben's mind or customer minds because those models have no explicit representation. The loops can only update Ben's and elf's own behaviour, not the model of others.</p>
+</li>
+</ol>
+<p><strong>The consequence:</strong> Yesterday, elf tried to judge whether the sveltetemplates "moat" was real. elf called it "a hope, not a moat" but had nothing concrete to put in its place — no model of why customers buy templates, what they fear, what they would pay. Just absence.</p>
+<p>With explicit ToM blocks, that gaps gets filled.</p>
+<h2 id="the-solution-theory-of-mind-blocks">The Solution: Theory of Mind Blocks<a class="headerlink" href="#the-solution-theory-of-mind-blocks" title="Permanent link">&para;</a></h2>
+<p><strong>One-sentence summary.</strong> Add a <code>mind</code> block category and two edge relation types (<code>predicts</code>, <code>validates</code>) so elf can hold falsifiable models of other minds, calibrated by outcome closure.</p>
+<p><strong>How it works in one scenario:</strong></p>
+<p>elf is in simulate mode, thinking about sveltetemplates strategy (the AI tool builders vertical). elf recalls the "customer" ToM block. It contains:</p>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gu">## Goals</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">-</span><span class="w"> </span>Ship fast without learning deployment details
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">-</span><span class="w"> </span>Keep token spend predictable and low
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">-</span><span class="w"> </span>Own their differentiation layer (the agent-ready layer)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gu">## Fears</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">-</span><span class="w"> </span>Complex setup (will cause them to abandon)
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">-</span><span class="w"> </span>Surprise costs (API bill doubles)
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">-</span><span class="w"> </span>Template becomes a commodity (vendor lock-in for safety)
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gu">## Beliefs</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">-</span><span class="w"> </span>Agent-ready layers matter (they use Claude Code daily)
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">-</span><span class="w"> </span>Files are getting commoditised (cheap copies on Gumroad)
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">-</span><span class="w"> </span>Customisation is a tax (they want it, but hate paying for it)
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="gu">## Predictions</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="k">-</span><span class="w"> </span>Will pay £49-99/mo for a hosted version with auto-updates. verify_at: 2026-06-30
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="k">-</span><span class="w"> </span>Will abandon if setup takes &gt;30min. verify_at: 2026-05-15
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="k">-</span><span class="w"> </span>Will ask for agent-customisation layer within first month. verify_at: 2026-05-20
+</span></code></pre></div>
+<p>elf inhabits this mind. It asks: "if you are this customer, what do I say to you about sveltetemplates?" The simulate frame retrieves this ToM block. elf generates: "You want to ship fast with an agent layer you own. This template does that without making you deploy infrastructure. No API surprises because hosting is baked in."</p>
+<p>That's a different pitch than without the ToM. With ToM, it's specific to what the customer wants and fears. Without it, it's generic.</p>
+<p>Now imagine the outcome: the customer <strong>does</strong> pay £49/mo by June 30. elf calls <code>elfmem outcome --against-mind &lt;customer-id&gt; --hit --reason "signed up week 1 at tier price"</code>. The ToM block gets reinforced. So do the SELF blocks in elf that drove the prediction (entrepreneurial focus, domain-first thinking, ability to model customer minds). Next time elf thinks about pricing strategy, those blocks are slightly stronger.</p>
+<p>Now imagine a miss: the customer asks for full customisation on day 1 (the opposite of the prediction that they'd ask by month end). elf calls <code>elfmem outcome --against-mind &lt;customer-id&gt; --miss --reason "requested full bespoke integration, rejected template layer"</code>. The ToM block decays. The SELF block "customers will adopt templates over custom-build" decays. elf learns: at this price point and for this audience, the theory was wrong.</p>
+<p>That's calibration across minds, not just elf's own constitution.</p>
+<h2 id="how-it-plugs-into-existing-systems">How It Plugs Into Existing Systems<a class="headerlink" href="#how-it-plugs-into-existing-systems" title="Permanent link">&para;</a></h2>
+<h3 id="with-the-simulate-frame">With the Simulate Frame<a class="headerlink" href="#with-the-simulate-frame" title="Permanent link">&para;</a></h3>
+<p>The simulate frame (designed yesterday) biases retrieval toward SELF blocks so elf can inhabit a perspective. ToM blocks sit at medium-high weight in simulate retrieval:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>SELF blocks:      weight 10.0  (the perspective being inhabited)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ToM blocks:       weight 6.0   (minds being reasoned about)
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Decision blocks:  weight 5.0   (unresolved hypotheses)
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Recent tasks:     weight 3.0   (what&#39;s alive)
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Knowledge:        weight 1.0   (grounding only)
+</span></code></pre></div>
+<p>When elf runs simulate with a ToM retrieved, the stances it produces are <em>conditioned on an explicit model of the other mind</em>. The stances become falsifiable: "given what I think you want and fear, you will do X."</p>
+<h3 id="with-multi-scale-learning-loops">With Multi-Scale Learning Loops<a class="headerlink" href="#with-multi-scale-learning-loops" title="Permanent link">&para;</a></h3>
+<p>Multi-scale loops (designed yesterday) already exist in elfmem:</p>
+<ul>
+<li><code>outcome()</code> updates block confidence with Bayesian delta</li>
+<li>Edges get reinforced on hit, decayed on miss</li>
+<li>The loop closes: predict → act → observe → calibrate → predict better</li>
+</ul>
+<p>ToM blocks plug in as the blocks being calibrated. Predictions live as <code>predicts</code> edges between a ToM block and a decision block. When the decision closes, the edge gets reinforced or decayed, and confidence on the ToM block moves with it.</p>
+<p>Example edge lifecycle:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Day 1:  elf creates edge: mind(customer) --predicts--&gt; decision(will-pay-49/mo)
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>        weight=0.7, confidence=0.5
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Day 15: Customer signs up. elf calls: outcome(decision-id, hit, &quot;signed week 1&quot;)
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        Edge weight reinforced to 0.8
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        ToM block confidence: 0.5 → 0.55
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>Day 45: Second customer asks for full bespoke. elf calls: outcome(decision-id, miss, &quot;rejected template&quot;)
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        Edge weight decayed to 0.65
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        ToM block confidence: 0.55 → 0.48
+</span></code></pre></div></p>
+<p>Over time, the ToM block's confidence reflects whether elf's model of that mind is accurate or drifting.</p>
+<h2 id="what-we-actually-build">What We Actually Build<a class="headerlink" href="#what-we-actually-build" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Where</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New block category <code>mind</code></td>
+<td>Convention + docs</td>
+<td>0 LOC (metadata string)</td>
+</tr>
+<tr>
+<td>Two edge relation types: <code>predicts</code>, <code>validates</code></td>
+<td><code>Edge.relation_type</code> already accepts strings</td>
+<td>0 LOC (config)</td>
+</tr>
+<tr>
+<td><code>simulate</code> frame retrieval policy</td>
+<td><code>.elfmem/config.yaml</code> + <code>scoring.py</code></td>
+<td>~50 LOC</td>
+</tr>
+<tr>
+<td>CLI: <code>elfmem mind &lt;subject&gt;</code></td>
+<td>New command module</td>
+<td>~200 LOC</td>
+</tr>
+<tr>
+<td>CLI: <code>elfmem outcome --against-mind</code></td>
+<td>Wrapper around existing <code>outcome()</code></td>
+<td>~150 LOC</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total scope: ~400 LOC for a feature that unlocks explicit world-modelling.</strong> No schema migrations. No DB changes. The entire feature is a convention layer on top of existing primitives (blocks, edges, outcome closure, decay tiers).</p>
+<h2 id="tom-block-content-schema">ToM Block Content Schema<a class="headerlink" href="#tom-block-content-schema" title="Permanent link">&para;</a></h2>
+<h3 id="frontmatter-structured">Frontmatter (structured)<a class="headerlink" href="#frontmatter-structured" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;[[agentmkts-customer-archetype]]&quot;</span><span class="w">  </span><span class="c1"># wiki entity ref</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mind</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">last_calibrated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-04-27</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">decay_tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">durable</span><span class="w">                          </span><span class="c1"># λ=0.001; slow decay</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">prediction_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">hit_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nt">miss_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nt">mean_confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.52</span>
+</span></code></pre></div>
+<h3 id="body-markdown-human-readable">Body (markdown, human-readable)<a class="headerlink" href="#body-markdown-human-readable" title="Permanent link">&para;</a></h3>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gu">## Goals</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>What this mind is trying to achieve. One per bullet.
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">-</span><span class="w"> </span>Ship fast without learning infra details
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">-</span><span class="w"> </span>Keep API costs predictable
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">-</span><span class="w"> </span>Own the agent differentiation layer
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="gu">## Beliefs</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>What this mind holds to be true. Reference sources where possible.
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">-</span><span class="w"> </span>Agent-ready code is a moat (they use Claude Code daily; see [[agentmkts-transcript]])
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">-</span><span class="w"> </span>Files are commoditising (competing SvelteKit templates on Gumroad; see [[claude-skills-monetisation-landscape]])
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="k">-</span><span class="w"> </span>Customisation has high discovery cost (they&#39;ll ask, but hate paying by the hour)
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="gu">## Fears</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>What this mind wants to avoid. Be specific.
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">-</span><span class="w"> </span>Complex setup (abandonment risk if &gt;30min to first deploy)
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="k">-</span><span class="w"> </span>Surprise costs (API bills scare them more than upfront price)
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="k">-</span><span class="w"> </span>Template becomes a commodity they don&#39;t own (vendor lock-in)
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="gu">## Motivations</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>What actually drives decisions. Often hidden behind goals/fears. Optional but powerful.
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="k">-</span><span class="w"> </span>Ego/status: want to say &quot;I built this with agents&quot;
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="k">-</span><span class="w"> </span>Autonomy: want to own their differentiation, not rent it
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="k">-</span><span class="w"> </span>Speed: want to ship month 1, not month 3
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="gu">## Predictions</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>Falsifiable claims about what this mind will do. Require verify_at date.
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="k">-</span><span class="w"> </span>Will pay £49-99/mo for hosted auto-updates (not files). verify_at: 2026-06-30
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: owns differentiation + predictable cost + no setup friction
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="k">-</span><span class="w"> </span>Will request agent-customisation layer within 30 days. verify_at: 2026-05-20
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: they&#39;ll want to tweak prompts for their domain
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="k">-</span><span class="w"> </span>Will abandon if setup takes &gt;30min. verify_at: 2026-05-15
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: deployment anxiety + competing alternatives (hire devs, build custom)
+</span></code></pre></div>
+<p><strong>Why markdown + headings, not structured JSON?</strong>
+- Keeps block content in text (existing LLM consolidation works)
+- Readable by humans (Ben can edit a ToM block as a note)
+- Survives Hebbian learning (similarity scoring operates on text)
+- Matches vault conventions (everything is markdown)</p>
+<h2 id="real-example-elfs-customer-tom-block">Real Example: elf's Customer ToM Block<a class="headerlink" href="#real-example-elfs-customer-tom-block" title="Permanent link">&para;</a></h2>
+<p>elf would create this when modelling a specific customer archetype engaged with elfmem:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;[[elfmem-early-adopter]]&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mind</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">last_calibrated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-04-28</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">decay_tier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">durable</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">prediction_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">hit_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">miss_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="nt">mean_confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.50</span>
+</span></code></pre></div>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gu">## Goals</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">-</span><span class="w"> </span>Build agents that learn and improve over time (not static systems)
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">-</span><span class="w"> </span>Integrate memory into existing agent frameworks with minimal friction
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">-</span><span class="w"> </span>Maintain observability of what agents know and why they decide
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="gu">## Beliefs</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">-</span><span class="w"> </span>Knowledge decay matters (forgetting bad data is as important as learning good data)
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="k">-</span><span class="w"> </span>Predictability of LLM behavior improves with good context
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">-</span><span class="w"> </span>Graph-based memory integrates better with agentic workflows than linear RAG
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="gu">## Fears</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="k">-</span><span class="w"> </span>Memory system becomes a black box (can&#39;t audit what agent knows)
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="k">-</span><span class="w"> </span>Integration overhead outweighs the memory benefit
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="k">-</span><span class="w"> </span>Stale or contradictory knowledge accumulates and breaks agent decisions
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="gu">## Predictions</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="k">-</span><span class="w"> </span>Will integrate elfmem into their agent framework within 2 weeks of launch. verify_at: 2026-05-12
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: minimal Python dependency, SQLite backend (no ops), API is straightforward
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="k">-</span><span class="w"> </span>Will use the simulate frame to test agent decisions before deployment. verify_at: 2026-06-01
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: observability of &quot;what would this agent think in context X?&quot; is valuable for debugging
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="k">-</span><span class="w"> </span>Will request per-domain decay tuning (some knowledge lasts months, some lasts days). verify_at: 2026-06-15
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>Reasoning: their domain mixes evergreen patterns with rapidly-changing facts
+</span></code></pre></div>
+<p>As predictions close (adoption confirmed, feature adoption measured, requests arrived), elf calibrates this model: hits reinforce it, misses decay it. Over time, the model becomes more accurate.</p>
+<h2 id="integration-with-simulate-frame-multi-scale-loops">Integration with Simulate Frame + Multi-Scale Loops<a class="headerlink" href="#integration-with-simulate-frame-multi-scale-loops" title="Permanent link">&para;</a></h2>
+<p><strong>The full cycle:</strong></p>
+<ol>
+<li><strong>elf inhabits</strong> → calls <code>elfmem frame simulate --mind customer</code></li>
+<li><strong>ToM blocks retrieved</strong> → customer goals, fears, predictions available</li>
+<li><strong>elf generates stance</strong> → "Here's what I'd say to this customer given what I know about them"</li>
+<li><strong>Stance becomes prediction</strong> → <code>elfmem connect &lt;mind-block&gt; &lt;decision-block&gt; predicts weight=0.7</code></li>
+<li><strong>Outcome arrives</strong> → Customer does X (or doesn't)</li>
+<li><strong>elf closes loop</strong> → <code>elfmem outcome --against-mind &lt;id&gt; --hit/miss --reason "..."</code></li>
+<li><strong>Calibration happens</strong> → ToM block confidence updated; SELF blocks reinforced/decayed</li>
+<li><strong>Next time</strong> → <code>elf inhabits</code> with a slightly better model of the customer mind</li>
+</ol>
+<p>This is Active Inference applied to world-modelling: the agent's generative model of other minds improves with each prediction cycle.</p>
+<h2 id="edge-cases-and-mitigations-with-examples">Edge Cases and Mitigations (with examples)<a class="headerlink" href="#edge-cases-and-mitigations-with-examples" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Edge case</th>
+<th>Mitigation</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hallucinated minds</strong> — elf invents customer preferences to seem capable</td>
+<td>ToM confidence capped at 0.6 until N≥3 predictions close. Can't reinforce fiction.</td>
+<td>If elf says "customers fear complexity" but all three predictions miss, confidence drops to 0.45.</td>
+</tr>
+<tr>
+<td><strong>Subject conflation</strong> — Two Bens with same name create one ToM</td>
+<td>Subject field MUST be <code>[[wiki-slug]]</code> pointing to actual entity. CLI enforces.</td>
+<td><code>elfmem mind create</code> fails if subject is not a valid wiki link.</td>
+</tr>
+<tr>
+<td><strong>Stale ToM</strong> — Mind modelled once in month 1, never updated</td>
+<td>DURABLE decay tier (λ=0.001); weekly <code>dream</code> flags ToM blocks with <code>last_calibrated &gt; 30 days</code>.</td>
+<td>If a ToM hasn't had a prediction close in 30 days, <code>dream</code> output: "Ben's model is stale — consider a check-in prediction."</td>
+</tr>
+<tr>
+<td><strong>Prediction inflation</strong> — Every casual statement becomes a prediction</td>
+<td><code>predicts</code> edge only created if elf's simulate output explicitly contains a <code>verify_at</code> date</td>
+<td>Without <code>verify_at</code>, the statement is just narrative in the ToM block, not a falsifiable edge.</td>
+</tr>
+<tr>
+<td><strong>Privacy</strong> — ToM of non-consenting third parties</td>
+<td>Third-party ToM blocks default to <code>private: true</code>; never indexed by MCP</td>
+<td>A customer's ToM is not shared externally. Ben approves before elf shares.</td>
+</tr>
+<tr>
+<td><strong>Confirmation bias</strong> — elf says "hit" for marginal outcomes to inflate hit rate</td>
+<td><code>outcome --against-mind</code> requires both hit/miss flag AND a reason; reason is embedded in edge metadata for later audit</td>
+<td>Years later, elf can review: "Did I really think that was a hit?" See the reason I wrote.</td>
+</tr>
+<tr>
+<td><strong>Cross-mind contamination</strong> — Customer model bleeds into Ben model</td>
+<td>Each ToM is a separate block. Similarity edges are fine; content stays isolated.</td>
+<td>Ben's ToM and customer's ToM can have a co_retrieval edge (they co-appear in retrieval), but they don't merge.</td>
+</tr>
+<tr>
+<td><strong>Goodhart on hit rate</strong> — elf optimises for prediction accuracy instead of calibration</td>
+<td>Track <code>mean_confidence_delta</code> per ToM, not hit count. Favour moving towards truth over being right.</td>
+<td>A ToM that decayed from 0.7 to 0.6 because elf was wrong is <em>good</em> — it's calibrating.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="three-alternatives-considered">Three Alternatives Considered<a class="headerlink" href="#three-alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Structured JSON ToM</strong> (rejected)</li>
+<li>Pros: queryable, type-safe</li>
+<li>Cons: breaks text-content assumption, requires schema migration, won't survive similarity scoring</li>
+<li>
+<p>Verdict: Over-engineered for a convention layer</p>
+</li>
+<li>
+<p><strong>One ToM per prediction</strong> (rejected)</p>
+</li>
+<li>Pros: fine-grained, one update per closure</li>
+<li>Cons: explodes block count (10 predictions = 10 blocks), loses subject coherence, makes "model a mind" hard</li>
+<li>
+<p>Verdict: Fragment the identity we're trying to model</p>
+</li>
+<li>
+<p><strong>One ToM per subject, append-only with consolidation via dream</strong> (chosen)</p>
+</li>
+<li>Pros: coherent unit, compounds, leverages existing consolidation, markdown-native</li>
+<li>Cons: body can get long; mitigated by dream consolidation</li>
+<li>Verdict: Matches elf's architecture and the vault's ethos</li>
+</ol>
+<h2 id="falsifiable-success-and-kill-criteria-phase-0-discipline">Falsifiable Success and Kill Criteria (Phase 0 discipline)<a class="headerlink" href="#falsifiable-success-and-kill-criteria-phase-0-discipline" title="Permanent link">&para;</a></h2>
+<p><strong>Success at 4 weeks (2026-05-25):</strong>
+- ≥3 ToM blocks live (Ben + 2 customer archetypes)
+- ≥10 closed predictions across them
+- Mean confidence delta is non-zero (calibration is moving the needle)
+- At least one prediction-miss visibly changed a subsequent simulate output (we learn from being wrong)
+- <code>elfmem outcome</code> calls are happening as part of weekly cadence, not ad-hoc</p>
+<p><strong>Kill at 4 weeks if:</strong>
+- Zero closed predictions (feature is capture-only, no closure loop working)
+- All predictions hit trivially (e.g., "will engage with the product" — unfalsifiable)
+- Simulate frame outputs are identical with vs without ToM retrieval (no signal, feature adds noise not intelligence)
+- ToM blocks are too expensive to maintain (updates take longer than value delivered)</p>
+<p><strong>Named user:</strong> Ben. First ToM is Ben's. First closed predictions are about Ben (will he publish the blog? Will he ship Phase 0 by deadline?). Self-bootstrapping because Ben's behaviour is observable and immediate.</p>
+<p><strong>Success metric we'll compute at week 4:</strong> (closed predictions with non-zero delta) / (total predictions) &gt;= 0.6. Not perfect predictions, but <em>moving</em> predictions.</p>
+<h2 id="implementation-sequence-week-1-5-days">Implementation Sequence (week 1, ~5 days)<a class="headerlink" href="#implementation-sequence-week-1-5-days" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Output</th>
+<th>Spike risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>simulate</code> frame entry in <code>.elfmem/config.yaml</code>; retrieval scoring policy (SELF 10.0, mind/decision 6.0/5.0, task 3.0, knowledge 1.0). Test that <code>frame simulate</code> retrieves mind blocks higher than knowledge blocks.</td>
+<td>Is the scoring hook flexible enough? (Answered by open questions.)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>elfmem mind &lt;subject&gt;</code> CLI: create / append-prediction / list / show. Template a Ben ToM block.</td>
+<td>Do categories accept "mind" string? (Answered by open questions.)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>elfmem outcome --against-mind &lt;id&gt;</code> wrapper; wire <code>predicts</code> / <code>validates</code> edges through <code>connects()</code>. Smoke test: predict → outcome → edge reinforced.</td>
+<td>Do <code>connects()</code> accept arbitrary relation strings? (Answered by open questions.)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Migrate three predictions about Ben from feedback memory into his ToM block. Run bootstrap: <code>elfmem mind append Ben --prediction "Will publish blog by..." --verify-at 2026-05-04</code>.</td>
+<td>Does the CLI make migration frictionless enough?</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Smoke test: run simulate frame with Ben's ToM retrieved; compare outputs with/without ToM. Confirm visible signal.</td>
+<td>Does the simulate frame actually change output quality? (Kill criterion.)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-we-explicitly-do-not-build-in-week-1">What We Explicitly Do NOT Build in Week 1<a class="headerlink" href="#what-we-explicitly-do-not-build-in-week-1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Episode blocks (distinct from ToM; comes week 2)</li>
+<li>Mode-monitoring metadata (week 3)</li>
+<li>Typed causal edges beyond predicts/validates (week 4-5)</li>
+<li>Goal hierarchy (after N=10 ToM closures)</li>
+<li>ToM versioning / time-travel queries (nice-to-have)</li>
+<li>Multi-agent ToM (ToM of agents modelling other agents; future)</li>
+<li>LLM-driven ToM auto-population from sources (future; risky)</li>
+</ul>
+<h2 id="open-questions-for-the-elfmem-maintainer">Open Questions for the Elfmem Maintainer<a class="headerlink" href="#open-questions-for-the-elfmem-maintainer" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Categories:</strong> Is there a registered category list, or are categories truly free-form strings? Does "mind" need a code change or just convention?</li>
+<li><strong>Relations:</strong> Does <code>connects()</code> accept arbitrary <code>relation</code> strings, or is there a guard list? Do "predicts" and "validates" need code changes?</li>
+<li><strong>Scoring policies:</strong> Where do frame-specific retrieval policies live? Is <code>scoring.py</code> the only hook, or is there a frame-specific registry?</li>
+<li><strong>Decay tiers:</strong> Best practice — set decay tier per-block at <code>remember()</code> time, or as a category-level default in config?</li>
+</ol>
+<h2 id="alignment-with-project-axioms">Alignment with Project Axioms<a class="headerlink" href="#alignment-with-project-axioms" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Capture is frictionless</strong> — <code>elfmem mind</code> CLI with minimal syntax; auto-linking to wiki entities</li>
+<li><strong>Agent maintains</strong> — elf owns ToM blocks; Ben approves on outcome closure</li>
+<li><strong>Knowledge compounds</strong> — Each closed prediction reinforces/decays blocks and edges; minds get more accurate over time</li>
+<li><strong>Elfmem is intelligence layer</strong> — ToM is core to intelligence: the agent's generative model of others</li>
+<li><strong>Everything is markdown</strong> — ToM blocks are vault-native notes, human-readable</li>
+</ul>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Originating designs: [[alv-simulated-self-cognitive-mode.md]], [[alv-multi-scale-learning-loops.md]], [[alv-cognitive-abstractions-roadmap.md]]</li>
+<li>Calibration mechanism: elfmem <code>outcome()</code> with confidence delta + edge reinforcement</li>
+<li>Playbook: [[project-build-playbook.md]] Phase 0 gates applied to infrastructure</li>
+<li>Theory: Active Inference (Friston) applied to explicit world-modelling</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
