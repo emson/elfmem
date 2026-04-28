@@ -139,7 +139,7 @@ Identity blocks use `permanent` decay with a half-life of ~80,000 hours. They an
 | Standard | ~69 hours | General knowledge |
 | Ephemeral | ~14 hours | Session observations, temporary facts |
 
-### Five frames: retrieval shaped by intent
+### Six frames: retrieval shaped by intent
 
 Each frame is a pre-configured scoring pipeline. The same knowledge scores differently depending on what the agent needs:
 
@@ -158,6 +158,9 @@ background = await system.frame("world", query="Python best practices")
 
 # "What just happened?" - weights recency above all
 recent = await system.frame("short_term")
+
+# "What would they do?" - inhabit another agent's perspective
+perspective = await system.frame("simulate", query="how will the user react?")
 ```
 
 Every block is scored across five dimensions:
@@ -170,7 +173,54 @@ Score = w_similarity    * cosine_similarity(query, block)
       + w_reinforcement * log(1 + count) / log(1 + max_count)
 ```
 
-The `self` frame heavily weights confidence and reinforcement, because identity is what you've consistently believed. The `attention` frame weights similarity and recency: what's relevant *right now*. The `task` frame balances everything for the goal at hand.
+The `self` frame heavily weights confidence and reinforcement, because identity is what you've consistently believed. The `attention` frame weights similarity and recency: what's relevant *right now*. The `task` frame balances everything for the goal at hand. The `simulate` frame uses score boosts to prioritise identity, mind models, and predictions — see below.
+
+### Theory of Mind: modelling other agents
+
+elfmem can model other agents, users, or stakeholders as **mind blocks** — structured representations of their goals, beliefs, fears, and motivations. Attach **falsifiable predictions** to test your model, then close the loop with outcomes to calibrate.
+
+```python
+# 1. Create a mind model
+result = await system.mind_create(
+    subject="Alice",
+    goals=["Ship the API refactor by Friday"],
+    beliefs=["Microservices are overengineered for our scale"],
+    fears=["Breaking the mobile app integration"],
+)
+print(result)  # "Stored block a1b2c3d4. Status: created."
+
+# 2. Make a falsifiable prediction
+pred = await system.mind_predict(
+    mind_block_id=result.block_id,
+    prediction="Alice will push back on splitting the monolith",
+    verify_at="2026-05-02",
+    reasoning="Her belief about microservices + fear of breaking mobile",
+)
+print(pred)  # "Prediction d5e6f7g8 linked to mind a1b2…"
+
+# 3. Retrieve through the simulate frame
+perspective = await system.frame("simulate", query="how will Alice react to the proposal?")
+# Returns: SELF blocks (10× boost), mind blocks (6×), predictions (5×)
+# Grouped by role: Identity → Minds → Decisions → Context
+
+# 4. Close the loop when the prediction resolves
+outcome = await system.mind_outcome(
+    prediction_block_id=pred.prediction_block_id,
+    hit=True,
+    reason="Alice vetoed the split in Thursday's meeting, as predicted",
+)
+print(outcome)  # "Prediction hit. Mind confidence: 0.50 → 0.58"
+```
+
+The `simulate` frame uses **score boosts** — per-category and per-tag multipliers applied during retrieval — to surface the most relevant identity and mind blocks:
+
+| Boost target | Multiplier | Why |
+|---|---|---|
+| `tag:self/` prefix | 10× | Ground perspective in agent's own values |
+| `mind` category | 6× | Surface the mind model being simulated |
+| `decision` category | 5× | Surface linked predictions |
+
+Mind blocks use `DURABLE` decay (~6 month half-life), so mental models persist across many sessions. Predictions are tracked as `decision` blocks linked via `predicts` edges. On outcome closure, `validates` edges are created and confidence is updated via Bayesian calibration.
 
 ### Three rhythms: learn, dream, curate
 
@@ -283,7 +333,8 @@ Decay is **session-aware**: the clock only ticks during active use. Knowledge su
 | Contradiction detection | Yes | No | No | No |
 | Feedback loop (outcome) | Yes | No | No | No |
 | Session-aware clock | Yes | No | No | No |
-| Retrieval frames | 5 optimised | No | No | No |
+| Theory of Mind | Yes | No | No | No |
+| Retrieval frames | 6 optimised | No | No | No |
 | MCP native | Yes | No | No | No |
 | Official SDKs only | Yes | No | Varies | No |
 
@@ -714,6 +765,18 @@ result = await system.connect(source, target, relation="similar")
 result = await system.disconnect(source, target)
 #   → DisconnectResult(action="removed", ...)
 
+# Theory of Mind
+result = await system.mind_create(subject, goals=None, beliefs=None, fears=None, motivations=None)
+#   → LearnResult(block_id="...", status="created")
+result = await system.mind_predict(mind_block_id, prediction, verify_at, reasoning=None)
+#   → MindPredictResult(prediction_block_id="...", mind_block_id="...")
+result = await system.mind_list()
+#   → list[MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)]
+result = await system.mind_show(mind_block_id)
+#   → MindShowResult(subject, block_id, content, predictions=[PredictionDetail, ...])
+result = await system.mind_outcome(prediction_block_id, hit, reason)
+#   → MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, ...)
+
 # Introspection
 status = await system.status()
 #   → SystemStatus(health="good", suggestion="Memory is healthy.", ...)
@@ -746,6 +809,11 @@ OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_pe
 ConnectResult(action, source_id, target_id, relation, weight)
 DisconnectResult(action, source_id, target_id)
 SetupResult(blocks_created, total_attempted)
+MindPredictResult(prediction_block_id, mind_block_id, edge_id)
+MindShowResult(subject, block_id, content, confidence, predictions)
+MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)
+MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, old_confidence)
+PredictionDetail(block_id, content, status, hit, reason)
 SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, lifetime_tokens)
 TokenUsage(llm_input_tokens, llm_output_tokens, embedding_tokens, llm_calls, embedding_calls)
 ```
@@ -792,7 +860,8 @@ src/elfmem/
     ├── learn.py            # learn(): fast-path ingestion
     ├── consolidate.py      # dream(): batch promotion
     ├── recall.py           # recall(): retrieval + reinforcement
-    └── curate.py           # curate(): maintenance
+    ├── curate.py           # curate(): maintenance
+    └── mind.py             # mind_create/predict/list/show/outcome
 ```
 
 **Four layers, clear boundaries:**
@@ -813,7 +882,7 @@ git clone https://github.com/emson/elfmem.git
 cd elfmem
 uv sync --extra dev
 uv run pytest                                            # all tests (no API key needed)
-uv run mypy --ignore-missing-imports src/elfmem/         # type checking
+uv run mypy src/elfmem/                                  # type checking
 uv run ruff check src/ tests/                            # lint
 ```
 
