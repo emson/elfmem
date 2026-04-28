@@ -9,6 +9,7 @@ from typing import Literal
 from elfmem.scoring import (
     ATTENTION_WEIGHTS,
     SELF_WEIGHTS,
+    SIMULATE_WEIGHTS,
     TASK_WEIGHTS,
     ScoringWeights,
 )
@@ -40,6 +41,7 @@ class FrameDefinition:
     token_budget: int
     cache: CachePolicy | None
     source: Literal["builtin", "user"] = "user"
+    score_boosts: dict[str, float] | None = None
 
 
 SELF_FRAME = FrameDefinition(
@@ -78,10 +80,27 @@ TASK_FRAME = FrameDefinition(
     source="builtin",
 )
 
+SIMULATE_FRAME = FrameDefinition(
+    name="simulate",
+    weights=SIMULATE_WEIGHTS,
+    filters=FrameFilters(),
+    guarantees=["self/constitutional", "mind/%"],
+    template="simulate",
+    token_budget=2000,
+    cache=None,
+    source="builtin",
+    score_boosts={
+        "tag:self/": 10.0,
+        "mind": 6.0,
+        "decision": 5.0,
+    },
+)
+
 BUILTIN_FRAMES: dict[str, FrameDefinition] = {
     "self": SELF_FRAME,
     "attention": ATTENTION_FRAME,
     "task": TASK_FRAME,
+    "simulate": SIMULATE_FRAME,
 }
 
 

@@ -70,6 +70,7 @@ async def recall(
         top_k=top_k,
         tag_filter=tag_filter,
         search_window_hours=frame_def.filters.search_window_hours,
+        score_boosts=frame_def.score_boosts,
     )
 
     # 5. Guarantee enforcement

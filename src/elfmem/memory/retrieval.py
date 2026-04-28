@@ -60,6 +60,7 @@ async def hybrid_retrieve(
     top_k: int = 5,
     tag_filter: str | None = None,
     search_window_hours: float = DEFAULT_SEARCH_WINDOW_HOURS,
+    score_boosts: dict[str, float] | None = None,
 ) -> list[ScoredBlock]:
     """Execute the 7-stage hybrid retrieval pipeline.
 
@@ -142,6 +143,7 @@ async def hybrid_retrieve(
         max_reinforcement_count=max_reinforcement,
         top_k=top_k,
         tags_map=tags_map,
+        score_boosts=score_boosts,
     )
 
     # Stage 5: MMR diversity reordering (query-aware retrievals with embeddings only)
@@ -283,6 +285,27 @@ async def _stage_3_graph_expand(
     return result
 
 
+def _compute_boost(
+    category: str,
+    tags: list[str],
+    boosts: dict[str, float],
+) -> float:
+    """Compute multiplicative score boost from category and tag-prefix matches.
+
+    Plain keys match block category (e.g. "mind" → 6.0).
+    Keys prefixed with "tag:" match any tag starting with the suffix
+    (e.g. "tag:self/" → 10.0 boosts any block tagged self/*).
+    Returns the maximum matching boost, defaulting to 1.0.
+    """
+    boost = boosts.get(category, 1.0)
+    for key, value in boosts.items():
+        if key.startswith("tag:"):
+            prefix = key[4:]
+            if any(t.startswith(prefix) for t in tags):
+                boost = max(boost, value)
+    return boost
+
+
 def _stage_4_composite_score(
     candidates: list[tuple[dict[str, Any], float, bool]],
     *,
@@ -292,10 +315,13 @@ def _stage_4_composite_score(
     max_reinforcement_count: int,
     top_k: int,
     tags_map: dict[str, list[str]] | None = None,
+    score_boosts: dict[str, float] | None = None,
 ) -> list[ScoredBlock]:
     """Stage 4: Compute composite score for all candidates.
 
     Each candidate is (block_dict, similarity, was_expanded).
+    When score_boosts is provided, the composite score is multiplied by
+    a category/tag-based boost factor before ranking.
     Returns top (top_k × CONTRADICTION_OVERSAMPLE) ScoredBlock objects.
     """
     scored: list[ScoredBlock] = []
@@ -321,11 +347,20 @@ def _stage_4_composite_score(
             reinforcement=reinforcement,
             weights=weights,
         )
+
+        block_tags = tags_map.get(block_id, []) if tags_map else []
+        if score_boosts:
+            score *= _compute_boost(
+                category=block.get("category", "knowledge"),
+                tags=block_tags,
+                boosts=score_boosts,
+            )
+
         scored.append(
             ScoredBlock(
                 id=block_id,
                 content=block.get("summary") or block.get("content", ""),
-                tags=tags_map.get(block_id, []) if tags_map else [],
+                tags=block_tags,
                 similarity=similarity,
                 confidence=confidence,
                 recency=recency,

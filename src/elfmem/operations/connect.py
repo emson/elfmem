@@ -29,6 +29,8 @@ _RELATION_DEFAULT_WEIGHTS: dict[str, float] = {
     "supports":    0.75,
     "contradicts": 0.60,
     "outcome":     0.80,
+    "predicts":    0.70,
+    "validates":   0.75,
 }
 _DEFAULT_WEIGHT_FALLBACK = 0.65   # for unknown custom relation types
 

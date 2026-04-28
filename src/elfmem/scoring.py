@@ -91,6 +91,14 @@ TASK_WEIGHTS = ScoringWeights(
     reinforcement=0.20,
 )
 
+SIMULATE_WEIGHTS = ScoringWeights(
+    similarity=0.25,
+    confidence=0.25,
+    recency=0.15,
+    centrality=0.20,
+    reinforcement=0.15,
+)
+
 
 def compute_score(
     *,

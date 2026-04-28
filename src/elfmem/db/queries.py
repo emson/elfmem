@@ -1091,6 +1091,36 @@ async def count_self_blocks(conn: AsyncConnection) -> int:
     return result.scalar() or 0
 
 
+async def get_active_blocks_by_category(
+    conn: AsyncConnection,
+    category: str,
+) -> list[dict[str, Any]]:
+    """Fetch all active blocks with a specific category."""
+    result = await conn.execute(
+        select(blocks).where(
+            and_(blocks.c.status == "active", blocks.c.category == category)
+        )
+    )
+    return [dict(row) for row in result.mappings()]
+
+
+async def get_edges_by_relation_type(
+    conn: AsyncConnection,
+    block_id: str,
+    relation_type: str,
+) -> list[dict[str, Any]]:
+    """Get edges of a specific relation type where block_id is an endpoint."""
+    result = await conn.execute(
+        select(edges).where(
+            and_(
+                or_(edges.c.from_id == block_id, edges.c.to_id == block_id),
+                edges.c.relation_type == relation_type,
+            )
+        )
+    )
+    return [dict(row) for row in result.mappings()]
+
+
 async def seed_builtin_data(conn: AsyncConnection) -> None:
     """Insert built-in frames and default system_config values.
 

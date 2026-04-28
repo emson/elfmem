@@ -59,6 +59,10 @@ from elfmem.types import (
     FrameResult,
     LearnDocumentResult,
     LearnResult,
+    MindOutcomeResult,
+    MindPredictResult,
+    MindShowResult,
+    MindSummary,
     OperationRecord,
     OutcomeResult,
     ScoredBlock,
@@ -1579,6 +1583,168 @@ class MemorySystem:
                 await prune_stale_co_retrieval_staging(conn)
                 self._co_retrieval_staging = await load_co_retrieval_staging(conn)
         self._record_op("curate", result.summary)
+        return result
+
+    # ── Mind (Theory of Mind) operations ───────────────────────────────────
+
+    async def mind_create(
+        self,
+        subject: str,
+        *,
+        goals: list[str] | None = None,
+        beliefs: list[str] | None = None,
+        fears: list[str] | None = None,
+        motivations: list[str] | None = None,
+    ) -> LearnResult:
+        """Create a Theory of Mind block for a subject.
+
+        USE WHEN: You need to model another agent's or person's mind —
+        their goals, beliefs, fears, and motivations — as an explicit,
+        falsifiable representation.
+
+        DON'T USE WHEN: Storing general knowledge about someone. Use
+        learn() for facts; mind_create() is for structured mental models
+        that will generate predictions.
+
+        COST: Instant. No LLM calls. Block goes to inbox.
+
+        RETURNS: LearnResult with the mind block ID. Category is "mind",
+        decay tier is DURABLE (~6 month half-life).
+
+        NEXT: Add predictions with mind_predict(). Retrieve with
+        frame("simulate") to reason about the modelled mind.
+        """
+        from elfmem.operations.mind import create_mind
+
+        async with self._engine.begin() as conn:
+            result = await create_mind(
+                conn,
+                subject=subject,
+                goals=goals,
+                beliefs=beliefs,
+                fears=fears,
+                motivations=motivations,
+            )
+        if result.status in ("created", "near_duplicate_superseded"):
+            self._pending += 1
+        if result.status == "created":
+            self._last_learned_block_id = result.block_id
+        self._record_op("mind_create", result.summary)
+        return result
+
+    async def mind_predict(
+        self,
+        mind_block_id: str,
+        prediction: str,
+        *,
+        verify_at: str,
+        reasoning: str | None = None,
+    ) -> "MindPredictResult":
+        """Add a falsifiable prediction linked to a mind block.
+
+        USE WHEN: You have a specific, testable hypothesis about what a
+        modelled mind will do. Predictions require a verify_at date.
+
+        DON'T USE WHEN: The claim is unfalsifiable or has no verification
+        date. Casual observations go in learn().
+
+        COST: Instant. Creates a decision block + predicts edge.
+
+        RETURNS: MindPredictResult with decision_block_id and edge status.
+
+        NEXT: When the prediction resolves, call mind_outcome() with the
+        decision_block_id and hit=True/False.
+        """
+        from elfmem.operations.mind import predict
+
+        async with self._engine.begin() as conn:
+            result = await predict(
+                conn,
+                mind_block_id=mind_block_id,
+                prediction=prediction,
+                verify_at=verify_at,
+                reasoning=reasoning,
+                edge_degree_cap=self._config.memory.edge_degree_cap,
+                edge_reinforce_delta=self._config.memory.edge_reinforce_delta,
+                current_active_hours=self._current_active_hours(),
+            )
+        self._pending += 1  # decision block goes to inbox
+        self._last_learned_block_id = result.decision_block_id
+        self._record_op("mind_predict", result.summary)
+        return result
+
+    async def mind_list(self) -> list["MindSummary"]:
+        """List all active mind blocks with prediction statistics.
+
+        USE WHEN: Discovering which minds are modelled and their calibration.
+
+        COST: Fast. Database reads only.
+
+        RETURNS: list[MindSummary] with subject, confidence, prediction
+        counts, and hit/miss ratios.
+        """
+        from elfmem.operations.mind import list_minds
+
+        async with self._engine.connect() as conn:
+            result = await list_minds(conn)
+        self._record_op("mind_list", f"{len(result)} mind(s) found.")
+        return result
+
+    async def mind_show(self, mind_block_id: str) -> "MindShowResult":
+        """Show a mind block with all linked predictions.
+
+        USE WHEN: Inspecting a specific mind model before reasoning about
+        it or before running simulate frame retrieval.
+
+        COST: Fast. Database reads only.
+
+        RETURNS: MindShowResult with content, predictions, and outcomes.
+        """
+        from elfmem.operations.mind import show_mind
+
+        async with self._engine.connect() as conn:
+            result = await show_mind(conn, mind_block_id)
+        self._record_op("mind_show", result.summary)
+        return result
+
+    async def mind_outcome(
+        self,
+        decision_block_id: str,
+        *,
+        hit: bool,
+        reason: str,
+    ) -> "MindOutcomeResult":
+        """Close a prediction: record hit/miss, calibrate the mind model.
+
+        USE WHEN: A prediction has resolved — the verify_at date has
+        passed and you can observe whether the prediction was correct.
+
+        DON'T USE WHEN: The prediction hasn't resolved yet. Don't
+        speculate — wait for observable evidence.
+
+        COST: Fast. Database writes only. Updates confidence on both
+        the decision block and the linked mind block.
+
+        RETURNS: MindOutcomeResult with confidence deltas and edge status.
+
+        NEXT: The mind model's confidence is now calibrated. Future
+        simulate frame retrievals reflect the updated model accuracy.
+        """
+        from elfmem.operations.mind import mind_outcome as _mind_outcome
+
+        async with self._engine.begin() as conn:
+            result = await _mind_outcome(
+                conn,
+                decision_block_id=decision_block_id,
+                hit=hit,
+                reason=reason,
+                current_active_hours=self._current_active_hours(),
+                prior_strength=self._config.memory.outcome_prior_strength,
+                reinforce_threshold=self._config.memory.outcome_reinforce_threshold,
+                edge_reinforce_delta=self._config.memory.edge_reinforce_delta,
+                edge_degree_cap=self._config.memory.edge_degree_cap,
+            )
+        self._record_op("mind_outcome", result.summary)
         return result
 
     async def close(self) -> None:

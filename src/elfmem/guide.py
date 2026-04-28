@@ -502,6 +502,87 @@ GUIDES: dict[str, AgentGuide] = {
             "# → 'guarded' if the edge is actually 'supports' (won't remove)"
         ),
     ),
+    "mind_create": AgentGuide(
+        name="mind_create",
+        what="Create a Theory of Mind block modelling another agent's goals, beliefs, fears.",
+        when=(
+            "You need to make predictions about what another agent or person will do. "
+            "Start by modelling their mind — goals, beliefs, fears, motivations."
+        ),
+        when_not=(
+            "Storing general facts about someone — use learn(). "
+            "Mind blocks are structured models for falsifiable predictions."
+        ),
+        cost="Instant. No LLM calls. Block queued in inbox.",
+        returns=(
+            "LearnResult with block_id. Category is 'mind', decay tier is DURABLE "
+            "(~6 month half-life). Tagged mind/<subject-slug>."
+        ),
+        next=(
+            "Add predictions with mind_predict(). Retrieve with frame('simulate') "
+            "to inhabit the perspective and reason about the modelled mind."
+        ),
+        example=(
+            "result = await system.mind_create(\n"
+            "    'customer-archetype',\n"
+            "    goals=['Ship fast without learning infra'],\n"
+            "    beliefs=['Agent-ready code is a moat'],\n"
+            "    fears=['Complex setup causes abandonment'],\n"
+            ")"
+        ),
+    ),
+    "mind_predict": AgentGuide(
+        name="mind_predict",
+        what="Add a falsifiable prediction linked to a mind block.",
+        when=(
+            "You have a specific, testable hypothesis about what the modelled mind will do. "
+            "Predictions must have a verify_at date."
+        ),
+        when_not=(
+            "The claim is unfalsifiable or has no verification date. "
+            "Casual observations go in learn()."
+        ),
+        cost="Instant. Creates a decision block + predicts edge.",
+        returns="MindPredictResult with decision_block_id and edge action.",
+        next="When the prediction resolves, call mind_outcome() with the decision_block_id.",
+        example=(
+            "result = await system.mind_predict(\n"
+            "    mind_block_id,\n"
+            "    'Will pay 49/mo for hosted version',\n"
+            "    verify_at='2026-06-30',\n"
+            "    reasoning='Prefers predictable cost over setup friction',\n"
+            ")"
+        ),
+    ),
+    "mind_outcome": AgentGuide(
+        name="mind_outcome",
+        what="Close a prediction: record hit/miss, calibrate the mind model.",
+        when="A prediction has resolved — the verify_at date passed and you have evidence.",
+        when_not="The prediction hasn't resolved yet. Wait for observable evidence.",
+        cost="Fast. Database writes only. No LLM calls.",
+        returns=(
+            "MindOutcomeResult with confidence deltas for both mind and decision blocks. "
+            "Hit: confidence up + reinforce. Miss: confidence down + decay."
+        ),
+        next=(
+            "The mind model's confidence is now calibrated. Future simulate frame "
+            "retrievals reflect the updated model accuracy."
+        ),
+        example=(
+            "# Prediction hit\n"
+            "result = await system.mind_outcome(\n"
+            "    decision_block_id,\n"
+            "    hit=True,\n"
+            "    reason='Signed up week 1 at tier price',\n"
+            ")\n"
+            "# Prediction miss\n"
+            "result = await system.mind_outcome(\n"
+            "    decision_block_id,\n"
+            "    hit=False,\n"
+            "    reason='Requested full bespoke integration',\n"
+            ")"
+        ),
+    ),
     "guide": AgentGuide(
         name="guide",
         what="Return agent-friendly documentation for a specific method or all methods.",
@@ -544,6 +625,11 @@ OVERVIEW: str = "\n".join([
     "  connect(src, tgt, ...) Instant      Assert a semantic edge between two blocks",
     "  disconnect(src, tgt)   Instant      Remove a wrong or unwanted edge",
     "  curate()               Fast         Archive stale blocks, prune weak edges",
+    "  mind_create(subj, ...) Instant      Create a Theory of Mind block for a subject",
+    "  mind_predict(id, ...)  Instant      Add a falsifiable prediction to a mind block",
+    "  mind_outcome(id, ...)  Fast         Close a prediction: hit/miss + calibrate",
+    "  mind_list()            Fast         List all mind blocks with prediction stats",
+    "  mind_show(id)          Fast         Show a mind block with linked predictions",
     "  status()               Fast         System health snapshot + suggested action",
     "  history(last_n=10)     Instant      Recent operations in this process session",
     "  guide(method?)         Instant      This help",

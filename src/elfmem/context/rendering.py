@@ -32,6 +32,8 @@ def render_blocks(
         return _render_with_budget(blocks, token_budget, _render_self_template)
     elif template == "task":
         return _render_with_budget(blocks, token_budget, _render_task_template)
+    elif template == "simulate":
+        return _render_with_budget(blocks, token_budget, _render_simulate_template)
     else:
         return _render_with_budget(blocks, token_budget, _render_attention_template)
 
@@ -85,6 +87,39 @@ def _render_task_template(blocks: list[ScoredBlock]) -> str:
     if other_blocks:
         lines.append("## Context")
         for i, block in enumerate(other_blocks, 1):
+            lines.append(f"[{i}] {block.content}")
+    return "\n".join(lines) if lines else ""
+
+
+def _render_simulate_template(blocks: list[ScoredBlock]) -> str:
+    """Render blocks grouped by role for Theory of Mind simulation.
+
+    Groups: Identity (self/* tags), Minds (mind/* tags), Decisions, Context.
+    """
+    identity = [b for b in blocks if any(t.startswith("self/") for t in b.tags)]
+    minds = [b for b in blocks if any(t.startswith("mind/") for t in b.tags)
+             and b not in identity]
+    decisions = [b for b in blocks if b not in identity and b not in minds
+                 and "decision" in (b.tags or [])]
+    context = [b for b in blocks if b not in identity and b not in minds
+               and b not in decisions]
+
+    lines: list[str] = []
+    if identity:
+        lines.append("## Identity (inhabiting)")
+        for block in identity:
+            lines.append(f"- {block.content}")
+    if minds:
+        lines.append("## Minds (reasoning about)")
+        for i, block in enumerate(minds, 1):
+            lines.append(f"[{i}] {block.content}")
+    if decisions:
+        lines.append("## Open Decisions")
+        for i, block in enumerate(decisions, 1):
+            lines.append(f"[{i}] {block.content}")
+    if context:
+        lines.append("## Context")
+        for i, block in enumerate(context, 1):
             lines.append(f"[{i}] {block.content}")
     return "\n".join(lines) if lines else ""
 

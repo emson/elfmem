@@ -734,6 +734,168 @@ class ConnectsResult:
         }
 
 
+@dataclass(frozen=True)
+class MindSummary:
+    """Summary of a mind (ToM) block for listing."""
+
+    block_id: str
+    subject: str
+    confidence: float
+    prediction_count: int
+    hit_count: int
+    miss_count: int
+
+    @property
+    def summary(self) -> str:
+        ratio = f"{self.hit_count}/{self.hit_count + self.miss_count}" if (self.hit_count + self.miss_count) > 0 else "0/0"
+        return (
+            f"Mind: {self.subject} ({self.block_id[:8]}…) "
+            f"confidence={self.confidence:.2f} predictions={self.prediction_count} "
+            f"hit/total={ratio}"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "subject": self.subject,
+            "confidence": self.confidence,
+            "prediction_count": self.prediction_count,
+            "hit_count": self.hit_count,
+            "miss_count": self.miss_count,
+        }
+
+
+@dataclass(frozen=True)
+class MindPredictResult:
+    """Result of adding a prediction to a mind block."""
+
+    mind_block_id: str
+    decision_block_id: str
+    prediction: str
+    verify_at: str
+    edge_action: str  # "created" | "reinforced"
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"Prediction stored ({self.decision_block_id[:8]}…) "
+            f"linked to mind {self.mind_block_id[:8]}… "
+            f"verify_at={self.verify_at}. Edge: {self.edge_action}."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "mind_block_id": self.mind_block_id,
+            "decision_block_id": self.decision_block_id,
+            "prediction": self.prediction,
+            "verify_at": self.verify_at,
+            "edge_action": self.edge_action,
+        }
+
+
+@dataclass(frozen=True)
+class PredictionDetail:
+    """A single prediction linked to a mind block."""
+
+    block_id: str
+    content: str
+    confidence: float
+    verify_at: str | None
+    outcome: str | None  # "hit" | "miss" | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "content": self.content,
+            "confidence": self.confidence,
+            "verify_at": self.verify_at,
+            "outcome": self.outcome,
+        }
+
+
+@dataclass(frozen=True)
+class MindShowResult:
+    """Full view of a mind block with its linked predictions."""
+
+    block_id: str
+    subject: str
+    content: str
+    confidence: float
+    predictions: list[PredictionDetail]
+
+    @property
+    def summary(self) -> str:
+        n = len(self.predictions)
+        noun = "prediction" if n == 1 else "predictions"
+        return (
+            f"Mind: {self.subject} ({self.block_id[:8]}…) "
+            f"confidence={self.confidence:.2f}, {n} {noun}."
+        )
+
+    def __str__(self) -> str:
+        lines = [self.summary, "", self.content]
+        if self.predictions:
+            lines.append("\n## Linked Predictions")
+            for p in self.predictions:
+                status = f" [{p.outcome}]" if p.outcome else ""
+                verify = f" (verify: {p.verify_at})" if p.verify_at else ""
+                lines.append(f"  - [{p.block_id[:8]}…] {p.content[:80]}{verify}{status}")
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "subject": self.subject,
+            "content": self.content,
+            "confidence": self.confidence,
+            "predictions": [p.to_dict() for p in self.predictions],
+        }
+
+
+@dataclass(frozen=True)
+class MindOutcomeResult:
+    """Result of closing a prediction against a mind block."""
+
+    mind_block_id: str
+    decision_block_id: str
+    hit: bool
+    reason: str
+    mind_confidence_delta: float
+    decision_confidence_delta: float
+    validates_edge_action: str  # "created" | "reinforced"
+
+    @property
+    def summary(self) -> str:
+        label = "HIT" if self.hit else "MISS"
+        return (
+            f"Prediction {label}: mind {self.mind_block_id[:8]}… "
+            f"Δconf={self.mind_confidence_delta:+.3f}, "
+            f"decision {self.decision_block_id[:8]}… "
+            f"Δconf={self.decision_confidence_delta:+.3f}. "
+            f"Reason: {self.reason}"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "mind_block_id": self.mind_block_id,
+            "decision_block_id": self.decision_block_id,
+            "hit": self.hit,
+            "reason": self.reason,
+            "mind_confidence_delta": self.mind_confidence_delta,
+            "decision_confidence_delta": self.decision_confidence_delta,
+            "validates_edge_action": self.validates_edge_action,
+        }
+
+
 @dataclass
 class ContradictionRecord:
     block_a_id: str
