@@ -17,6 +17,8 @@ Agent self-documentation::
     s = await system.status()       # health snapshot + suggested action
 """
 
+from importlib.metadata import version as _version
+
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, LoggingConfig
 from elfmem.exceptions import (
@@ -56,7 +58,10 @@ from elfmem.types import (
     TokenUsage,
 )
 
+__version__ = _version("elfmem")
+
 __all__ = [
+    "__version__",
     # Core
     "MemorySystem",
     "ElfmemConfig",
