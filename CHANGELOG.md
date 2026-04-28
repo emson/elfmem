@@ -7,6 +7,12 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **`elfmem --version` / `-V` CLI flag:** Prints installed version and exits. Version is read from package metadata (`importlib.metadata`), single source of truth in `pyproject.toml`.
+- **`elfmem.__version__`:** Exported from the package root for programmatic access.
+
 ## [0.7.0] — 2026-04-28
 
 ### Added

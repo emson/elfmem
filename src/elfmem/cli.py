@@ -40,6 +40,7 @@ except ImportError:
         "  pip install 'elfmem[cli]'  or  uv add 'elfmem[cli]'"
     ) from None
 
+from elfmem import __version__
 from elfmem import project as _project
 from elfmem.api import MemorySystem, format_recall_response
 from elfmem.exceptions import ElfmemError
@@ -56,11 +57,33 @@ from elfmem.types import (
     SystemStatus,
 )
 
+
+def _version_callback(value: bool) -> None:
+    if value:
+        print(f"elfmem {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(
     name="elfmem",
     help="Adaptive memory for AI agents.",
     no_args_is_help=True,
 )
+
+
+@app.callback()
+def _main(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version", "-V",
+            help="Show version and exit.",
+            callback=_version_callback,
+            is_eager=True,
+        ),
+    ] = False,
+) -> None:
+    """Adaptive memory for AI agents."""
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
