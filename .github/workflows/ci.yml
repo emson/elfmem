@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - run: uv run mypy --ignore-missing-imports src/elfmem/
+      - run: uv run mypy src/elfmem/
 
   pytest:
     name: pytest

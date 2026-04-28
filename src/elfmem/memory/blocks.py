@@ -32,6 +32,8 @@ def determine_decay_tier(tags: list[str], category: str) -> DecayTier:
     durable_tags = {"self/value", "self/constraint", "self/goal"}
     if tag_set & durable_tags:
         return DecayTier.DURABLE
+    if category == "mind":
+        return DecayTier.DURABLE
     if category == "observation":
         return DecayTier.EPHEMERAL
     return DecayTier.STANDARD

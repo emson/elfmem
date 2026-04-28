@@ -44,7 +44,17 @@ from elfmem import project as _project
 from elfmem.api import MemorySystem, format_recall_response
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
-from elfmem.types import CurateResult, FrameResult, LearnResult, OutcomeResult, SystemStatus
+from elfmem.types import (
+    CurateResult,
+    FrameResult,
+    LearnResult,
+    MindOutcomeResult,
+    MindPredictResult,
+    MindShowResult,
+    MindSummary,
+    OutcomeResult,
+    SystemStatus,
+)
 
 app = typer.Typer(
     name="elfmem",
@@ -519,10 +529,17 @@ def remember(
     """Store knowledge for future retrieval."""
     db_path, config_path = _resolve_paths(db, config)
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
-    result: LearnResult = _run(
+    result, should_dream = _run(
         _remember(db_path, config_path, content, tag_list, category)
     )
-    _json(result.to_dict()) if json_output else typer.echo(str(result))
+    if json_output:
+        data = result.to_dict()
+        data["should_dream"] = should_dream
+        _json(data)
+    else:
+        typer.echo(str(result))
+        if should_dream:
+            typer.echo("Inbox full — run 'elfmem dream' to consolidate.")
 
 
 @app.command()
@@ -684,6 +701,163 @@ def serve(
     mcp_main(db_path=db_path, config_path=config_path, use_adaptive_policy=adaptive_policy)
 
 
+# ── Mind (Theory of Mind) subcommands ────────────────────────────────────────
+
+mind_app = typer.Typer(
+    name="mind",
+    help="Theory of Mind blocks: model other minds, make predictions, close outcomes.",
+    no_args_is_help=True,
+)
+app.add_typer(mind_app, name="mind")
+
+
+@mind_app.command("create")
+def mind_create(
+    subject: str,
+    goals: Annotated[
+        list[str] | None, typer.Option("--goal", help="Goal (repeatable)")
+    ] = None,
+    beliefs: Annotated[
+        list[str] | None, typer.Option("--belief", help="Belief (repeatable)")
+    ] = None,
+    fears: Annotated[
+        list[str] | None, typer.Option("--fear", help="Fear (repeatable)")
+    ] = None,
+    motivations: Annotated[
+        list[str] | None, typer.Option("--motivation", help="Motivation (repeatable)")
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Create a Theory of Mind block for a subject.
+
+    Models another agent's goals, beliefs, fears, and motivations as an
+    explicit, falsifiable representation. Decay tier: DURABLE (~6 month half-life).
+
+    Examples:
+
+        elfmem mind create "customer-archetype" \\
+            --goal "Ship fast without learning infra" \\
+            --goal "Keep API costs predictable" \\
+            --belief "Agent-ready code is a moat" \\
+            --fear "Complex setup causes abandonment"
+    """
+    db_path, config_path = _resolve_paths(db, config)
+    result: LearnResult = _run(
+        _mind_create(db_path, config_path, subject, goals, beliefs, fears, motivations)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@mind_app.command("predict")
+def mind_predict(
+    mind_block_id: str,
+    prediction: Annotated[
+        str, typer.Option("--prediction", help="Falsifiable prediction text")
+    ],
+    verify_at: Annotated[
+        str, typer.Option("--verify-at", help="Verification date (YYYY-MM-DD)")
+    ],
+    reasoning: Annotated[
+        str | None, typer.Option("--reasoning", help="Why this prediction")
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Add a falsifiable prediction linked to a mind block.
+
+    Creates a decision block with the prediction content and links it
+    to the mind block via a 'predicts' edge.
+
+    Examples:
+
+        elfmem mind predict abc12345 \\
+            --prediction "Will pay 49/mo for hosted version" \\
+            --verify-at 2026-06-30 \\
+            --reasoning "Prefers predictable cost over setup friction"
+    """
+    db_path, config_path = _resolve_paths(db, config)
+    result: MindPredictResult = _run(
+        _mind_predict(db_path, config_path, mind_block_id, prediction, verify_at, reasoning)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@mind_app.command("list")
+def mind_list(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List all active mind blocks with prediction statistics."""
+    db_path, config_path = _resolve_paths(db, config)
+    results: list[MindSummary] = _run(_mind_list(db_path, config_path))
+    if json_output:
+        _json([r.to_dict() for r in results])
+    else:
+        if not results:
+            typer.echo("No mind blocks found. Create one with: elfmem mind create <subject>")
+        else:
+            for r in results:
+                typer.echo(str(r))
+
+
+@mind_app.command("show")
+def mind_show(
+    mind_block_id: str,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Show a mind block with all linked predictions."""
+    db_path, config_path = _resolve_paths(db, config)
+    result: MindShowResult = _run(_mind_show(db_path, config_path, mind_block_id))
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@mind_app.command("outcome")
+def mind_outcome_cmd(
+    decision_block_id: str,
+    hit: Annotated[bool, typer.Option("--hit/--miss", help="Did the prediction come true?")] = True,
+    reason: Annotated[str, typer.Option("--reason", help="Why this outcome")] = "",
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Close a prediction: record hit/miss and calibrate the mind model.
+
+    Updates confidence on both the decision block and the linked mind block.
+    Creates a 'validates' edge from the decision to the mind.
+
+    Examples:
+
+        elfmem mind outcome def67890 --hit --reason "Signed up week 1 at tier price"
+        elfmem mind outcome def67890 --miss --reason "Requested full bespoke integration"
+    """
+    if not reason:
+        typer.echo("Error: --reason is required for audit trail.", err=True)
+        raise typer.Exit(1)
+    db_path, config_path = _resolve_paths(db, config)
+    result: MindOutcomeResult = _run(
+        _mind_outcome(db_path, config_path, decision_block_id, hit, reason)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
 def main() -> None:
     """Package entry point."""
     app()
@@ -698,9 +872,10 @@ async def _remember(
     content: str,
     tags: list[str] | None,
     category: str,
-) -> LearnResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
-        return await mem.remember(content, tags=tags, category=category)
+) -> tuple[LearnResult, bool]:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        result = await mem.remember(content, tags=tags, category=category)
+        return result, mem.should_dream
 
 
 async def _recall(
@@ -710,12 +885,12 @@ async def _recall(
     top_k: int,
     frame: str,
 ) -> FrameResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.frame(frame, query=query or None, top_k=top_k)
 
 
 async def _status(db_path: str, config: str | None) -> SystemStatus:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.status()
 
 
@@ -727,18 +902,18 @@ async def _outcome(
     weight: float,
     source: str,
 ) -> OutcomeResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
 
 
 async def _dream(db_path: str, config: str | None) -> Any:
     """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.dream()
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.curate()
 
 
@@ -752,7 +927,7 @@ async def _init_seed(
     if template:
         blocks = blocks + get_template(template)
 
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         results = []
         for block in blocks:
             r = await mem.remember(
@@ -765,8 +940,60 @@ async def _init_seed(
 
 async def _init_self(db_path: str, config: str, content: str) -> LearnResult:
     """Store an identity block tagged self/context. Used by elfmem init --self."""
-    async with MemorySystem.managed(db_path, config=config) as mem:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.remember(content, tags=["self/context"])
+
+
+async def _mind_create(
+    db_path: str,
+    config: str | None,
+    subject: str,
+    goals: list[str] | None,
+    beliefs: list[str] | None,
+    fears: list[str] | None,
+    motivations: list[str] | None,
+) -> LearnResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.mind_create(
+            subject, goals=goals, beliefs=beliefs, fears=fears, motivations=motivations,
+        )
+
+
+async def _mind_predict(
+    db_path: str,
+    config: str | None,
+    mind_block_id: str,
+    prediction: str,
+    verify_at: str,
+    reasoning: str | None,
+) -> MindPredictResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.mind_predict(
+            mind_block_id, prediction, verify_at=verify_at, reasoning=reasoning,
+        )
+
+
+async def _mind_list(db_path: str, config: str | None) -> list[MindSummary]:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.mind_list()
+
+
+async def _mind_show(
+    db_path: str, config: str | None, mind_block_id: str,
+) -> MindShowResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.mind_show(mind_block_id)
+
+
+async def _mind_outcome(
+    db_path: str,
+    config: str | None,
+    decision_block_id: str,
+    hit: bool,
+    reason: str,
+) -> MindOutcomeResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.mind_outcome(decision_block_id, hit=hit, reason=reason)
 
 
 async def _doctor_self_count(db_path: str) -> int:

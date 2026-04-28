@@ -9,6 +9,25 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Theory of Mind (ToM) blocks:** New `mind` block category for modelling other agents' goals, beliefs, fears, motivations, and falsifiable predictions. Mind blocks use DURABLE decay tier (~6 month half-life). New API methods: `mind_create()`, `mind_predict()`, `mind_list()`, `mind_show()`, `mind_outcome()`.
+- **`simulate` frame:** New built-in retrieval frame for inhabiting perspectives and reasoning about modelled minds. Uses `score_boosts` to prioritise SELF blocks (10×), mind blocks (6×), and decision blocks (5×) via category/tag-prefix multipliers applied during composite scoring.
+- **`score_boosts` on `FrameDefinition`:** Frames can now specify per-category and per-tag-prefix score multipliers. Plain keys match block categories (e.g. `"mind": 6.0`); keys prefixed with `"tag:"` match tag prefixes (e.g. `"tag:self/": 10.0`). Applied in retrieval stage 4 before top-k selection.
+- **`predicts` and `validates` edge relation types:** Default weights 0.70 and 0.75 respectively. `predicts` links mind blocks to decision blocks (predictions). `validates` is created on outcome closure.
+- **`elfmem mind` CLI command group:** `mind create`, `mind predict`, `mind list`, `mind show`, `mind outcome` subcommands for managing ToM blocks from the command line.
+- **New result types:** `MindSummary`, `MindPredictResult`, `MindShowResult`, `MindOutcomeResult`, `PredictionDetail` — all with agent-friendly `__str__`, `summary`, and `to_dict()` surfaces.
+- **`SIMULATE_WEIGHTS` scoring preset:** Balanced weights (similarity=0.25, confidence=0.25, recency=0.15, centrality=0.20, reinforcement=0.15) for the simulate frame.
+- **`_render_simulate_template`:** Groups blocks by role (Identity, Minds, Decisions, Context) for simulate frame rendering.
+- **DB queries:** `get_active_blocks_by_category()`, `get_edges_by_relation_type()` for mind block operations.
+
+### Fixed
+- **CLI commands no longer hang due to implicit consolidation:** `MemorySystem.managed()` gains `auto_dream` parameter (default `True` for backward compatibility). All CLI commands now pass `auto_dream=False`, preventing surprise `dream()` calls on context exit that blocked for minutes with local LLM backends. Unconsolidated blocks remain safely in the inbox — run `elfmem dream` explicitly when ready. `elfmem remember` now prints an advisory when inbox hits threshold.
+
+### Changed
+- **`MemorySystem.managed(auto_dream=...)` parameter:** New keyword-only parameter controls whether pending blocks are consolidated on exit. Default is `True` (preserves existing behaviour for scripts). Pass `False` for CLI tools and contexts where implicit consolidation would cause unexpected delays.
+
+## [0.6.0] — 2026-04-26
+
 ### Fixed
 - **`EmbeddingService` protocol gains `model_name` property:** `consolidate()` was storing `embedding_model="mock"` (hardcoded string, TODO since inception). `OpenAIEmbeddingAdapter` exposes `model_name → self._model`; `MockEmbeddingService` exposes `model_name → "mock"`. `_BlockDecision` carries the model name and `_apply_decisions` writes it via `d.embedding_model`. All stored block embeddings now record their actual source model.
 - **MemoryAgentBench context always built from blocks, not frame-rendered text:** `context_text = frame_result.text` was bounded by the attention frame's hardcoded 2000-token `token_budget`, while the BM25 path rebuilt context from `block.content` (bounded only by `_context_budget_words`). Fixed: always build `"\n\n".join(b.content for b in blocks)` so both paths are bounded identically by `config.context_window_tokens`.
