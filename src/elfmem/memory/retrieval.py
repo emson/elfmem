@@ -32,7 +32,7 @@ from elfmem.types import ScoredBlock
 
 # Soft dependency — retrieval works without it.
 try:
-    from rank_bm25 import BM25Okapi  # type: ignore[import-untyped]
+    from rank_bm25 import BM25Okapi
 
     _HAS_BM25 = True
 except ImportError:  # pragma: no cover

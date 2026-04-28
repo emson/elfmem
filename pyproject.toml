@@ -94,6 +94,10 @@ python_version = "3.11"
 mypy_path = "src"
 packages = ["elfmem"]
 
+[[tool.mypy.overrides]]
+module = "rank_bm25"
+ignore_missing_imports = true
+
 [tool.ruff]
 src = ["src"]
 line-length = 100
