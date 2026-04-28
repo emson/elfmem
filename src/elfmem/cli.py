@@ -756,9 +756,15 @@ def mind_create(
 @mind_app.command("predict")
 def mind_predict(
     mind_block_id: str,
-    prediction: Annotated[str, typer.Option("--prediction", help="Falsifiable prediction text")],
-    verify_at: Annotated[str, typer.Option("--verify-at", help="Verification date (YYYY-MM-DD)")],
-    reasoning: Annotated[str | None, typer.Option("--reasoning", help="Why this prediction")] = None,
+    prediction: Annotated[
+        str, typer.Option("--prediction", help="Falsifiable prediction text")
+    ],
+    verify_at: Annotated[
+        str, typer.Option("--verify-at", help="Verification date (YYYY-MM-DD)")
+    ],
+    reasoning: Annotated[
+        str | None, typer.Option("--reasoning", help="Why this prediction")
+    ] = None,
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,

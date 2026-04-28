@@ -19,7 +19,6 @@ from elfmem.types import (
     MindSummary,
 )
 
-
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
 

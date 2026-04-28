@@ -747,7 +747,12 @@ class MindSummary:
 
     @property
     def summary(self) -> str:
-        ratio = f"{self.hit_count}/{self.hit_count + self.miss_count}" if (self.hit_count + self.miss_count) > 0 else "0/0"
+        total = self.hit_count + self.miss_count
+        ratio = (
+            f"{self.hit_count}/{total}"
+            if total > 0
+            else "0/0"
+        )
         return (
             f"Mind: {self.subject} ({self.block_id[:8]}…) "
             f"confidence={self.confidence:.2f} predictions={self.prediction_count} "

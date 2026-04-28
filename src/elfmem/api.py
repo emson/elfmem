@@ -1639,7 +1639,7 @@ class MemorySystem:
         *,
         verify_at: str,
         reasoning: str | None = None,
-    ) -> "MindPredictResult":
+    ) -> MindPredictResult:
         """Add a falsifiable prediction linked to a mind block.
 
         USE WHEN: You have a specific, testable hypothesis about what a
@@ -1673,7 +1673,7 @@ class MemorySystem:
         self._record_op("mind_predict", result.summary)
         return result
 
-    async def mind_list(self) -> list["MindSummary"]:
+    async def mind_list(self) -> list[MindSummary]:
         """List all active mind blocks with prediction statistics.
 
         USE WHEN: Discovering which minds are modelled and their calibration.
@@ -1690,7 +1690,7 @@ class MemorySystem:
         self._record_op("mind_list", f"{len(result)} mind(s) found.")
         return result
 
-    async def mind_show(self, mind_block_id: str) -> "MindShowResult":
+    async def mind_show(self, mind_block_id: str) -> MindShowResult:
         """Show a mind block with all linked predictions.
 
         USE WHEN: Inspecting a specific mind model before reasoning about
@@ -1713,7 +1713,7 @@ class MemorySystem:
         *,
         hit: bool,
         reason: str,
-    ) -> "MindOutcomeResult":
+    ) -> MindOutcomeResult:
         """Close a prediction: record hit/miss, calibrate the mind model.
 
         USE WHEN: A prediction has resolved — the verify_at date has

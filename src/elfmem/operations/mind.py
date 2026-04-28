@@ -12,16 +12,15 @@ No LLM calls. All operations are database reads/writes.
 from __future__ import annotations
 
 import re
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db import queries
-from elfmem.exceptions import BlockNotActiveError, ElfmemError
 from elfmem.db.queries import insert_agent_edge
+from elfmem.exceptions import BlockNotActiveError, ElfmemError
 from elfmem.operations.connect import do_connect
 from elfmem.operations.learn import learn as _learn
-from elfmem.operations.outcome import compute_bayesian_update, record_outcome
+from elfmem.operations.outcome import record_outcome
 from elfmem.types import (
     Edge,
     LearnResult,
@@ -154,9 +153,10 @@ async def predict(
     if mind_block is None or mind_block.get("status") != "active":
         raise BlockNotActiveError(mind_block_id)
     if mind_block.get("category") != "mind":
+        category = mind_block.get("category")
         raise ElfmemError(
-            f"Block {mind_block_id[:8]}… is not a mind block (category={mind_block.get('category')!r}).",
-            recovery=f"Use a block with category='mind'. List minds with mind_list().",
+            f"Block {mind_block_id[:8]}… is not a mind block (category={category!r}).",
+            recovery="Use a block with category='mind'. List minds with mind_list().",
         )
 
     # Extract subject from mind block tags
