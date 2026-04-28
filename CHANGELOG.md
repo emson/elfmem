@@ -7,7 +7,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.7.0] — 2026-04-28
 
 ### Added
 - **Theory of Mind (ToM) blocks:** New `mind` block category for modelling other agents' goals, beliefs, fears, motivations, and falsifiable predictions. Mind blocks use DURABLE decay tier (~6 month half-life). New API methods: `mind_create()`, `mind_predict()`, `mind_list()`, `mind_show()`, `mind_outcome()`.

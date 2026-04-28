@@ -117,6 +117,12 @@ git checkout main
 git reset --hard origin/main  # Discard local-only commits
 ```
 
+**If you get "divergent branches" on pull:** this means both local and remote have commits the other lacks. Configure rebase as the global default (once, per machine) so `git pull` always replays local commits on top of remote rather than prompting:
+```bash
+git config --global pull.rebase true
+```
+Then pull before committing whenever the branch has been pushed to by another machine or collaborator.
+
 **Why:** Protected main ensures all changes go through code review (PR), prevents accidental commits, and keeps release tags clean and authoritative.
 
 ## Public API
