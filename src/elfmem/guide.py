@@ -604,6 +604,217 @@ GUIDES: dict[str, AgentGuide] = {
             "print(system.guide('unknown'))  # lists valid method names"
         ),
     ),
+    # ── Peer communication ────────────────────────────────────────────────────
+    "peer_init": AgentGuide(
+        name="peer_init",
+        what="Set this instance's identity (DID) in the database. Call once before any peer ops.",
+        when="First time you want to use peer communication. Safe to re-run — idempotent.",
+        when_not="Identity is already set — check with peer_list() or elfmem peer list.",
+        cost="Instant. Database write only.",
+        returns="str — the assigned identity DID (e.g. 'elf:research-elf').",
+        next="Call peer_add() to register peers to communicate with.",
+        example=(
+            "did = await system.peer_init('research-elf')\n"
+            "print(did)  # elf:research-elf"
+        ),
+    ),
+    "peer_add": AgentGuide(
+        name="peer_add",
+        what="Register a peer for message exchange. Optionally set a direct delivery path.",
+        when=(
+            "Adding a known peer before sending messages or importing their bundles. "
+            "With delivery_path: the peer's inbox directory is on a shared/local filesystem "
+            "(Dropbox, NFS, same machine) — messages are written directly without transport."
+        ),
+        when_not=(
+            "You don't know the peer's DID yet — get it from them first. "
+            "Don't add a peer just to import a one-off bundle; from_peer is optional on import."
+        ),
+        cost="Instant. Database write only.",
+        returns="PeerInfo with did, name, trust, is_self, delivery_path, message counts.",
+        next="Send a message with peer_send(), or exchange bundles with export_blocks().",
+        example=(
+            "# Standard peer (outbox-mediated)\n"
+            "peer = await system.peer_add('elf:trader', 'Trading Elf')\n"
+            "\n"
+            "# Direct delivery (shared filesystem)\n"
+            "peer = await system.peer_add(\n"
+            "    'elf:vault', 'Vault Elf',\n"
+            "    delivery_path='/shared/vault/.elfmem/inbox',\n"
+            ")\n"
+            "\n"
+            "# Self-federation (same identity on another machine)\n"
+            "peer = await system.peer_add('elf:laptop', 'Laptop', is_self=True)"
+        ),
+    ),
+    "peer_send": AgentGuide(
+        name="peer_send",
+        what=(
+            "Send a message to a registered peer. Heartbeat speed — no LLM calls. "
+            "Writes a JSON file to the peer's inbox (direct) or your outbox (mediated)."
+        ),
+        when=(
+            "Sending a question, observation, or reply to another elfmem instance. "
+            "The peer must exist in the roster (peer_add first)."
+        ),
+        when_not=(
+            "Sharing bulk knowledge — use export_blocks() instead. "
+            "Broadcasting to many peers — send individually; each peer has its own trust."
+        ),
+        cost="Instant. No LLM calls. Pure file write.",
+        returns=(
+            "PeerSendResult with msg_id, to_peer, delivery_path. "
+            "delivery_path shows where the message file was written."
+        ),
+        next=(
+            "The peer picks it up with peer_inbox(). "
+            "Message blocks are stored locally in your memory too (category='message')."
+        ),
+        example=(
+            "result = await system.peer_send('elf:trader', 'What is your gilt view?')\n"
+            "print(result)  # Sent m_a1b2c3d4 to elf:trader\n"
+            "\n"
+            "# Reply to an existing message\n"
+            "result = await system.peer_send(\n"
+            "    'elf:trader', 'I agree with your analysis',\n"
+            "    in_reply_to='m_e5f6g7h8',\n"
+            ")"
+        ),
+    ),
+    "peer_inbox": AgentGuide(
+        name="peer_inbox",
+        what="Scan the inbox directory for pending messages from peers.",
+        when=(
+            "Checking for incoming messages from registered peers. "
+            "With import_all=True, messages are imported into your memory immediately."
+        ),
+        when_not=(
+            "You want to import bulk knowledge blocks — use import_blocks() instead. "
+            "Messages are events (not claims) so they skip dedup/contradiction detection."
+        ),
+        cost="Instant. File scan + optional database writes. No LLM calls.",
+        returns=(
+            "PeerInboxResult with messages_found, messages_imported, "
+            "messages_skipped, peers (list of sender DIDs)."
+        ),
+        next=(
+            "Imported message blocks enter your active memory. "
+            "Use frame('attention') or recall() to query them."
+        ),
+        example=(
+            "# Check what's waiting\n"
+            "inbox = await system.peer_inbox()\n"
+            "print(inbox)  # Found 3 messages from 2 peer(s). Imported 0, skipped 0.\n"
+            "\n"
+            "# Import all pending messages\n"
+            "inbox = await system.peer_inbox(import_all=True)\n"
+            "# Filter by sender\n"
+            "inbox = await system.peer_inbox(from_peer='elf:trader', import_all=True)"
+        ),
+    ),
+    "export_blocks": AgentGuide(
+        name="export_blocks",
+        what="Export shareable knowledge blocks to a JSON bundle file.",
+        when=(
+            "Sharing knowledge with another elfmem instance. "
+            "Only exports blocks tagged share='public' or share='shared'."
+        ),
+        when_not=(
+            "Sending a real-time message — use peer_send() instead. "
+            "Self/constitutional blocks (self/ tags) are never exported regardless of share."
+        ),
+        cost="Fast. Database read + file write. No LLM calls.",
+        returns=(
+            "ExportResult with blocks_exported, edges_exported, output_path. "
+            "The bundle file is a self-contained JSON the receiving instance can import."
+        ),
+        next="Transfer the bundle file and have the peer call import_blocks().",
+        example=(
+            "# Mark blocks as shareable first (learn with share='public')\n"
+            "result = await system.export_blocks(\n"
+            "    share_level='public',\n"
+            "    output_path='knowledge.json',\n"
+            "    min_confidence=0.5,\n"
+            ")\n"
+            "print(result)  # Exported 18 blocks, 12 edges → knowledge.json"
+        ),
+    ),
+    "import_blocks": AgentGuide(
+        name="import_blocks",
+        what="Import a knowledge bundle from another elfmem instance into your inbox.",
+        when=(
+            "Receiving a bundle exported by a peer. Blocks enter inbox and go through "
+            "your normal consolidation pipeline. Trust modulates confidence on import."
+        ),
+        when_not=(
+            "You want to receive messages — use peer_inbox() instead. "
+            "Don't import your own exports — use is_self_merge=True for self-federation."
+        ),
+        cost="Fast. File read + database writes. No LLM calls at import time.",
+        returns=(
+            "ImportResult with blocks_imported, blocks_skipped (below confidence floor), "
+            "edges_imported, from_peer."
+        ),
+        next=(
+            "Imported blocks sit in inbox. Call dream() to consolidate them — "
+            "this is where dedup and contradiction detection run against your existing knowledge."
+        ),
+        example=(
+            "# From a known peer (uses their trust for confidence scaling)\n"
+            "result = await system.import_blocks('knowledge.json', from_peer='elf:trader')\n"
+            "print(result)  # Imported 15 blocks (3 skipped), 9 edges from elf:trader\n"
+            "\n"
+            "# Self-federation (same identity, different machine — trust=1.0)\n"
+            "result = await system.import_blocks('laptop_sync.json', is_self_merge=True)\n"
+            "\n"
+            "# After importing, consolidate to integrate with existing knowledge\n"
+            "await system.dream()"
+        ),
+    ),
+    "peer_list": AgentGuide(
+        name="peer_list",
+        what="List all registered peers with trust scores and message counts.",
+        when="Checking who you've registered, their trust levels, and activity.",
+        when_not="(Always safe. No side effects.)",
+        cost="Instant. Single database read.",
+        returns=(
+            "list[PeerInfo]. Each has: did, name, trust (0.0–1.0), is_self, "
+            "delivery_path, messages_in, messages_out, blocks_imported, blocks_exported."
+        ),
+        next="peer_trust() to update trust, peer_send() to send a message.",
+        example=(
+            "peers = await system.peer_list()\n"
+            "for p in peers:\n"
+            "    print(p)  # Trading Elf (elf:trader) [trust=0.72] — 3↓ 5↑"
+        ),
+    ),
+    "peer_trust": AgentGuide(
+        name="peer_trust",
+        what="View or manually set trust for a peer (0.0–1.0).",
+        when=(
+            "Bootstrapping trust for a new peer before outcomes have accumulated, "
+            "or correcting trust after an incident. Trust normally evolves via outcome()."
+        ),
+        when_not=(
+            "Trust will calibrate naturally — let outcome() handle it unless you need "
+            "to bootstrap or override. Don't set trust=1.0 on external peers; reserve "
+            "that for is_self peers."
+        ),
+        cost="Instant. Database write only.",
+        returns="PeerInfo reflecting the updated trust value.",
+        next=(
+            "Trust affects confidence scaling on import_blocks(). "
+            "Use outcome() on peer-sourced blocks to let trust self-calibrate over time."
+        ),
+        example=(
+            "# View current trust\n"
+            "peer = await system.peer_trust('elf:trader')\n"
+            "print(peer)  # Trading Elf (elf:trader) [trust=0.50]\n"
+            "\n"
+            "# Set trust manually\n"
+            "peer = await system.peer_trust('elf:trader', set_value=0.8)"
+        ),
+    ),
 }
 
 # ── Overview ──────────────────────────────────────────────────────────────────
@@ -634,9 +845,21 @@ OVERVIEW: str = "\n".join([
     "  history(last_n=10)     Instant      Recent operations in this process session",
     "  guide(method?)         Instant      This help",
     "",
+    "  ── Peer communication ───────────────────────────────────────────────",
+    "  peer_init(name)        Instant      Set this instance's identity DID (once)",
+    "  peer_add(did, name)    Instant      Register a peer (+ optional delivery_path)",
+    "  peer_send(did, msg)    Instant      Send a message to a peer (file write, no LLM)",
+    "  peer_inbox(...)        Instant      Scan inbox for pending messages",
+    "  peer_list()            Instant      List all registered peers with trust scores",
+    "  peer_trust(did, ...)   Instant      View or manually set trust for a peer",
+    "  peer_remove(did)       Instant      Unregister a peer",
+    "  export_blocks(...)     Fast         Export shareable blocks as a JSON bundle",
+    "  import_blocks(path)    Fast         Import a bundle from another instance",
+    "",
     "Three rhythms:  remember() [heartbeat] → dream() [breathing] → curate() [sleep]",
     "Always-on:      remember() → check should_dream → dream() when True",
     "Session-based:  async with system.session(): learn() → frame() → outcome()",
+    "Peer exchange:  peer_init() → peer_add() → peer_send() / export_blocks()",
     "Quick start:    elfmem_setup(identity='...') | system.status() | system.guide('remember')",
 ])
 
