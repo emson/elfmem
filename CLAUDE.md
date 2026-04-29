@@ -138,7 +138,8 @@ from elfmem import MemorySystem, ElfmemConfig, ConsolidationPolicy
 |------|---------|
 | `src/elfmem/api.py` | `MemorySystem` — all public operations |
 | `src/elfmem/types.py` | Result types, exceptions |
-| `src/elfmem/operations/` | `learn`, `consolidate`, `curate`, `outcome`, `recall` |
+| `src/elfmem/operations/` | `learn`, `consolidate`, `curate`, `outcome`, `recall`, `peer` |
+| `src/elfmem/db/migrate.py` | Schema migration + backup utilities (`ensure_schema_current`, `create_backup`, `vacuum_backup`, `list_backups`) |
 | `src/elfmem/adapters/factory.py` | `make_llm_adapter()` / `make_embedding_adapter()` |
 | `src/elfmem/adapters/anthropic.py` | `AnthropicLLMAdapter` — Claude via official SDK |
 | `src/elfmem/adapters/openai.py` | `OpenAILLMAdapter` + `OpenAIEmbeddingAdapter` |

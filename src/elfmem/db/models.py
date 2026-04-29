@@ -38,6 +38,10 @@ blocks = Table(
     Column("summary", Text),
     Column("last_session_id", Text),
     Column("outcome_evidence", Float, nullable=False, default=0.0),
+    # Peer communication (v0.9.0)
+    Column("source_peer", Text),           # DID of originating peer (None = local)
+    Column("share", Text, default="private"),  # private | public | peer
+    Column("envelope_json", Text),         # JSON envelope for message blocks
 )
 
 block_tags = Table(
@@ -128,6 +132,24 @@ co_retrieval_staging = Table(
     UniqueConstraint("from_id", "to_id", name="uq_co_retrieval_staging"),
 )
 
+peer_roster = Table(
+    "peer_roster",
+    metadata,
+    Column("did", Text, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column("public_key", Text),                                  # v2 (signing)
+    Column("trust", Float, nullable=False, default=0.0),
+    Column("is_self", Integer, nullable=False, default=0),       # 1 = same identity
+    Column("first_contact", Text, nullable=False),
+    Column("last_active", Text, nullable=False),
+    Column("blocks_imported", Integer, nullable=False, default=0),
+    Column("blocks_exported", Integer, nullable=False, default=0),
+    Column("messages_in", Integer, nullable=False, default=0),
+    Column("messages_out", Integer, nullable=False, default=0),
+    Column("notes", Text),
+    Column("delivery_path", Text),  # filesystem path to peer's inbox dir
+)
+
 Index("idx_blocks_status", blocks.c.status)
 Index("idx_blocks_last_reinforced", blocks.c.last_reinforced_at)
 Index("idx_block_tags_tag", block_tags.c.tag)
@@ -135,6 +157,7 @@ Index("idx_block_tags_block_id", block_tags.c.block_id)
 Index("idx_edges_from", edges.c.from_id)
 Index("idx_edges_to", edges.c.to_id)
 Index("idx_block_outcomes_block_id", block_outcomes.c.block_id)
+Index("idx_blocks_source_peer", blocks.c.source_peer)
 Index(
     "idx_contradictions_unresolved",
     contradictions.c.block_a_id,

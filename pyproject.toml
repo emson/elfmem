@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elfmem"
-version = "0.8.0"
+version = "0.9.1"
 description = "Adaptive memory for LLM agents — adaptive decay, knowledge graph, zero infrastructure"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -107,3 +107,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/benchmarks/*" = ["E402", "I001"]  # pytest.importorskip requires imports after guard
+"tests/*" = ["E501"]  # test method signatures and SQL strings are exempt from line length
+"src/elfmem/cli.py" = ["E501"]  # Typer Annotated parameter declarations exceed line limit

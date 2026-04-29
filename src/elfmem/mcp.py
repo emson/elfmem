@@ -140,6 +140,52 @@ async def _tool_guide(method: str | None = None) -> str:
     return _mem().guide(method)
 
 
+async def _tool_peer_send(
+    to_peer: str,
+    content: str,
+    in_reply_to: str | None = None,
+) -> dict[str, Any]:
+    result = await _mem().peer_send(to_peer, content, in_reply_to=in_reply_to)
+    return result.to_dict()
+
+
+async def _tool_peer_inbox(
+    from_peer: str | None = None,
+    import_all: bool = False,
+) -> dict[str, Any]:
+    result = await _mem().peer_inbox(from_peer=from_peer, import_all=import_all)
+    return result.to_dict()
+
+
+async def _tool_peer_list() -> list[dict[str, Any]]:
+    results = await _mem().peer_list()
+    return [r.to_dict() for r in results]
+
+
+async def _tool_export(
+    share_level: str = "public",
+    min_confidence: float = 0.0,
+    output_path: str = "export.json",
+) -> dict[str, Any]:
+    result = await _mem().export_blocks(
+        share_level=share_level,
+        min_confidence=min_confidence,
+        output_path=output_path,
+    )
+    return result.to_dict()
+
+
+async def _tool_import(
+    path: str,
+    from_peer: str | None = None,
+    self_merge: bool = False,
+) -> dict[str, Any]:
+    result = await _mem().import_blocks(
+        path, from_peer=from_peer, self_merge=self_merge,
+    )
+    return result.to_dict()
+
+
 # ── MCP tool registrations (thin wrappers, one line each) ─────────────────────
 
 
@@ -279,6 +325,70 @@ async def elfmem_disconnect(
     Returns action: 'removed' | 'not_found' | 'guarded'.
     """
     return await _tool_disconnect(source, target, guard_relation=guard_relation, reason=reason)
+
+
+@mcp.tool()
+async def elfmem_peer_send(
+    to_peer: str,
+    content: str,
+    in_reply_to: str | None = None,
+) -> dict[str, Any]:
+    """Send a message to a peer elfmem instance.
+
+    Creates a message block in your memory and writes a JSON file
+    to the outbox directory. Transport is handled externally.
+    """
+    return await _tool_peer_send(to_peer, content, in_reply_to=in_reply_to)
+
+
+@mcp.tool()
+async def elfmem_peer_inbox(
+    from_peer: str | None = None,
+    import_all: bool = False,
+) -> dict[str, Any]:
+    """Check for and import pending messages from peers.
+
+    Scans the inbox directory. With import_all=True, imports messages
+    into your memory as inbox blocks.
+    """
+    return await _tool_peer_inbox(from_peer=from_peer, import_all=import_all)
+
+
+@mcp.tool()
+async def elfmem_peer_list() -> list[dict[str, Any]]:
+    """List all registered peers with trust scores and statistics."""
+    return await _tool_peer_list()
+
+
+@mcp.tool()
+async def elfmem_export(
+    share_level: str = "public",
+    min_confidence: float = 0.0,
+    output_path: str = "export.json",
+) -> dict[str, Any]:
+    """Export shareable blocks as a JSON bundle for another instance.
+
+    share_level: 'public' | 'peer' | 'all'. Blocks tagged self/* are never exported.
+    """
+    return await _tool_export(
+        share_level=share_level,
+        min_confidence=min_confidence,
+        output_path=output_path,
+    )
+
+
+@mcp.tool()
+async def elfmem_import(
+    path: str,
+    from_peer: str | None = None,
+    self_merge: bool = False,
+) -> dict[str, Any]:
+    """Import a block bundle from another elfmem instance.
+
+    Blocks enter the inbox with provenance tracking.
+    self_merge=True for same-identity federation (preserves original confidence).
+    """
+    return await _tool_import(path, from_peer=from_peer, self_merge=self_merge)
 
 
 @mcp.tool()

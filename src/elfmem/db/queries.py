@@ -1121,6 +1121,142 @@ async def get_edges_by_relation_type(
     return [dict(row) for row in result.mappings()]
 
 
+# ── Peer roster queries ──────────────────────────────────────────────────────
+
+
+async def insert_peer(
+    conn: AsyncConnection,
+    *,
+    did: str,
+    name: str,
+    is_self: bool = False,
+    delivery_path: str | None = None,
+) -> None:
+    """Insert a new peer. Sets trust=1.0 for self-peers, 0.0 for others."""
+    from elfmem.db.models import peer_roster
+
+    now = _now_iso()
+    trust = 1.0 if is_self else 0.0
+    await conn.execute(
+        insert(peer_roster).values(
+            did=did,
+            name=name,
+            trust=trust,
+            is_self=1 if is_self else 0,
+            first_contact=now,
+            last_active=now,
+            blocks_imported=0,
+            blocks_exported=0,
+            messages_in=0,
+            messages_out=0,
+            delivery_path=delivery_path,
+        )
+    )
+
+
+async def get_peer(conn: AsyncConnection, did: str) -> dict[str, Any] | None:
+    """Fetch a peer by DID. Returns None if not found."""
+    from elfmem.db.models import peer_roster
+
+    result = await conn.execute(
+        select(peer_roster).where(peer_roster.c.did == did)
+    )
+    row = result.mappings().first()
+    return dict(row) if row is not None else None
+
+
+async def get_all_peers(conn: AsyncConnection) -> list[dict[str, Any]]:
+    """Fetch all registered peers."""
+    from elfmem.db.models import peer_roster
+
+    result = await conn.execute(select(peer_roster))
+    return [dict(row) for row in result.mappings()]
+
+
+async def delete_peer(conn: AsyncConnection, did: str) -> bool:
+    """Delete a peer by DID. Returns True if it existed."""
+    from elfmem.db.models import peer_roster
+
+    result = await conn.execute(
+        delete(peer_roster).where(peer_roster.c.did == did)
+    )
+    return result.rowcount > 0
+
+
+async def update_peer_trust(
+    conn: AsyncConnection, did: str, trust: float,
+) -> None:
+    """Set the trust score for a peer. Clamped to [0.0, 1.0]."""
+    from elfmem.db.models import peer_roster
+
+    clamped = max(0.0, min(1.0, trust))
+    await conn.execute(
+        update(peer_roster)
+        .where(peer_roster.c.did == did)
+        .values(trust=clamped, last_active=_now_iso())
+    )
+
+
+async def update_peer_stats(
+    conn: AsyncConnection,
+    did: str,
+    *,
+    blocks_imported_delta: int = 0,
+    blocks_exported_delta: int = 0,
+    messages_in_delta: int = 0,
+    messages_out_delta: int = 0,
+) -> None:
+    """Increment peer statistics counters."""
+    from elfmem.db.models import peer_roster
+
+    await conn.execute(
+        update(peer_roster)
+        .where(peer_roster.c.did == did)
+        .values(
+            blocks_imported=peer_roster.c.blocks_imported + blocks_imported_delta,
+            blocks_exported=peer_roster.c.blocks_exported + blocks_exported_delta,
+            messages_in=peer_roster.c.messages_in + messages_in_delta,
+            messages_out=peer_roster.c.messages_out + messages_out_delta,
+            last_active=_now_iso(),
+        )
+    )
+
+
+async def get_exportable_blocks(
+    conn: AsyncConnection,
+    *,
+    share_level: str,
+    min_confidence: float = 0.0,
+) -> list[dict[str, Any]]:
+    """Fetch active blocks matching a share level and minimum confidence."""
+    conditions = [
+        blocks.c.status == "active",
+        blocks.c.confidence >= min_confidence,
+    ]
+    if share_level != "all":
+        conditions.append(blocks.c.share == share_level)
+    result = await conn.execute(select(blocks).where(and_(*conditions)))
+    return [dict(row) for row in result.mappings()]
+
+
+async def get_edges_for_export(
+    conn: AsyncConnection,
+    block_ids: set[str],
+) -> list[dict[str, Any]]:
+    """Fetch edges where both endpoints are in block_ids."""
+    if not block_ids:
+        return []
+    result = await conn.execute(
+        select(edges).where(
+            and_(
+                edges.c.from_id.in_(block_ids),
+                edges.c.to_id.in_(block_ids),
+            )
+        )
+    )
+    return [dict(row) for row in result.mappings()]
+
+
 async def seed_builtin_data(conn: AsyncConnection) -> None:
     """Insert built-in frames and default system_config values.
 

@@ -206,6 +206,18 @@ class ProjectConfig(BaseModel):
     created: str = ""   # ISO date of initialisation
 
 
+class PeerConfig(BaseModel):
+    """Configuration for peer communication."""
+
+    identity: str | None = None
+    outbox_dir: str = "~/.elfmem/outbox"
+    inbox_dir: str = "~/.elfmem/inbox"
+    confidence_floor: float = 0.3
+    auto_ingest_trust_threshold: float = 0.7
+    trust_decay_days: int = 90
+    trust_decay_factor: float = 0.95
+
+
 class ElfmemConfig(BaseModel):
     """Top-level configuration for the elfmem memory system.
 
@@ -223,6 +235,7 @@ class ElfmemConfig(BaseModel):
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    peer: PeerConfig = Field(default_factory=PeerConfig)
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:
