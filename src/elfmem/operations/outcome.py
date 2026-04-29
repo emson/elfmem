@@ -7,10 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from elfmem.db.queries import (
     accelerate_block_decay,
     get_block,
+    get_peer,
     insert_block_outcome,
     reinforce_blocks,
     update_block_outcome,
     update_edge,
+    update_peer_trust,
     upsert_outcome_edge,
 )
 from elfmem.types import OutcomeResult
@@ -132,6 +134,9 @@ async def record_outcome(
         updated_ids.append(block_id)
         confidence_deltas.append(confidence_after - confidence_before)
 
+    # Update trust on peer-originated blocks
+    await _update_peer_trust(conn, block_ids, signal, weight)
+
     edges_reinforced = 0
     outcome_edges_created = 0
     if updated_ids and signal > reinforce_threshold:
@@ -175,6 +180,42 @@ async def record_outcome(
         blocks_penalized=blocks_penalized,
         outcome_edges_created=outcome_edges_created,
     )
+
+
+TRUST_DELTA_SCALE = 0.05
+TRUST_POSITIVE_THRESHOLD = 0.7
+TRUST_NEGATIVE_THRESHOLD = 0.3
+
+
+async def _update_peer_trust(
+    conn: AsyncConnection,
+    block_ids: list[str],
+    signal: float,
+    weight: float,
+) -> None:
+    """Update trust scores for peers whose blocks received outcome closure."""
+    peers_seen: set[str] = set()
+    for block_id in block_ids:
+        block = await get_block(conn, block_id)
+        if block is None:
+            continue
+        source_peer = block.get("source_peer")
+        if not source_peer or source_peer in peers_seen:
+            continue
+        peers_seen.add(source_peer)
+
+        peer = await get_peer(conn, source_peer)
+        if peer is None:
+            continue
+
+        delta = TRUST_DELTA_SCALE * weight
+        if signal >= TRUST_POSITIVE_THRESHOLD:
+            new_trust = min(1.0, peer["trust"] + delta)
+        elif signal <= TRUST_NEGATIVE_THRESHOLD:
+            new_trust = max(0.0, peer["trust"] - delta)
+        else:
+            continue
+        await update_peer_trust(conn, source_peer, new_trust)
 
 
 def _canonical_pairs(block_ids: list[str]) -> list[tuple[str, str]]:

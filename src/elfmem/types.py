@@ -901,6 +901,172 @@ class MindOutcomeResult:
         }
 
 
+# ── Peer communication types ─────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class PeerInfo:
+    """Summary of a registered peer."""
+
+    did: str
+    name: str
+    trust: float
+    is_self: bool
+    first_contact: str
+    last_active: str
+    blocks_imported: int
+    blocks_exported: int
+    messages_in: int
+    messages_out: int
+    delivery_path: str | None = None
+
+    @property
+    def summary(self) -> str:
+        kind = "self" if self.is_self else f"trust={self.trust:.2f}"
+        delivery = f" → {self.delivery_path}" if self.delivery_path else ""
+        return f"{self.name} ({self.did}) [{kind}] — {self.messages_in}↓ {self.messages_out}↑{delivery}"  # noqa: E501
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "did": self.did,
+            "name": self.name,
+            "trust": self.trust,
+            "is_self": self.is_self,
+            "first_contact": self.first_contact,
+            "last_active": self.last_active,
+            "blocks_imported": self.blocks_imported,
+            "blocks_exported": self.blocks_exported,
+            "messages_in": self.messages_in,
+            "messages_out": self.messages_out,
+            "delivery_path": self.delivery_path,
+        }
+
+
+@dataclass(frozen=True)
+class ExportResult:
+    """Result of exporting blocks to a bundle."""
+
+    blocks_exported: int
+    edges_exported: int
+    output_path: str
+    from_did: str
+    share_level: str
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"Exported {self.blocks_exported} blocks, "
+            f"{self.edges_exported} edges to {self.output_path}"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_exported": self.blocks_exported,
+            "edges_exported": self.edges_exported,
+            "output_path": self.output_path,
+            "from_did": self.from_did,
+            "share_level": self.share_level,
+        }
+
+
+@dataclass(frozen=True)
+class ImportResult:
+    """Result of importing a peer bundle."""
+
+    blocks_imported: int
+    blocks_skipped: int
+    edges_imported: int
+    from_peer: str
+    is_self_merge: bool
+    confidence_floor: float
+
+    @property
+    def summary(self) -> str:
+        mode = "self-merge" if self.is_self_merge else f"peer ({self.from_peer})"
+        return (
+            f"Imported {self.blocks_imported} blocks "
+            f"({self.blocks_skipped} skipped) from {mode}, "
+            f"{self.edges_imported} edges"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_imported": self.blocks_imported,
+            "blocks_skipped": self.blocks_skipped,
+            "edges_imported": self.edges_imported,
+            "from_peer": self.from_peer,
+            "is_self_merge": self.is_self_merge,
+            "confidence_floor": self.confidence_floor,
+        }
+
+
+@dataclass(frozen=True)
+class PeerSendResult:
+    """Result of sending a message to a peer."""
+
+    block_id: str
+    msg_id: str
+    to_peer: str
+    outbox_path: str
+    in_reply_to: str | None = None
+
+    @property
+    def summary(self) -> str:
+        reply = f" (reply to {self.in_reply_to})" if self.in_reply_to else ""
+        return f"Sent {self.msg_id} to {self.to_peer}{reply}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "msg_id": self.msg_id,
+            "to_peer": self.to_peer,
+            "outbox_path": self.outbox_path,
+            "in_reply_to": self.in_reply_to,
+        }
+
+
+@dataclass(frozen=True)
+class PeerInboxResult:
+    """Result of checking the peer inbox."""
+
+    messages_found: int
+    messages_imported: int
+    messages_skipped: int
+    peers: list[str]
+
+    @property
+    def summary(self) -> str:
+        if self.messages_found == 0:
+            return "No pending messages."
+        return (
+            f"Found {self.messages_found} messages from {len(self.peers)} peer(s). "
+            f"Imported {self.messages_imported}, skipped {self.messages_skipped}."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "messages_found": self.messages_found,
+            "messages_imported": self.messages_imported,
+            "messages_skipped": self.messages_skipped,
+            "peers": self.peers,
+        }
+
+
 @dataclass
 class ContradictionRecord:
     block_a_id: str

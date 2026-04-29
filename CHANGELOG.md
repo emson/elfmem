@@ -7,6 +7,24 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Peer communication:** elfmem instances can exchange knowledge and messages. Pull-based, file-mediated, zero infrastructure. Three schema additions (`source_peer`, `share`, `envelope_json` on blocks) and one new table (`peer_roster`).
+- **`elfmem peer` CLI command group:** `peer init`, `peer add`, `peer remove`, `peer list`, `peer trust`, `peer send`, `peer inbox` subcommands for managing peer identity, roster, messaging, and trust.
+- **`elfmem export` / `elfmem import` CLI commands:** Export shareable blocks as signed JSON bundles; import with provenance tracking and trust-gated confidence. Self-federation via `--self-merge`.
+- **New API methods:** `peer_init()`, `peer_add()`, `peer_remove()`, `peer_list()`, `peer_trust()`, `peer_send()`, `peer_inbox()`, `export_blocks()`, `import_blocks()`.
+- **New MCP tools:** `elfmem_peer_send`, `elfmem_peer_inbox`, `elfmem_peer_list`, `elfmem_export`, `elfmem_import`.
+- **New result types:** `PeerInfo`, `ExportResult`, `ImportResult`, `PeerSendResult`, `PeerInboxResult` — all with agent-friendly `__str__`, `summary`, and `to_dict()` surfaces.
+- **Trust loop:** Outcome closure on peer-originated blocks automatically updates peer trust scores. Trust decays for inactive peers during `curate()`.
+- **Message blocks skip dedup:** Blocks with `category=message` bypass near-duplicate rejection and contradiction detection during `consolidate()` — messages are events, not knowledge claims.
+- **`delivery_path` on `peer_add()`:** Optional filesystem path to a peer's inbox directory. When set, `peer_send()` writes directly there (subdirectory named by sender), enabling instant delivery with no transport layer. CLI: `elfmem peer add <did> --name <n> --delivery-path <path>`.
+- **`PeerConfig`:** New configuration section for peer identity, outbox/inbox directories, confidence floor, and trust thresholds.
+- **`PeerError` exception:** New exception type for peer operations, with `.recovery` field.
+- **Automatic schema migration:** `db/migrate.py` applies pending migrations on startup via `MemorySystem.from_config()`. Version-tracked, idempotent, zero ceremony. Existing databases are upgraded transparently — no manual migration commands needed. Pre-migration backup is created automatically.
+- **`elfmem backup` CLI command:** Creates a clean, self-contained database backup using `VACUUM INTO`. Records backup metadata in `system_config` for `elfmem doctor` to report.
+- **Backup advisory in `elfmem doctor`:** Reports backup count, total size, and latest backup name. Suggests `elfmem backup` when no backups exist. Suggests cleanup when more than 3 backups accumulate.
+
 ## [0.8.0] — 2026-04-28
 
 ### Added

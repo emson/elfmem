@@ -55,6 +55,10 @@ class FrameError(ElfmemError):
     """Raised when an unknown frame name is passed to frame() or recall()."""
 
 
+class PeerError(ElfmemError):
+    """Raised when a peer operation cannot complete."""
+
+
 class ConnectError(ElfmemError):
     """Raised when a connect() or disconnect() operation cannot complete."""
 

@@ -512,6 +512,29 @@ def doctor(
                 "Add elfmem MCP server (shown at end of elfmem init output)",
             )
 
+    # ── Backups ────────────────────────────────────────────────────────────
+
+    if db_file.exists():
+        from elfmem.db.migrate import list_backups
+
+        backups = list_backups(db_path)
+        if backups:
+            total_size = sum(int(b["size"]) for b in backups)
+            newest = backups[0]["name"]
+            _check(
+                "Backups",
+                True,
+                f"{len(backups)} backup(s), {total_size / 1024:.1f} KB total. Latest: {newest}",
+                f"Clean up with: rm {Path(db_path).parent}/*.bak" if len(backups) > 3 else "",
+            )
+        else:
+            _check(
+                "Backups",
+                False,
+                "No backups found",
+                "Run: elfmem backup",
+            )
+
     # ── Output ─────────────────────────────────────────────────────────────
 
     if json_output:
@@ -530,6 +553,31 @@ def doctor(
 
     if failed:
         raise typer.Exit(1)
+
+
+@app.command()
+def backup(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Create a clean backup of the database.
+
+    Uses VACUUM INTO to produce a self-contained backup file with no
+    pending WAL state. Ideal before risky operations or as a periodic
+    safety net.
+
+    Examples:
+
+        elfmem backup
+        elfmem backup --db ~/.elfmem/databases/elfmem.db
+    """
+    db_path, config_path = _resolve_paths(db, config)
+    result: dict[str, Any] = _run(_backup_async(db_path, config_path))
+    if json_output:
+        _json(result)
+    else:
+        typer.echo(f"Backed up to {result['path']} ({result['size_kb']:.1f} KB)")
 
 
 @app.command()
@@ -722,6 +770,224 @@ def serve(
         raise typer.Exit(1)
 
     mcp_main(db_path=db_path, config_path=config_path, use_adaptive_policy=adaptive_policy)
+
+
+# ── Peer communication subcommands ───────────────────────────────────────────
+
+peer_app = typer.Typer(
+    name="peer",
+    help="Peer communication: exchange knowledge and messages between elfmem instances.",
+    no_args_is_help=True,
+)
+app.add_typer(peer_app, name="peer")
+
+
+@peer_app.command("init")
+def peer_init(
+    name: Annotated[str, typer.Option("--name", help="Name for this instance")],
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Set this instance's peer identity for communication."""
+    db_path, config_path = _resolve_paths(db, config)
+    did: str = _run(_peer_init_async(db_path, config_path, name))
+    if json_output:
+        _json({"did": did})
+    else:
+        typer.echo(f"Identity set: {did}")
+
+
+@peer_app.command("add")
+def peer_add(
+    did: str,
+    name: Annotated[str, typer.Option("--name", help="Human-readable name")],
+    is_self: Annotated[bool, typer.Option("--self", help="Same identity, different machine")] = False,
+    delivery_path: Annotated[str | None, typer.Option("--delivery-path", help="Filesystem path to peer's inbox dir (direct delivery)")] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Register a peer for communication.
+
+    With --delivery-path, messages are written directly to the peer's
+    inbox directory (instant delivery, no transport needed).
+
+    Examples:
+
+        elfmem peer add elf:trader --name "Trading Elf"
+        elfmem peer add elf:server --name "Server Elf" --self
+        elfmem peer add elf:vault --name "Vault" \\
+            --delivery-path ~/Dropbox/vaults/elf_vault_proj/.elfmem/inbox
+    """
+    from elfmem.types import PeerInfo
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: PeerInfo = _run(_peer_add_async(db_path, config_path, did, name, is_self, delivery_path))
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@peer_app.command("remove")
+def peer_remove(
+    did: str,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+) -> None:
+    """Unregister a peer."""
+    db_path, config_path = _resolve_paths(db, config)
+    removed: bool = _run(_peer_remove_async(db_path, config_path, did))
+    typer.echo(f"{'Removed' if removed else 'Not found'}: {did}")
+
+
+@peer_app.command("list")
+def peer_list(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List all registered peers with trust scores."""
+    from elfmem.types import PeerInfo
+
+    db_path, config_path = _resolve_paths(db, config)
+    results: list[PeerInfo] = _run(_peer_list_async(db_path, config_path))
+    if json_output:
+        _json([r.to_dict() for r in results])
+    else:
+        if not results:
+            typer.echo("No peers registered. Add one with: elfmem peer add <did> --name <name>")
+        else:
+            for r in results:
+                typer.echo(str(r))
+
+
+@peer_app.command("trust")
+def peer_trust(
+    did: str,
+    set_value: Annotated[float | None, typer.Option("--set", help="Set trust to this value")] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """View or set trust for a peer."""
+    from elfmem.types import PeerInfo
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: PeerInfo = _run(_peer_trust_async(db_path, config_path, did, set_value))
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@peer_app.command("send")
+def peer_send(
+    did: str,
+    content: str,
+    reply_to: Annotated[str | None, typer.Option("--reply-to", help="msg_id of prior message")] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Send a message to a peer.
+
+    Creates a message block in your memory and writes a JSON file
+    to the outbox directory for transport.
+
+    Examples:
+
+        elfmem peer send elf:trader "What is your view on UK gilts?"
+        elfmem peer send elf:trader "I agree" --reply-to m_a1b2c3d4
+    """
+    from elfmem.types import PeerSendResult
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: PeerSendResult = _run(
+        _peer_send_async(db_path, config_path, did, content, reply_to)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@peer_app.command("inbox")
+def peer_inbox(
+    from_peer: Annotated[str | None, typer.Option("--from", help="Filter by peer DID")] = None,
+    import_all: Annotated[bool, typer.Option("--import-all", help="Import all pending messages")] = False,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Check for and optionally import pending messages."""
+    from elfmem.types import PeerInboxResult
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: PeerInboxResult = _run(
+        _peer_inbox_async(db_path, config_path, from_peer, import_all)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@app.command("export")
+def export_cmd(
+    share: Annotated[str, typer.Option("--share", help="Share level: public|peer|all")] = "public",
+    min_confidence: Annotated[float, typer.Option("--min-confidence")] = 0.0,
+    output: Annotated[str, typer.Option("-o", "--output", help="Output file path")] = "export.json",
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Export shareable blocks as a JSON bundle.
+
+    Examples:
+
+        elfmem export --share public -o knowledge.json
+        elfmem export --share all -o sync.json --min-confidence 0.5
+    """
+    from elfmem.types import ExportResult
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: ExportResult = _run(
+        _export_async(db_path, config_path, share, min_confidence, output)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@app.command("import")
+def import_cmd(
+    path: str,
+    from_peer: Annotated[str | None, typer.Option("--from", help="Source peer DID")] = None,
+    self_merge: Annotated[bool, typer.Option("--self-merge", help="Same identity, trust 1.0")] = False,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Import a block bundle from another elfmem instance.
+
+    Examples:
+
+        elfmem import knowledge.json --from elf:researcher
+        elfmem import sync.json --self-merge
+    """
+    from elfmem.types import ImportResult
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: ImportResult = _run(
+        _import_async(db_path, config_path, path, from_peer, self_merge)
+    )
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
 
 
 # ── Mind (Theory of Mind) subcommands ────────────────────────────────────────
@@ -965,6 +1231,85 @@ async def _init_self(db_path: str, config: str, content: str) -> LearnResult:
     """Store an identity block tagged self/context. Used by elfmem init --self."""
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.remember(content, tags=["self/context"])
+
+
+async def _backup_async(db_path: str, config: str | None) -> dict[str, Any]:
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from elfmem.db.migrate import vacuum_backup
+
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        src = Path(db_path)
+        out_path = str(src.with_suffix(f".backup.{timestamp}.bak"))
+        async with mem._engine.begin() as conn:
+            result_path = await vacuum_backup(conn, out_path)
+            from elfmem.db.queries import set_config
+            await set_config(conn, "last_backup_path", result_path)
+            await set_config(conn, "last_backup_at", datetime.now(UTC).isoformat())
+        size = Path(result_path).stat().st_size
+        return {"path": result_path, "size_kb": size / 1024}
+
+
+async def _peer_init_async(db_path: str, config: str | None, name: str) -> str:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_init(name)
+
+
+async def _peer_add_async(
+    db_path: str, config: str | None, did: str, name: str, is_self: bool,
+    delivery_path: str | None = None,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_add(did, name, is_self=is_self, delivery_path=delivery_path)
+
+
+async def _peer_remove_async(db_path: str, config: str | None, did: str) -> bool:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_remove(did)
+
+
+async def _peer_list_async(db_path: str, config: str | None) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_list()
+
+
+async def _peer_trust_async(
+    db_path: str, config: str | None, did: str, set_value: float | None,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_trust(did, set_value=set_value)
+
+
+async def _peer_send_async(
+    db_path: str, config: str | None, did: str, content: str, reply_to: str | None,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_send(did, content, in_reply_to=reply_to)
+
+
+async def _peer_inbox_async(
+    db_path: str, config: str | None, from_peer: str | None, import_all: bool,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.peer_inbox(from_peer=from_peer, import_all=import_all)
+
+
+async def _export_async(
+    db_path: str, config: str | None, share: str, min_confidence: float, output: str,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.export_blocks(
+            share_level=share, min_confidence=min_confidence, output_path=output,
+        )
+
+
+async def _import_async(
+    db_path: str, config: str | None, path: str, from_peer: str | None, self_merge: bool,
+) -> Any:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.import_blocks(path, from_peer=from_peer, self_merge=self_merge)
 
 
 async def _mind_create(

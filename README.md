@@ -222,6 +222,57 @@ The `simulate` frame uses **score boosts** — per-category and per-tag multipli
 
 Mind blocks use `DURABLE` decay (~6 month half-life), so mental models persist across many sessions. Predictions are tracked as `decision` blocks linked via `predicts` edges. On outcome closure, `validates` edges are created and confidence is updated via Bayesian calibration.
 
+### Peer communication: agents that talk to each other
+
+elfmem instances can exchange knowledge and messages. Pull-based, file-mediated, zero infrastructure. Each instance remains sovereign — it owns its blocks, shares selectively, and learns from exchanges through outcome closure.
+
+```python
+# 1. Set your identity and register a peer
+await system.peer_init("research-elf")
+await system.peer_add("elf:trader", "Trading Elf")
+
+# 2. Direct delivery: register with the peer's inbox path (no transport needed)
+await system.peer_add(
+    "elf:vault", "Vault Elf",
+    delivery_path="/shared/vaults/elf_vault_proj/.elfmem/inbox",
+)
+
+# 3. Send a message (heartbeat speed, no LLM)
+result = await system.peer_send("elf:vault", "What's your gilt view this week?")
+print(result)  # "Sent m_a1b2c3d4 to elf:vault → /shared/vaults/.../inbox/research-elf/"
+
+# 4. Export shareable knowledge as a bundle
+await system.export_blocks(share_level="public", output_path="knowledge.json")
+
+# 5. Import knowledge from another instance (blocks enter inbox)
+result = await system.import_blocks("peer_knowledge.json", from_peer="elf:trader")
+print(result)  # "Imported 12 blocks (3 skipped) from peer (elf:trader), 4 edges"
+
+# 6. Check inbox for messages
+inbox = await system.peer_inbox(import_all=True)
+print(inbox)  # "Found 2 messages from 1 peer(s). Imported 2, skipped 0."
+
+# 7. Trust evolves through outcomes — no manual scoring needed
+await system.outcome([imported_block_id], signal=0.9, source="gilt prediction confirmed")
+# → Trust on elf:trader rises automatically
+```
+
+**Routing:** If a peer has a `delivery_path`, messages go directly to that directory using your identity slug as the subdirectory. Without it, messages go to your local outbox for manual transport. Self-federation (same identity across machines) uses `--self-merge` with trust 1.0.
+
+Trust is outcome-driven: when peer-originated knowledge leads to good outcomes, trust rises. When it misleads, trust falls. Peer trust also decays slowly over inactivity (90 days), incentivising regular exchange.
+
+```bash
+# CLI equivalents
+elfmem peer init research-elf
+elfmem peer add elf:vault --name "Vault Elf" \
+    --delivery-path ~/shared/vaults/elf_vault_proj/.elfmem/inbox
+elfmem peer send elf:vault "What's your view on UK gilts?"
+elfmem peer inbox --import-all
+elfmem peer list
+elfmem export knowledge.json --share public
+elfmem import peer_knowledge.json --from elf:trader
+```
+
 ### Three rhythms: learn, dream, curate
 
 Every operation maps to one of three biological rhythms:
@@ -334,6 +385,8 @@ Decay is **session-aware**: the clock only ticks during active use. Knowledge su
 | Feedback loop (outcome) | Yes | No | No | No |
 | Session-aware clock | Yes | No | No | No |
 | Theory of Mind | Yes | No | No | No |
+| Peer communication | Yes | No | No | No |
+| Automatic migration | Yes | No | No | No |
 | Retrieval frames | 6 optimised | No | No | No |
 | MCP native | Yes | No | No | No |
 | Official SDKs only | Yes | No | Varies | No |
@@ -468,7 +521,26 @@ Project:  my-agent
 
 Agent doc: CLAUDE.md  ✓ elfmem section found
 MCP config: .claude.json  ✓ elfmem entry found
+Backups  ✓  2 backup(s), 1,240.0 KB total. Latest: my-agent.before-v2.20260430-120000.bak
+           Clean up with: rm ~/.elfmem/databases/*.bak
 ```
+
+### Schema migration and backups
+
+elfmem databases migrate automatically when you upgrade. On first startup after an upgrade, elfmem detects schema changes, backs up your database, then applies the migration. Your data is never lost.
+
+```bash
+# Check migration status and backup health
+elfmem doctor
+
+# Create a manual backup (VACUUM INTO — clean, WAL-free copy)
+elfmem backup
+
+# Backups are created automatically before any schema migration
+# Format: my-agent.before-v2.20260430-120000.bak
+```
+
+Backup files live alongside the database. `elfmem doctor` reports count and total size, and suggests cleanup when you have more than three backups.
 
 ---
 
@@ -777,6 +849,26 @@ result = await system.mind_show(mind_block_id)
 result = await system.mind_outcome(prediction_block_id, hit, reason)
 #   → MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, ...)
 
+# Peer communication
+result = await system.peer_init(name)
+#   → str (identity DID)
+result = await system.peer_add(did, name, *, is_self=False, delivery_path=None)
+#   → PeerInfo(did, name, trust, is_self, delivery_path, ...)
+result = await system.peer_remove(did)
+#   → bool
+peers  = await system.peer_list()
+#   → list[PeerInfo]
+result = await system.peer_trust(did, set_value=None)
+#   → PeerInfo  (or updates trust when set_value given)
+result = await system.peer_send(did, content, *, in_reply_to=None)
+#   → PeerSendResult(msg_id, to_peer, delivery_path)
+result = await system.peer_inbox(*, from_peer=None, import_all=False)
+#   → PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
+result = await system.export_blocks(*, share_level="public", output_path, min_confidence=0.3)
+#   → ExportResult(blocks_exported, edges_exported, output_path)
+result = await system.import_blocks(path, *, from_peer=None, is_self_merge=False)
+#   → ImportResult(blocks_imported, blocks_skipped, edges_imported, from_peer)
+
 # Introspection
 status = await system.status()
 #   → SystemStatus(health="good", suggestion="Memory is healthy.", ...)
@@ -814,6 +906,11 @@ MindShowResult(subject, block_id, content, confidence, predictions)
 MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)
 MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, old_confidence)
 PredictionDetail(block_id, content, status, hit, reason)
+PeerInfo(did, name, trust, is_self, delivery_path, messages_in, messages_out, ...)
+PeerSendResult(msg_id, to_peer, delivery_path)
+PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
+ExportResult(blocks_exported, edges_exported, output_path)
+ImportResult(blocks_imported, blocks_skipped, edges_imported, from_peer)
 SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, lifetime_tokens)
 TokenUsage(llm_input_tokens, llm_output_tokens, embedding_tokens, llm_calls, embedding_calls)
 ```
@@ -846,6 +943,7 @@ src/elfmem/
 ├── db/
 │   ├── models.py           # SQLAlchemy Core tables
 │   ├── engine.py           # Async engine factory
+│   ├── migrate.py          # Schema migration + backup utilities
 │   └── queries.py          # All database operations
 ├── memory/
 │   ├── blocks.py           # Block state, content hashing, decay tiers
@@ -861,7 +959,8 @@ src/elfmem/
     ├── consolidate.py      # dream(): batch promotion
     ├── recall.py           # recall(): retrieval + reinforcement
     ├── curate.py           # curate(): maintenance
-    └── mind.py             # mind_create/predict/list/show/outcome
+    ├── mind.py             # mind_create/predict/list/show/outcome
+    └── peer.py             # export, import, send, inbox, peer roster
 ```
 
 **Four layers, clear boundaries:**

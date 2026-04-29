@@ -81,6 +81,7 @@ async def curate(
     reinforced = await _reinforce_top_blocks(conn, current_active_hours, reinforce_top_n)
     total_edges_after = await count_edges(conn)
 
+    await _decay_peer_trust(conn)
     await set_config(conn, "last_curate_at", str(current_active_hours))
 
     return CurateResult(
@@ -212,6 +213,21 @@ async def _get_tags_fast(conn: AsyncConnection, block_id: str) -> list[str]:
     """Fetch tags for a single block."""
     from elfmem.db.queries import get_tags
     return await get_tags(conn, block_id)
+
+
+async def _decay_peer_trust(conn: AsyncConnection) -> None:
+    """Decay trust for peers inactive for > 90 days. Runs each curate cycle."""
+    from datetime import UTC, datetime, timedelta
+
+    from elfmem.db.queries import get_all_peers, update_peer_trust
+
+    cutoff = (datetime.now(UTC) - timedelta(days=90)).isoformat()
+    for peer in await get_all_peers(conn):
+        if peer["is_self"]:
+            continue
+        if peer["last_active"] < cutoff and peer["trust"] > 0.0:
+            new_trust = max(0.0, peer["trust"] * 0.95)
+            await update_peer_trust(conn, peer["did"], new_trust)
 
 
 async def _reinforce_top_blocks(

@@ -276,6 +276,10 @@ async def _collect_decisions(
         # Cache hit: pre-warmed by embed_batch above.
         vec = await embedding_svc.embed(norm_content)
 
+        # Messages are events, not knowledge claims — skip dedup and
+        # contradiction checks. They still get embeddings and edges.
+        is_message = category == "message"
+
         # Near/exact duplicate check (pure in-memory, no DB).
         # Cosine similarities are cached here and reused by contradiction detection
         # below, avoiding a second O(n_active) similarity pass per block.
@@ -289,14 +293,14 @@ async def _collect_decisions(
                 best_sim = sim
                 best_active = a_block
 
-        if best_active is not None and best_sim >= near_dup_exact_threshold:
+        if not is_message and best_active is not None and best_sim >= near_dup_exact_threshold:
             block_decisions.append(_BlockDecision(
                 block_id=block_id, action="reject_exact", supersedes_id=None,
             ))
             continue
 
         supersedes_id: str | None = None
-        if best_active is not None and best_sim >= near_dup_near_threshold:
+        if not is_message and best_active is not None and best_sim >= near_dup_near_threshold:
             supersedes_id = best_active["id"]
             evolving_vecs.pop(best_active["content"].strip().lower(), None)
 
@@ -352,7 +356,7 @@ async def _collect_decisions(
         # not in sim_cache; their similarity is computed on demand.
         # Skipped when skip_llm=True (no LLM at all) or skip_contradictions=True
         # (keeps process_block summaries but avoids the O(n²) contradiction loop).
-        if skip_llm or skip_contradictions:
+        if skip_llm or skip_contradictions or is_message:
             evolving_vecs[norm_content] = (block, vec)
             newly_promoted.append((block, vec))
             continue

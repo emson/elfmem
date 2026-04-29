@@ -56,7 +56,9 @@ from elfmem.types import (
     ConsolidateResult,
     CurateResult,
     DisconnectResult,
+    ExportResult,
     FrameResult,
+    ImportResult,
     LearnDocumentResult,
     LearnResult,
     MindOutcomeResult,
@@ -65,6 +67,9 @@ from elfmem.types import (
     MindSummary,
     OperationRecord,
     OutcomeResult,
+    PeerInboxResult,
+    PeerInfo,
+    PeerSendResult,
     ScoredBlock,
     SetupResult,
     SystemStatus,
@@ -224,6 +229,10 @@ class MemorySystem:
         async with engine.begin() as conn:
             await conn.run_sync(metadata.create_all)
             await seed_builtin_data(conn)
+            # Apply any pending schema migrations (idempotent, fast skip if current).
+            # Backup is created automatically before the first migration.
+            from elfmem.db.migrate import ensure_schema_current
+            await ensure_schema_current(conn, db_path=db_path)
             # Seed _pending from DB so the advisory is accurate on restart.
             # Blocks that survived a crash or process restart are counted.
             initial_pending = await get_inbox_count(conn)
@@ -1585,6 +1594,244 @@ class MemorySystem:
         self._record_op("curate", result.summary)
         return result
 
+    # ── Peer communication operations ───────────────────────────────────────
+
+    async def peer_init(self, name: str) -> str:
+        """Set this instance's peer identity.
+
+        USE WHEN: First-time setup for peer communication.
+        COST: Instant. Database write only.
+        RETURNS: The DID string (e.g. "elf:my-agent").
+        NEXT: Register peers with peer_add().
+        """
+        from elfmem.operations.peer import set_identity
+
+        async with self._engine.begin() as conn:
+            did = await set_identity(conn, name)
+        self._record_op("peer_init", f"Identity set: {did}")
+        return did
+
+    async def peer_add(
+        self,
+        did: str,
+        name: str,
+        *,
+        is_self: bool = False,
+        delivery_path: str | None = None,
+    ) -> PeerInfo:
+        """Register a peer for communication.
+
+        USE WHEN: You want to exchange knowledge with another elfmem instance.
+        DON'T USE WHEN: The peer is already registered (idempotent — returns existing).
+        COST: Instant.
+        RETURNS: PeerInfo with trust score and statistics.
+
+        Args:
+            delivery_path: Filesystem path to the peer's inbox directory.
+                When set, peer_send() writes directly there (instant delivery).
+                When None, messages go to the local outbox for manual transport.
+        """
+        from elfmem.db.queries import get_peer, insert_peer
+
+        async with self._engine.begin() as conn:
+            existing = await get_peer(conn, did)
+            if existing is None:
+                await insert_peer(
+                    conn, did=did, name=name, is_self=is_self,
+                    delivery_path=delivery_path,
+                )
+                existing = await get_peer(conn, did)
+        result = _peer_row_to_info(existing)  # type: ignore[arg-type]
+        self._record_op("peer_add", result.summary)
+        return result
+
+    async def peer_remove(self, did: str) -> bool:
+        """Unregister a peer. Returns True if the peer existed.
+
+        USE WHEN: Removing a peer you no longer communicate with.
+        COST: Instant.
+        """
+        from elfmem.db.queries import delete_peer
+
+        async with self._engine.begin() as conn:
+            removed = await delete_peer(conn, did)
+        self._record_op("peer_remove", f"{'Removed' if removed else 'Not found'}: {did}")
+        return removed
+
+    async def peer_list(self) -> list[PeerInfo]:
+        """List all registered peers with trust scores and statistics.
+
+        USE WHEN: Discovering which peers are available for communication.
+        COST: Fast. Database reads only.
+        RETURNS: list[PeerInfo].
+        """
+        from elfmem.db.queries import get_all_peers
+
+        async with self._engine.connect() as conn:
+            rows = await get_all_peers(conn)
+        result = [_peer_row_to_info(r) for r in rows]
+        self._record_op("peer_list", f"{len(result)} peer(s) registered.")
+        return result
+
+    async def peer_trust(
+        self, did: str, *, set_value: float | None = None,
+    ) -> PeerInfo:
+        """Get or set trust for a peer.
+
+        USE WHEN: Inspecting or manually adjusting trust for a peer.
+        COST: Instant.
+        RETURNS: PeerInfo with current trust score.
+        """
+        from elfmem.db.queries import get_peer, update_peer_trust
+
+        async with self._engine.begin() as conn:
+            if set_value is not None:
+                await update_peer_trust(conn, did, set_value)
+            peer = await get_peer(conn, did)
+        if peer is None:
+            from elfmem.exceptions import PeerError
+            raise PeerError(
+                f"Peer not found: {did}",
+                recovery=f"Register first: elfmem peer add {did} --name <name>",
+            )
+        result = _peer_row_to_info(peer)
+        self._record_op("peer_trust", result.summary)
+        return result
+
+    async def peer_send(
+        self,
+        to_peer: str,
+        content: str,
+        *,
+        in_reply_to: str | None = None,
+    ) -> PeerSendResult:
+        """Send a message to a peer. Heartbeat speed.
+
+        USE WHEN: Communicating with another elfmem instance.
+        DON'T USE WHEN: Sharing bulk knowledge — use export_blocks() instead.
+        COST: Instant. No LLM calls. Creates a message block + outbox file.
+        RETURNS: PeerSendResult with msg_id and outbox path.
+        NEXT: Transport the outbox file to the peer's inbox directory.
+        """
+        from pathlib import Path
+
+        from elfmem.operations.peer import get_identity, send_message
+
+        outbox_dir = Path(self._config.peer.outbox_dir).expanduser()
+        async with self._engine.begin() as conn:
+            identity = await get_identity(conn)
+            result = await send_message(
+                conn,
+                to_peer=to_peer,
+                content=content,
+                in_reply_to=in_reply_to,
+                identity=identity,
+                outbox_dir=outbox_dir,
+            )
+        self._pending += 1
+        self._last_learned_block_id = result.block_id
+        self._record_op("peer_send", result.summary)
+        return result
+
+    async def peer_inbox(
+        self,
+        *,
+        from_peer: str | None = None,
+        import_all: bool = False,
+    ) -> PeerInboxResult:
+        """Check and optionally import pending messages from peers.
+
+        USE WHEN: Starting a session or periodically checking for messages.
+        COST: Fast. Filesystem scan + optional database writes.
+        RETURNS: PeerInboxResult with message counts and peer list.
+        NEXT: Run dream() to consolidate imported messages into active memory.
+        """
+        from pathlib import Path
+
+        from elfmem.operations.peer import check_inbox, get_identity
+
+        inbox_dir = Path(self._config.peer.inbox_dir).expanduser()
+        async with self._engine.begin() as conn:
+            identity = await get_identity(conn)
+            result = await check_inbox(
+                conn,
+                inbox_dir=inbox_dir,
+                from_peer=from_peer,
+                import_messages=import_all,
+                identity=identity,
+            )
+        if result.messages_imported > 0:
+            self._pending += result.messages_imported
+        self._record_op("peer_inbox", result.summary)
+        return result
+
+    async def export_blocks(
+        self,
+        *,
+        share_level: str = "public",
+        min_confidence: float = 0.0,
+        output_path: str,
+    ) -> ExportResult:
+        """Export shareable blocks as a JSON bundle.
+
+        USE WHEN: Sharing knowledge with another elfmem instance.
+        DON'T USE WHEN: Sending a single message — use peer_send() instead.
+        COST: Fast. Database reads + file write.
+        RETURNS: ExportResult with counts and output path.
+        NEXT: Transfer the bundle file to the receiving instance.
+        """
+        from elfmem.operations.peer import export_blocks as _export
+        from elfmem.operations.peer import get_identity
+
+        async with self._engine.connect() as conn:
+            identity = await get_identity(conn)
+            result = await _export(
+                conn,
+                share_level=share_level,
+                min_confidence=min_confidence,
+                identity=identity,
+                output_path=output_path,
+            )
+        self._record_op("export_blocks", result.summary)
+        return result
+
+    async def import_blocks(
+        self,
+        path: str,
+        *,
+        from_peer: str | None = None,
+        self_merge: bool = False,
+    ) -> ImportResult:
+        """Import a block bundle with provenance tracking.
+
+        USE WHEN: Receiving knowledge from another elfmem instance.
+        DON'T USE WHEN: The bundle is from an untrusted, unregistered peer.
+        COST: Fast. Database writes. Imported blocks enter inbox.
+        RETURNS: ImportResult with counts.
+        NEXT: Run dream() to consolidate imported blocks.
+        """
+        import json as _json
+        from pathlib import Path
+
+        from elfmem.operations.peer import import_bundle
+
+        bundle_path = Path(path).expanduser()
+        bundle_data = _json.loads(bundle_path.read_text(encoding="utf-8"))
+        peer_did = from_peer or bundle_data.get("from_did", "unknown")
+
+        async with self._engine.begin() as conn:
+            result = await import_bundle(
+                conn,
+                bundle_data=bundle_data,
+                from_peer=peer_did,
+                is_self_merge=self_merge,
+                confidence_floor=self._config.peer.confidence_floor,
+            )
+        if result.blocks_imported > 0:
+            self._pending += result.blocks_imported
+        self._record_op("import_blocks", result.summary)
+        return result
+
     # ── Mind (Theory of Mind) operations ───────────────────────────────────
 
     async def mind_create(
@@ -1777,6 +2024,23 @@ class MemorySystem:
                 timestamp=datetime.now(UTC).isoformat(),
             )
         )
+
+
+def _peer_row_to_info(row: dict[str, Any]) -> PeerInfo:
+    """Convert a peer_roster row dict to a PeerInfo result type."""
+    return PeerInfo(
+        did=row["did"],
+        name=row["name"],
+        trust=row["trust"],
+        is_self=bool(row["is_self"]),
+        first_contact=row["first_contact"],
+        last_active=row["last_active"],
+        blocks_imported=row["blocks_imported"],
+        blocks_exported=row["blocks_exported"],
+        messages_in=row["messages_in"],
+        messages_out=row["messages_out"],
+        delivery_path=row.get("delivery_path"),
+    )
 
 
 # ── Module-level helpers ───────────────────────────────────────────────────────
