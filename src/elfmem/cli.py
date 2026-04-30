@@ -387,6 +387,9 @@ def doctor(
         typer.Option("--config", envvar="ELFMEM_CONFIG", help="Config YAML path"),
     ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    modules: Annotated[
+        bool, typer.Option("--modules", help="Print key module paths and exit")
+    ] = False,
 ) -> None:
     """Diagnose your elfmem setup. Reports what is configured and what is missing.
 
@@ -396,7 +399,12 @@ def doctor(
 
     Exits with code 1 if any required item is missing; 0 if fully configured.
     Read-only: never writes to the database or config files.
+
+    Use --modules to print the key module map without running health checks.
     """
+    if modules:
+        typer.echo(_project.format_key_modules())
+        return
     checks: list[dict[str, Any]] = []
     failed = False
 
@@ -483,7 +491,24 @@ def doctor(
                 "elfmem init  (creates CLAUDE.md with elfmem section)",
             )
         elif _project.has_agent_section(agent_doc):
-            _check("Agent doc", True, f"{agent_doc.name} has elfmem section")
+            from importlib.metadata import version as _pkg_version
+            installed = _pkg_version("elfmem")
+            section_ver = _project.extract_section_version(agent_doc)
+            if section_ver == "legacy" or (
+                section_ver is not None and section_ver != installed
+            ):
+                _check(
+                    "Agent doc",
+                    False,
+                    f"{agent_doc.name} elfmem section is from v{section_ver},"
+                    f" installed is v{installed}",
+                    "Run: elfmem init  (refreshes section, idempotent)",
+                )
+            else:
+                _check(
+                    "Agent doc", True,
+                    f"{agent_doc.name} has elfmem section (v{installed})",
+                )
         else:
             _check(
                 "Agent doc",

@@ -53,8 +53,28 @@ _MCP_CANDIDATES: tuple[str, ...] = (
 
 # Delimiters for the managed elfmem block inside agent doc files.
 # HTML comments: invisible when rendered, readable by tools.
-SECTION_START = "<!-- elfmem:start -->"
+SECTION_START = "<!-- elfmem:start -->"   # legacy — kept for compat detection
+SECTION_START_PREFIX = "<!-- elfmem:start"  # matches both versioned and unversioned
 SECTION_END = "<!-- elfmem:end -->"
+
+# ── Key module map ────────────────────────────────────────────────────────────
+# Single source of truth for the project's module layout.
+# Add an entry here when adding a significant new module.
+# Displayed by: elfmem doctor --modules
+KEY_MODULES: dict[str, str] = {
+    "src/elfmem/api.py": "MemorySystem — all public operations",
+    "src/elfmem/types.py": "Result types, exceptions",
+    "src/elfmem/operations/": "learn, consolidate, curate, outcome, recall, peer",
+    "src/elfmem/db/migrate.py": "Schema migration + backup utilities",
+    "src/elfmem/adapters/factory.py": "make_llm_adapter() / make_embedding_adapter()",
+    "src/elfmem/adapters/anthropic.py": "AnthropicLLMAdapter — Claude via official SDK",
+    "src/elfmem/adapters/openai.py": "OpenAILLMAdapter + OpenAIEmbeddingAdapter",
+    "src/elfmem/adapters/mock.py": "MockLLMService, MockEmbeddingService",
+    "src/elfmem/guide.py": "AgentGuide + GUIDES dict — add entry for every new public op",
+    "tests/conftest.py": "Shared test fixtures — always use these",
+    "CHANGELOG.md": "Update this for every user-facing change",
+    "docs/amgs_architecture.md": "Full technical specification",
+}
 
 _LOCAL_CONFIG_SUBDIR = ".elfmem"
 _LOCAL_CONFIG_NAME = "config.yaml"
@@ -221,11 +241,47 @@ def detect_mcp_config(root: Path) -> Path | None:
     return None
 
 
+def format_key_modules() -> str:
+    """Return KEY_MODULES as a formatted markdown table for terminal output."""
+    lines = ["Key module paths (from project.py KEY_MODULES):", ""]
+    col_w = max(len(k) for k in KEY_MODULES) + 2
+    lines.append(f"  {'Path':<{col_w}}  Purpose")
+    lines.append(f"  {'-' * col_w}  {'-' * 40}")
+    for path, purpose in KEY_MODULES.items():
+        lines.append(f"  {path:<{col_w}}  {purpose}")
+    lines.append("")
+    lines.append("Maintained in src/elfmem/project.py KEY_MODULES.")
+    return "\n".join(lines)
+
+
+def _section_start(version: str) -> str:
+    """Return a versioned section-start comment for the given elfmem version."""
+    return f"<!-- elfmem:start v{version} -->"
+
+
+def extract_section_version(doc_path: Path) -> str | None:
+    """Return the elfmem version embedded in the section start comment, or None.
+
+    Handles both legacy (unversioned) and current (versioned) section starts.
+    """
+    if not doc_path.exists():
+        return None
+    text = doc_path.read_text(encoding="utf-8")
+    # Versioned: <!-- elfmem:start v0.9.1 -->
+    m = re.search(r"<!-- elfmem:start v([\d.]+)\s*-->", text)
+    if m:
+        return m.group(1)
+    # Legacy unversioned: <!-- elfmem:start -->
+    if SECTION_START in text:
+        return "legacy"
+    return None
+
+
 def has_agent_section(doc_path: Path) -> bool:
     """Return True if *doc_path* contains the managed elfmem section."""
     if not doc_path.exists():
         return False
-    return SECTION_START in doc_path.read_text(encoding="utf-8")
+    return SECTION_START_PREFIX in doc_path.read_text(encoding="utf-8")
 
 
 def has_mcp_entry(mcp_path: Path) -> bool:
@@ -246,10 +302,15 @@ def _build_section(
     identity: str = "",
 ) -> str:
     """Build the managed elfmem block for insertion into an agent doc file."""
+    from importlib.metadata import version as _pkg_version
+    try:
+        elfmem_version = _pkg_version("elfmem")
+    except Exception:
+        elfmem_version = "unknown"
     mcp = mcp_json_snippet(config_path=config_path)
     identity_line = f"- **Identity:** {identity}\n" if identity else ""
     return (
-        f"{SECTION_START}\n"
+        f"{_section_start(elfmem_version)}\n"
         f"## elfmem — Project Memory\n\n"
         f"- **Project:** {name}\n"
         f"- **Database:** `{db_path}`\n"
@@ -259,7 +320,8 @@ def _build_section(
         f"Commands:\n"
         f"- `elfmem doctor` — verify setup, show paths\n"
         f"- `elfmem status` — memory health\n"
-        f"- `elfmem guide` — all operations\n"
+        f"- `elfmem guide` — all operations (always current)\n"
+        f"- `elfmem doctor --modules` — key module paths\n"
         f"\n"
         f"Add to `.claude.json` to give Claude persistent memory:\n"
         f"```json\n{mcp}\n```\n"
@@ -295,10 +357,10 @@ def write_agent_section(
 
     existing = doc_path.read_text(encoding="utf-8")
 
-    if SECTION_START in existing and SECTION_END in existing:
-        # Replace the existing managed block.
+    if SECTION_START_PREFIX in existing and SECTION_END in existing:
+        # Replace the existing managed block (handles both versioned and legacy starts).
         pattern = re.compile(
-            re.escape(SECTION_START) + r".*?" + re.escape(SECTION_END),
+            re.escape(SECTION_START_PREFIX) + r".*?" + re.escape(SECTION_END),
             re.DOTALL,
         )
         new_content = pattern.sub(section.rstrip("\n"), existing)

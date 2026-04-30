@@ -10,6 +10,13 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`elfmem doctor --modules`:** Prints the key module map (from `project.py KEY_MODULES`) without running health checks. Always current — adding a new module means adding one line to the dict, not editing CLAUDE.md.
+- **`KEY_MODULES` dict in `project.py`:** Single source of truth for the project's module layout. Maintained alongside the code; displayed on demand via `elfmem doctor --modules`.
+- **Version-stamped agent doc sections:** `elfmem init` now embeds the installed version in the section comment (`<!-- elfmem:start v0.9.1 -->`). `elfmem doctor` detects legacy or mismatched versions and suggests a refresh.
+- **`extract_section_version(doc_path)`:** New public function in `project.py` — parses the elfmem version from the section start comment for programmatic version checking.
+- **`format_key_modules()`:** New public function in `project.py` — returns the KEY_MODULES table as formatted text for CLI and agent consumption.
+- **`AgentGuide` entries for all peer operations:** `peer_init`, `peer_add`, `peer_send`, `peer_inbox`, `peer_list`, `peer_trust`, `export_blocks`, `import_blocks` — all now in `guide.py GUIDES`. `elfmem guide` is authoritative for all operations including v0.9.x peer features.
+- **Updated `elfmem guide` OVERVIEW:** Peer communication operations now appear in the compact overview table, grouped under a "Peer communication" section.
 - **Peer communication:** elfmem instances can exchange knowledge and messages. Pull-based, file-mediated, zero infrastructure. Three schema additions (`source_peer`, `share`, `envelope_json` on blocks) and one new table (`peer_roster`).
 - **`elfmem peer` CLI command group:** `peer init`, `peer add`, `peer remove`, `peer list`, `peer trust`, `peer send`, `peer inbox` subcommands for managing peer identity, roster, messaging, and trust.
 - **`elfmem export` / `elfmem import` CLI commands:** Export shareable blocks as signed JSON bundles; import with provenance tracking and trust-gated confidence. Self-federation via `--self-merge`.

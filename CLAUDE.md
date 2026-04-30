@@ -27,6 +27,7 @@ Decay is session-aware (holidays don't kill knowledge). Reinforcement resets the
   ```
   USE WHEN: …   DON'T USE WHEN: …   COST: …   RETURNS: …   NEXT: …
   ```
+- **AgentGuide required**: every new public `MemorySystem` method **must** have a corresponding `AgentGuide` entry in `src/elfmem/guide.py` `GUIDES` dict before the PR merges. This is what makes `elfmem guide` authoritative and keeps user project CLAUDE.mds permanently correct.
 
 ## Agent-First Contract
 
@@ -134,19 +135,9 @@ from elfmem import MemorySystem, ElfmemConfig, ConsolidationPolicy
 
 ## Key Paths
 
-| Path | Purpose |
-|------|---------|
-| `src/elfmem/api.py` | `MemorySystem` — all public operations |
-| `src/elfmem/types.py` | Result types, exceptions |
-| `src/elfmem/operations/` | `learn`, `consolidate`, `curate`, `outcome`, `recall`, `peer` |
-| `src/elfmem/db/migrate.py` | Schema migration + backup utilities (`ensure_schema_current`, `create_backup`, `vacuum_backup`, `list_backups`) |
-| `src/elfmem/adapters/factory.py` | `make_llm_adapter()` / `make_embedding_adapter()` |
-| `src/elfmem/adapters/anthropic.py` | `AnthropicLLMAdapter` — Claude via official SDK |
-| `src/elfmem/adapters/openai.py` | `OpenAILLMAdapter` + `OpenAIEmbeddingAdapter` |
-| `src/elfmem/adapters/mock.py` | `MockLLMService`, `MockEmbeddingService` |
-| `tests/conftest.py` | Shared test fixtures — always use these |
-| `CHANGELOG.md` | **Update this for every user-facing change** |
-| `docs/amgs_architecture.md` | Full technical specification |
+Run `elfmem doctor --modules` for the live module map (always current — maintained in `src/elfmem/project.py KEY_MODULES`).
+
+**Rule: when adding a new significant module, add one line to `KEY_MODULES` in `project.py`.**
 
 
 <!-- elfmem:start -->
