@@ -1045,15 +1045,20 @@ class PeerInboxResult:
     messages_imported: int
     messages_skipped: int
     peers: list[str]
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
         if self.messages_found == 0:
-            return "No pending messages."
-        return (
-            f"Found {self.messages_found} messages from {len(self.peers)} peer(s). "
-            f"Imported {self.messages_imported}, skipped {self.messages_skipped}."
-        )
+            base = "No pending messages."
+        else:
+            base = (
+                f"Found {self.messages_found} messages from {len(self.peers)} peer(s). "
+                f"Imported {self.messages_imported}, skipped {self.messages_skipped}."
+            )
+        if self.warnings:
+            base += " " + " ".join(self.warnings)
+        return base
 
     def __str__(self) -> str:
         return self.summary
@@ -1064,6 +1069,7 @@ class PeerInboxResult:
             "messages_imported": self.messages_imported,
             "messages_skipped": self.messages_skipped,
             "peers": self.peers,
+            "warnings": self.warnings,
         }
 
 

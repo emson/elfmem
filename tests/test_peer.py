@@ -675,3 +675,63 @@ class TestDeliveryPath:
         assert msg["content"] == "Check the envelope"
         assert msg["category"] == "message"
         assert msg["msg_id"] == result.msg_id
+
+
+# ── Inbox warnings ──────────────────────────────────────────────────────────
+
+
+class TestInboxWarnings:
+    async def test_warns_on_zero_messages_with_active_peers(
+        self, system_with_identity: MemorySystem, tmp_path: Path,
+    ):
+        system = system_with_identity
+        system._config = system._config.model_copy(update={
+            "peer": PeerConfig(inbox_dir=str(tmp_path / "inbox")),
+        })
+        await system.peer_add("elf:trader", "Trader")
+
+        result = await system.peer_inbox()
+        assert result.messages_found == 0
+        assert len(result.warnings) == 1
+        assert "Verify inbox path" in result.warnings[0]
+
+    async def test_no_warning_when_no_peers(
+        self, system_with_identity: MemorySystem, tmp_path: Path,
+    ):
+        system = system_with_identity
+        system._config = system._config.model_copy(update={
+            "peer": PeerConfig(inbox_dir=str(tmp_path / "inbox")),
+        })
+
+        result = await system.peer_inbox()
+        assert result.messages_found == 0
+        assert result.warnings == []
+
+    async def test_no_warning_when_messages_found(
+        self, system_with_identity: MemorySystem, tmp_path: Path,
+    ):
+        system = system_with_identity
+        inbox_dir = tmp_path / "inbox"
+        system._config = system._config.model_copy(update={
+            "peer": PeerConfig(inbox_dir=str(inbox_dir)),
+        })
+        await system.peer_add("elf:trader", "Trader")
+
+        peer_dir = inbox_dir / "elf-trader"
+        peer_dir.mkdir(parents=True)
+        msg = {
+            "version": 1,
+            "msg_id": "m_warn_test",
+            "from_did": "elf:trader",
+            "to_did": "elf:test-elf",
+            "in_reply_to": None,
+            "sent_at": "2026-04-29T14:00:00Z",
+            "content": "Test message",
+            "tags": [],
+            "category": "message",
+        }
+        (peer_dir / "msg_m_warn_test.json").write_text(json.dumps(msg))
+
+        result = await system.peer_inbox()
+        assert result.messages_found == 1
+        assert result.warnings == []
