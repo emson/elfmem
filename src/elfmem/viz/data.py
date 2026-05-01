@@ -25,7 +25,7 @@ _LAMBDA_TO_TIER: dict[float, str] = {
 _DEFAULT_LAMBDA: float = 0.010
 _PRUNE_THRESHOLD: float = 0.05
 _AT_RISK_THRESHOLD: float = 0.10
-_CURVE_POINTS: int = 25
+_CURVE_POINTS: int = 50
 
 
 def _tier_from_lambda(lam: float) -> str:
@@ -35,22 +35,70 @@ def _tier_from_lambda(lam: float) -> str:
 
 
 def _compute_tier_curves() -> dict[str, list[dict[str, float]]]:
-    """Pre-compute _CURVE_POINTS decay points for each tier.
+    """Pre-compute log-spaced decay points for each tier.
 
-    Horizon for each tier: hours where recency drops to 0.01.
-    JS receives plain (x, y) arrays — no maths in the browser.
+    Uses logarithmic X spacing so all tiers (spanning 5 orders of magnitude)
+    are visible on a single log-scale chart. X starts at 0.1h (not 0, since
+    log(0) is undefined). JS receives plain (x, y) arrays.
     """
     curves: dict[str, list[dict[str, float]]] = {}
     for lam, tier in _LAMBDA_TO_TIER.items():
         # horizon: exp(-lam * h) = 0.01  →  h = -ln(0.01) / lam
         horizon = -math.log(0.01) / lam
-        points = []
+        points: list[dict[str, float]] = [{"x": 0.0, "y": 1.0}]  # origin point
+        x_min, x_max = 0.1, horizon
         for i in range(_CURVE_POINTS):
-            h = horizon * i / (_CURVE_POINTS - 1)
+            # Log-spaced: 10^(log10(x_min) + i * (log10(x_max) - log10(x_min)) / (N-1))
+            log_min = math.log10(x_min)
+            log_max = math.log10(x_max)
+            h = 10 ** (log_min + i * (log_max - log_min) / (_CURVE_POINTS - 1))
             y = math.exp(-lam * h)
             points.append({"x": round(h, 2), "y": round(y, 4)})
         curves[tier] = points
     return curves
+
+
+# ── Builtin frame data (mirrors scoring.py + frames.py) ─────────────────────
+# Copied here to avoid importing core at viz time. Keep in sync manually.
+
+_BUILTIN_FRAMES: dict[str, dict[str, object]] = {
+    "self": {
+        "weights": {
+            "similarity": 0.10, "confidence": 0.30, "recency": 0.05,
+            "centrality": 0.25, "reinforcement": 0.30,
+        },
+        "token_budget": 600,
+        "cache_ttl": 3600,
+        "score_boosts": {},
+    },
+    "attention": {
+        "weights": {
+            "similarity": 0.35, "confidence": 0.15, "recency": 0.25,
+            "centrality": 0.15, "reinforcement": 0.10,
+        },
+        "token_budget": 2000,
+        "cache_ttl": 0,
+        "score_boosts": {},
+    },
+    "task": {
+        "weights": {
+            "similarity": 0.20, "confidence": 0.20, "recency": 0.20,
+            "centrality": 0.20, "reinforcement": 0.20,
+        },
+        "token_budget": 800,
+        "cache_ttl": 0,
+        "score_boosts": {},
+    },
+    "simulate": {
+        "weights": {
+            "similarity": 0.25, "confidence": 0.25, "recency": 0.15,
+            "centrality": 0.20, "reinforcement": 0.15,
+        },
+        "token_budget": 2000,
+        "cache_ttl": 0,
+        "score_boosts": {"tag:self/": 10.0, "mind": 6.0, "decision": 5.0},
+    },
+}
 
 
 # ── Sub-dataclasses ────────────────────────────────────────────────────────────
@@ -128,7 +176,7 @@ class DashboardData:
         cls,
         db_path: str,
         *,
-        include_archived: bool = False,
+        include_archived: bool = True,
         max_nodes: int = 100,
     ) -> DashboardData:
         """Query SQLite and build all dashboard data.
@@ -237,18 +285,12 @@ def _build_graph(
     include_archived: bool,
     max_nodes: int,
 ) -> GraphData:
-    # Check which columns exist in blocks table for backward compatibility
-    blocks_cols = {row[1] for row in conn.execute("PRAGMA table_info(blocks)").fetchall()}
-    edges_cols = {row[1] for row in conn.execute("PRAGMA table_info(edges)").fetchall()}
-
     status_clause = "status IN ('active', 'archived')" if include_archived else "status = 'active'"
-    block_select = "id, content, category, confidence, reinforcement_count, decay_lambda, status"
-    if "self_alignment" in blocks_cols:
-        block_select += ", self_alignment"
 
     block_rows = conn.execute(
         f"""
-        SELECT {block_select}
+        SELECT id, content, category, confidence, reinforcement_count,
+               decay_lambda, status, self_alignment
         FROM blocks WHERE {status_clause}
         """
     ).fetchall()
@@ -258,15 +300,10 @@ def _build_graph(
     for row in tag_rows:
         tags_map.setdefault(row["block_id"], []).append(row["tag"])
 
-    edge_select = "e.from_id, e.to_id, e.weight, e.reinforcement_count"
-    if "relation_type" in edges_cols:
-        edge_select += ", e.relation_type"
-    if "origin" in edges_cols:
-        edge_select += ", e.origin"
-
     edge_rows = conn.execute(
-        f"""
-        SELECT {edge_select}
+        """
+        SELECT e.from_id, e.to_id, e.weight, e.reinforcement_count,
+               e.relation_type, e.origin
         FROM edges e
         JOIN blocks ba ON e.from_id = ba.id AND ba.status = 'active'
         JOIN blocks bb ON e.to_id   = bb.id AND bb.status = 'active'
@@ -306,9 +343,7 @@ def _build_graph(
             "confidence": b["confidence"] or 0.0,
             "reinforcement_count": b["reinforcement_count"] or 0,
             "centrality": round(centrality.get(b["id"], 0.0), 4),
-            "self_alignment": (
-                (b["self_alignment"] or 0.0) if "self_alignment" in blocks_cols else 0.0
-            ),
+            "self_alignment": b["self_alignment"] or 0.0,
             "tags": tags_map.get(b["id"], []),
             "category": b["category"] or "",
         }
@@ -320,10 +355,8 @@ def _build_graph(
             "from_id": e["from_id"],
             "to_id": e["to_id"],
             "weight": e["weight"] or 0.0,
-            "relation_type": (
-                (e["relation_type"] or "similar") if "relation_type" in edges_cols else "similar"
-            ),
-            "origin": (e["origin"] or "similarity") if "origin" in edges_cols else "similarity",
+            "relation_type": e["relation_type"] or "similar",
+            "origin": e["origin"] or "similarity",
             "reinforcement_count": e["reinforcement_count"] or 0,
         }
         for e in edges_filtered
@@ -421,7 +454,8 @@ def _build_scoring(conn: sqlite3.Connection) -> ScoringData:
         "SELECT name, weights_json, token_budget, cache_json FROM frames"
     ).fetchall()
 
-    frames = []
+    # Merge DB frames with builtins — builtins fill gaps, DB takes priority
+    db_frames: dict[str, dict[str, object]] = {}
     for row in frame_rows:
         try:
             weights = json.loads(row["weights_json"] or "{}")
@@ -431,17 +465,39 @@ def _build_scoring(conn: sqlite3.Connection) -> ScoringData:
             cache = json.loads(row["cache_json"] or "{}")
         except (json.JSONDecodeError, TypeError):
             cache = {}
-        frames.append(
-            {
-                "name": row["name"],
-                "weights": weights,
-                "token_budget": row["token_budget"],
-                "cache_ttl": cache.get("ttl_seconds", 0),
-            }
-        )
+        db_frames[row["name"]] = {
+            "name": row["name"],
+            "weights": weights,
+            "token_budget": row["token_budget"],
+            "cache_ttl": cache.get("ttl_seconds", 0),
+            "score_boosts": {},
+        }
 
-    # block_outcomes stores outcome signals, not retrieval score breakdowns.
-    # last_retrieval is intentionally empty in the current schema.
+    # Merge: builtins provide defaults, DB overrides where present
+    frames = []
+    seen: set[str] = set()
+    # Emit builtins in canonical order, using DB values where available
+    for name, builtin in _BUILTIN_FRAMES.items():
+        if name in db_frames:
+            entry = db_frames[name]
+            # Overlay score_boosts from builtin (not stored in DB)
+            entry["score_boosts"] = builtin.get("score_boosts", {})
+            frames.append(entry)
+        else:
+            frames.append({
+                "name": name,
+                "weights": builtin["weights"],
+                "token_budget": builtin["token_budget"],
+                "cache_ttl": builtin.get("cache_ttl", 0),
+                "score_boosts": builtin.get("score_boosts", {}),
+            })
+        seen.add(name)
+
+    # Append any user-defined frames not in builtins
+    for name, entry in db_frames.items():
+        if name not in seen:
+            frames.append(entry)
+
     return ScoringData(
         frames=frames,
         last_retrieval=[],
