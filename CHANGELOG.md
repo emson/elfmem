@@ -10,7 +10,6 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-
 - **`elfmem doctor` peer checks:** Doctor now validates peer communication setup — identity, inbox/outbox path accessibility, per-peer delivery path reachability, and inbox drift detection (warns when `inbox_dir` has changed since `peer init`).
 - **`peer inbox` warnings:** When no messages are found but peers have been active in the last 30 days, `PeerInboxResult` now includes a warning suggesting inbox path verification. Catches silent wrong-path misconfigurations.
 - **`elfmem doctor --modules`:** Prints the key module map (from `project.py KEY_MODULES`) without running health checks. Always current — adding a new module means adding one line to the dict, not editing CLAUDE.md.
@@ -34,6 +33,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **Automatic schema migration:** `db/migrate.py` applies pending migrations on startup via `MemorySystem.from_config()`. Version-tracked, idempotent, zero ceremony. Existing databases are upgraded transparently — no manual migration commands needed. Pre-migration backup is created automatically.
 - **`elfmem backup` CLI command:** Creates a clean, self-contained database backup using `VACUUM INTO`. Records backup metadata in `system_config` for `elfmem doctor` to report.
 - **Backup advisory in `elfmem doctor`:** Reports backup count, total size, and latest backup name. Suggests `elfmem backup` when no backups exist. Suggests cleanup when more than 3 backups accumulate.
+
+### Fixed
+- **`mind_predict()` no longer requires `consolidate()` after `mind_create()`:** Mind blocks are now promoted to active inline when a prediction is made against them, with correct DURABLE decay tier (λ=0.001) assigned. Structured blocks are validated by their lifecycle events, not by LLM processing.
+- **`mind_outcome()` no longer requires `consolidate()` before closing a prediction:** Decision blocks are now promoted to active inline when their outcome is recorded. Outcome closure is the consolidation event for predictions.
 
 ## [0.8.0] — 2026-04-28
 
