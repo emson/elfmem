@@ -1604,10 +1604,14 @@ class MemorySystem:
         RETURNS: The DID string (e.g. "elf:my-agent").
         NEXT: Register peers with peer_add().
         """
+        from elfmem.db.queries import set_config
         from elfmem.operations.peer import set_identity
 
         async with self._engine.begin() as conn:
             did = await set_identity(conn, name)
+            await set_config(
+                conn, "peer_inbox_dir", self._config.peer.inbox_dir,
+            )
         self._record_op("peer_init", f"Identity set: {did}")
         return did
 

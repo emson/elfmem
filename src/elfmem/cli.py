@@ -394,8 +394,10 @@ def doctor(
     """Diagnose your elfmem setup. Reports what is configured and what is missing.
 
     Walks the full config and DB discovery chain to show exactly which files are
-    active for the current directory. Checks API keys, SELF blocks, and whether
-    the project's agent doc (CLAUDE.md / AGENTS.md) is configured.
+    active for the current directory. Checks API keys, SELF blocks, peer
+    communication setup (identity, inbox/outbox paths, delivery paths, inbox
+    drift), and whether the project's agent doc (CLAUDE.md / AGENTS.md) is
+    configured.
 
     Exits with code 1 if any required item is missing; 0 if fully configured.
     Read-only: never writes to the database or config files.
@@ -559,6 +561,13 @@ def doctor(
                 "No backups found",
                 "Run: elfmem backup",
             )
+
+    # ── Peer communication ─────────────────────────────────────────────────
+
+    if db_file.exists():
+        peer_checks = _run(_doctor_peer_checks(db_path, config_path))
+        for pc in peer_checks:
+            _check(pc["label"], pc["ok"], pc["detail"], pc["suggestion"])
 
     # ── Output ─────────────────────────────────────────────────────────────
 
@@ -1387,6 +1396,109 @@ async def _mind_outcome(
 ) -> MindOutcomeResult:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.mind_outcome(decision_block_id, hit=hit, reason=reason)
+
+
+async def _doctor_peer_checks(
+    db_path: str, config_path: str | None,
+) -> list[dict[str, Any]]:
+    """Validate peer communication config-vs-DB consistency.
+
+    Returns a list of check dicts (label, ok, detail, suggestion).
+    Returns empty list if peer communication is not configured.
+    """
+    from elfmem.config import ElfmemConfig
+    from elfmem.db.engine import create_engine
+    from elfmem.db.queries import get_all_peers, get_config
+
+    checks: list[dict[str, Any]] = []
+
+    def _add(label: str, ok: bool, detail: str, suggestion: str = "") -> None:
+        checks.append({"label": label, "ok": ok, "detail": detail, "suggestion": suggestion})
+
+    try:
+        engine = await create_engine(db_path)
+    except Exception:
+        return []
+
+    try:
+        cfg = ElfmemConfig.from_yaml(config_path) if config_path else ElfmemConfig()
+    except Exception:
+        cfg = ElfmemConfig()
+
+    try:
+        async with engine.connect() as conn:
+            identity = await get_config(conn, "peer_identity")
+            peers = await get_all_peers(conn)
+            stored_inbox = await get_config(conn, "peer_inbox_dir")
+    except Exception:
+        await engine.dispose()
+        return []
+
+    await engine.dispose()
+
+    # Skip entirely if peer communication was never configured
+    if not identity and not peers:
+        return []
+
+    # Check 1: Peer identity
+    if identity:
+        _add("Peer identity", True, identity)
+    else:
+        _add(
+            "Peer identity", False, "Not set",
+            "elfmem peer init --name <name>",
+        )
+
+    # Check 2: Inbox path
+    inbox_dir = Path(cfg.peer.inbox_dir).expanduser()
+    if inbox_dir.exists() and inbox_dir.is_dir():
+        _add("Peer inbox", True, str(inbox_dir))
+    elif not inbox_dir.exists():
+        _add(
+            "Peer inbox", True,
+            f"{inbox_dir} (will be created on first message)",
+        )
+    else:
+        _add(
+            "Peer inbox", False,
+            f"{inbox_dir} exists but is not a directory",
+            f"Check path: {inbox_dir}",
+        )
+
+    # Check 3: Inbox drift
+    if stored_inbox and stored_inbox != cfg.peer.inbox_dir:
+        _add(
+            "Inbox drift", False,
+            f"Was {stored_inbox}, now {cfg.peer.inbox_dir}",
+            "Verify config peer.inbox_dir or re-run: elfmem peer init --name <name>",
+        )
+
+    # Check 4: Per-peer delivery paths
+    for peer in peers:
+        dp = peer.get("delivery_path")
+        if not dp:
+            continue
+        dp_path = Path(dp).expanduser()
+        name = peer.get("name", peer["did"])
+        if dp_path.exists() and dp_path.is_dir():
+            _add(f"Deliver→{name}", True, str(dp_path))
+        else:
+            _add(
+                f"Deliver→{name}", False,
+                f"{dp_path} not accessible",
+                f"Check path or update: elfmem peer add {peer['did']} --name {name} --delivery-path <path>",
+            )
+
+    # Check 5: Pending messages (info only)
+    if inbox_dir.exists():
+        pending = 0
+        for sub in inbox_dir.iterdir():
+            if sub.is_dir() and sub.name != "processed":
+                pending += len(list(sub.glob("msg_*.json")))
+        if pending > 0:
+            _add("Peer inbox", True, f"{pending} message(s) pending import")
+
+    return checks
 
 
 async def _doctor_self_count(db_path: str) -> int:

@@ -10,6 +10,9 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+
+- **`elfmem doctor` peer checks:** Doctor now validates peer communication setup — identity, inbox/outbox path accessibility, per-peer delivery path reachability, and inbox drift detection (warns when `inbox_dir` has changed since `peer init`).
+- **`peer inbox` warnings:** When no messages are found but peers have been active in the last 30 days, `PeerInboxResult` now includes a warning suggesting inbox path verification. Catches silent wrong-path misconfigurations.
 - **`elfmem doctor --modules`:** Prints the key module map (from `project.py KEY_MODULES`) without running health checks. Always current — adding a new module means adding one line to the dict, not editing CLAUDE.md.
 - **`KEY_MODULES` dict in `project.py`:** Single source of truth for the project's module layout. Maintained alongside the code; displayed on demand via `elfmem doctor --modules`.
 - **Version-stamped agent doc sections:** `elfmem init` now embeds the installed version in the section comment (`<!-- elfmem:start v0.9.1 -->`). `elfmem doctor` detects legacy or mismatched versions and suggests a refresh.

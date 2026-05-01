@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db.queries import (
     add_tags,
+    get_all_peers,
     get_block,
     get_config,
     get_edges_for_export,
@@ -483,19 +484,21 @@ async def check_inbox(
 
     USE WHEN: Checking for messages from peers.
     COST: Fast. Filesystem scan + optional database writes.
-    RETURNS: PeerInboxResult with counts.
+    RETURNS: PeerInboxResult with counts and warnings.
     """
     if not inbox_dir.exists():
+        warnings = await _empty_inbox_warnings(conn, inbox_dir)
         return PeerInboxResult(
             messages_found=0, messages_imported=0,
-            messages_skipped=0, peers=[],
+            messages_skipped=0, peers=[], warnings=warnings,
         )
 
     files = _scan_inbox(inbox_dir, from_peer)
     if not files:
+        warnings = await _empty_inbox_warnings(conn, inbox_dir)
         return PeerInboxResult(
             messages_found=0, messages_imported=0,
-            messages_skipped=0, peers=[],
+            messages_skipped=0, peers=[], warnings=warnings,
         )
 
     peers_seen: set[str] = set()
@@ -614,6 +617,42 @@ def _move_to_processed(msg_file: Path, inbox_dir: Path) -> None:
     processed = inbox_dir / "processed"
     processed.mkdir(exist_ok=True)
     msg_file.rename(processed / msg_file.name)
+
+
+# ── Warnings ─────────────────────────────────────────────────────────────────
+
+_ACTIVE_DAYS = 30
+
+
+async def _empty_inbox_warnings(
+    conn: AsyncConnection, inbox_dir: Path,
+) -> list[str]:
+    """Generate warnings when inbox scan finds zero messages but peers are active."""
+    all_peers = await get_all_peers(conn)
+    if not all_peers:
+        return []
+
+    now = datetime.now(UTC)
+    active_count = 0
+    for peer in all_peers:
+        last = peer.get("last_active", "")
+        if not last:
+            continue
+        try:
+            last_dt = datetime.fromisoformat(last)
+            if (now - last_dt).days < _ACTIVE_DAYS:
+                active_count += 1
+        except (ValueError, TypeError):
+            continue
+
+    if active_count == 0:
+        return []
+
+    return [
+        f"No messages found at {inbox_dir}. "
+        f"{active_count} peer(s) active in last {_ACTIVE_DAYS} days. "
+        f"Verify inbox path."
+    ]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
