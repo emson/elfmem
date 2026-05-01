@@ -536,13 +536,13 @@ GUIDES: dict[str, AgentGuide] = {
         what="Add a falsifiable prediction linked to a mind block.",
         when=(
             "You have a specific, testable hypothesis about what the modelled mind will do. "
-            "Predictions must have a verify_at date."
+            "Predictions must have a verify_at date. No prior consolidation needed."
         ),
         when_not=(
             "The claim is unfalsifiable or has no verification date. "
             "Casual observations go in learn()."
         ),
-        cost="Instant. Creates a decision block + predicts edge.",
+        cost="Instant. Promotes mind block if needed, creates decision block + predicts edge.",
         returns="MindPredictResult with decision_block_id and edge action.",
         next="When the prediction resolves, call mind_outcome() with the decision_block_id.",
         example=(
@@ -557,9 +557,12 @@ GUIDES: dict[str, AgentGuide] = {
     "mind_outcome": AgentGuide(
         name="mind_outcome",
         what="Close a prediction: record hit/miss, calibrate the mind model.",
-        when="A prediction has resolved — the verify_at date passed and you have evidence.",
+        when=(
+            "A prediction has resolved — the verify_at date passed and you have evidence. "
+            "No prior consolidation needed."
+        ),
         when_not="The prediction hasn't resolved yet. Wait for observable evidence.",
-        cost="Fast. Database writes only. No LLM calls.",
+        cost="Fast. Promotes decision block if needed, then updates confidence via Bayesian model.",
         returns=(
             "MindOutcomeResult with confidence deltas for both mind and decision blocks. "
             "Hit: confidence up + reinforce. Miss: confidence down + decay."

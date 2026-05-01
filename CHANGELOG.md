@@ -34,6 +34,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`elfmem backup` CLI command:** Creates a clean, self-contained database backup using `VACUUM INTO`. Records backup metadata in `system_config` for `elfmem doctor` to report.
 - **Backup advisory in `elfmem doctor`:** Reports backup count, total size, and latest backup name. Suggests `elfmem backup` when no backups exist. Suggests cleanup when more than 3 backups accumulate.
 
+### Fixed
+- **`mind_predict()` no longer requires `consolidate()` after `mind_create()`:** Mind blocks are now promoted to active inline when a prediction is made against them, with correct DURABLE decay tier (λ=0.001) assigned. Structured blocks are validated by their lifecycle events, not by LLM processing.
+- **`mind_outcome()` no longer requires `consolidate()` before closing a prediction:** Decision blocks are now promoted to active inline when their outcome is recorded. Outcome closure is the consolidation event for predictions.
+
 ## [0.8.0] — 2026-04-28
 
 ### Added

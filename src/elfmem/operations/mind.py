@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from elfmem.db import queries
 from elfmem.db.queries import insert_agent_edge
 from elfmem.exceptions import BlockNotActiveError, ElfmemError
+from elfmem.memory.blocks import decay_lambda_for_tier, determine_decay_tier
 from elfmem.operations.connect import do_connect
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome
@@ -146,12 +147,23 @@ async def predict(
     Creates a decision block with the prediction content, then creates
     a ``predicts`` edge from the mind block to the decision block.
 
-    The mind block must exist and be active.
+    The mind block must exist and be active (or inbox — will be promoted inline).
     """
     # Validate mind block exists
     mind_block = await queries.get_block(conn, mind_block_id)
-    if mind_block is None or mind_block.get("status") != "active":
+    if mind_block is None:
         raise BlockNotActiveError(mind_block_id)
+
+    # Promote inbox mind blocks inline — deliberate act of predicting validates the model
+    if mind_block.get("status") == "inbox":
+        mind_tags = await queries.get_tags(conn, mind_block_id)
+        tier = determine_decay_tier(mind_tags, mind_block.get("category", ""))
+        lam = decay_lambda_for_tier(tier)
+        await queries.update_block_scoring(conn, mind_block_id, decay_lambda=lam)
+        await queries.update_block_status(conn, mind_block_id, "active")
+    elif mind_block.get("status") != "active":
+        raise BlockNotActiveError(mind_block_id)
+
     if mind_block.get("category") != "mind":
         category = mind_block.get("category")
         raise ElfmemError(
@@ -314,10 +326,19 @@ async def mind_outcome(
     2. Finds the mind block via reverse ``predicts`` edge.
     3. Records outcome on the mind block (attenuated signal).
     4. Creates or reinforces a ``validates`` edge from decision to mind.
+
+    Outcome closure is the consolidation event for predictions: promotes inbox
+    decision blocks to active inline if needed.
     """
     # Validate decision block
     decision_block = await queries.get_block(conn, decision_block_id)
-    if decision_block is None or decision_block.get("status") != "active":
+    if decision_block is None:
+        raise BlockNotActiveError(decision_block_id)
+
+    # Promote inbox decision blocks inline — outcome closure IS the consolidation event
+    if decision_block.get("status") == "inbox":
+        await queries.update_block_status(conn, decision_block_id, "active")
+    elif decision_block.get("status") != "active":
         raise BlockNotActiveError(decision_block_id)
 
     # Find linked mind block via predicts edge
