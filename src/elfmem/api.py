@@ -68,6 +68,7 @@ from elfmem.types import (
     OperationRecord,
     OutcomeResult,
     PeerInboxResult,
+    PeerInboxStatus,
     PeerInfo,
     PeerSendResult,
     ScoredBlock,
@@ -1767,6 +1768,26 @@ class MemorySystem:
         if result.messages_imported > 0:
             self._pending += result.messages_imported
         self._record_op("peer_inbox", result.summary)
+        return result
+
+    def peer_inbox_status(self) -> PeerInboxStatus:
+        """Check whether peer messages are waiting without importing them.
+
+        USE WHEN: Deciding whether to trigger a peer message processing session.
+        DON'T USE WHEN: You need message content — use peer_inbox() or
+            frame(frame="task") instead.
+        COST: Zero LLM calls. Pure filesystem scan. No database access.
+        RETURNS: PeerInboxStatus with pending count, sender DIDs, and timing.
+        NEXT: If pending > 0, call peer_inbox(import_all=True) or fire
+            the processing prompt.
+        """
+        from pathlib import Path
+
+        from elfmem.operations.peer import scan_peer_inbox
+
+        inbox_dir = Path(self._config.peer.inbox_dir)
+        result = scan_peer_inbox(inbox_dir)
+        self._record_op("peer_inbox_status", result.summary)
         return result
 
     async def export_blocks(

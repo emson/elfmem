@@ -39,6 +39,7 @@ from elfmem.types import (
     ExportResult,
     ImportResult,
     PeerInboxResult,
+    PeerInboxStatus,
     PeerSendResult,
 )
 
@@ -653,6 +654,53 @@ async def _empty_inbox_warnings(
         f"{active_count} peer(s) active in last {_ACTIVE_DAYS} days. "
         f"Verify inbox path."
     ]
+
+
+# ── Inbox status (pure filesystem, no DB) ────────────────────────────────────
+
+
+def scan_peer_inbox(inbox_dir: Path) -> PeerInboxStatus:
+    """Scan the peer inbox directory and report pending message status.
+
+    USE WHEN: Deciding whether to trigger peer message processing.
+    DON'T USE WHEN: You need message content — use check_inbox() instead.
+    COST: Zero LLM calls. Pure filesystem scan.
+    RETURNS: PeerInboxStatus with pending count and sender list.
+    NEXT: If pending > 0, call check_inbox() with import_messages=True.
+    """
+    inbox_path = inbox_dir.expanduser()
+    if not inbox_path.exists():
+        return PeerInboxStatus(
+            pending=0, oldest_at=None, newest_at=None,
+            from_peers=[], inbox_dir=str(inbox_path),
+        )
+
+    files = _scan_inbox(inbox_path, from_peer=None)
+    if not files:
+        return PeerInboxStatus(
+            pending=0, oldest_at=None, newest_at=None,
+            from_peers=[], inbox_dir=str(inbox_path),
+        )
+
+    from_peers: list[str] = []
+    for f in files:
+        msg = _parse_message(f)
+        if msg is None:
+            continue
+        did = msg.get("from_did")
+        if did and did not in from_peers:
+            from_peers.append(did)
+
+    oldest_mtime = min(f.stat().st_mtime for f in files)
+    newest_mtime = max(f.stat().st_mtime for f in files)
+
+    return PeerInboxStatus(
+        pending=len(files),
+        oldest_at=datetime.fromtimestamp(oldest_mtime, tz=UTC).isoformat(),
+        newest_at=datetime.fromtimestamp(newest_mtime, tz=UTC).isoformat(),
+        from_peers=from_peers,
+        inbox_dir=str(inbox_path),
+    )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

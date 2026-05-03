@@ -1073,6 +1073,47 @@ class PeerInboxResult:
         }
 
 
+@dataclass(frozen=True)
+class PeerInboxStatus:
+    """Lightweight inbox status for triggering peer message processing.
+
+    USE WHEN: Deciding whether to trigger a peer message processing session.
+    DON'T USE WHEN: You need message content — use peer_inbox() or
+        frame(frame="task") instead.
+    COST: Zero LLM calls. Pure filesystem scan.
+    RETURNS: Pending count, sender DIDs, and timing of oldest/newest messages.
+    NEXT: If pending > 0, fire the processing prompt or call peer_inbox(import_all=True).
+    """
+
+    pending: int
+    oldest_at: str | None
+    newest_at: str | None
+    from_peers: list[str]
+    inbox_dir: str
+
+    @property
+    def summary(self) -> str:
+        if self.pending == 0:
+            return "Peer inbox: empty"
+        peers = ", ".join(self.from_peers)
+        return (
+            f"Peer inbox: {self.pending} unprocessed message(s) "
+            f"from [{peers}] — oldest {self.oldest_at}"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "pending": self.pending,
+            "oldest_at": self.oldest_at,
+            "newest_at": self.newest_at,
+            "from_peers": self.from_peers,
+            "inbox_dir": self.inbox_dir,
+        }
+
+
 @dataclass
 class ContradictionRecord:
     block_a_id: str
