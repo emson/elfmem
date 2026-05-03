@@ -146,7 +146,7 @@ class TestHealthData:
 
 
 class TestGraphData:
-    def test_graph_nodes_are_active_only(self, db_path: str) -> None:
+    def test_graph_includes_archived_by_default(self, db_path: str) -> None:
         for _ in range(5):
             _insert_block(db_path, status="active")
         for _ in range(2):
@@ -154,16 +154,20 @@ class TestGraphData:
 
         data = DashboardData.from_db(db_path)
 
-        assert len(data.graph.nodes) == 5
-        assert all(n["status"] == "active" for n in data.graph.nodes)
+        assert len(data.graph.nodes) == 7
+        active_nodes = [n for n in data.graph.nodes if n["status"] == "active"]
+        archived_nodes = [n for n in data.graph.nodes if n["status"] == "archived"]
+        assert len(active_nodes) == 5
+        assert len(archived_nodes) == 2
 
-    def test_graph_includes_archived_when_flag_set(self, db_path: str) -> None:
+    def test_graph_excludes_archived_when_flag_unset(self, db_path: str) -> None:
         _insert_block(db_path, status="active")
         _insert_block(db_path, status="archived")
 
-        data = DashboardData.from_db(db_path, include_archived=True)
+        data = DashboardData.from_db(db_path, include_archived=False)
 
-        assert len(data.graph.nodes) == 2
+        assert len(data.graph.nodes) == 1
+        assert data.graph.nodes[0]["status"] == "active"
 
     def test_graph_not_truncated_under_limit(self, db_path: str) -> None:
         for _ in range(5):
@@ -231,7 +235,8 @@ class TestDecayData:
     def test_decay_curves_have_expected_points_per_tier(self, db_path: str) -> None:
         data = DashboardData.from_db(db_path)
         for tier in ("permanent", "durable", "standard", "ephemeral"):
-            assert len(data.decay.tier_curves[tier]) == 25
+            # 50 log-spaced points + 1 origin point = 51
+            assert len(data.decay.tier_curves[tier]) == 51
 
     def test_decay_prune_threshold_is_005(self, db_path: str) -> None:
         data = DashboardData.from_db(db_path)
@@ -260,14 +265,30 @@ class TestDecayData:
 
 
 class TestScoringData:
-    def test_scoring_frames_present(self, db_path: str) -> None:
+    def test_scoring_includes_all_builtin_frames(self, db_path: str) -> None:
         data = DashboardData.from_db(db_path)
-        assert len(data.scoring.frames) >= 1
+        frame_names = [f["name"] for f in data.scoring.frames]
+        assert "self" in frame_names
+        assert "attention" in frame_names
+        assert "task" in frame_names
+        assert "simulate" in frame_names
 
     def test_scoring_frame_has_weights(self, db_path: str) -> None:
         data = DashboardData.from_db(db_path)
         frame = data.scoring.frames[0]
         assert "similarity" in frame["weights"]
+
+    def test_simulate_frame_has_score_boosts(self, db_path: str) -> None:
+        data = DashboardData.from_db(db_path)
+        simulate = next(f for f in data.scoring.frames if f["name"] == "simulate")
+        assert simulate["score_boosts"]["mind"] == 6.0
+        assert simulate["score_boosts"]["decision"] == 5.0
+        assert simulate["score_boosts"]["tag:self/"] == 10.0
+
+    def test_non_simulate_frames_have_empty_boosts(self, db_path: str) -> None:
+        data = DashboardData.from_db(db_path)
+        attention = next(f for f in data.scoring.frames if f["name"] == "attention")
+        assert attention["score_boosts"] == {}
 
     def test_last_retrieval_is_empty_list(self, db_path: str) -> None:
         data = DashboardData.from_db(db_path)

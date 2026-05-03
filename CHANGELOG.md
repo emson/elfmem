@@ -34,9 +34,16 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`elfmem backup` CLI command:** Creates a clean, self-contained database backup using `VACUUM INTO`. Records backup metadata in `system_config` for `elfmem doctor` to report.
 - **Backup advisory in `elfmem doctor`:** Reports backup count, total size, and latest backup name. Suggests `elfmem backup` when no backups exist. Suggests cleanup when more than 3 backups accumulate.
 
+### Changed
+- **`visualise()` now includes archived blocks by default:** `include_archived` defaults to `True`. Archived nodes load as diamond-shaped, hidden by default with a toggle button. The full knowledge lifecycle is always one click away.
+
 ### Fixed
 - **`mind_predict()` no longer requires `consolidate()` after `mind_create()`:** Mind blocks are now promoted to active inline when a prediction is made against them, with correct DURABLE decay tier (λ=0.001) assigned. Structured blocks are validated by their lifecycle events, not by LLM processing.
 - **`mind_outcome()` no longer requires `consolidate()` before closing a prediction:** Decision blocks are now promoted to active inline when their outcome is recorded. Outcome closure is the consolidation event for predictions.
+- **Dashboard decay chart scale fixed:** Decay curves now use a logarithmic X-axis so all four tiers (spanning 5 orders of magnitude) are visible. Previously, the permanent tier stretched the axis to 460,000 hours, making standard and ephemeral curves invisible.
+- **Dashboard scoring tab now shows all 4 frames including `simulate`:** Builtin frame profiles are mirrored in the viz module so frames missing from the DB (e.g. `simulate`) always appear. Score boosts (`mind: 6×`, `decision: 5×`, `tag:self/: 10×`) are now visualised as a grouped bar chart.
+- **Dashboard graph no longer spins after loading:** Physics simulation is disabled after stabilisation completes, preventing node drift and orbital motion. Zoom speed reduced for smoother navigation.
+- **Dashboard graph supports Theory of Mind:** New edge colours for `predicts`, `validates`, `elaborates`, `supports` relations. Category-based node colouring toggle (tier vs category) and category filter pills reveal mind/decision block structure.
 
 ## [0.8.0] — 2026-04-28
 

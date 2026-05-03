@@ -29,6 +29,10 @@
       --edge-outcome:    #557755;
       --edge-agent:      #886633;
       --edge-contradicts:#993333;
+      --edge-predicts:   #7788bb;
+      --edge-validates:  #88aa66;
+      --edge-elaborates: #9977aa;
+      --edge-supports:   #779988;
 
       --font: system-ui, -apple-system, "Segoe UI", sans-serif;
       --mono: ui-monospace, "SF Mono", "Cascadia Code", monospace;
@@ -254,6 +258,28 @@
 
     /* ── Scoring last-retrieval empty ── */
     .retrieval-note { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s3); }
+
+    /* ── Color-by toggle ── */
+    .toggle-group {
+      display: inline-flex;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-right: var(--s2);
+    }
+    .toggle-group button {
+      background: none;
+      border: none;
+      border-right: 1px solid var(--rule);
+      padding: 2px 10px;
+      font: inherit;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.02em;
+    }
+    .toggle-group button:last-child { border-right: none; }
+    .toggle-group button.active { color: var(--text); background: var(--rule); }
   </style>
 </head>
 <body>
@@ -333,8 +359,8 @@
         <div class="chart-wrap"><canvas id="scoring-radar-chart" height="280"></canvas></div>
       </div>
       <div>
-        <h3>Last retrieval</h3>
-        <div id="last-retrieval-container"></div>
+        <h3>Score boosts (simulate frame)</h3>
+        <div class="chart-wrap"><canvas id="scoring-boosts-chart" height="280"></canvas></div>
       </div>
     </div>
   </section>
@@ -371,6 +397,20 @@ const EDGE_COLOURS = {
   outcome:     '#557755',
   agent:       '#886633',
   contradicts: '#993333',
+  predicts:    '#7788bb',
+  validates:   '#88aa66',
+  elaborates:  '#9977aa',
+  supports:    '#779988',
+};
+
+const CATEGORY_COLOURS = {
+  mind:        '#7788bb',
+  decision:    '#88aa66',
+  knowledge:   '#558877',
+  observation: '#886644',
+  message:     '#9a7c34',
+  self:        '#8888cc',
+  general:     '#558877',
 };
 
 const FRAME_COLOURS = ['#8888cc', '#6688aa', '#558877', '#886644', '#9a7c34'];
@@ -437,6 +477,15 @@ function initGraph() {
     notice.hidden = false;
   }
 
+  // Current color mode: 'tier' or 'category'
+  let colorMode = 'tier';
+
+  function nodeColor(n) {
+    if (n.status === 'archived') return '#2a2a2a';
+    if (colorMode === 'category') return CATEGORY_COLOURS[n.category] || '#558877';
+    return TIER_COLOURS[n.decay_tier] || '#444444';
+  }
+
   // Store full content + filter metadata on each vis node
   const visNodes = nodes.map(n => ({
     id: n.id,
@@ -446,10 +495,12 @@ function initGraph() {
     decayTier: n.decay_tier,   // used by tier filter
     nodeStatus: n.status,      // used by status filter
     nodeTags: n.tags,          // used by tag filter
+    nodeCategory: n.category,  // used by category filter
+    shape: n.status === 'archived' ? 'diamond' : 'dot',
     color: {
-      background: TIER_COLOURS[n.decay_tier] || '#444444',
+      background: nodeColor(n),
       border: 'transparent',
-      highlight: { background: TIER_COLOURS[n.decay_tier] || '#444444', border: '#e0e0e0' },
+      highlight: { background: nodeColor(n), border: '#e0e0e0' },
     },
     size: Math.max(6, 6 + Math.log1p(n.reinforcement_count) * 4),
   }));
@@ -473,9 +524,9 @@ function initGraph() {
       physics: {
         solver: 'forceAtlas2Based',
         forceAtlas2Based: { gravitationalConstant: -30, springLength: 80 },
-        stabilization: { iterations: 150, fit: true },
+        stabilization: { iterations: 300, fit: true },
       },
-      interaction: { hover: true, tooltips: false },
+      interaction: { hover: true, tooltips: false, zoomSpeed: 0.3 },
       nodes: {
         shape: 'dot',
         borderWidth: 0,
@@ -488,6 +539,11 @@ function initGraph() {
       },
     }
   );
+
+  // ── Freeze layout after stabilisation — prevents spin/drift ──
+  network.on('stabilizationComplete', () => {
+    network.setOptions({ physics: false });
+  });
 
   // ── Zoom-dependent label visibility ──
   const ZOOM_THRESHOLD = 0.7;
@@ -511,10 +567,13 @@ function initGraph() {
   let currentDetailNode = null;
 
   function applyFilters() {
+    // Collect hidden categories (keys starting with 'cat:')
+    const hiddenCats = new Set([...hiddenGroups].filter(k => k.startsWith('cat:')).map(k => k.slice(4)));
     const updates = nodeDataSet.get().map(node => {
       const byGroup = hiddenGroups.has(node.decayTier) || hiddenGroups.has(node.nodeStatus);
+      const byCat   = hiddenCats.size > 0 && hiddenCats.has(node.nodeCategory);
       const byTag   = activeTags.size > 0 && !node.nodeTags.some(t => activeTags.has(t));
-      return { ...node, hidden: byGroup || byTag };
+      return { ...node, hidden: byGroup || byCat || byTag };
     });
     nodeDataSet.update(updates);
   }
@@ -540,6 +599,28 @@ function initGraph() {
 
   const filterContainer = document.getElementById('graph-filters');
 
+  // Color-by toggle: Tier | Category
+  const toggleGroup = document.createElement('div');
+  toggleGroup.className = 'toggle-group';
+  ['tier', 'category'].forEach(mode => {
+    const btn = document.createElement('button');
+    btn.textContent = mode;
+    btn.className = mode === 'tier' ? 'active' : '';
+    btn.addEventListener('click', () => {
+      colorMode = mode;
+      toggleGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const updates = nodeDataSet.get().map(node => {
+        const n = nodes.find(nd => nd.id === node.id) || {};
+        const bg = nodeColor(n);
+        return { ...node, color: { background: bg, border: 'transparent', highlight: { background: bg, border: '#e0e0e0' } } };
+      });
+      nodeDataSet.update(updates);
+    });
+    toggleGroup.appendChild(btn);
+  });
+  filterContainer.appendChild(toggleGroup);
+
   // Tier filters — only show tiers present in the data
   const tiersPresent = [...new Set(nodes.map(n => n.decay_tier))];
   const tierOrder = ['permanent', 'durable', 'standard', 'ephemeral'];
@@ -552,6 +633,26 @@ function initGraph() {
       tierGroup.appendChild(makeFilterBtn(tier, tier, TIER_COLOURS[tier]));
     });
     filterContainer.appendChild(tierGroup);
+  }
+
+  // Category filters
+  const categoriesPresent = [...new Set(nodes.map(n => n.category).filter(Boolean))];
+  const categoryOrder = ['mind', 'decision', 'knowledge', 'observation', 'message', 'self', 'general'];
+  const catsInOrder = categoryOrder.filter(c => categoriesPresent.includes(c));
+  const catsExtra = categoriesPresent.filter(c => !categoryOrder.includes(c));
+
+  if (catsInOrder.length + catsExtra.length > 1) {
+    const catSep = document.createElement('div');
+    catSep.className = 'filter-sep';
+    filterContainer.appendChild(catSep);
+
+    const catGroup = document.createElement('div');
+    catGroup.className = 'filter-group';
+    [...catsInOrder, ...catsExtra].forEach(cat => {
+      const btn = makeFilterBtn('cat:' + cat, cat, CATEGORY_COLOURS[cat] || 'var(--muted)');
+      catGroup.appendChild(btn);
+    });
+    filterContainer.appendChild(catGroup);
   }
 
   // Status filter — only show if archived nodes are present; archived starts hidden
@@ -749,10 +850,17 @@ function initDecay() {
       parsing: false,
       scales: {
         x: {
-          type: 'linear',
-          title: { display: true, text: 'active hours', color: '#606060', font: { size: 11 } },
+          type: 'logarithmic',
+          min: 0.1,
+          title: { display: true, text: 'active hours (log scale)', color: '#606060', font: { size: 11 } },
           grid: { color: '#2a2a2a' },
-          ticks: { color: '#606060' },
+          ticks: {
+            color: '#606060',
+            callback: v => {
+              if ([0.1, 1, 10, 100, 1000, 10000, 100000].includes(v)) return v >= 1000 ? (v/1000)+'k' : v;
+              return '';
+            },
+          },
         },
         y: {
           min: 0, max: 1,
@@ -784,6 +892,12 @@ function initDecay() {
       borderWidth: 0,
     }));
 
+    // Determine if log scale is appropriate (need spread > 10x)
+    const allHours = d.blocks.map(b => b.hours_since_reinforced).filter(h => h > 0);
+    const maxH = Math.max(...allHours, 1);
+    const minH = Math.min(...allHours.filter(h => h > 0), 0.1);
+    const useLog = maxH / minH > 10;
+
     new Chart(document.getElementById('decay-scatter-chart'), {
       type: 'bubble',
       data: { datasets: scatterDatasets },
@@ -791,7 +905,8 @@ function initDecay() {
         parsing: false,
         scales: {
           x: {
-            title: { display: true, text: 'hours since reinforced', color: '#606060', font: { size: 11 } },
+            type: useLog ? 'logarithmic' : 'linear',
+            title: { display: true, text: 'hours since reinforced' + (useLog ? ' (log)' : ''), color: '#606060', font: { size: 11 } },
             grid: { color: '#2a2a2a' },
             ticks: { color: '#606060' },
           },
@@ -860,9 +975,38 @@ function initScoring() {
     });
   }
 
-  const container = document.getElementById('last-retrieval-container');
-  if (s.last_retrieval.length === 0) {
-    container.innerHTML = '<p class="retrieval-note">' + escapeHtml(s.last_retrieval_note) + '</p>';
+  // Score boosts grouped bar chart
+  const boostsContainer = document.getElementById('scoring-boosts-chart');
+  const framesWithBoosts = s.frames.filter(f => f.score_boosts && Object.keys(f.score_boosts).length > 0);
+
+  if (framesWithBoosts.length === 0) {
+    boostsContainer.parentElement.innerHTML =
+      '<div class="empty">No frames use score boosts.<br>The <code>simulate</code> frame uses boosts to prioritise mind blocks.</div>';
+  } else {
+    // Collect all unique boost keys across frames
+    const boostKeys = [...new Set(framesWithBoosts.flatMap(f => Object.keys(f.score_boosts)))];
+    const boostDatasets = framesWithBoosts.map((f, i) => ({
+      label: f.name,
+      data: boostKeys.map(k => f.score_boosts[k] || 1.0),
+      backgroundColor: FRAME_COLOURS[s.frames.indexOf(f) % FRAME_COLOURS.length],
+      borderWidth: 0,
+    }));
+
+    new Chart(boostsContainer, {
+      type: 'bar',
+      data: { labels: boostKeys, datasets: boostDatasets },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 16, color: '#606060' } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#606060' } },
+          y: {
+            title: { display: true, text: 'multiplier', color: '#606060', font: { size: 11 } },
+            grid: { color: '#2a2a2a' },
+            ticks: { color: '#606060' },
+          },
+        },
+      },
+    });
   }
 }
 
