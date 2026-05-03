@@ -55,6 +55,7 @@ from elfmem.types import (
     OperationRecord,
     OutcomeResult,
     PeerInboxResult,
+    PeerInboxStatus,
     PeerInfo,
     PeerSendResult,
     PredictionDetail,
@@ -102,6 +103,7 @@ __all__ = [
     "PeerInfo",
     "PeerSendResult",
     "PeerInboxResult",
+    "PeerInboxStatus",
     "ExportResult",
     "ImportResult",
     # Exceptions

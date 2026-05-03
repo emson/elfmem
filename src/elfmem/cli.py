@@ -54,6 +54,7 @@ from elfmem.types import (
     MindShowResult,
     MindSummary,
     OutcomeResult,
+    PeerInboxStatus,
     SystemStatus,
 )
 
@@ -675,11 +676,18 @@ def status(
         str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
     ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    peer_inbox: Annotated[
+        bool, typer.Option("--peer-inbox", help="Show peer inbox status only")
+    ] = False,
 ) -> None:
     """System health and suggested next action."""
     db_path, config_path = _resolve_paths(db, config)
-    result: SystemStatus = _run(_status(db_path, config_path))
-    _json(result.to_dict()) if json_output else typer.echo(str(result))
+    if peer_inbox:
+        result = _run(_peer_inbox_status(db_path, config_path))
+        _json(result.to_dict()) if json_output else typer.echo(str(result))
+    else:
+        result = _run(_status(db_path, config_path))
+        _json(result.to_dict()) if json_output else typer.echo(str(result))
 
 
 @app.command()
@@ -1215,6 +1223,11 @@ async def _recall(
 async def _status(db_path: str, config: str | None) -> SystemStatus:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.status()
+
+
+async def _peer_inbox_status(db_path: str, config: str | None) -> PeerInboxStatus:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return mem.peer_inbox_status()
 
 
 async def _outcome(

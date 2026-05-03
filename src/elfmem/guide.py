@@ -715,6 +715,34 @@ GUIDES: dict[str, AgentGuide] = {
             "inbox = await system.peer_inbox(from_peer='elf:trader', import_all=True)"
         ),
     ),
+    "peer_inbox_status": AgentGuide(
+        name="peer_inbox_status",
+        what="Check whether peer messages are waiting without importing them.",
+        when=(
+            "Deciding whether to trigger a peer message processing session. "
+            "Use in polling loops or RemoteTrigger prompts to gate on inbox state."
+        ),
+        when_not=(
+            "You need message content — use peer_inbox() or frame(frame='task') instead. "
+            "Don't use this to import messages — pass import_all=True to peer_inbox()."
+        ),
+        cost="Instant. Pure filesystem scan. No LLM calls. No database access.",
+        returns=(
+            "PeerInboxStatus with pending (int), from_peers (list of sender DIDs), "
+            "oldest_at / newest_at (ISO timestamps), inbox_dir (path scanned)."
+        ),
+        next=(
+            "If pending > 0: call peer_inbox(import_all=True) to ingest, then dream(). "
+            "Or fire a SELF-grounded processing prompt."
+        ),
+        example=(
+            "status = system.peer_inbox_status()\n"
+            "if status.pending > 0:\n"
+            "    inbox = await system.peer_inbox(import_all=True)\n"
+            "    if system.should_dream:\n"
+            "        await system.dream()"
+        ),
+    ),
     "export_blocks": AgentGuide(
         name="export_blocks",
         what="Export shareable knowledge blocks to a JSON bundle file.",
@@ -853,6 +881,7 @@ OVERVIEW: str = "\n".join([
     "  peer_add(did, name)    Instant      Register a peer (+ optional delivery_path)",
     "  peer_send(did, msg)    Instant      Send a message to a peer (file write, no LLM)",
     "  peer_inbox(...)        Instant      Scan inbox for pending messages",
+    "  peer_inbox_status()    Instant      Check for unprocessed messages (no import, no DB)",
     "  peer_list()            Instant      List all registered peers with trust scores",
     "  peer_trust(did, ...)   Instant      View or manually set trust for a peer",
     "  peer_remove(did)       Instant      Unregister a peer",

@@ -75,9 +75,12 @@ async def _tool_recall(
     return format_recall_response(result)
 
 
-async def _tool_status() -> dict[str, Any]:
-    result = await _mem().status()
-    return result.to_dict()
+async def _tool_status(peer_inbox: bool = False) -> dict[str, Any]:
+    mem = _mem()
+    result = (await mem.status()).to_dict()
+    if peer_inbox:
+        result["peer_inbox"] = mem.peer_inbox_status().to_dict()
+    return result
 
 
 async def _tool_outcome(
@@ -157,6 +160,10 @@ async def _tool_peer_inbox(
     return result.to_dict()
 
 
+def _tool_peer_inbox_status() -> dict[str, Any]:
+    return _mem().peer_inbox_status().to_dict()
+
+
 async def _tool_peer_list() -> list[dict[str, Any]]:
     results = await _mem().peer_list()
     return [r.to_dict() for r in results]
@@ -222,9 +229,13 @@ async def elfmem_recall(
 
 
 @mcp.tool()
-async def elfmem_status() -> dict[str, Any]:
-    """Memory health snapshot. Check the suggestion field for recommended action."""
-    return await _tool_status()
+async def elfmem_status(peer_inbox: bool = False) -> dict[str, Any]:
+    """Memory health snapshot. Check the suggestion field for recommended action.
+
+    With peer_inbox=True, includes a peer_inbox key with pending message count
+    and sender list — use this to decide whether to trigger message processing.
+    """
+    return await _tool_status(peer_inbox=peer_inbox)
 
 
 @mcp.tool()
@@ -352,6 +363,16 @@ async def elfmem_peer_inbox(
     into your memory as inbox blocks.
     """
     return await _tool_peer_inbox(from_peer=from_peer, import_all=import_all)
+
+
+@mcp.tool()
+async def elfmem_peer_inbox_status() -> dict[str, Any]:
+    """Check for unprocessed peer messages without importing them.
+
+    Returns pending count, sender DIDs, and timestamps. Use to decide
+    whether to trigger message processing or call elfmem_peer_inbox.
+    """
+    return _tool_peer_inbox_status()
 
 
 @mcp.tool()
