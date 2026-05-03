@@ -12,7 +12,6 @@ from elfmem.config import ElfmemConfig, MemoryConfig, PeerConfig
 from elfmem.operations.peer import scan_peer_inbox
 from elfmem.types import PeerInboxStatus
 
-
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
 
@@ -44,7 +43,7 @@ def _write_message(
         "in_reply_to": None,
         "sent_at": "2026-05-01T10:00:00+00:00",
         "content": content,
-        "tags": ["peer/outbound", f"peer/to:elf:test"],
+        "tags": ["peer/outbound", "peer/to:elf:test"],
         "category": "message",
     }
     path.write_text(json.dumps(message), encoding="utf-8")
