@@ -10,14 +10,11 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-<<<<<<< feature/peer-inbox-trigger
 - **`MemorySystem.peer_inbox_status()`:** Lightweight filesystem scan reporting unprocessed peer messages. Returns `PeerInboxStatus` with pending count, sender DIDs, oldest/newest timestamps, and inbox path. Zero LLM calls, no database access. Designed for polling triggers.
 - **`elfmem status --peer-inbox` CLI flag:** Focused inbox status view for scripting and RemoteTrigger prompts. Supports `--json` output.
 - **`elfmem_status` MCP tool `peer_inbox` param:** When `True`, includes `peer_inbox` key in response with `PeerInboxStatus` data.
 - **`AgentGuide` entry for `peer_inbox_status`:** Runtime self-documentation for the new method.
 - **`scan_peer_inbox()` in `operations/peer.py`:** Pure function (Path → PeerInboxStatus) reusing existing `_scan_inbox()` and `_parse_message()` helpers.
-=======
->>>>>>> main
 - **`elfmem doctor` peer checks:** Doctor now validates peer communication setup — identity, inbox/outbox path accessibility, per-peer delivery path reachability, and inbox drift detection (warns when `inbox_dir` has changed since `peer init`).
 - **`peer inbox` warnings:** When no messages are found but peers have been active in the last 30 days, `PeerInboxResult` now includes a warning suggesting inbox path verification. Catches silent wrong-path misconfigurations.
 - **`elfmem doctor --modules`:** Prints the key module map (from `project.py KEY_MODULES`) without running health checks. Always current — adding a new module means adding one line to the dict, not editing CLAUDE.md.
