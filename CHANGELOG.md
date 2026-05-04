@@ -7,7 +7,7 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.11.0] — 2026-05-03
 
 ### Added
 - **`MemorySystem.peer_inbox_status()`:** Lightweight filesystem scan reporting unprocessed peer messages. Returns `PeerInboxStatus` with pending count, sender DIDs, oldest/newest timestamps, and inbox path. Zero LLM calls, no database access. Designed for polling triggers.
