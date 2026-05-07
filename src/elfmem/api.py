@@ -10,6 +10,7 @@ from collections import deque
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from sqlalchemy import text
@@ -31,7 +32,7 @@ from elfmem.db.queries import (
     seed_builtin_data,
     set_config,
 )
-from elfmem.exceptions import ElfmemError, FrameError
+from elfmem.exceptions import ElfmemError, FrameError, ProjectNotFound
 from elfmem.guide import get_guide
 from elfmem.logging_config import configure_logging
 from elfmem.memory.graph import stage_and_promote_co_retrievals
@@ -135,11 +136,16 @@ class MemorySystem:
         policy: ConsolidationPolicy | None = None,
         initial_pending: int = 0,
         initial_co_retrieval_staging: dict[tuple[str, str], int] | None = None,
+        project_root: Path | None = None,
     ) -> None:
         self._engine = engine
         self._llm = llm_service
         self._embedding = embedding_service
         self._config = config or ElfmemConfig()
+        self._project_root = project_root
+        # ^project root used to derive default peer inbox/outbox paths. None when
+        # no project was discovered; peer ops then fail fast with ProjectNotFound
+        # unless the config explicitly overrides inbox_dir/outbox_dir.
         self._frame_cache = FrameCache()
         self._session_id: str | None = None
         self._session_started_at: float | None = None  # monotonic seconds
@@ -255,6 +261,8 @@ class MemorySystem:
         llm_svc = make_llm_adapter(cfg, counter)
         embedding_svc = make_embedding_adapter(cfg, counter)
 
+        project_root = _discover_project_root(config)
+
         return cls(
             engine=engine,
             llm_service=llm_svc,
@@ -264,6 +272,7 @@ class MemorySystem:
             policy=policy,
             initial_pending=initial_pending,
             initial_co_retrieval_staging=co_retrieval_staging,
+            project_root=project_root,
         )
 
     @classmethod
@@ -1597,6 +1606,28 @@ class MemorySystem:
 
     # ── Peer communication operations ───────────────────────────────────────
 
+    def _resolve_peer_dir(self, kind: Literal["inbox", "outbox"]) -> Path:
+        """Resolve the project-local peer inbox/outbox directory.
+
+        Order of resolution:
+            1. Explicit override in ``config.peer.<kind>_dir`` (test fixtures,
+               unusual deployments). Tilde-expanded.
+            2. ``<project_root>/.elfmem/<kind>``, derived once at construction.
+
+        Raises:
+            ProjectNotFound: No override and no project root could be located.
+                The recovery hint instructs the caller to run ``elfmem setup``.
+        """
+        override = (
+            self._config.peer.inbox_dir if kind == "inbox"
+            else self._config.peer.outbox_dir
+        )
+        if override:
+            return Path(override).expanduser()
+        if self._project_root is not None:
+            return self._project_root / ".elfmem" / kind
+        raise ProjectNotFound(f"peer {kind}")
+
     async def peer_init(self, name: str) -> str:
         """Set this instance's peer identity.
 
@@ -1608,11 +1639,10 @@ class MemorySystem:
         from elfmem.db.queries import set_config
         from elfmem.operations.peer import set_identity
 
+        inbox_dir = self._resolve_peer_dir("inbox")
         async with self._engine.begin() as conn:
             did = await set_identity(conn, name)
-            await set_config(
-                conn, "peer_inbox_dir", self._config.peer.inbox_dir,
-            )
+            await set_config(conn, "peer_inbox_dir", str(inbox_dir))
         self._record_op("peer_init", f"Identity set: {did}")
         return did
 
@@ -1718,11 +1748,9 @@ class MemorySystem:
         RETURNS: PeerSendResult with msg_id and outbox path.
         NEXT: Transport the outbox file to the peer's inbox directory.
         """
-        from pathlib import Path
-
         from elfmem.operations.peer import get_identity, send_message
 
-        outbox_dir = Path(self._config.peer.outbox_dir).expanduser()
+        outbox_dir = self._resolve_peer_dir("outbox")
         async with self._engine.begin() as conn:
             identity = await get_identity(conn)
             result = await send_message(
@@ -1751,11 +1779,9 @@ class MemorySystem:
         RETURNS: PeerInboxResult with message counts and peer list.
         NEXT: Run dream() to consolidate imported messages into active memory.
         """
-        from pathlib import Path
-
         from elfmem.operations.peer import check_inbox, get_identity
 
-        inbox_dir = Path(self._config.peer.inbox_dir).expanduser()
+        inbox_dir = self._resolve_peer_dir("inbox")
         async with self._engine.begin() as conn:
             identity = await get_identity(conn)
             result = await check_inbox(
@@ -1781,11 +1807,9 @@ class MemorySystem:
         NEXT: If pending > 0, call peer_inbox(import_all=True) or fire
             the processing prompt.
         """
-        from pathlib import Path
-
         from elfmem.operations.peer import scan_peer_inbox
 
-        inbox_dir = Path(self._config.peer.inbox_dir)
+        inbox_dir = self._resolve_peer_dir("inbox")
         result = scan_peer_inbox(inbox_dir)
         self._record_op("peer_inbox_status", result.summary)
         return result
@@ -2106,6 +2130,36 @@ def _resolve_config(
     if isinstance(config, dict):
         return ElfmemConfig.model_validate(config)
     return config
+
+
+def _discover_project_root(
+    config: ElfmemConfig | str | dict[str, Any] | None,
+) -> Path | None:
+    """Find the project root for peer-path derivation.
+
+    Priority: explicit config-file path → ELFMEM_CONFIG env → walk up from cwd.
+    A config file at ``<root>/.elfmem/config.yaml`` makes ``<root>`` the project
+    root. Returns ``None`` when no project marker is found anywhere; peer
+    operations then fail fast with ``ProjectNotFound``.
+    """
+    from elfmem.project import find_project_root
+
+    explicit_path: str | None = None
+    if isinstance(config, str):
+        explicit_path = config
+    elif config is None:
+        explicit_path = os.getenv("ELFMEM_CONFIG")
+
+    if explicit_path:
+        cfg_path = Path(explicit_path).expanduser().resolve()
+        # <root>/.elfmem/config.yaml → <root>
+        if cfg_path.parent.name == ".elfmem":
+            return cfg_path.parent.parent
+        # Fall through: explicit config not under .elfmem/, treat its directory
+        # as project root only if it carries a project marker.
+        return find_project_root(cfg_path.parent)
+
+    return find_project_root()
 
 
 # ── Presentation helpers (used by CLI and MCP) ───────────────────────────────

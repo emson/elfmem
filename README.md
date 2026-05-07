@@ -259,6 +259,8 @@ await system.outcome([imported_block_id], signal=0.9, source="gilt prediction co
 
 **Routing:** If a peer has a `delivery_path`, messages go directly to that directory using your identity slug as the subdirectory. Without it, messages go to your local outbox for manual transport. Self-federation (same identity across machines) uses `--self-merge` with trust 1.0.
 
+**Inbox/outbox location:** Peer messaging is project-scoped. Your inbox is always `<project>/.elfmem/inbox` (and outbox `<project>/.elfmem/outbox`), derived from the project root (the directory containing `.elfmem/config.yaml`). Run `elfmem setup` once per project to initialise it; peer operations outside any project raise `ProjectNotFound` with a recovery hint.
+
 Trust is outcome-driven: when peer-originated knowledge leads to good outcomes, trust rises. When it misleads, trust falls. Peer trust also decays slowly over inactivity (90 days), incentivising regular exchange.
 
 ```bash

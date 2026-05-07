@@ -29,8 +29,18 @@ _use_adaptive_policy: bool = False
 
 @asynccontextmanager
 async def _lifespan(server: FastMCP) -> AsyncIterator[None]:
-    global _memory
+    global _memory, _config_path
     policy = ConsolidationPolicy() if _use_adaptive_policy else None
+    if _config_path is None:
+        # Auto-discover .elfmem/config.yaml by walking up from cwd.
+        # This is the difference between the MCP server scanning the global
+        # ~/.elfmem/inbox (wrong) and the project-local inbox (right) when
+        # Claude Code launches the server with no explicit --config.
+        from elfmem.project import find_local_config
+
+        discovered = find_local_config()
+        if discovered is not None:
+            _config_path = str(discovered)
     _memory = await MemorySystem.from_config(_db_path, config=_config_path, policy=policy)
     try:
         yield

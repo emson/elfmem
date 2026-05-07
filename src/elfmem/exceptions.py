@@ -59,6 +59,25 @@ class PeerError(ElfmemError):
     """Raised when a peer operation cannot complete."""
 
 
+class ProjectNotFound(ElfmemError):
+    """Raised when an operation requires a project root but none was found.
+
+    Project root = the directory containing ``.elfmem/config.yaml`` (or another
+    project marker). Peer messaging is project-scoped, so peer operations fail
+    fast with this error when invoked outside any project and no explicit
+    override is configured.
+    """
+
+    def __init__(self, what: str = "this operation") -> None:
+        super().__init__(
+            f"No project root found for {what}.",
+            recovery=(
+                "Run 'elfmem setup' (or 'elfmem init') in your project directory, "
+                "or invoke from a directory inside an existing elfmem project."
+            ),
+        )
+
+
 class ConnectError(ElfmemError):
     """Raised when a connect() or disconnect() operation cannot complete."""
 

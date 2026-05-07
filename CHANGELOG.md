@@ -7,6 +7,26 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+---
+
+## [0.12.0] — 2026-05-07
+
+### Changed
+- **Peer inbox/outbox are now project-local by default.** `MemorySystem` derives them from the project root (the directory containing `.elfmem/config.yaml`) as `<project>/.elfmem/inbox` and `<project>/.elfmem/outbox`. Previously they defaulted to the global `~/.elfmem/inbox` / `outbox`, which silently diverged from project-local paths peers were writing to — meaning the MCP server could miss messages that landed in the right place. `PeerConfig.inbox_dir` and `outbox_dir` are now optional overrides (default `None`); leave them unset and elfmem picks the project-local path. Set them explicitly only for tests or unusual deployments.
+- **`elfmem serve` (MCP) auto-discovers `.elfmem/config.yaml`.** When launched without `--config` and without `ELFMEM_CONFIG_PATH`, the server walks up from cwd to locate a project config. This is what lets Claude Code launch the server with no flags and still see project-local peer messages.
+- **`elfmem doctor` peer-inbox check** now reports the resolved project-local path (rather than the raw config value) and warns when a legacy `~/.elfmem/inbox` directory still contains pending messages, with a `mv` command in the recovery hint.
+
+### Removed
+- **Global `~/.elfmem/inbox` and `~/.elfmem/outbox` defaults.** Peer messaging is project-scoped; running peer ops outside a project (and without an explicit override) now raises `ProjectNotFound` with a recovery hint pointing to `elfmem setup`. Migration: move any existing messages from `~/.elfmem/inbox/<sender>/` into `<project>/.elfmem/inbox/<sender>/`. `elfmem doctor` flags this automatically.
+
+### Added
+- **`ProjectNotFound` exception.** Raised when a peer operation needs a project root but none is found and no explicit override is configured. Carries a `.recovery` hint pointing at `elfmem setup`.
+- **Agent-docs system (`src/elfmem/agent_docs.py`).** Auto-generates library API reference from `guide.GUIDES`, stored as project-local `.elfmem/AGENT.md`. Drift detection via `.agent-docs.lock` tracks version and content hash. Three CLI commands: `elfmem agent-docs install | check | diff`. Installed at `elfmem init`, validated by `elfmem doctor`. Single source of truth for agent invocation patterns.
+
+---
+
 ## [0.11.0] — 2026-05-03
 
 ### Added

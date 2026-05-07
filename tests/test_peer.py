@@ -276,7 +276,7 @@ class TestMessaging:
     ):
         system = system_with_identity
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add("elf:trader", "Trader")
 
@@ -291,7 +291,7 @@ class TestMessaging:
     ):
         system = system_with_identity
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add("elf:trader", "Trader")
 
@@ -375,7 +375,7 @@ class TestMessaging:
     ):
         system = system_with_identity
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add("elf:trader", "Trader")
 
@@ -392,7 +392,7 @@ class TestMessageConsolidation:
         """Two identical messages from different peers should both be promoted."""
         system = system_with_identity
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add("elf:a", "Agent A")
         await system.peer_add("elf:b", "Agent B")
@@ -479,7 +479,7 @@ class TestIntegration:
         """Export from instance A, import to instance B, verify provenance."""
         cfg = ElfmemConfig(
             memory=MemoryConfig(inbox_threshold=3),
-            peer=PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            peer=PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         )
 
         # Instance A: create and export
@@ -579,7 +579,7 @@ class TestDeliveryPath:
         system = system_with_identity
         peer_inbox = tmp_path / "vault_inbox"
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add(
             "elf:vault", "Vault", delivery_path=str(peer_inbox),
@@ -601,7 +601,7 @@ class TestDeliveryPath:
         system = system_with_identity
         outbox = tmp_path / "outbox"
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(outbox)),
+            "peer": PeerConfig(outbox_dir=str(outbox), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add("elf:trader", "Trader")
 
@@ -643,7 +643,7 @@ class TestDeliveryPath:
         system = system_with_identity
         peer_inbox = tmp_path / "new" / "nested" / "inbox"
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add(
             "elf:vault", "Vault", delivery_path=str(peer_inbox),
@@ -661,7 +661,7 @@ class TestDeliveryPath:
         system = system_with_identity
         peer_inbox = tmp_path / "vault_inbox"
         system._config = system._config.model_copy(update={
-            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox")),
+            "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
         await system.peer_add(
             "elf:vault", "Vault", delivery_path=str(peer_inbox),
@@ -735,3 +735,55 @@ class TestInboxWarnings:
         result = await system.peer_inbox()
         assert result.messages_found == 1
         assert result.warnings == []
+
+
+# ── Project-local path derivation ─────────────────────────────────────────────
+
+
+class TestProjectLocalPaths:
+    """Inbox/outbox derive from project root when no explicit override is set.
+
+    The defaults are None so the runtime always resolves through the project
+    root — no global ``~/.elfmem/inbox`` fallback. Explicit overrides remain
+    available as a test fixture / advanced-deployment escape hatch.
+    """
+
+    async def test_resolve_inbox_uses_explicit_override(
+        self, test_engine, mock_llm, mock_embedding, tmp_path: Path,
+    ):
+        cfg = ElfmemConfig(
+            memory=MemoryConfig(inbox_threshold=3),
+            peer=PeerConfig(inbox_dir=str(tmp_path / "explicit-inbox")),
+        )
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+        )
+        assert system._resolve_peer_dir("inbox") == tmp_path / "explicit-inbox"
+
+    async def test_resolve_inbox_uses_project_root_when_no_override(
+        self, test_engine, mock_llm, mock_embedding, tmp_path: Path,
+    ):
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+            project_root=tmp_path,
+        )
+        assert system._resolve_peer_dir("inbox") == tmp_path / ".elfmem" / "inbox"
+        assert system._resolve_peer_dir("outbox") == tmp_path / ".elfmem" / "outbox"
+
+    async def test_peer_init_raises_project_not_found_without_root_or_override(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        from elfmem.exceptions import ProjectNotFound
+
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+            project_root=None,
+        )
+        with pytest.raises(ProjectNotFound) as exc_info:
+            await system.peer_init("orphan")
+        assert "elfmem setup" in exc_info.value.recovery
