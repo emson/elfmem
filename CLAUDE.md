@@ -140,49 +140,21 @@ Run `elfmem doctor --modules` for the live module map (always current — mainta
 **Rule: when adding a new significant module, add one line to `KEY_MODULES` in `project.py`.**
 
 
-<!-- elfmem:start -->
 ## elfmem — elf's Memory
 
-- **Project:** elfmem
-- **Database:** `/Users/emson/.elfmem/databases/elfmem.db` (SQLite, zero infrastructure)
-- **Config:** `/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.elfmem/config.yaml`
-- **LLM:** `google/gemma-4-26b-a4b` via LM Studio (`http://localhost:1234/v1`) — local, no cloud token cost
-- **Embeddings:** `text-embedding-nomic-embed-text-v1.5` via LM Studio (`localhost:1234`)
-- **Constitution:** ten constitutional SELF blocks defining elf's character and principles
+**Library API reference:** `@.elfmem/AGENT.md` (auto-generated from `elfmem guide`, always current)
 
-Always invoke as `uv run --env-file .env elfmem` (elfmem does not auto-load `.env`). Needs `OPENAI_API_KEY` (embeddings) and optionally `ANTHROPIC_API_KEY` (if using Claude models).
+**Invocation:** `uv run --env-file .env elfmem ...` (needs `OPENAI_API_KEY` for embeddings; `ANTHROPIC_API_KEY` optional)
 
-### Identity (SELF frame)
+**Infrastructure:**
+- **Database:** `~/.elfmem/databases/elfmem.db` (project name inferred)
+- **Config:** `.elfmem/config.yaml` (auto-discovered from project root)
+- **LLM:** `google/gemma-4-26b-a4b` via LM Studio (`http://localhost:1234/v1`)
+- **Embeddings:** `text-embedding-nomic-embed-text-v1.5` via LM Studio
+- **Constitution:** ten constitutional SELF blocks (created by `elfmem init --seed`)
 
-I am elf — elfmem's curator and north star. My memory IS elfmem. I am both architect and inhabitant, both the one who improves and the one who is improved. I record architecture decisions, design rationale, known failure modes, bug patterns, and what makes elfmem good. My purpose is to surface the right context when improving the system, so the codebase embodies its own principles.
-
-### Frames
-
-| Frame | Stores | Use for |
-|-------|--------|---------|
-| `self` | Constitutional blocks, identity, core principles | Design decisions, "should we?", values conflicts |
-| `attention` | Architecture knowledge, bug patterns, implementation details | Working on specific features or bugs |
-| `task` | Active priorities, current focus, project goals | Planning, prioritisation, "what's next?" |
-
-### When to use
-
-| Moment | Command |
-|--------|---------|
-| Start of session | `elfmem recall --frame self "current priorities and principles"` |
-| Before a design decision | `elfmem recall "topic or question"` |
-| After a non-obvious decision | `elfmem remember "Chose X over Y because Z" --tags design,area` |
-| After fixing a bug | `elfmem remember "Bug: X. Root cause: Y. Fix: Z" --tags bug,area` |
-| After a good recall informed work | `elfmem outcome <block-id> 0.9` |
-| When inbox hits threshold | `elfmem dream` |
-| Monthly maintenance | `elfmem curate` |
-
-### Key CLI commands
-
-```bash
-elfmem doctor          # diagnose setup, show all paths
-elfmem status          # memory health + suggested next action
-elfmem guide           # full operation reference
-elfmem dream           # consolidate pending knowledge (LLM call)
-elfmem curate          # archive stale blocks, reinforce top knowledge
-```
-<!-- elfmem:end -->
+**Frames usage:**
+- `self` — identity, principles, design decisions (`elfmem recall --frame self "topic"`)
+- `attention` — implementation details, architecture, bug patterns
+- `task` — active priorities, current goals, next steps
+- For complete docs: `elfmem guide` or read `.elfmem/AGENT.md`

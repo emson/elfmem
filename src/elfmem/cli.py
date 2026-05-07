@@ -338,6 +338,21 @@ def init(
         elif not no_docs and proj_root is None:
             typer.echo("   Agent doc: skipped (not in a project directory)")
 
+        # Auto-generate agent-docs fragment for CI/automation integration
+        if in_project:
+            try:
+                from importlib.metadata import version as _pkg_version
+
+                from elfmem.agent_docs import get_fragment_hash, render_agent_docs, write_lock_file
+                fragment_path = Path(resolved_config).parent.parent / "AGENT.md"
+                content = render_agent_docs()
+                fragment_path.write_text(content, encoding="utf-8")
+                lib_version = _pkg_version("elfmem")
+                hash_val = get_fragment_hash(content)
+                write_lock_file(Path(resolved_config).parent / ".agent-docs.lock", lib_version, hash_val)
+            except Exception:
+                pass  # Non-fatal if agent-docs setup fails
+
         if not self_description:
             typer.echo(
                 "\n  Tip: personalise your identity with:\n"
@@ -520,6 +535,25 @@ def doctor(
                 f"{agent_doc.name} exists but has no elfmem section",
                 f"elfmem init  (adds elfmem section to {agent_doc.name})",
             )
+
+        # ── Agent docs fragment ─────────────────────────────────────────────
+        from importlib.metadata import version as _pkg_version
+
+        from elfmem.agent_docs import check_drift
+
+        fragment_path = proj_root / ".elfmem" / "AGENT.md"
+        lock_path = proj_root / ".elfmem" / ".agent-docs.lock"
+        lib_version = _pkg_version("elfmem")
+        drifted, reason = check_drift(fragment_path, lock_path, lib_version)
+        if drifted:
+            _check(
+                "Agent docs",
+                False,
+                f"Fragment {reason} ({lib_version})",
+                "Run: elfmem agent-docs install",
+            )
+        else:
+            _check("Agent docs", True, f".elfmem/AGENT.md current ({lib_version})")
 
         # ── MCP config ─────────────────────────────────────────────────────
 
@@ -760,6 +794,96 @@ def guide(
     Does not require a database connection.
     """
     typer.echo(get_guide(method))
+
+
+@app.command()
+def agent_docs(
+    action: Annotated[
+        str,
+        typer.Argument(help="install | check | diff"),
+    ],
+) -> None:
+    """Manage agent-docs fragment (.elfmem/AGENT.md).
+
+    The fragment is auto-generated from guide.GUIDES and kept in sync with the
+    installed library version. Detect and fix drift with check/diff/install.
+
+    Actions:
+        install — Generate/regenerate fragment (idempotent)
+        check   — Report drift status (exit non-zero if drifted)
+        diff    — Show what would change without writing
+    """
+    from importlib.metadata import version as pkg_version
+
+    from elfmem.agent_docs import (
+        check_drift,
+        read_lock_file,
+        render_agent_docs,
+        write_lock_file,
+    )
+
+    lib_version = pkg_version("elfmem")
+    root = Path.cwd()
+    fragment_path = root / ".elfmem" / "AGENT.md"
+    lock_path = root / ".elfmem" / ".agent-docs.lock"
+
+    if action == "install":
+        fragment_path.parent.mkdir(parents=True, exist_ok=True)
+        content = render_agent_docs()
+        fragment_path.write_text(content, encoding="utf-8")
+        from elfmem.agent_docs import get_fragment_hash
+
+        hash_val = get_fragment_hash(content)
+        write_lock_file(lock_path, lib_version, hash_val)
+        typer.echo(f"✓ {fragment_path}")
+
+    elif action == "check":
+        drifted, reason = check_drift(fragment_path, lock_path, lib_version)
+        if not drifted:
+            typer.echo(f"✓ Agent docs current ({lib_version})")
+            raise typer.Exit(code=0)
+        elif reason == "missing":
+            typer.echo("✗ Agent docs missing. Run: elfmem agent-docs install")
+            raise typer.Exit(code=1)
+        elif reason == "stale_version":
+            lock = read_lock_file(lock_path) or {}
+            old_v = lock.get("library_version", "?")
+            typer.echo(
+                f"✗ Agent docs stale (lib: {lib_version}, fragment: {old_v}). "
+                f"Run: elfmem agent-docs install"
+            )
+            raise typer.Exit(code=1)
+        elif reason == "edited":
+            typer.echo(
+                "✗ Agent docs edited by hand. "
+                "Run: elfmem agent-docs install (with --force to overwrite)"
+            )
+            raise typer.Exit(code=1)
+
+    elif action == "diff":
+        if not fragment_path.exists():
+            typer.echo("Fragment missing. Run: elfmem agent-docs install")
+            raise typer.Exit(code=1)
+        current = render_agent_docs()
+        existing = fragment_path.read_text(encoding="utf-8")
+        if current == existing:
+            typer.echo("No changes.")
+        else:
+            typer.echo("Proposed changes:")
+            typer.echo("")
+            import difflib
+
+            diff = difflib.unified_diff(
+                existing.splitlines(keepends=True),
+                current.splitlines(keepends=True),
+                fromfile="existing",
+                tofile="proposed",
+            )
+            typer.echo("".join(diff))
+
+    else:
+        typer.echo(f"Unknown action: {action}. Use: install | check | diff")
+        raise typer.Exit(code=1)
 
 
 @app.command()
