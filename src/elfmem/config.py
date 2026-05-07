@@ -207,11 +207,18 @@ class ProjectConfig(BaseModel):
 
 
 class PeerConfig(BaseModel):
-    """Configuration for peer communication."""
+    """Configuration for peer communication.
+
+    The inbox and outbox directories are project-local by default — derived
+    from the project root (``<project>/.elfmem/inbox`` / ``outbox``) at runtime
+    by ``MemorySystem``. Explicit values here override that derivation; this is
+    primarily an escape hatch for tests and unusual deployments. Most users
+    should leave them unset and let ``elfmem setup`` create the project.
+    """
 
     identity: str | None = None
-    outbox_dir: str = "~/.elfmem/outbox"
-    inbox_dir: str = "~/.elfmem/inbox"
+    outbox_dir: str | None = None
+    inbox_dir: str | None = None
     confidence_floor: float = 0.3
     auto_ingest_trust_threshold: float = 0.7
     trust_decay_days: int = 90

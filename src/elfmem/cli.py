@@ -43,6 +43,7 @@ except ImportError:
 from elfmem import __version__
 from elfmem import project as _project
 from elfmem.api import MemorySystem, format_recall_response
+from elfmem.config import ElfmemConfig
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
 from elfmem.types import (
@@ -1411,6 +1412,24 @@ async def _mind_outcome(
         return await mem.mind_outcome(decision_block_id, hit=hit, reason=reason)
 
 
+def _resolve_doctor_inbox(cfg: ElfmemConfig, config_path: str | None) -> Path | None:
+    """Resolve the inbox path the same way MemorySystem does, for doctor display.
+
+    Returns None when no override is set and no project root can be found —
+    matches the ProjectNotFound behaviour the runtime would surface.
+    """
+    if cfg.peer.inbox_dir:
+        return Path(cfg.peer.inbox_dir).expanduser()
+    if config_path:
+        cfg_path = Path(config_path).expanduser().resolve()
+        if cfg_path.parent.name == ".elfmem":
+            return cfg_path.parent.parent / ".elfmem" / "inbox"
+    root = _project.find_project_root()
+    if root is not None:
+        return root / ".elfmem" / "inbox"
+    return None
+
+
 async def _doctor_peer_checks(
     db_path: str, config_path: str | None,
 ) -> list[dict[str, Any]]:
@@ -1462,9 +1481,15 @@ async def _doctor_peer_checks(
             "elfmem peer init --name <name>",
         )
 
-    # Check 2: Inbox path
-    inbox_dir = Path(cfg.peer.inbox_dir).expanduser()
-    if inbox_dir.exists() and inbox_dir.is_dir():
+    # Check 2: Inbox path — resolved project-local unless explicitly overridden.
+    inbox_dir = _resolve_doctor_inbox(cfg, config_path)
+    if inbox_dir is None:
+        _add(
+            "Peer inbox", False,
+            "No project root and no explicit override",
+            "Run 'elfmem setup' inside your project directory",
+        )
+    elif inbox_dir.exists() and inbox_dir.is_dir():
         _add("Peer inbox", True, str(inbox_dir))
     elif not inbox_dir.exists():
         _add(
@@ -1478,13 +1503,30 @@ async def _doctor_peer_checks(
             f"Check path: {inbox_dir}",
         )
 
-    # Check 3: Inbox drift
-    if stored_inbox and stored_inbox != cfg.peer.inbox_dir:
+    # Check 3: Inbox drift — DB-stored path differs from currently-resolved path.
+    current_inbox_str = str(inbox_dir) if inbox_dir is not None else ""
+    if stored_inbox and current_inbox_str and stored_inbox != current_inbox_str:
         _add(
             "Inbox drift", False,
-            f"Was {stored_inbox}, now {cfg.peer.inbox_dir}",
-            "Verify config peer.inbox_dir or re-run: elfmem peer init --name <name>",
+            f"Was {stored_inbox}, now {current_inbox_str}",
+            "Re-run: elfmem peer init --name <name>",
         )
+
+    # Check 3b: Legacy global inbox at ~/.elfmem/inbox.
+    # Project-local is now the only supported layout. Warn if old data exists.
+    legacy_inbox = Path("~/.elfmem/inbox").expanduser()
+    if legacy_inbox.exists() and legacy_inbox != inbox_dir:
+        legacy_msgs = sum(
+            1 for sub in legacy_inbox.iterdir()
+            if sub.is_dir() and sub.name != "processed"
+            for _ in sub.glob("msg_*.json")
+        ) if legacy_inbox.is_dir() else 0
+        if legacy_msgs > 0:
+            _add(
+                "Legacy inbox", False,
+                f"{legacy_msgs} message(s) in {legacy_inbox} (no longer scanned)",
+                f"Move them: mv {legacy_inbox}/* {inbox_dir}/",
+            )
 
     # Check 4: Per-peer delivery paths
     for peer in peers:
@@ -1503,7 +1545,7 @@ async def _doctor_peer_checks(
             )
 
     # Check 5: Pending messages (info only)
-    if inbox_dir.exists():
+    if inbox_dir is not None and inbox_dir.exists():
         pending = 0
         for sub in inbox_dir.iterdir():
             if sub.is_dir() and sub.name != "processed":
