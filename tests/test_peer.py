@@ -774,9 +774,13 @@ class TestProjectLocalPaths:
         assert system._resolve_peer_dir("outbox") == tmp_path / ".elfmem" / "outbox"
 
     async def test_peer_init_raises_project_not_found_without_root_or_override(
-        self, test_engine, mock_llm, mock_embedding,
+        self, test_engine, mock_llm, mock_embedding, monkeypatch,
     ):
         from elfmem.exceptions import ProjectNotFound
+
+        # Simulate running outside any project: no project_root at construction
+        # AND no project discoverable from cwd (Tier 3 late discovery returns None).
+        monkeypatch.setattr("elfmem.project.find_project_root", lambda start=None: None)
 
         cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
         system = MemorySystem(
@@ -787,3 +791,35 @@ class TestProjectLocalPaths:
         with pytest.raises(ProjectNotFound) as exc_info:
             await system.peer_init("orphan")
         assert "elfmem setup" in exc_info.value.recovery
+
+    async def test_tier3_late_discovery_caches_project_root(
+        self, test_engine, mock_llm, mock_embedding, tmp_path: Path, monkeypatch,
+    ):
+        """Tier 3 discovery caches the result — cwd changes after first call don't
+        silently shift which project's inbox is used in the same session."""
+        project_a = tmp_path / "a"
+        project_b = tmp_path / "b"
+        project_a.mkdir()
+        project_b.mkdir()
+
+        call_count = 0
+        def fake_find(start=None):
+            nonlocal call_count
+            call_count += 1
+            return project_a  # always returns a, cwd irrelevant after cache
+
+        monkeypatch.setattr("elfmem.project.find_project_root", fake_find)
+
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg, project_root=None,
+        )
+        inbox_1 = system._resolve_peer_dir("inbox")
+        # Swap fake to return b — should NOT affect result after caching
+        monkeypatch.setattr("elfmem.project.find_project_root", lambda start=None: project_b)
+        inbox_2 = system._resolve_peer_dir("inbox")
+
+        assert inbox_1 == inbox_2, "inbox must be stable after first resolution"
+        assert inbox_1 == project_a / ".elfmem" / "inbox"
+        assert call_count == 1, "find_project_root should be called exactly once"

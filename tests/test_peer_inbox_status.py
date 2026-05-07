@@ -61,10 +61,23 @@ class TestScanPeerInbox:
         assert result.newest_at is None
         assert result.from_peers == []
 
-    def test_missing_inbox_dir(self, tmp_path: Path):
-        result = scan_peer_inbox(tmp_path / "nonexistent")
+    def test_missing_inbox_dir_elfmem_exists(self, tmp_path: Path):
+        # .elfmem/ present (project initialised), inbox/ just hasn't been created yet.
+        elfmem_dir = tmp_path / ".elfmem"
+        elfmem_dir.mkdir()
+        result = scan_peer_inbox(elfmem_dir / "inbox")
         assert result.pending == 0
         assert result.from_peers == []
+        assert not result.warning  # no warning — setup was run
+
+    def test_missing_elfmem_dir_warns(self, tmp_path: Path):
+        # .elfmem/ absent — project found via .git but elfmem setup never run.
+        (tmp_path / ".git").mkdir()
+        result = scan_peer_inbox(tmp_path / ".elfmem" / "inbox")
+        assert result.pending == 0
+        assert "elfmem setup" in result.warning
+        assert "warning" in result.to_dict()
+        assert "elfmem setup" in result.summary
 
     def test_single_message(self, inbox_dir: Path):
         _write_message(inbox_dir, "elf-sender", "m_abc1", "elf:sender")

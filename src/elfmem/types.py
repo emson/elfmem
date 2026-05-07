@@ -1090,9 +1090,12 @@ class PeerInboxStatus:
     newest_at: str | None
     from_peers: list[str]
     inbox_dir: str
+    warning: str = ""
 
     @property
     def summary(self) -> str:
+        if self.warning:
+            return f"Peer inbox: {self.warning}"
         if self.pending == 0:
             return "Peer inbox: empty"
         peers = ", ".join(self.from_peers)
@@ -1105,13 +1108,16 @@ class PeerInboxStatus:
         return self.summary
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "pending": self.pending,
             "oldest_at": self.oldest_at,
             "newest_at": self.newest_at,
             "from_peers": self.from_peers,
             "inbox_dir": self.inbox_dir,
         }
+        if self.warning:
+            result["warning"] = self.warning
+        return result
 
 
 @dataclass

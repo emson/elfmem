@@ -407,6 +407,13 @@ def doctor(
     modules: Annotated[
         bool, typer.Option("--modules", help="Print key module paths and exit")
     ] = False,
+    migrate_mcp: Annotated[
+        bool,
+        typer.Option(
+            "--migrate-mcp",
+            help="Scan Claude MCP configs for stale elfmem entries and print fixes.",
+        ),
+    ] = False,
 ) -> None:
     """Diagnose your elfmem setup. Reports what is configured and what is missing.
 
@@ -420,9 +427,16 @@ def doctor(
     Read-only: never writes to the database or config files.
 
     Use --modules to print the key module map without running health checks.
+    Use --migrate-mcp to scan ~/.claude/claude_code_config.json and the local
+    .claude.json for elfmem MCP entries that use deprecated env vars or the
+    legacy 'python -m elfmem.mcp' launch pattern. Prints a diff per finding;
+    never writes — you apply the change yourself.
     """
     if modules:
         typer.echo(_project.format_key_modules())
+        return
+    if migrate_mcp:
+        _doctor_migrate_mcp(json_output)
         return
     checks: list[dict[str, Any]] = []
     failed = False
@@ -937,6 +951,209 @@ def serve(
         raise typer.Exit(1)
 
     mcp_main(db_path=db_path, config_path=config_path, use_adaptive_policy=adaptive_policy)
+
+
+# ── Migration subcommands ────────────────────────────────────────────────────
+
+migrate_app = typer.Typer(
+    name="migrate",
+    help=(
+        "Migrate config files between elfmem versions.\n\n"
+        "Plan-and-apply model: 'plan' shows what would change (read-only), "
+        "'apply' performs the changes atomically with backups. Designed for "
+        "agent invocation — every subcommand supports --json."
+    ),
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
+app.add_typer(migrate_app, name="migrate")
+
+
+@migrate_app.callback()
+def _migrate_default(ctx: typer.Context) -> None:
+    """Default action when 'elfmem migrate' is called with no subcommand: status."""
+    if ctx.invoked_subcommand is None:
+        # Delegate to status with default args.
+        ctx.invoke(migrate_status, json_output=False)
+
+
+@migrate_app.command("status")
+def migrate_status(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """One-line summary per pending migration; exit 0 if nothing to do.
+
+    Cheap to call repeatedly. Use this in scripts and pre-flight checks.
+    """
+    from elfmem.migrate import build_plan
+
+    plan = build_plan()
+    if json_output:
+        _json({
+            "pending_count": plan.pending_count,
+            "step_ids": [s.id for s in plan.steps],
+            "warnings": [w.to_dict() for w in plan.warnings],
+            "summary": plan.summary,
+        })
+        if plan.pending_count or plan.warnings:
+            raise typer.Exit(1)
+        return
+
+    if not plan.steps and not plan.warnings:
+        typer.echo("No migrations pending.")
+        return
+    if plan.steps:
+        typer.echo(f"{plan.pending_count} migration(s) pending:\n")
+        for step in plan.steps:
+            typer.echo(f"  • {step.id}")
+            typer.echo(f"      {step.summary}")
+            typer.echo(f"      file: {step.file}")
+            typer.echo("")
+    if plan.warnings:
+        typer.echo(f"{len(plan.warnings)} unparseable file(s) — migration cannot inspect:\n")
+        for w in plan.warnings:
+            typer.echo(f"  ! {w.file}")
+            typer.echo(f"      {w.error}")
+            typer.echo("")
+    if plan.steps:
+        typer.echo("Next: 'elfmem migrate plan' to inspect, 'elfmem migrate apply' to execute.")
+    raise typer.Exit(1)
+
+
+@migrate_app.command("plan")
+def migrate_plan(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Full structured plan: per-step diffs, file hashes, apply commands.
+
+    Read-only. The JSON output is the contract for agents — every step
+    includes an 'apply_command' string ready to invoke.
+    """
+    from elfmem.migrate import build_plan
+
+    plan = build_plan()
+    if json_output:
+        _json(plan.to_dict())
+        if plan.pending_count:
+            raise typer.Exit(1)
+        return
+
+    if not plan.steps:
+        typer.echo("No migrations pending.")
+        return
+
+    typer.echo(f"{plan.pending_count} migration(s) pending.\n")
+    for step in plan.steps:
+        typer.echo(f"━━━ {step.id} ━━━")
+        typer.echo(f"Summary: {step.summary}")
+        typer.echo(f"File:    {step.file}")
+        typer.echo(f"SHA256:  {step.file_sha256[:16]}…")
+        typer.echo("Issues:")
+        for issue in step.issues:
+            typer.echo(f"  - {issue}")
+        typer.echo("")
+        typer.echo("Before:")
+        for ln in json.dumps(step.before, indent=2).splitlines():
+            typer.echo(f"  {ln}")
+        typer.echo("")
+        typer.echo("After:")
+        for ln in json.dumps(step.after, indent=2).splitlines():
+            typer.echo(f"  {ln}")
+        typer.echo("")
+        typer.echo(f"Apply: {step.id}  →  elfmem migrate apply --id {step.id} --yes")
+        if step.post_apply_step:
+            typer.echo(f"After: {step.post_apply_step}")
+        typer.echo("")
+    raise typer.Exit(1)
+
+
+@migrate_app.command("apply")
+def migrate_apply(
+    step_ids: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--id",
+            help="Apply only the named migration step. Repeat for multiple.",
+        ),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Report what would happen without writing."),
+    ] = False,
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Skip interactive confirmation prompt."),
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Apply pending migrations atomically, with backups.
+
+    Each step writes a ``<file>.elfmem-bak-<step_id>-<timestamp>`` backup
+    before modifying the original. Atomic: writes go through a tmp-file
+    rename so readers never see a partial state.
+
+    If a file's content has drifted since the plan was built, that step is
+    marked 'stale' and skipped. Re-run 'elfmem migrate plan' first.
+
+    Without --yes, prompts for confirmation. Always safe to re-run — already-
+    applied steps return 'skipped'.
+    """
+    from elfmem.migrate import apply_plan, build_plan
+
+    plan = build_plan()
+    targets = tuple(step_ids) if step_ids else None
+    target_steps = (
+        [s for s in plan.steps if targets is None or s.id in targets]
+    )
+
+    if not target_steps:
+        msg = (
+            "No migrations pending."
+            if not targets
+            else f"No matching migrations: {', '.join(targets)}"
+        )
+        if json_output:
+            _json({"applied": [], "skipped": [], "failed": [], "results": [], "all_ok": True})
+        else:
+            typer.echo(msg)
+        return
+
+    if not yes and not dry_run and not json_output:
+        typer.echo(f"About to apply {len(target_steps)} migration(s):\n")
+        for step in target_steps:
+            typer.echo(f"  • {step.id} → {step.file}")
+        typer.echo("")
+        confirm = typer.confirm("Proceed?", default=False)
+        if not confirm:
+            typer.echo("Aborted.")
+            raise typer.Exit(1)
+
+    result = apply_plan(plan, only=targets, dry_run=dry_run)
+
+    if json_output:
+        _json(result.to_dict())
+        if not result.all_ok:
+            raise typer.Exit(1)
+        return
+
+    for step_result in result.results:
+        symbol = {
+            "applied": "✓",
+            "skipped": "·",
+            "failed": "✗",
+            "stale": "⟲",
+        }.get(step_result.status, "?")
+        typer.echo(f"{symbol}  {step_result.step_id}: {step_result.detail}")
+        if step_result.backup:
+            typer.echo(f"   backup: {step_result.backup}")
+    typer.echo("")
+    if result.all_ok:
+        typer.echo(f"Done. Applied: {len(result.applied)}, skipped: {len(result.skipped)}.")
+        if result.applied and not dry_run:
+            typer.echo("Restart Claude Code so MCP servers reload.")
+    else:
+        typer.echo(f"{len(result.failed)} step(s) need attention.")
+        raise typer.Exit(1)
 
 
 # ── Peer communication subcommands ───────────────────────────────────────────
@@ -1678,6 +1895,55 @@ async def _doctor_peer_checks(
             _add("Peer inbox", True, f"{pending} message(s) pending import")
 
     return checks
+
+
+def _doctor_migrate_mcp(json_output: bool) -> None:
+    """Scan Claude MCP configs for stale elfmem entries and print suggested fixes.
+
+    Read-only — never edits user files. Exits 0 if nothing needs migrating,
+    1 if any findings were reported.
+    """
+    from elfmem import migrate
+
+    findings = migrate.scan()
+
+    if json_output:
+        _json({
+            "findings": [
+                {
+                    "file": str(f.file),
+                    "server_name": f.server_name,
+                    "issues": f.issues,
+                    "current": f.current,
+                    "suggested": f.suggested,
+                }
+                for f in findings
+            ],
+            "needs_migration": bool(findings),
+        })
+        if findings:
+            raise typer.Exit(1)
+        return
+
+    if not findings:
+        typer.echo("MCP configs: no migration needed.")
+        typer.echo("")
+        typer.echo("Scanned:")
+        for path in migrate.DEFAULT_SCAN_PATHS:
+            typer.echo(f"  - {path.expanduser()}")
+        return
+
+    typer.echo(f"Found {len(findings)} elfmem MCP entr"
+               f"{'y' if len(findings) == 1 else 'ies'} that need updating.\n")
+    for finding in findings:
+        typer.echo(migrate.format_finding(finding))
+        typer.echo("")
+    typer.echo(
+        "These changes are NOT applied automatically — your Claude config is\n"
+        "user-owned. Edit each file by hand to match the 'Suggested' block.\n"
+        "After editing, restart Claude Code so MCP servers reload."
+    )
+    raise typer.Exit(1)
 
 
 async def _doctor_self_count(db_path: str) -> int:

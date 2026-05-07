@@ -1020,6 +1020,69 @@ embedding = make_mock_embedding(
 
 ---
 
+## Migrating between versions
+
+elfmem ships a structured migration system for upgrading config drift across
+releases — env var renames, MCP launch-pattern changes, and project config
+updates. The flow is **plan → review → apply**, with backups and atomic
+writes throughout.
+
+```bash
+elfmem migrate status            # one-line summary; exit 0 if clean
+elfmem migrate plan              # full diff per step (read-only)
+elfmem migrate plan --json       # structured plan for agents
+elfmem migrate apply --dry-run   # show what would happen
+elfmem migrate apply             # interactive: prompts to confirm
+elfmem migrate apply --yes       # non-interactive; for scripts and agents
+elfmem migrate apply --id <step> # apply one specific step
+```
+
+Properties of the system:
+
+- **Idempotent** — re-running after success is a no-op. Already-canonical
+  entries return `skipped`.
+- **Hash-gated** — every step records the source file's SHA256 at plan
+  time; apply refuses if the file changed in between. Re-run `plan` to
+  recover.
+- **Atomic + backed up** — each apply writes a
+  `<file>.elfmem-bak-<step_id>-<timestamp>` backup, then commits the new
+  contents via tmp-file rename. Reverting is a single `mv`.
+- **Per-step granularity** — agents can apply migrations one at a time.
+  Per-step failure does not block other steps.
+- **Read-only by default** — `status` and `plan` never write. `apply`
+  prompts unless `--yes` is passed.
+
+For agent invocation, `elfmem migrate plan --json` is the contract:
+
+```json
+{
+  "elfmem_version": "0.12.0",
+  "pending_count": 1,
+  "steps": [{
+    "id": "mcp-elfmem@claude_code_config-2dacbee7",
+    "kind": "claude_mcp_config",
+    "summary": "Update 'elfmem' MCP entry: …",
+    "file": "/Users/.../claude_code_config.json",
+    "file_sha256": "e48877…",
+    "issues": ["renamed env var ELFMEM_CONFIG_PATH → ELFMEM_CONFIG", …],
+    "before": { … },
+    "after":  { … },
+    "json_pointer": "/mcpServers/elfmem",
+    "reversible": true,
+    "post_apply_step": "Restart Claude Code so MCP servers reload.",
+    "apply_command": "elfmem migrate apply --id mcp-elfmem@… --yes"
+  }],
+  "next_action": "elfmem migrate apply --yes  # apply all"
+}
+```
+
+Per-version migration notes (env var renames, removed APIs, schema changes)
+live in [CHANGELOG.md](CHANGELOG.md) under each release's `### Migration`
+heading. Database schema migrations run automatically on startup via
+`MemorySystem.from_config()` — no manual step needed for those.
+
+---
+
 ## API stability
 
 **Stable (no breaking changes within 0.x):**

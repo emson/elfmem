@@ -670,6 +670,17 @@ def scan_peer_inbox(inbox_dir: Path) -> PeerInboxStatus:
     """
     inbox_path = inbox_dir.expanduser()
     if not inbox_path.exists():
+        # Distinguish: .elfmem/ absent (setup never run) vs inbox/ absent (normal).
+        elfmem_dir = inbox_path.parent
+        if not elfmem_dir.exists():
+            return PeerInboxStatus(
+                pending=0, oldest_at=None, newest_at=None,
+                from_peers=[], inbox_dir=str(inbox_path),
+                warning=(
+                    f"elfmem not initialised at {elfmem_dir.parent} — "
+                    f"run 'elfmem setup' to enable peer messaging"
+                ),
+            )
         return PeerInboxStatus(
             pending=0, oldest_at=None, newest_at=None,
             from_peers=[], inbox_dir=str(inbox_path),
