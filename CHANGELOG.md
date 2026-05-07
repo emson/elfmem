@@ -11,6 +11,92 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.1] — 2026-05-07
+
+Critical safety patch. v0.13.0 introduced two bugs that combined to silently
+relocate user databases and create false-positive "fresh install" states.
+This release reverts the destabilising change, hardens every safety net it
+exposed, and adds a structured recovery surface.
+
+### Fixed
+- **Path-resolution regression (catastrophic).** v0.13.0 changed bare-relative
+  ``project.db`` to resolve against the config file's directory instead of
+  the caller's cwd. Existing users with relative configs found their DB
+  silently "missing"; ``elfmem doctor`` then suggested ``elfmem init``,
+  which created a fresh empty DB at the new path while the real data sat
+  orphaned. Reverted to 0.12.x semantics: bare-relative paths are kept
+  verbatim and resolved by ``Path()`` at the call site (cwd-relative).
+  Affected users recover via ``elfmem rescue`` (see below).
+- **Backup safety net was technically correct, operationally useless.** The
+  ``.before-vN.bak`` mechanism dutifully backed up whatever was at the path,
+  even an already-empty DB created by the path regression. ``create_backup``
+  now validates row counts in canonical content tables (``blocks``,
+  ``peer_roster``, ``block_tags``, ``edges``) post-write; mismatch → stub
+  is deleted, ``BackupValidationError`` raised, migration aborted. A
+  populated DB whose backup ends up empty cannot pass through unnoticed.
+- **Constitutional re-seed created ghost duplicates.** ``setup()`` keyed
+  idempotency on content hash and only caught inbox-stage duplicates.
+  Active/archived collisions silently produced fresh UUIDs, multiplying
+  stock content on every re-run and diluting the SELF frame. Now
+  identifies each constitutional block by stable role tag
+  (``self/role/<role>``); seeds whose role is filled in any active or
+  inbox state are skipped, preserving any user customisation of that slot.
+  Archived blocks count as "unfilled" so explicit retirements can be
+  re-seeded.
+
+### Added
+- **``elfmem rescue`` command.** Detects orphaned populated DBs and proposes
+  a rebind plan. Walks neighbour locations (config-dir-relative, parent-of-
+  config-dir, ``~/.elfmem/databases/``), inspects row counts read-only, and
+  reports an action: ``none`` | ``rebind`` | ``ambiguous`` | ``first_install``.
+  ``--apply --yes`` rewrites ``project.db`` in the config to an absolute
+  path (with a timestamped config backup taken first). ``--json`` for agent
+  invocation.
+- **``elfmem init`` neighbour-DB pre-flight.** Before creating a fresh DB,
+  init now scans for populated neighbour DBs. If exactly one is found,
+  init refuses with an ``elfmem rescue`` recovery hint. If multiple are
+  found, init refuses and lists them for human/agent review. ``--force-new``
+  bypasses the check (rarely needed).
+- **``elfmem doctor`` DB drift check.** New observability surface — when
+  the configured DB is missing or empty AND a populated neighbour exists,
+  doctor's recovery suggestion is ``elfmem rescue``, NOT ``elfmem init``.
+  Doctor never recommends a destructive path when a non-destructive one
+  fits the symptom.
+- **``self/role/<role>`` tags on every constitutional seed.** Stable
+  identifier per cognitive slot. ``CONSTITUTIONAL_ROLES`` exported from
+  ``elfmem.seed`` for programmatic access.
+- **``elfmem.rescue`` module.** Public surface: ``DbCandidate``,
+  ``RescuePlan``, ``inspect``, ``find_neighbour_dbs``, ``build_rescue_plan``.
+  Pure-read; ``to_dict()`` on every result type for agent consumption.
+- **``BackupValidationError``** in ``elfmem.db.migrate`` — typed exception
+  with ``.recovery`` field, raised when a backup fails post-write integrity
+  validation.
+
+### Migration (recovering from 0.13.0)
+If you upgraded to 0.13.0 and your DB looks empty:
+
+```
+$ elfmem doctor
+✗ Database  /path/to/.elfmem/x.db (project.db in config)
+   Suggestion: elfmem rescue
+✗ DB drift  populated DB at /path/to/x.db (247 blocks) is not the
+            configured target — likely 0.13.0 path regression
+   Suggestion: elfmem rescue --apply --yes
+
+$ elfmem rescue
+Configured DB is empty; populated DB found at /path/to/x.db
+(247 blocks). Suggested: rewrite project.db to '/path/to/x.db' (absolute).
+
+$ elfmem rescue --apply --yes
+✓ rebind applied. Config backup: <config>.elfmem-bak-rescue-<ts>
+```
+
+The rescue command never deletes the orphan or the empty-fresh DB — that
+decision is left to the user. Inspect both, decide, remove the unwanted
+one manually.
+
+---
+
 ## [0.13.0] — 2026-05-07
 
 ### Added

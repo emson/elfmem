@@ -86,28 +86,23 @@ class TestRelativeProjectDb:
         result = _read_project_db(str(cfg))
         assert result == str(Path.home() / "foo.db")
 
-    def test_relative_resolved_against_config_dir(self, tmp_path: Path):
-        # A relative project.db must resolve against the config file's directory,
-        # not against the caller's cwd. This is what makes configs portable.
+    def test_relative_kept_relative(self, tmp_path: Path):
+        # Bare-relative paths are kept as-is (cwd-relative), matching 0.12.x.
+        # The 0.13.0 config-dir-relative semantics silently relocated existing
+        # users' DBs and have been reverted in 0.13.1.
         config_dir = tmp_path / "myproj" / ".elfmem"
         config_dir.mkdir(parents=True)
         cfg = config_dir / "config.yaml"
-        cfg.write_text("project:\n  db: db/local.db\n", encoding="utf-8")
+        cfg.write_text("project:\n  db: elf_vault.db\n", encoding="utf-8")
         result = _read_project_db(str(cfg))
-        assert Path(result).is_absolute()
-        assert Path(result) == (config_dir / "db" / "local.db").resolve()
+        # The string is left unmodified — caller resolves via Path() at use time.
+        assert result == "elf_vault.db"
 
-    def test_relative_path_independent_of_cwd(self, tmp_path: Path, monkeypatch):
-        config_dir = tmp_path / "p" / ".elfmem"
-        config_dir.mkdir(parents=True)
-        cfg = config_dir / "config.yaml"
-        cfg.write_text("project:\n  db: ./x.db\n", encoding="utf-8")
-        # Move cwd somewhere unrelated; relative path must still resolve via config dir.
-        monkeypatch.chdir(tmp_path)
-        from_root = _read_project_db(str(cfg))
-        monkeypatch.chdir("/")
-        from_slash = _read_project_db(str(cfg))
-        assert from_root == from_slash
+    def test_relative_dot_prefix_kept(self, tmp_path: Path):
+        cfg = tmp_path / "config.yaml"
+        cfg.write_text("project:\n  db: ./db/local.db\n", encoding="utf-8")
+        # ./prefix is preserved; resolution happens at call site against cwd.
+        assert _read_project_db(str(cfg)) == "db/local.db"
 
 
 class TestResolveDbWithConfig:

@@ -146,6 +146,17 @@ def init(
         bool,
         typer.Option("--force", help="Overwrite existing config (never overwrites DB)"),
     ] = False,
+    force_new: Annotated[
+        bool,
+        typer.Option(
+            "--force-new",
+            help=(
+                "Bypass the rescue check and create a fresh DB even if a "
+                "populated DB exists at a neighbouring path. Almost never "
+                "needed — prefer 'elfmem rescue'."
+            ),
+        ),
+    ] = False,
     seed: Annotated[
         bool,
         typer.Option("--seed/--no-seed", help="Seed constitutional cognitive loop blocks"),
@@ -242,6 +253,48 @@ def init(
             )
         config_file.write_text(render_default_config(project_cfg), encoding="utf-8")
         config_action = "created"
+
+    # ── Pre-flight: refuse if a neighbour DB has data we'd silently orphan ─
+    # The 0.13.0 path-resolution regression silently created fresh empty DBs
+    # at the wrong path while users' real data sat at the cwd-relative path.
+    # Refuse to do that ever again.
+    if not force_new:
+        from elfmem.rescue import build_rescue_plan
+        plan = build_rescue_plan(resolved_db, resolved_config)
+        if plan.action == "rebind":
+            target = plan.suggested_target
+            typer.echo(
+                f"Refusing to create a fresh DB at {resolved_db}.\n"
+                f"A populated DB exists at {target} "
+                f"({plan._target_candidate.block_count} blocks, "
+                f"{plan._target_candidate.peer_count} peers).\n"
+                "\n"
+                "This is the 0.13.0 path-resolution regression. Recover with:\n"
+                f"  elfmem rescue --apply --yes\n"
+                "\n"
+                "If you genuinely want a fresh DB and accept the orphan, "
+                "re-run with --force-new.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        if plan.action == "ambiguous":
+            typer.echo(
+                f"Refusing to create a fresh DB at {resolved_db}.\n"
+                f"Multiple populated DBs found at neighbouring paths — manual "
+                "review required:\n",
+                err=True,
+            )
+            for c in plan.populated_alternatives:
+                typer.echo(
+                    f"  • {c.path}  ({c.block_count} blocks, {c.peer_count} peers)",
+                    err=True,
+                )
+            typer.echo(
+                "\nEdit project.db in your config to point at the correct one "
+                "(absolute path), or run 'elfmem rescue' for a structured plan.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
 
     # Also create the database directory if needed.
     Path(resolved_db).parent.mkdir(parents=True, exist_ok=True)
@@ -477,12 +530,51 @@ def doctor(
 
     db_path, db_source = _project.resolve_db(db, config_path)
     db_file = Path(db_path)
+
+    # Suggestion path branches on cause: "DB missing AND a populated neighbour
+    # exists" is the 0.13.0 regression — ALWAYS suggest 'elfmem rescue', NEVER
+    # 'elfmem init' (init created the empty DB in the first place).
+    db_suggestion = f"elfmem init --db {db_path}"
+    if not db_file.exists() or _looks_empty(db_file):
+        try:
+            from elfmem.rescue import build_rescue_plan
+            plan = build_rescue_plan(db_path, config_path)
+            if plan.action in ("rebind", "ambiguous"):
+                db_suggestion = "elfmem rescue"
+        except Exception:
+            pass
+
     _check(
         "Database",
         db_file.exists(),
         f"{db_path} ({db_source})",
-        f"elfmem init --db {db_path}",
+        db_suggestion,
     )
+
+    # Drift check: surface populated neighbour DBs even when the configured
+    # DB is fine. This is informational unless the configured DB is empty.
+    try:
+        from elfmem.rescue import build_rescue_plan
+        plan = build_rescue_plan(db_path, config_path)
+        if plan.action == "rebind":
+            assert plan.suggested_target is not None
+            _check(
+                "DB drift",
+                False,
+                f"populated DB at {plan.suggested_target} "
+                f"({plan._target_candidate.block_count} blocks) is not the "
+                "configured target — likely 0.13.0 path regression",
+                "elfmem rescue --apply --yes",
+            )
+        elif plan.action == "ambiguous":
+            _check(
+                "DB drift",
+                False,
+                f"{len(plan.populated_alternatives)} populated DBs at neighbour paths",
+                "elfmem rescue  # inspect candidates",
+            )
+    except Exception:
+        pass
 
     # ── API keys ───────────────────────────────────────────────────────────
 
@@ -951,6 +1043,139 @@ def serve(
         raise typer.Exit(1)
 
     mcp_main(db_path=db_path, config_path=config_path, use_adaptive_policy=adaptive_policy)
+
+
+# ── Rescue ───────────────────────────────────────────────────────────────────
+
+
+@app.command()
+def rescue(
+    db: Annotated[
+        str | None, typer.Option("--db", envvar="ELFMEM_DB")
+    ] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply",
+            help=(
+                "Rewrite project.db in the config to the suggested absolute "
+                "path. A timestamped backup of the config is taken first."
+            ),
+        ),
+    ] = False,
+    yes: Annotated[
+        bool, typer.Option("--yes", "-y", help="Skip confirmation prompt.")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Detect orphaned populated DBs and propose a rebind plan.
+
+    Read-only by default. Surfaces the rescue path for users hit by the
+    0.13.0 path-resolution regression: an empty configured DB and a
+    populated DB at a sibling path.
+
+    --apply rewrites project.db in the config to the suggested absolute
+    path (after writing a timestamped config backup). Requires either the
+    plan to be unambiguous (action='rebind') or --yes plus exactly one
+    populated alternative.
+    """
+    from elfmem.rescue import build_rescue_plan
+
+    config_path, _ = _project.resolve_config(config)
+    db_path, _ = _project.resolve_db(db, config_path)
+    plan = build_rescue_plan(db_path, config_path)
+
+    if json_output:
+        _json(plan.to_dict())
+        if plan.action in ("rebind", "ambiguous"):
+            raise typer.Exit(1)
+        return
+
+    typer.echo(plan.summary)
+    typer.echo("")
+    typer.echo("Configured:")
+    c = plan.configured
+    typer.echo(
+        f"  {'✓' if c.populated else '·'}  {c.path}\n"
+        f"      exists={c.exists}  blocks={c.block_count}  "
+        f"peers={c.peer_count}  size={c.size_bytes:,} bytes"
+    )
+    others = [x for x in plan.candidates if x is not c]
+    if others:
+        typer.echo("")
+        typer.echo("Neighbours:")
+        for x in others:
+            mark = "★" if x.populated else "·"
+            typer.echo(
+                f"  {mark}  {x.path}\n"
+                f"      exists={x.exists}  blocks={x.block_count}  "
+                f"peers={x.peer_count}  size={x.size_bytes:,} bytes"
+            )
+
+    if plan.action == "ambiguous":
+        typer.echo("")
+        typer.echo(
+            "Multiple populated DBs found — refusing to choose. Inspect each "
+            "candidate manually and edit project.db in your config to point "
+            "at the correct one (use an absolute path)."
+        )
+        raise typer.Exit(1)
+
+    if plan.action != "rebind":
+        return
+
+    target = plan.suggested_target
+    typer.echo("")
+    typer.echo(f"Proposed: rewrite project.db → {target}")
+    typer.echo(f"Config:   {config_path}")
+
+    if not apply:
+        typer.echo("")
+        typer.echo("Re-run with --apply to perform the rewrite.")
+        raise typer.Exit(1)
+
+    if not yes:
+        confirm = typer.confirm("Apply rebind?", default=False)
+        if not confirm:
+            typer.echo("Aborted.")
+            raise typer.Exit(1)
+
+    if config_path is None:
+        typer.echo("No config file to rewrite — cannot apply rescue.", err=True)
+        raise typer.Exit(1)
+    backup = _rewrite_project_db_in_config(Path(config_path), str(target))
+    typer.echo(f"✓ rebind applied. Config backup: {backup}")
+
+
+def _rewrite_project_db_in_config(config_path: Path, new_db_path: str) -> Path:
+    """Rewrite ``project.db`` in *config_path* to *new_db_path*. Backup first.
+
+    Returns the backup path. Atomic via tmp-file rename. Pure-yaml
+    round-trip — preserves other keys verbatim, only the project.db value
+    changes.
+    """
+    import time
+
+    import yaml
+
+    text = config_path.read_text(encoding="utf-8")
+    data = yaml.safe_load(text) or {}
+    if "project" not in data or not isinstance(data["project"], dict):
+        data["project"] = {}
+    data["project"]["db"] = new_db_path
+
+    backup = config_path.with_name(
+        f"{config_path.name}.elfmem-bak-rescue-{time.time_ns()}"
+    )
+    backup.write_bytes(config_path.read_bytes())
+
+    tmp = config_path.with_suffix(config_path.suffix + ".tmp")
+    tmp.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    os.replace(tmp, config_path)
+    return backup
 
 
 # ── Migration subcommands ────────────────────────────────────────────────────
@@ -1895,6 +2120,21 @@ async def _doctor_peer_checks(
             _add("Peer inbox", True, f"{pending} message(s) pending import")
 
     return checks
+
+
+def _looks_empty(db_file: Path) -> bool:
+    """Quick row-count heuristic: True if the DB has zero content rows.
+
+    Used to branch doctor's recovery suggestion. Returns False on any error
+    (we'd rather under-flag drift than mis-direct users).
+    """
+    if not db_file.exists():
+        return True
+    try:
+        from elfmem.rescue import inspect
+        return not inspect(db_file).populated
+    except Exception:
+        return False
 
 
 def _doctor_migrate_mcp(json_output: bool) -> None:
