@@ -1022,8 +1022,9 @@ class MemorySystem:
         then adds any identity description and domain values you provide.
 
         DON'T USE WHEN: Every session — SELF blocks persist across restarts.
-        Duplicate content is silently rejected, so re-running is safe but
-        unnecessary. Call once, then use remember() for new knowledge.
+        Re-running is idempotent: each constitutional block fills a stable
+        role (self/role/<name>); seeds whose role is already filled are
+        skipped, preserving any user customisation of that slot.
 
         COST: Fast per block (pure DB insert, no LLM). Each block queues in
         inbox; one LLM call per block during dream()/consolidate().
@@ -1056,7 +1057,17 @@ class MemorySystem:
 
         if seed:
             from elfmem.seed import CONSTITUTIONAL_SEED
+            # Role-based idempotency: a constitutional block fills a specific
+            # cognitive slot (its role). If a block tagged self/role/<role>
+            # already exists in any non-archived state, the slot is filled —
+            # do not re-seed, regardless of whether the user has customised
+            # the content. Archived blocks are explicit user retirements and
+            # do count as "unfilled" so the agent can re-bootstrap.
+            existing_roles = await self._existing_constitutional_roles()
             for block in CONSTITUTIONAL_SEED:
+                role = block.get("role", "")
+                if role and role in existing_roles:
+                    continue
                 r = await self.remember(
                     block["content"],  # type: ignore[arg-type]
                     tags=block["tags"],  # type: ignore[arg-type]
@@ -1079,6 +1090,25 @@ class MemorySystem:
         )
         self._record_op("setup", result.summary)
         return result
+
+    async def _existing_constitutional_roles(self) -> set[str]:
+        """Return the set of constitutional roles already filled in this DB.
+
+        A role is "filled" if any block tagged ``self/role/<role>`` exists in
+        an active or inbox state (NOT archived — archived means the user
+        explicitly retired the block and may want re-seeding). Pure read.
+        """
+        from sqlalchemy import text
+        async with self._engine.connect() as conn:
+            rows = await conn.execute(text(
+                "SELECT DISTINCT bt.tag "
+                "FROM block_tags bt JOIN blocks b ON b.id = bt.block_id "
+                "WHERE bt.tag LIKE 'self/role/%' "
+                "  AND b.status IN ('active', 'inbox')"
+            ))
+            tags = [r[0] for r in rows.fetchall()]
+        prefix = "self/role/"
+        return {t[len(prefix):] for t in tags if t.startswith(prefix)}
 
     async def frame(
         self,

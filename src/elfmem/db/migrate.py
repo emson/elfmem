@@ -54,9 +54,19 @@ async def ensure_schema_current(
     if version >= CURRENT_SCHEMA_VERSION:
         return version
 
-    # Backup before any migration (safety net)
+    # Backup before any migration (safety net). The backup is validated by
+    # row count; if validation fails the migration is aborted so we never
+    # mutate a DB whose rollback doesn't exist. A live populated DB whose
+    # backup ends up empty is the failure mode that wiped a peer's vault in
+    # the 0.13.0 path-resolution disaster — never again. (We use file-copy
+    # rather than VACUUM INTO here because VACUUM cannot run inside the
+    # active migration transaction.)
     if db_path:
-        backup_path = create_backup(db_path, suffix=f"before-v{version + 1}")
+        try:
+            backup_path = create_backup(db_path, suffix=f"before-v{version + 1}")
+        except BackupValidationError as e:
+            logger.error("Pre-migration backup validation failed: %s", e)
+            raise
         if backup_path:
             await set_config(conn, "last_backup_path", backup_path)
             await set_config(conn, "last_backup_at", _now_iso())
@@ -143,12 +153,91 @@ async def _add_index(
 # ── Backup ───────────────────────────────────────────────────────────────────
 
 
+_VALIDATION_TABLES: tuple[str, ...] = ("blocks", "peer_roster", "block_tags", "edges")
+
+
+def _row_counts(db_path: Path) -> dict[str, int]:
+    """Return row counts for the canonical content tables. Missing tables → 0.
+
+    Used to validate that a backup actually contains the source data, rather
+    than being a stub of an empty/freshly-created DB. The 0.13.0 disaster
+    happened because a backup was technically created but contained nothing,
+    while the operator believed it was a recoverable snapshot.
+    """
+    import sqlite3
+    counts: dict[str, int] = {}
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            cur = conn.cursor()
+            for table in _VALIDATION_TABLES:
+                try:
+                    cur.execute(f"SELECT COUNT(*) FROM {table}")
+                    counts[table] = int(cur.fetchone()[0])
+                except sqlite3.OperationalError:
+                    counts[table] = 0  # table doesn't exist
+        finally:
+            conn.close()
+    except sqlite3.DatabaseError:
+        return dict.fromkeys(_VALIDATION_TABLES, 0)
+    return counts
+
+
+def _validate_backup(src: Path, backup: Path) -> None:
+    """Open *backup* and confirm row counts match *src*. Raise on mismatch.
+
+    A valid backup either:
+    - Has identical row counts in every validation table, OR
+    - Is empty AND the source is empty (fresh install case).
+
+    Anything else is a stub — we delete it and raise so the caller does not
+    proceed with a destructive operation under the false impression that a
+    rollback exists.
+    """
+    import contextlib
+    src_counts = _row_counts(src)
+    bak_counts = _row_counts(backup)
+    if src_counts != bak_counts:
+        with contextlib.suppress(OSError):
+            backup.unlink()
+        raise BackupValidationError(
+            f"backup row counts diverge from source — refusing to proceed. "
+            f"source={src_counts}, backup={bak_counts}",
+            recovery=(
+                "This usually means the source DB is being written by another "
+                "process. Stop other elfmem processes and retry, or run "
+                "'elfmem backup --vacuum' for a transactional snapshot."
+            ),
+        )
+
+
+class BackupValidationError(Exception):
+    """Raised when a created backup fails post-write integrity validation.
+
+    Carries a ``.recovery`` field per the agent-first contract.
+    """
+
+    def __init__(self, message: str, *, recovery: str) -> None:
+        super().__init__(message)
+        self.recovery = recovery
+
+    def __str__(self) -> str:
+        return f"{super().__str__()} — Recovery: {self.recovery}"
+
+
 def create_backup(db_path: str, *, suffix: str = "backup") -> str | None:
-    """Create a timestamped copy of the database file.
+    """Create a timestamped, content-validated copy of the database file.
 
     Returns the backup path on success, None if the source doesn't exist.
-    The backup is a simple file copy (shutil.copy2) — fast and preserves
-    metadata. For a clean, WAL-free backup, use ``vacuum_backup()`` instead.
+
+    Validation: after the file copy, the backup is opened and its row counts
+    in canonical content tables (blocks, peer_roster, block_tags, edges) are
+    compared with the source. If they diverge, the stub is deleted and
+    ``BackupValidationError`` is raised so the caller does not proceed with
+    a destructive operation under the false impression that a rollback exists.
+
+    For a WAL-clean snapshot (preferred for migration backups), use
+    ``vacuum_backup()`` instead — it works through SQLite's transaction layer.
     """
     src = Path(db_path)
     if not src.exists():
@@ -156,6 +245,7 @@ def create_backup(db_path: str, *, suffix: str = "backup") -> str | None:
     timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     backup = src.with_suffix(f".{suffix}.{timestamp}.bak")
     shutil.copy2(src, backup)
+    _validate_backup(src, backup)
     logger.info("Database backed up: %s (%.1f KB)", backup.name, backup.stat().st_size / 1024)
     return str(backup)
 
