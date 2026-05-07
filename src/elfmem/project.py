@@ -403,6 +403,29 @@ def has_mcp_entry(mcp_path: Path) -> bool:
 # ── Agent doc writing ─────────────────────────────────────────────────────────
 
 
+def read_render_values_from_config(config_path: str | Path) -> tuple[str, str]:
+    """Return ``(name, db)`` from a config's ``project`` section, never raising.
+
+    Returns empty strings for missing or unreadable fields. Render callers
+    treat empty strings as "missing — omit the line", never as a license
+    to fall back to inferred defaults. This is the principle:
+
+        Authoritative state is read, never inferred. Config is truth; the
+        absence of a field is a fact about the config, not a request for
+        the renderer to fabricate one.
+    """
+    try:
+        import yaml
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        proj = data.get("project") or {}
+        name = str(proj.get("name", "")).strip()
+        db = str(proj.get("db", "")).strip()
+        return name, db
+    except Exception:
+        return "", ""
+
+
 def _build_section(
     *,
     name: str,
@@ -410,20 +433,38 @@ def _build_section(
     config_path: str,
     identity: str = "",
 ) -> str:
-    """Build the managed elfmem block for insertion into an agent doc file."""
+    """Build the managed elfmem block for an agent doc file.
+
+    Lines render only when their value is non-empty — an empty ``name`` or
+    ``db_path`` means "missing from config", and the renderer omits the
+    corresponding line rather than displaying blank. The principle this
+    enforces:
+
+        Authoritative state is read, never inferred. When config exists,
+        it is truth; defaults are bootstrap only on first install.
+
+    Callers in established-instance mode pass values derived from the live
+    config (via ``read_render_values_from_config``); callers in fresh-install
+    mode pass inferred defaults. The function itself doesn't choose — it
+    just renders what it's given, faithfully.
+    """
     from importlib.metadata import version as _pkg_version
     try:
         elfmem_version = _pkg_version("elfmem")
     except Exception:
         elfmem_version = "unknown"
     mcp = mcp_json_snippet(config_path=config_path)
+    name_line = f"- **Project:** {name}\n" if name else ""
+    db_line = f"- **Database:** `{db_path}`\n" if db_path else ""
+    config_line = f"- **Config:** `{config_path}`\n" if config_path else ""
     identity_line = f"- **Identity:** {identity}\n" if identity else ""
     return (
         f"{_section_start(elfmem_version)}\n"
         f"## elfmem — Project Memory\n\n"
-        f"- **Project:** {name}\n"
-        f"- **Database:** `{db_path}`\n"
-        f"- **Config:** `{config_path}`\n"
+        f"_auto-generated from `.elfmem/config.yaml` — edit OUTSIDE these markers._\n\n"
+        f"{name_line}"
+        f"{db_line}"
+        f"{config_line}"
         f"{identity_line}"
         f"\n"
         f"**Full agent reference:** see `@.elfmem/AGENT.md` — auto-generated, "
@@ -431,10 +472,11 @@ def _build_section(
         f"for every operation, including peer communication.\n"
         f"\n"
         f"Quick commands:\n"
+        f"- `elfmem init` — idempotent setup; refresh-only on established instances\n"
         f"- `elfmem doctor` — verify setup, show paths, check fragment freshness\n"
+        f"- `elfmem rescue` — recover an orphaned DB (path drift)\n"
         f"- `elfmem status` — memory health\n"
         f"- `elfmem guide` — all operations (always current)\n"
-        f"- `elfmem agent-docs install` — regenerate `.elfmem/AGENT.md` after upgrade\n"
         f"- `elfmem peer list` — registered peers (DIDs + delivery paths)\n"
         f"\n"
         f"Add to `.claude.json` to give Claude persistent memory:\n"

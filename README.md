@@ -487,19 +487,30 @@ See the examples throughout this README, the [API reference](#api-reference) bel
 
 ## Project setup
 
-`elfmem init` makes the CLI and MCP server project-aware. Run it once in any project directory.
+`elfmem init` makes the CLI and MCP server project-aware. Idempotent and state-aware — safe to run anytime.
 
 ```bash
 cd ~/projects/my-agent
 elfmem init
 ```
 
-What it does:
-1. Detects your project root (walks up to find `.git`, `pyproject.toml`, etc.)
-2. Creates `.elfmem/config.yaml` with project settings
-3. Creates a database at `~/.elfmem/databases/{project-name}.db` (outside the repo)
-4. Writes an elfmem section into `CLAUDE.md` / `AGENTS.md`
-5. Prints the MCP JSON snippet to paste into `~/.claude.json`
+What it does — **state-aware** (one verb, three behaviours selected by detection):
+
+- **Fresh install** (no config / no DB / empty DB):
+  1. Detects your project root (walks up to find `.git`, `pyproject.toml`, etc.)
+  2. Creates `.elfmem/config.yaml` with project settings
+  3. Creates a database at `~/.elfmem/databases/{project-name}.db` (outside the repo)
+  4. Seeds the constitutional cognitive loop (10 role-tagged blocks)
+  5. Writes an elfmem section into `CLAUDE.md` / `AGENTS.md`
+  6. Prints the MCP JSON snippet to paste into `~/.claude.json`
+- **Established instance** (config + populated DB): refresh-only mode. Reads
+  the live `.elfmem/config.yaml`, re-renders the agent doc section from it
+  (never from inferred defaults), runs the constitutional seed idempotently
+  (no-op when role slots are filled), and applies any pending schema migration
+  with a row-count-validated backup. The config and existing blocks are
+  preserved.
+- **Orphaned DB** (configured DB is empty but a populated DB exists at a
+  neighbour path): refuses with a pointer to `elfmem rescue`. No data loss.
 
 After init, every `elfmem` command in that directory tree discovers config automatically.
 

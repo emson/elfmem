@@ -11,6 +11,72 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.2] — 2026-05-08
+
+State-aware ``elfmem init``. Closes the anti-recovery loop where doctor
+flagged stale agent docs, recommended ``elfmem init``, and init then
+re-introduced the very drift it was supposed to remove by rendering from
+inferred defaults instead of live config. One verb, three behaviours
+selected by lifecycle state — no new commands, smaller surface, safer
+re-runs.
+
+### Fixed
+- **Agent doc section rendered from inferred defaults instead of live
+  config (Bug A).** ``init`` previously passed directory basename as
+  ``Project`` and ``~/.elfmem/databases/{dir}.db`` as ``Database`` to the
+  doc renderer, even when ``.elfmem/config.yaml`` already specified
+  different values. Result: re-running ``init`` (which doctor recommended
+  for stale docs) clobbered correct paths with wrong ones — the same
+  shape of failure as the 0.13.0 path regression. Renderer now reads
+  ``project.name`` and ``project.db`` from the config file and uses them
+  faithfully. Empty/missing fields are omitted; never fabricated.
+- **No "established instance" semantics on init.** v0.13.1 made block-level
+  seeding idempotent, but the outer init shell still asserted the
+  fresh-install template every run. Doctor steered operators here; init
+  re-introduced drift. v0.13.2 makes ``init`` state-aware: detection at
+  entry classifies the instance and selects the right behaviour. No new
+  command added — same ``init`` verb, smarter implementation.
+
+### Added
+- **``elfmem.lifecycle.is_established_instance(config_path, db_path)``.**
+  Pure-read state detector returning ``EstablishmentState`` with kind in
+  ``{"fresh", "established", "orphan", "unreadable"}``. Reused by ``init``
+  and (in future) doctor. ``to_dict()`` for agent invocation.
+- **State-aware ``elfmem init``.** Three behaviours, one command:
+  - **Fresh** (no config / empty DB): full setup as before.
+  - **Established** (config + content rows): refresh-only — does NOT
+    rewrite config, re-renders agent doc from live config, runs the
+    idempotent constitutional seed, prints
+    ``[established — refreshing only]`` mode banner.
+  - **Orphan** (configured DB empty + populated neighbour): refuses with a
+    pointer to ``elfmem rescue``. ``--force-new`` bypasses (rarely needed).
+  - **Unreadable**: refuses; never silently overwrites a corrupt DB.
+- **``read_render_values_from_config(config_path)``** in ``elfmem.project``.
+  Public helper returning ``(name, db)`` tuple from config; never raises.
+- **Render-time visibility.** The auto-managed CLAUDE.md/AGENTS.md elfmem
+  block now includes ``_auto-generated from .elfmem/config.yaml — edit
+  OUTSIDE these markers_`` so operators stop wasting effort hand-fixing
+  text that will be re-rendered next run. Quick-commands list now includes
+  ``elfmem init`` (idempotent) and ``elfmem rescue``.
+- **``init --json`` includes lifecycle state.** Adds ``lifecycle`` and
+  ``mode_banner`` fields so agent callers see exactly which branch ran.
+
+### Principle (now in code)
+*Authoritative state is read, never inferred. When live state exists,
+config is truth; defaults are bootstrap only on first install.* Quoted
+in the docstrings of ``_build_section`` and ``is_established_instance``
+so the next contributor reads the rule before touching the render or
+detection paths.
+
+### Migration
+No user action required for existing healthy installs. Affected users
+(stale docs from prior 0.13.x init runs) just re-run ``elfmem init`` —
+on an established instance it now rewrites the docs from live config and
+leaves everything else alone. The mode banner (``[established —
+refreshing only]``) makes the implicit branch explicit.
+
+---
+
 ## [0.13.1] — 2026-05-07
 
 Critical safety patch. v0.13.0 introduced two bugs that combined to silently
