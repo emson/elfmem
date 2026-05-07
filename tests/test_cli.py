@@ -87,10 +87,14 @@ class TestRememberCommand:
         data = json.loads(result.output)
         assert "block_id" in data
 
-    def test_no_db_flag_uses_discovery_chain(self, mock_managed: AsyncMock) -> None:
-        # Without --db, the command uses the discovery chain (falls back to
-        # ~/.elfmem/agent.db) rather than failing. mock_managed intercepts
-        # the MemorySystem.managed() call so no real file I/O occurs.
+    def test_no_db_flag_uses_discovery_chain(
+        self, mock_managed: AsyncMock, monkeypatch
+    ) -> None:
+        # Without --db, the command uses the discovery chain. Under pytest the
+        # global ~/.elfmem/agent.db fallback is guarded — this test asserts the
+        # chain still works end-to-end when the caller opts in (the safe path
+        # for CI environments where no real config exists).
+        monkeypatch.setenv("ELFMEM_ALLOW_GLOBAL_FALLBACK", "1")
         result = runner.invoke(app, ["remember", "fact"])
         assert result.exit_code == 0
 

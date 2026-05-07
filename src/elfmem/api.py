@@ -1613,6 +1613,10 @@ class MemorySystem:
             1. Explicit override in ``config.peer.<kind>_dir`` (test fixtures,
                unusual deployments). Tilde-expanded.
             2. ``<project_root>/.elfmem/<kind>``, derived once at construction.
+            3. Late discovery via ``find_project_root()`` — handles global MCP
+               servers initialised without a project context. Result is cached
+               back into ``_project_root`` so all subsequent peer calls in this
+               session resolve consistently, regardless of cwd changes.
 
         Raises:
             ProjectNotFound: No override and no project root could be located.
@@ -1626,6 +1630,14 @@ class MemorySystem:
             return Path(override).expanduser()
         if self._project_root is not None:
             return self._project_root / ".elfmem" / kind
+        # Tier 3: late discovery. Result is cached so the inbox path is stable
+        # for the lifetime of this instance — cwd drift between calls cannot
+        # silently change which project's messages are visible.
+        from elfmem.project import find_project_root
+        root = find_project_root()
+        if root is not None:
+            self._project_root = root  # cache: all future peer calls use same root
+            return root / ".elfmem" / kind
         raise ProjectNotFound(f"peer {kind}")
 
     async def peer_init(self, name: str) -> str:
@@ -2154,7 +2166,13 @@ def _discover_project_root(
         cfg_path = Path(explicit_path).expanduser().resolve()
         # <root>/.elfmem/config.yaml → <root>
         if cfg_path.parent.name == ".elfmem":
-            return cfg_path.parent.parent
+            candidate = cfg_path.parent.parent
+            # Guard: ~/.elfmem/config.yaml is the global data dir, not a project.
+            # Returning ~ here would make all peer paths resolve to ~/.elfmem/inbox,
+            # silently hiding project-local messages.
+            if candidate.resolve() != Path.home().resolve():
+                return candidate
+            # Fall through to find_project_root — global config is not a project.
         # Fall through: explicit config not under .elfmem/, treat its directory
         # as project root only if it carries a project marker.
         return find_project_root(cfg_path.parent)

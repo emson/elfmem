@@ -43,36 +43,57 @@ def render_agent_docs() -> str:
         f"Single source of truth for how to invoke elfmem.\n\n"
     )
 
-    # Overview
+    # Overview — CLI is the primary interface for agent-driven usage.
     overview = (
-        "## Quick Start\n\n"
+        "## Quick Start (CLI)\n\n"
+        "elfmem is a CLI-first tool. Agents invoke it via shell commands, "
+        "typically through `uv run --env-file .env elfmem ...` in a project.\n\n"
+        "```bash\n"
+        "# Memory\n"
+        "elfmem remember 'I learned X'\n"
+        "elfmem recall 'topic' --frame attention --top-k 5\n"
+        "elfmem outcome <block-id> 0.9          # reinforce useful blocks\n"
+        "\n"
+        "# Health & introspection\n"
+        "elfmem status                          # health snapshot\n"
+        "elfmem doctor                          # setup verification, drift checks\n"
+        "elfmem guide                           # all operations\n"
+        "elfmem guide <operation>               # detail for one operation\n"
+        "\n"
+        "# Maintenance\n"
+        "elfmem dream                           # consolidate pending blocks\n"
+        "elfmem curate                          # archive stale, prune weak edges\n"
+        "elfmem agent-docs install              # regenerate this file after upgrade\n"
+        "\n"
+        "# Peer communication (inter-agent messaging)\n"
+        "elfmem peer list                       # registered peers + DIDs + delivery paths\n"
+        "elfmem peer send <did> '<message>'     # e.g. elfmem peer send elf:elf 'hello'\n"
+        "elfmem peer inbox                      # check pending peer messages\n"
+        "```\n\n"
+        "Subcommand syntax uses spaces (`elfmem peer send`), not underscores. "
+        "The operation cards below use Python-style names (`peer_send`) because "
+        "they document the underlying API; the CLI form is `elfmem peer send`.\n\n"
+    )
+
+    # Python embedding — secondary, for library consumers.
+    python_note = (
+        "## Embedding in Python (library use)\n\n"
+        "If you are embedding elfmem in a Python application rather than calling "
+        "it from the shell, the same operations are available on `MemorySystem`:\n\n"
         "```python\n"
         "from elfmem import MemorySystem\n\n"
         "system = await MemorySystem.from_config('agent.db')\n"
         "async with system.session():\n"
         "    await system.remember('I learned something')\n"
         "    result = await system.frame('attention', query='what do I know about X?')\n"
-        "    print(result.text)  # inject into your LLM prompt\n"
+        "    print(result.text)\n"
         "```\n\n"
-    )
-
-    # Invoke as CLI
-    cli_note = (
-        "## Invoking from CLI\n\n"
-        "All operations also work as shell commands:\n\n"
-        "```bash\n"
-        "elfmem remember 'I learned X'\n"
-        "elfmem recall 'topic' --frame attention --top-k 5\n"
-        "elfmem status\n"
-        "elfmem dream  # consolidate pending blocks\n"
-        "```\n\n"
-        "Full reference: `elfmem guide` or `elfmem guide <operation>`\n\n"
     )
 
     # Per-operation cards
     operations = _operation_cards(GUIDES)
 
-    return header + overview + cli_note + operations
+    return header + overview + python_note + operations
 
 
 def _guides_to_markdown(guides: dict[str, Any]) -> str:

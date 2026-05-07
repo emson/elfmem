@@ -3,16 +3,16 @@
 Stateless module — pure functions only. No globals. No I/O side effects except
 the explicit write_agent_section() function.
 
-The config discovery chain (used by every CLI command):
+The config discovery chain (used by every CLI command and the MCP server):
     1. --config PATH flag           (explicit always wins)
-    2. ELFMEM_CONFIG env var
+    2. ELFMEM_CONFIG env var        (ELFMEM_CONFIG_PATH accepted with a deprecation warning)
     3. .elfmem/config.yaml          (walk up from cwd to project root)
     4. ~/.elfmem/config.yaml        (global fallback, if it exists)
 
 The DB discovery chain:
     1. --db PATH flag
-    2. ELFMEM_DB env var
-    3. project.db from discovered config
+    2. ELFMEM_DB env var            (ELFMEM_DB_PATH accepted with a deprecation warning)
+    3. project.db from discovered config (relative paths resolve against the config dir)
     4. ~/.elfmem/agent.db           (global fallback)
 """
 from __future__ import annotations
@@ -20,9 +20,19 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import tomllib
 from pathlib import Path
 from typing import NamedTuple
+
+# Env vars whose values may be paths but should NEVER be tilde-expanded
+# (legacy compatibility). The canonical name comes first; aliases are deprecated.
+_CONFIG_ENV_NAMES: tuple[str, ...] = ("ELFMEM_CONFIG", "ELFMEM_CONFIG_PATH")
+_DB_ENV_NAMES: tuple[str, ...] = ("ELFMEM_DB", "ELFMEM_DB_PATH")
+
+# Track which deprecated env vars we've already warned about, so a single
+# process doesn't spam stderr on every CLI sub-call.
+_warned_envs: set[str] = set()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -106,11 +116,16 @@ def find_project_root(start: Path | None = None) -> Path | None:
     home = Path.home().resolve()
 
     while True:
+        # Home is a data/config boundary, never a project root.
+        # Checking this before markers prevents ~/.elfmem from satisfying the
+        # ".elfmem" marker and making ~ look like a project root.
+        if current == home:
+            return None
         for marker in _PROJECT_MARKERS:
             if (current / marker).exists():
                 return current
         parent = current.parent
-        if parent == current or current == home:
+        if parent == current:
             return None
         current = parent
 
@@ -158,6 +173,60 @@ def find_local_config(start: Path | None = None) -> Path | None:
     return candidate if candidate.exists() else None
 
 
+def _read_env(names: tuple[str, ...]) -> tuple[str | None, str | None]:
+    """Read the first set env var in *names*, warning about deprecated aliases.
+
+    *names* lists env vars in priority order: canonical first, deprecated aliases
+    after. If both canonical and a deprecated alias are set with conflicting
+    values, raises ConfigError — silent precedence would hide bugs. If the
+    deprecated alias wins (canonical unset), prints a one-time stderr warning.
+
+    Returns (value, source_name) where source_name is the env var that won, or
+    (None, None) if nothing is set.
+    """
+    canonical = names[0]
+    aliases = names[1:]
+    canonical_val = os.getenv(canonical)
+    alias_hits = [(a, os.getenv(a)) for a in aliases if os.getenv(a)]
+
+    if canonical_val and alias_hits:
+        # Both set — check for conflict.
+        for alias, alias_val in alias_hits:
+            if alias_val != canonical_val:
+                from elfmem.exceptions import ConfigError
+                raise ConfigError(
+                    f"Conflicting env vars: {canonical}={canonical_val!r} "
+                    f"and deprecated {alias}={alias_val!r}. Unset {alias}.",
+                    recovery=f"unset {alias}",
+                )
+        # Same value — warn once that the alias is deprecated and ignored.
+        for alias, _ in alias_hits:
+            _warn_deprecated_env(alias, canonical)
+        return canonical_val, canonical
+
+    if canonical_val:
+        return canonical_val, canonical
+
+    if alias_hits:
+        alias, alias_val = alias_hits[0]
+        _warn_deprecated_env(alias, canonical)
+        return alias_val, alias
+
+    return None, None
+
+
+def _warn_deprecated_env(deprecated: str, canonical: str) -> None:
+    """Emit a one-time stderr deprecation warning for an env var alias."""
+    if deprecated in _warned_envs:
+        return
+    _warned_envs.add(deprecated)
+    print(
+        f"[elfmem] {deprecated} is deprecated; use {canonical} instead. "
+        "Support will be removed in v0.14.",
+        file=sys.stderr,
+    )
+
+
 def resolve_config(
     explicit: str | None = None,
     cwd: Path | None = None,
@@ -170,9 +239,9 @@ def resolve_config(
     if explicit:
         return str(Path(explicit).expanduser()), "explicit flag"
 
-    env = os.getenv("ELFMEM_CONFIG")
+    env, env_name = _read_env(_CONFIG_ENV_NAMES)
     if env:
-        return str(Path(env).expanduser()), "ELFMEM_CONFIG env"
+        return str(Path(env).expanduser()), f"{env_name} env"
 
     local = find_local_config(cwd)
     if local is not None:
@@ -193,31 +262,65 @@ def resolve_db(
     """Resolve the database path and return (path, source_label).
 
     Chain: explicit flag → ELFMEM_DB env → project.db in config → global fallback.
+    Relative project.db values are resolved against the config file's directory.
     """
     if explicit:
         return str(Path(explicit).expanduser()), "explicit flag"
 
-    env = os.getenv("ELFMEM_DB")
+    env, env_name = _read_env(_DB_ENV_NAMES)
     if env:
-        return str(Path(env).expanduser()), "ELFMEM_DB env"
+        return str(Path(env).expanduser()), f"{env_name} env"
 
     if config_path:
         db_from_config = _read_project_db(config_path)
         if db_from_config:
-            return str(Path(db_from_config).expanduser()), "project.db in config"
+            return db_from_config, "project.db in config"
 
+    _guard_test_fallback(config_path)
     return str(Path("~/.elfmem/agent.db").expanduser()), "global fallback (~/.elfmem/agent.db)"
 
 
+def _guard_test_fallback(config_path: str | None) -> None:
+    """Refuse to fall through to the user's home DB when running under pytest.
+
+    Tests that hit the global fallback usually indicate a missing fixture, not
+    a real intent to write to the developer's actual memory. Failing fast here
+    catches the leak before it corrupts production data.
+    """
+    if not os.getenv("PYTEST_CURRENT_TEST"):
+        return
+    if os.getenv("ELFMEM_ALLOW_GLOBAL_FALLBACK"):
+        return  # explicit opt-out for tests that legitimately need this path
+    from elfmem.exceptions import ConfigError
+    raise ConfigError(
+        "Refusing to use ~/.elfmem/agent.db fallback under pytest "
+        f"(config_path={config_path!r}). Pass --db, set ELFMEM_DB, or set "
+        "ELFMEM_ALLOW_GLOBAL_FALLBACK=1 if this is intentional.",
+        recovery="use tmp_path fixture and pass --db explicitly",
+    )
+
+
 def _read_project_db(config_path: str) -> str:
-    """Read project.db from a config YAML file. Returns '' on any error."""
+    """Read project.db from a config YAML file. Returns '' on any error.
+
+    Relative paths are resolved against the config file's parent directory,
+    so a config at /a/b/.elfmem/config.yaml with project.db: db/x.db points
+    to /a/b/.elfmem/db/x.db, regardless of the caller's cwd.
+    """
     try:
         import yaml
         with open(config_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-        return str((data.get("project") or {}).get("db", ""))
+        raw = str((data.get("project") or {}).get("db", ""))
     except Exception:
         return ""
+    if not raw:
+        return ""
+    expanded = Path(raw).expanduser()
+    if expanded.is_absolute():
+        return str(expanded)
+    config_dir = Path(config_path).expanduser().resolve().parent
+    return str((config_dir / expanded).resolve())
 
 
 # ── Agent doc detection ───────────────────────────────────────────────────────
@@ -317,11 +420,16 @@ def _build_section(
         f"- **Config:** `{config_path}`\n"
         f"{identity_line}"
         f"\n"
-        f"Commands:\n"
-        f"- `elfmem doctor` — verify setup, show paths\n"
+        f"**Full agent reference:** see `@.elfmem/AGENT.md` — auto-generated, "
+        f"always current with installed library version. Single source of truth "
+        f"for every operation, including peer communication.\n"
+        f"\n"
+        f"Quick commands:\n"
+        f"- `elfmem doctor` — verify setup, show paths, check fragment freshness\n"
         f"- `elfmem status` — memory health\n"
         f"- `elfmem guide` — all operations (always current)\n"
-        f"- `elfmem doctor --modules` — key module paths\n"
+        f"- `elfmem agent-docs install` — regenerate `.elfmem/AGENT.md` after upgrade\n"
+        f"- `elfmem peer list` — registered peers (DIDs + delivery paths)\n"
         f"\n"
         f"Add to `.claude.json` to give Claude persistent memory:\n"
         f"```json\n{mcp}\n```\n"

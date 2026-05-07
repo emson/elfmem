@@ -29,18 +29,33 @@ _use_adaptive_policy: bool = False
 
 @asynccontextmanager
 async def _lifespan(server: FastMCP) -> AsyncIterator[None]:
-    global _memory, _config_path
+    global _memory, _config_path, _db_path
     policy = ConsolidationPolicy() if _use_adaptive_policy else None
-    if _config_path is None:
-        # Auto-discover .elfmem/config.yaml by walking up from cwd.
-        # This is the difference between the MCP server scanning the global
-        # ~/.elfmem/inbox (wrong) and the project-local inbox (right) when
-        # Claude Code launches the server with no explicit --config.
-        from elfmem.project import find_local_config
+    from elfmem.project import find_local_config, resolve_db
 
+    # Step 1: Prefer project-local config over the global startup value.
+    # The project config carries the right project.db, LLM settings, and identity.
+    config_source = "explicit (--config)"
+    if not _config_path:
         discovered = find_local_config()
         if discovered is not None:
             _config_path = str(discovered)
+            config_source = "auto-discovered (.elfmem/config.yaml)"
+        else:
+            config_source = "none"
+
+    # Step 2: Re-resolve DB now that we have the best available config.
+    # _db_path is non-empty only when --db was passed (or set at startup) — in
+    # that case honour it; otherwise consult ELFMEM_DB env, project.db in
+    # config, then the global fallback.
+    db_source = "explicit (--db)"
+    if not _db_path:
+        _db_path, db_source = resolve_db(None, _config_path)
+
+    # Step 3: Identity banner. One stderr line so failed-config and identity
+    # mix-ups are visible in Claude Code's MCP logs without enabling debug.
+    _print_boot_banner(_db_path, db_source, _config_path, config_source)
+
     _memory = await MemorySystem.from_config(_db_path, config=_config_path, policy=policy)
     try:
         yield
@@ -48,6 +63,24 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[None]:
         await _memory.end_session()
         await _memory.close()
         _memory = None
+
+
+def _print_boot_banner(
+    db_path: str, db_source: str, config_path: str | None, config_source: str
+) -> None:
+    """Print a one-line identity banner to stderr at MCP startup.
+
+    Shows the resolved DB and config paths with their resolution sources, so
+    silent fallbacks to ~/.elfmem/agent.db are visible in Claude Code's MCP
+    server logs without needing debug mode.
+    """
+    import sys
+    cfg = config_path or "<none>"
+    print(
+        f"[elfmem] mcp boot: db={db_path} ({db_source}) "
+        f"config={cfg} ({config_source})",
+        file=sys.stderr,
+    )
 
 
 mcp = FastMCP("elfmem", lifespan=_lifespan)
@@ -460,10 +493,17 @@ if __name__ == "__main__":
     import os
     import sys
 
-    db_path = os.path.expanduser(os.getenv("ELFMEM_DB_PATH", "~/.elfmem/default.db"))
-    config_path = os.getenv("ELFMEM_CONFIG_PATH")
-    if config_path:
-        config_path = os.path.expanduser(config_path)
+    from elfmem.project import _CONFIG_ENV_NAMES, _DB_ENV_NAMES, _read_env
+
+    # Pass startup hints to main(); _lifespan does the real resolution.
+    # _read_env handles deprecated aliases (ELFMEM_CONFIG_PATH, ELFMEM_DB_PATH)
+    # with a one-time stderr warning, and refuses if both forms are set with
+    # conflicting values.
+    raw_config, _ = _read_env(_CONFIG_ENV_NAMES)
+    config_path = os.path.expanduser(raw_config) if raw_config else None
+
+    raw_db, _ = _read_env(_DB_ENV_NAMES)
+    db_path = os.path.expanduser(raw_db) if raw_db else ""
     adaptive = os.getenv("ELFMEM_ADAPTIVE_POLICY", "").lower() in ("1", "true", "yes")
 
     try:
