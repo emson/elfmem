@@ -158,3 +158,40 @@ Run `elfmem doctor --modules` for the live module map (always current — mainta
 - `attention` — implementation details, architecture, bug patterns
 - `task` — active priorities, current goals, next steps
 - For complete docs: `elfmem guide` or read `.elfmem/AGENT.md`
+
+
+<!-- elfmem:start v0.13.2 -->
+## elfmem — Project Memory
+
+_auto-generated from `.elfmem/config.yaml` — edit OUTSIDE these markers._
+
+- **Project:** elfmem
+- **Database:** `/Users/emson/.elfmem/databases/elfmem.db`
+- **Config:** `/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.elfmem/config.yaml`
+
+**Full agent reference:** see `@.elfmem/AGENT.md` — auto-generated, always current with installed library version. Single source of truth for every operation, including peer communication.
+
+Quick commands:
+- `elfmem init` — idempotent setup; refresh-only on established instances
+- `elfmem doctor` — verify setup, show paths, check fragment freshness
+- `elfmem rescue` — recover an orphaned DB (path drift)
+- `elfmem status` — memory health
+- `elfmem guide` — all operations (always current)
+- `elfmem peer list` — registered peers (DIDs + delivery paths)
+
+Add to `.claude.json` to give Claude persistent memory:
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "elfmem",
+      "args": [
+        "serve",
+        "--config",
+        "/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.elfmem/config.yaml"
+      ]
+    }
+  }
+}
+```
+<!-- elfmem:end -->

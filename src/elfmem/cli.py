@@ -179,25 +179,44 @@ def init(
     ] = False,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Initialise elfmem: create config, database, and seed the cognitive loop.
+    """Initialise OR refresh elfmem: state-aware setup, idempotent by design.
 
-    When run inside a project directory (detected by .git, pyproject.toml, etc.),
-    creates a project-local .elfmem/config.yaml and stores the database in
-    ~/.elfmem/databases/{project-name}.db. Also writes an elfmem section to
-    CLAUDE.md or AGENTS.md so Claude and other agents know how to use memory.
+    One verb, three behaviours selected by lifecycle state:
 
-    When run outside a project (or with --global), falls back to the global
-    ~/.elfmem/ directory, matching previous behaviour.
+    - **Fresh install** (no config, no DB, or empty DB): creates the config,
+      seeds the constitutional cognitive loop, writes the elfmem section to
+      CLAUDE.md / AGENTS.md.
+    - **Established instance** (config + DB with content rows): refresh-only
+      mode. Skips config write; re-renders the agent doc section from the
+      LIVE config (not from inferred defaults — Bug A fix); runs the
+      constitutional seed idempotently (no-op when all roles are filled);
+      installs the AGENT.md fragment. Print banner: ``[established —
+      refreshing only]``.
+    - **Orphaned DB** (configured DB is empty but populated DB exists at a
+      neighbour path): refuses with a pointer to ``elfmem rescue``.
+    - **Unreadable DB**: refuses with a pointer to ``elfmem doctor``.
 
-    Safe to re-run: existing config is preserved unless --force is given.
-    Constitutional and SELF blocks are idempotent (duplicates are silently skipped).
+    Safe to re-run anywhere, anytime. The principle: authoritative state is
+    read, never inferred. Config is truth; defaults are bootstrap only on
+    first install.
+
+    Flags:
+
+    - ``--force`` overwrites the config even on established instances. Use
+      when you genuinely want to rewrite from defaults.
+    - ``--force-new`` bypasses the orphan-DB check. Almost never needed —
+      prefer ``elfmem rescue``.
+    - ``--global`` uses ``~/.elfmem/`` regardless of project detection.
+    - ``--no-docs`` skips CLAUDE.md / AGENTS.md updates.
+    - ``--no-seed`` skips constitutional seeding entirely.
 
     Examples:
 
+        elfmem init                                   # fresh or refresh, auto
         elfmem init --self "I am a software engineering assistant"
         elfmem init --template coding --self "My coding principles..."
-        elfmem init --global   # force global config regardless of project
-        elfmem init --no-docs  # skip CLAUDE.md update
+        elfmem init --global                          # force global config
+        elfmem init --no-docs                         # skip doc update
     """
     from elfmem.config import ProjectConfig, render_default_config
     from elfmem.seed import get_template
@@ -254,47 +273,78 @@ def init(
         config_file.write_text(render_default_config(project_cfg), encoding="utf-8")
         config_action = "created"
 
-    # ── Pre-flight: refuse if a neighbour DB has data we'd silently orphan ─
-    # The 0.13.0 path-resolution regression silently created fresh empty DBs
-    # at the wrong path while users' real data sat at the cwd-relative path.
-    # Refuse to do that ever again.
-    if not force_new:
-        from elfmem.rescue import build_rescue_plan
-        plan = build_rescue_plan(resolved_db, resolved_config)
+    # ── State detection: pick the right behaviour for THIS invocation ─────
+    # The `init` command is state-aware: one verb, three behaviours selected
+    # by the lifecycle detector. Established instances get refresh-only
+    # treatment (don't rewrite config; render docs from config; idempotent
+    # seed); orphan and unreadable states refuse with the right pointer
+    # rather than mutating something the user didn't intend to mutate.
+    from elfmem.lifecycle import is_established_instance
+    state = is_established_instance(
+        resolved_config if config_file.exists() else None,
+        resolved_db,
+    )
+
+    if state.kind == "orphan" and not force_new:
+        plan = state.rescue_plan
+        assert plan is not None  # populated by detector for orphan kind
         if plan.action == "rebind":
             target = plan.suggested_target
             typer.echo(
-                f"Refusing to create a fresh DB at {resolved_db}.\n"
+                f"Refusing to create or refresh against {resolved_db}.\n"
                 f"A populated DB exists at {target} "
                 f"({plan._target_candidate.block_count} blocks, "
                 f"{plan._target_candidate.peer_count} peers).\n"
                 "\n"
-                "This is the 0.13.0 path-resolution regression. Recover with:\n"
-                f"  elfmem rescue --apply --yes\n"
+                "This is likely the 0.13.0 path-resolution regression. "
+                "Recover with:\n"
+                "  elfmem rescue --apply --yes\n"
                 "\n"
                 "If you genuinely want a fresh DB and accept the orphan, "
                 "re-run with --force-new.",
                 err=True,
             )
-            raise typer.Exit(code=1)
-        if plan.action == "ambiguous":
+        else:
             typer.echo(
-                f"Refusing to create a fresh DB at {resolved_db}.\n"
-                f"Multiple populated DBs found at neighbouring paths — manual "
-                "review required:\n",
+                "Refusing — multiple populated DBs found at neighbour paths:",
                 err=True,
             )
             for c in plan.populated_alternatives:
                 typer.echo(
-                    f"  • {c.path}  ({c.block_count} blocks, {c.peer_count} peers)",
+                    f"  • {c.path}  ({c.block_count} blocks, "
+                    f"{c.peer_count} peers)",
                     err=True,
                 )
             typer.echo(
-                "\nEdit project.db in your config to point at the correct one "
-                "(absolute path), or run 'elfmem rescue' for a structured plan.",
+                "\nReview the candidates, set project.db in config to an "
+                "absolute path pointing at the right one, then re-run.\n"
+                "Or run 'elfmem rescue' for the structured plan.",
                 err=True,
             )
-            raise typer.Exit(code=1)
+        raise typer.Exit(code=1)
+
+    if state.kind == "unreadable":
+        typer.echo(
+            f"Refusing — configured DB exists but cannot be read:\n"
+            f"  {resolved_db}\n"
+            f"  {state.reason}\n"
+            "\n"
+            "Back up the file, then run 'elfmem doctor' to diagnose. "
+            "init will not silently overwrite an unreadable DB.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    # Mode banner — visible explicit signal of which branch ran.
+    if state.established and not force:
+        mode_banner = (
+            f"[established — refreshing only "
+            f"({state.block_count} blocks, {state.peer_count} peers)]"
+        )
+    elif state.established and force:
+        mode_banner = "[established + --force — overwriting config and refreshing]"
+    else:
+        mode_banner = "[fresh install]"
 
     # Also create the database directory if needed.
     Path(resolved_db).parent.mkdir(parents=True, exist_ok=True)
@@ -327,10 +377,23 @@ def init(
             # No doc found → create CLAUDE.md (most common convention)
             doc_path = detected if detected is not None else (proj_root / "CLAUDE.md")
 
+        # Bug A fix: on established instances render values come from the
+        # live config, NOT from inferred dir-basename / home-path defaults.
+        # On fresh installs there is no config to read from, so defaults
+        # are correct and used. The principle: authoritative state is read,
+        # never inferred. Config is truth; defaults are bootstrap only.
+        if state.established and not force:
+            cfg_name, cfg_db = _project.read_render_values_from_config(resolved_config)
+            render_name = cfg_name or proj_name
+            render_db = cfg_db or resolved_db
+        else:
+            render_name = proj_name
+            render_db = resolved_db
+
         doc_action = _project.write_agent_section(
             doc_path,
-            name=proj_name,
-            db_path=resolved_db,
+            name=render_name,
+            db_path=render_db,
             config_path=resolved_config,
             identity=self_description or "",
         )
@@ -343,6 +406,8 @@ def init(
     if json_output:
         out: dict[str, Any] = {
             "mode": "project" if in_project else "global",
+            "lifecycle": state.to_dict(),
+            "mode_banner": mode_banner,
             "config_path": resolved_config,
             "config_action": config_action,
             "db_path": resolved_db,
@@ -361,6 +426,7 @@ def init(
         out["mcp_snippet"] = mcp_snippet
         _json(out)
     else:
+        typer.echo(f"✓  Mode:      {mode_banner}")
         if in_project:
             typer.echo(f"✓  Project:   {proj_name} (detected)")
         typer.echo(f"✓  Config:    {resolved_config} ({config_action})")
