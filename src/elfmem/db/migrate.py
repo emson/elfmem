@@ -33,7 +33,7 @@ from elfmem.db.queries import get_config, set_config
 logger = logging.getLogger(__name__)
 
 # Bump this when adding a new migration function.
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 
 
 async def ensure_schema_current(
@@ -75,9 +75,8 @@ async def ensure_schema_current(
     if version < 2:
         await _migrate_v2_peer_communication(conn)
 
-    # Future migrations:
-    # if version < 3:
-    #     await _migrate_v3_something(conn)
+    if version < 3:
+        await _migrate_v3_rescore_tracking(conn)
 
     final = await _get_version(conn)
     logger.info("Schema migrated from v%d to v%d", version, final)
@@ -123,6 +122,36 @@ async def _migrate_v2_peer_communication(conn: AsyncConnection) -> None:
 
     await set_config(conn, "schema_version", "2")
     logger.info("Migration v2 complete: peer communication columns added")
+
+
+# ── Migration: v2 → v3 (deep-sleep rescoring) ───────────────────────────────
+
+
+async def _migrate_v3_rescore_tracking(conn: AsyncConnection) -> None:
+    """Add the column that supports deep-sleep rescoring.
+
+    New column:
+    - last_scored_at TEXT — ISO timestamp of the most recent LLM-pass that
+      produced this block's alignment / summary / tags. NULL means "never
+      LLM-scored" (set explicitly by --no-llm or LLM-timeout fallback);
+      this is what makes a block first in line for ``dream --rescore``.
+
+    Backfill: existing blocks are stamped with their ``created_at`` so they
+    sort by age in the rescore queue. This is synthetic but conservative —
+    the oldest blocks become the first rescore candidates, which is the
+    correct default. Truly-unscored blocks (those promoted with skip_llm=True
+    or via LLM timeout going forward) carry NULL; the migration backfill
+    does not retroactively set NULL on blocks whose history we don't know.
+    """
+    await _add_column(conn, "blocks", "last_scored_at", "TEXT")
+    # Idempotent: only fills NULL → created_at, leaves real values alone.
+    await conn.execute(text(
+        "UPDATE blocks SET last_scored_at = created_at "
+        "WHERE last_scored_at IS NULL"
+    ))
+    await _add_index(conn, "idx_blocks_last_scored_at", "blocks", "last_scored_at")
+    await set_config(conn, "schema_version", "3")
+    logger.info("Migration v3 complete: rescore tracking columns added")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

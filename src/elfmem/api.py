@@ -918,11 +918,66 @@ class MemorySystem:
         self._record_op("learn_document", doc_result.summary)
         return doc_result
 
+    async def rescore(
+        self, *, max_count: int | None = None,
+    ) -> dict[str, int]:
+        """Deep-sleep rescoring: refresh aged or unscored active blocks.
+
+        USE WHEN: After ``--no-llm`` ingest (catch up debt); periodically
+        to keep the knowledge graph aligned with the agent's evolving
+        identity (every block scored against current SELF, not the SELF
+        at promotion time).
+
+        DON'T USE WHEN: Hot-path retrieval is in progress on the same DB
+        — rescore takes brief write locks per block.
+
+        COST: One LLM call per rescored block. Bounded by ``max_count``
+        (default from ``consolidation.rescore.max_per_run``, typically 20).
+
+        RETURNS: ``{"rescored": N, "failed": M, "attempted": N+M}``.
+
+        Selection priority:
+        - First, all blocks with ``last_scored_at IS NULL`` (debt — drained first).
+        - Then, oldest by ``last_scored_at`` (progressive rotation — every
+          block leaves the front of the queue once rescored).
+
+        Eligibility: status=active, category not in
+        ``rescore.exclude_categories`` (message/mind/decision/prediction),
+        ``source_peer IS NULL`` (peer perspectives stay intact), no
+        ``rescore.exclude_tags`` (default ``system/no-rescore``), and
+        ``last_scored_at IS NULL OR < now - min_age_hours`` (cooldown).
+        """
+        from elfmem.operations.rescore import (
+            RescoreFilter,
+            rescore_blocks,
+            select_rescore_candidates,
+        )
+        cfg = self._config.rescore
+        if not cfg.enabled:
+            return {"rescored": 0, "failed": 0, "attempted": 0}
+        budget = max_count if max_count is not None else cfg.max_per_run
+        filt = RescoreFilter(
+            exclude_categories=tuple(cfg.exclude_categories),
+            exclude_tags=tuple(cfg.exclude_tags),
+            min_age_hours=cfg.min_age_hours,
+            target_max_age_days=cfg.target_max_age_days,
+        )
+        async with self._engine.begin() as conn:
+            candidates = await select_rescore_candidates(
+                conn, filt=filt, max_count=budget,
+            )
+            return await rescore_blocks(
+                conn, block_ids=candidates,
+                llm=self._llm, embedding_svc=self._embedding,
+            )
+
     async def dream(
         self,
         *,
         skip_llm: bool = False,
         skip_contradictions: bool = False,
+        rescore: bool = False,
+        rescore_max: int | None = None,
     ) -> ConsolidateResult | None:
         """Consolidate pending blocks at a natural pause point.
 
@@ -950,8 +1005,15 @@ class MemorySystem:
         Args:
             skip_llm: Bypass all LLM calls (embed + promote only). Fastest path
                 for bulk ingestion where alignment scoring isn't needed.
+                Affected blocks have ``last_scored_at = NULL`` and are picked
+                up first by ``rescore=True`` on a future call.
             skip_contradictions: Keep LLM summaries but skip O(n²) contradiction
                 detection. Good balance of quality and speed.
+            rescore: After processing inbox, also refresh aged or unscored
+                active blocks against the current SELF. Mutually exclusive
+                with ``skip_llm`` (rescore needs the LLM by definition).
+            rescore_max: Override the per-call rescore budget (default from
+                ``consolidation.rescore.max_per_run``).
 
         Example::
 
@@ -962,17 +1024,34 @@ class MemorySystem:
                 if dream_result:
                     print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.
         """
-        if self._pending == 0:
+        if rescore and skip_llm:
+            from elfmem.exceptions import ConfigError
+            raise ConfigError(
+                "dream(rescore=True) requires the LLM; cannot combine with skip_llm.",
+                recovery="Drop --no-llm; --rescore needs LLM to do its work.",
+            )
+        if self._pending == 0 and not rescore:
             return None
-        result = await self.consolidate(
-            skip_llm=skip_llm, skip_contradictions=skip_contradictions,
-        )
+        result: ConsolidateResult | None = None
+        if self._pending > 0:
+            result = await self.consolidate(
+                skip_llm=skip_llm, skip_contradictions=skip_contradictions,
+            )
+        if rescore:
+            rs = await self.rescore(max_count=rescore_max)
+            if result is None:
+                result = ConsolidateResult(
+                    processed=0,
+                    promoted=0, deduplicated=0, edges_created=0,
+                )
+            result.rescored = rs["rescored"]
+            result.rescore_failed = rs["failed"]
         # Feed policy so it can adapt the threshold for the next cycle,
         # then persist the new threshold so it survives process restarts.
         # Persistence is best-effort: a DB failure here is non-fatal —
         # the adapted threshold is still in memory for this session,
         # and the next restart will use whatever was last successfully saved.
-        if self._policy is not None:
+        if self._policy is not None and result is not None:
             self._policy.record_result(result)
             async with self._engine.begin() as conn:
                 await set_config(

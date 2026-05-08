@@ -42,6 +42,8 @@ blocks = Table(
     Column("source_peer", Text),           # DID of originating peer (None = local)
     Column("share", Text, default="private"),  # private | public | peer
     Column("envelope_json", Text),         # JSON envelope for message blocks
+    # Deep-sleep rescoring (v0.13.3)
+    Column("last_scored_at", Text),        # ISO ts of last LLM pass; NULL = unscored
 )
 
 block_tags = Table(

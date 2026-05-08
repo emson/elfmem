@@ -178,16 +178,34 @@ class ConsolidateResult:
     promoted: int
     deduplicated: int
     edges_created: int
+    # Deep-sleep rescoring counts (v0.13.3). Populated when dream() is
+    # called with rescore=True; otherwise zeros. Tracks the second phase
+    # of dream — refreshing existing active blocks, separate from the
+    # inbox-promotion phase counted by `promoted`/`deduplicated`.
+    rescored: int = 0
+    rescore_failed: int = 0
 
     @property
     def summary(self) -> str:
-        if self.processed == 0:
+        if self.processed == 0 and self.rescored == 0 and self.rescore_failed == 0:
             return "Nothing to consolidate. Inbox was empty."
-        parts: list[str] = [f"{self.promoted} promoted"]
-        if self.deduplicated:
-            parts.append(f"{self.deduplicated} deduped")
-        parts.append(f"{self.edges_created} edges")
-        return f"Consolidated {self.processed}: {', '.join(parts)}."
+        parts: list[str] = []
+        if self.processed > 0:
+            parts.append(f"{self.promoted} promoted")
+            if self.deduplicated:
+                parts.append(f"{self.deduplicated} deduped")
+            parts.append(f"{self.edges_created} edges")
+        if self.rescored or self.rescore_failed:
+            rs = f"{self.rescored} rescored"
+            if self.rescore_failed:
+                rs += f" ({self.rescore_failed} failed)"
+            parts.append(rs)
+        prefix = (
+            f"Consolidated {self.processed}: "
+            if self.processed > 0
+            else "Rescored: "
+        )
+        return prefix + ", ".join(parts) + "."
 
     def __str__(self) -> str:
         return self.summary
@@ -198,6 +216,8 @@ class ConsolidateResult:
             "promoted": self.promoted,
             "deduplicated": self.deduplicated,
             "edges_created": self.edges_created,
+            "rescored": self.rescored,
+            "rescore_failed": self.rescore_failed,
         }
 
 

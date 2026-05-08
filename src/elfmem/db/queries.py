@@ -202,12 +202,17 @@ async def update_block_scoring(
     embedding_model: str | None = None,
     token_count: int | None = None,
     summary: str | None = None,
+    last_scored_at: str | None = None,
+    clear_last_scored_at: bool = False,
 ) -> None:
     """Update scoring-related fields after consolidation (partial update).
 
-    Only updates fields that are not None.
+    Only updates fields that are not None. ``last_scored_at`` follows a
+    three-state convention: ``None`` (default) leaves the column alone;
+    a value sets it; ``clear_last_scored_at=True`` writes SQL NULL — the
+    "this block needs LLM scoring" signal used by ``dream --rescore``.
     """
-    values: dict[str, object] = {}
+    values: dict[str, object | None] = {}
     if confidence is not None:
         values["confidence"] = confidence
     if self_alignment is not None:
@@ -222,6 +227,10 @@ async def update_block_scoring(
         values["token_count"] = token_count
     if summary is not None:
         values["summary"] = summary
+    if clear_last_scored_at:
+        values["last_scored_at"] = None
+    elif last_scored_at is not None:
+        values["last_scored_at"] = last_scored_at
     if values:
         await conn.execute(
             update(blocks).where(blocks.c.id == block_id).values(**values)
