@@ -11,6 +11,87 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.3] — 2026-05-08
+
+Deep-sleep rescoring. Adds elfmem's fourth rhythm: periodic re-evaluation
+of *existing* active blocks against the *current* identity. The principle:
+**memory health is observable and actionable** — doctor measures, one
+command (`dream --rescore`) heals, ordering by `last_scored_at ASC` ensures
+progressive coverage without manual targeting.
+
+Closes a silent defect that had been in elfmem since the LLM-fallback was
+added: blocks promoted via `skip_llm=True` or LLM timeout were stuck at
+neutral metadata forever — `consolidate()` only processes inbox blocks,
+never re-touching active ones. The fallback docstring claimed "re-scored
+on next consolidation if the LLM recovers" but this was false. Now true.
+
+### Added
+- **`elfmem dream --no-llm`**: surface the existing `skip_llm=True` API
+  capability at the CLI. Promotes inbox blocks without LLM scoring; affected
+  blocks have `last_scored_at = NULL` and are picked up first by `--rescore`.
+  Use for outages, bulk loads, cost-sensitive batches.
+- **`elfmem dream --skip-contradictions`**: surface the existing
+  `skip_contradictions=True` API capability at the CLI. Keeps LLM scoring
+  but skips the O(n²) contradiction detection loop. Use for trusted
+  structured ingestion.
+- **`elfmem dream --rescore [--max N]`**: deep-sleep mode. After processing
+  inbox, refreshes aged or unscored active blocks against the current SELF.
+  Selection: NULL `last_scored_at` first (debt drains), then oldest by
+  `last_scored_at` ascending (progressive rotation — every block leaves
+  the front of the queue once rescored). Mutually exclusive with `--no-llm`.
+- **`MemorySystem.rescore(max_count=None)`**: public API for programmatic
+  rescore. Returns `{"rescored": N, "failed": M, "attempted": N+M}`.
+- **`elfmem doctor` Scoring drift check**: surfaces unscored count, stale
+  count (older than `target_max_age_days`), and percent of active. Drift
+  warning fires when EITHER absolute count OR percentage threshold is
+  exceeded; the recommendation is auto-scaled to the observed debt
+  (rounded to nearest 50, floored at 20). Healthy state shows
+  `0 unscored, N stale (>90d, X%)`.
+- **`elfmem.operations.rescore` module**: pure-function selection + drift
+  surface. Public exports: `RescoreFilter`, `DriftStats`,
+  `select_rescore_candidates`, `compute_drift_stats`, `rescore_blocks`,
+  and module-level `DEFAULT_*` constants.
+- **`RescoreConfig`** in `elfmem.config`: `enabled`, `max_per_run`,
+  `min_age_hours`, `target_max_age_days`, `drift_warning_count`,
+  `drift_warning_percent`, `exclude_categories`, `exclude_tags`. All
+  configurable via YAML; sensible defaults for typical agent memory sizes.
+
+### Changed
+- **Schema migration v2 → v3 (additive)**: adds nullable `last_scored_at`
+  TEXT column to the `blocks` table. Backfill on migration sets it to
+  `created_at` for existing blocks (synthetic but conservative — oldest
+  blocks become first rescore candidates). Migration is row-count-validated
+  by 0.13.1's backup machinery; safe by construction.
+- **`consolidate()`** now records `last_scored_at` on success (current
+  ISO timestamp) and clears it (NULL) when the LLM was bypassed via
+  `skip_llm=True` or timeout fallback. Closes the prior one-way-door
+  defect — blocks no longer get stuck at neutral metadata indefinitely.
+- **`ConsolidateResult`** gains `rescored` and `rescore_failed` fields
+  populated when `dream(rescore=True)` is called. Surfaces in `to_dict()`
+  and `summary` so callers see both phases of dream's work.
+
+### Eligibility filter (single source of truth)
+A block is rescore-eligible iff:
+- `status == "active"`
+- `category` not in `["message", "mind", "decision", "prediction"]`
+  (events / structured artefacts excluded by design)
+- `source_peer IS NULL` (peer perspectives stay intact)
+- no tag in `exclude_tags` (`system/no-rescore` is the explicit opt-out)
+- `last_scored_at IS NULL` (debt — drains first regardless of cooldown), OR
+  `last_scored_at < now - min_age_hours` (cooldown — don't churn fresh)
+
+### Migration
+None required. Schema migration is automatic, additive, and backed up on
+first run of any post-0.13.3 elfmem command. Existing healthy installs
+see `0 unscored, 0 stale` immediately. Affected installs (those using
+`skip_llm=True` via the Python API or hitting LLM timeouts) see their
+debt surface in doctor and can drain it with `dream --rescore`.
+
+### Plan reference
+[docs/plans/plan_deep_sleep_rescoring.md](docs/plans/plan_deep_sleep_rescoring.md)
+
+---
+
 ## [0.13.2] — 2026-05-08
 
 State-aware ``elfmem init``. Closes the anti-recovery loop where doctor

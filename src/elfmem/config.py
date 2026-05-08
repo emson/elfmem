@@ -206,6 +206,39 @@ class ProjectConfig(BaseModel):
     created: str = ""   # ISO date of initialisation
 
 
+class RescoreConfig(BaseModel):
+    """Configuration for deep-sleep rescoring (v0.13.3).
+
+    Rescoring re-evaluates active blocks against the current SELF using the
+    LLM, keeping alignment / summary / tags fresh as the agent's identity
+    drifts. Driven by ``dream --rescore``; surfaced as a drift health check
+    in ``elfmem doctor``.
+
+    The defaults are calibrated for typical agent memory sizes:
+    - ``max_per_run=20`` keeps each ``--rescore`` invocation under ~60s on
+      common providers; tune up for larger DBs.
+    - ``min_age_hours=24`` prevents recently-scored blocks from churning.
+    - ``target_max_age_days=90`` is the staleness horizon: blocks scored
+      longer ago than this count toward drift.
+    - ``drift_warning_count=25`` is the absolute drift floor for the doctor
+      warning (protects small-DB users from invisible drift).
+    - ``drift_warning_percent=25`` is the proportional drift cap (protects
+      large-DB users from doctor noise). Either being exceeded triggers
+      the warning.
+    """
+
+    enabled: bool = True
+    max_per_run: int = 20
+    min_age_hours: int = 24
+    target_max_age_days: int = 90
+    drift_warning_count: int = 25
+    drift_warning_percent: int = 25
+    exclude_categories: list[str] = Field(
+        default_factory=lambda: ["message", "mind", "decision", "prediction"]
+    )
+    exclude_tags: list[str] = Field(default_factory=lambda: ["system/no-rescore"])
+
+
 class PeerConfig(BaseModel):
     """Configuration for peer communication.
 
@@ -243,6 +276,7 @@ class ElfmemConfig(BaseModel):
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     peer: PeerConfig = Field(default_factory=PeerConfig)
+    rescore: RescoreConfig = Field(default_factory=RescoreConfig)
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:

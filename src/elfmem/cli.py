@@ -642,6 +642,40 @@ def doctor(
     except Exception:
         pass
 
+    # ── Scoring drift ──────────────────────────────────────────────────────
+    # Memory-health surface for deep-sleep rescoring (v0.13.3): unscored
+    # blocks (debt from --no-llm or LLM timeouts) and stale blocks (last
+    # scored too long ago) are both drift; doctor's job is to tell the user
+    # to act when drift exceeds tolerance, with a self-scaled --max
+    # suggestion so the action is concrete.
+    if db_file.exists():
+        try:
+            drift = _run(_doctor_scoring_drift(db_path, config_path))
+            if drift is not None:
+                cfg_warn_count = drift.get("warn_count", 25)
+                cfg_warn_pct = drift.get("warn_percent", 25)
+                stats = drift["stats"]
+                drift_count = stats["drift"]
+                pct = stats["percent_drift"]
+                healthy = not (
+                    drift_count > cfg_warn_count
+                    or pct > cfg_warn_pct
+                )
+                detail = (
+                    f"{stats['unscored']} unscored, {stats['stale']} stale "
+                    f"(>{stats['target_max_age_days']}d, {pct:.1f}%)"
+                )
+                if healthy:
+                    _check("Scoring drift", True, detail)
+                else:
+                    rec_max = drift["recommended_max"]
+                    _check(
+                        "Scoring drift", False, detail,
+                        f"elfmem dream --rescore --max {rec_max}",
+                    )
+        except Exception:
+            pass
+
     # ── API keys ───────────────────────────────────────────────────────────
 
     has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -924,15 +958,87 @@ def dream(
     config: Annotated[
         str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
     ] = None,
+    no_llm: Annotated[
+        bool,
+        typer.Option(
+            "--no-llm",
+            help=(
+                "Promote without LLM scoring (embed-only). Affected blocks are "
+                "tagged for catch-up via --rescore. Use for outages, bulk loads, "
+                "cost-sensitive batches. NOT for default use."
+            ),
+        ),
+    ] = False,
+    skip_contradictions: Annotated[
+        bool,
+        typer.Option(
+            "--skip-contradictions",
+            help=(
+                "Keep LLM scoring + summaries but skip O(n²) contradiction "
+                "detection. For large structured ingest where contradictions "
+                "are unlikely (signed exports, trusted bundles)."
+            ),
+        ),
+    ] = False,
+    rescore: Annotated[
+        bool,
+        typer.Option(
+            "--rescore",
+            help=(
+                "After processing inbox, refresh aged or unscored active "
+                "blocks against current SELF. Catches up --no-llm debt and "
+                "rotates oldest blocks. Run periodically for hygiene."
+            ),
+        ),
+    ] = False,
+    rescore_max: Annotated[
+        int | None,
+        typer.Option(
+            "--max",
+            help=(
+                "Override rescore budget. Use a large value (e.g. 1000) for "
+                "a one-shot deep sweep. Default from config "
+                "(consolidation.rescore.max_per_run, typically 20)."
+            ),
+        ),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Consolidate pending knowledge: embed, align, detect contradictions.
 
-    Call when elfmem_remember indicates should_dream=True, or at natural pause
-    points during a session. Automatically triggered on session exit if pending.
+    Default mode processes inbox blocks with LLM scoring. Flags adjust the
+    LLM workload (skip-contradictions, --no-llm) or extend the work to
+    include refreshing existing active blocks (--rescore).
+
+    USE WHEN:
+      Default (no flags): standard consolidation after a learn batch.
+      --no-llm:           LLM down / bulk load / cost-sensitive batch.
+      --skip-contradictions: large structured ingest, contradictions unlikely.
+      --rescore:          catch-up after --no-llm; periodic hygiene; refresh
+                          alignment as the agent's identity evolves.
+      --rescore --max N:  one-shot deep sweep (large N).
+
+    DON'T USE:
+      --no-llm by default (degrades SELF-frame coherence over time).
+      --no-llm in tight loops without --rescore follow-up.
+      --rescore on a hot DB during heavy use (brief write locks per block).
     """
+    if no_llm and rescore:
+        typer.echo(
+            "Error: --no-llm and --rescore are mutually exclusive "
+            "(rescore requires the LLM).",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
     db_path, config_path = _resolve_paths(db, config)
-    result = _run(_dream(db_path, config_path))
+    result = _run(_dream(
+        db_path, config_path,
+        skip_llm=no_llm,
+        skip_contradictions=skip_contradictions,
+        rescore=rescore,
+        rescore_max=rescore_max,
+    ))
     if result is None:
         msg = "No pending blocks — nothing to consolidate."
         _json({"message": msg, "status": "idle"}) if json_output else typer.echo(msg)
@@ -1875,10 +1981,70 @@ async def _outcome(
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
 
 
-async def _dream(db_path: str, config: str | None) -> Any:
+async def _doctor_scoring_drift(
+    db_path: str, config: str | None,
+) -> dict[str, Any] | None:
+    """Compute scoring-drift stats for the doctor surface. None on error.
+
+    Returns ``{"stats": {...}, "warn_count": N, "warn_percent": M,
+    "recommended_max": K}`` for the caller to render. The recommended
+    --max is auto-scaled to the observed drift (rounds up to nearest 50,
+    floored at 20) so doctor's suggestion is actionable, not aspirational.
+    """
+    from elfmem.config import ElfmemConfig
+    from elfmem.db.engine import create_engine
+    from elfmem.operations.rescore import RescoreFilter, compute_drift_stats
+
+    cfg = (
+        ElfmemConfig.from_yaml(config) if config else ElfmemConfig()
+    ).rescore
+    if not cfg.enabled:
+        return None
+    filt = RescoreFilter(
+        exclude_categories=tuple(cfg.exclude_categories),
+        exclude_tags=tuple(cfg.exclude_tags),
+        min_age_hours=cfg.min_age_hours,
+        target_max_age_days=cfg.target_max_age_days,
+    )
+    try:
+        engine = await create_engine(db_path)
+        async with engine.connect() as conn:
+            stats = await compute_drift_stats(conn, filt=filt)
+        await engine.dispose()
+    except Exception:
+        return None
+    return {
+        "stats": {
+            "total_active": stats.total_active,
+            "unscored": stats.unscored,
+            "stale": stats.stale,
+            "drift": stats.drift,
+            "percent_drift": stats.percent_drift_of_total(),
+            "target_max_age_days": stats.target_max_age_days,
+        },
+        "warn_count": cfg.drift_warning_count,
+        "warn_percent": cfg.drift_warning_percent,
+        "recommended_max": stats.recommended_max(),
+    }
+
+
+async def _dream(
+    db_path: str,
+    config: str | None,
+    *,
+    skip_llm: bool = False,
+    skip_contradictions: bool = False,
+    rescore: bool = False,
+    rescore_max: int | None = None,
+) -> Any:
     """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
-        return await mem.dream()
+        return await mem.dream(
+            skip_llm=skip_llm,
+            skip_contradictions=skip_contradictions,
+            rescore=rescore,
+            rescore_max=rescore_max,
+        )
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:

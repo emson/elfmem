@@ -14,6 +14,7 @@ import asyncio
 import contextlib
 import heapq
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import numpy as np
@@ -74,6 +75,11 @@ class _BlockDecision:
     decay_lambda: float = 0.01
     token_count: int = 0
     embedding_model: str = "unknown"
+    # Deep-sleep rescoring (v0.13.3): True when this block's analysis came
+    # from the LLM-bypass path (skip_llm or LLM timeout fallback). Carried
+    # through to _apply_decisions so the persisted last_scored_at is set
+    # to NULL — making the block first in line for `dream --rescore`.
+    llm_skipped: bool = False
 
 
 @dataclass
@@ -306,11 +312,14 @@ async def _collect_decisions(
 
         # LLM scoring — external I/O with timeout, shared lock only.
         # skip_llm: bypass LLM calls entirely (embed + promote only).
-        # Blocks are promoted with neutral scoring. Useful for benchmarks
-        # and bulk ingestion where retrieval speed matters more than
-        # alignment scoring or contradiction detection.
+        # Blocks are promoted with neutral scoring AND last_scored_at=NULL,
+        # making them first in line for `dream --rescore`. The same NULL
+        # signal is set on LLM timeout, so timeout-fallback blocks are no
+        # longer a one-way door (the prior bug fixed by v0.13.3).
+        llm_skipped = False
         if skip_llm:
             analysis = _fallback_analysis()
+            llm_skipped = True
         else:
             try:
                 analysis = await asyncio.wait_for(
@@ -319,6 +328,7 @@ async def _collect_decisions(
                 )
             except TimeoutError:
                 analysis = _fallback_analysis()
+                llm_skipped = True
 
         inferred_tags = analysis.tags or []
         all_block_tags = list({*tags_map.get(block_id, []), *inferred_tags})
@@ -348,6 +358,7 @@ async def _collect_decisions(
             decay_lambda=decay_lambda_for_tier(tier),
             token_count=max(1, len(content) // 4),
             embedding_model=embedding_svc.model_name,
+            llm_skipped=llm_skipped,
         ))
 
         # Contradiction detection — LLM, shared lock, with timeout.
@@ -430,17 +441,35 @@ async def _apply_decisions(
 
         if d.inferred_tags:
             await add_tags(conn, d.block_id, d.inferred_tags)
-        await update_block_scoring(
-            conn,
-            d.block_id,
-            confidence=d.confidence,
-            self_alignment=d.alignment_score,
-            decay_lambda=d.decay_lambda,
-            embedding=d.summary_embedding,
-            embedding_model=d.embedding_model,
-            token_count=d.token_count,
-            summary=d.summary,
-        )
+        # last_scored_at: NULL when the LLM was bypassed (skip_llm or
+        # timeout fallback) — flags the block for catch-up via
+        # `dream --rescore`. Otherwise stamped with the current time.
+        if d.llm_skipped:
+            await update_block_scoring(
+                conn,
+                d.block_id,
+                confidence=d.confidence,
+                self_alignment=d.alignment_score,
+                decay_lambda=d.decay_lambda,
+                embedding=d.summary_embedding,
+                embedding_model=d.embedding_model,
+                token_count=d.token_count,
+                summary=d.summary,
+                clear_last_scored_at=True,
+            )
+        else:
+            await update_block_scoring(
+                conn,
+                d.block_id,
+                confidence=d.confidence,
+                self_alignment=d.alignment_score,
+                decay_lambda=d.decay_lambda,
+                embedding=d.summary_embedding,
+                embedding_model=d.embedding_model,
+                token_count=d.token_count,
+                summary=d.summary,
+                last_scored_at=datetime.now(UTC).isoformat(),
+            )
         await update_block_status(conn, d.block_id, "active")
         promoted_ids.append(d.block_id)
         promoted += 1
