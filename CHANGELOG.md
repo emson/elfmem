@@ -10,6 +10,17 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- **`contradictions_detected` now surfaced on `ConsolidateResult`** (closes
+  [#50](https://github.com/emson/elfmem/issues/50) item 1). Detection was
+  running and contradictions were being inserted into the contradictions
+  table, but the count never reached the result object — `to_dict()`
+  returned only `processed/promoted/deduplicated/edges_created`, so MCP
+  clients and CLI consumers couldn't tell whether the flagship
+  contradiction-detection feature had fired. New field
+  `ConsolidateResult.contradictions_detected: int = 0` carries the count
+  per call; `to_dict()` includes it; `summary` surfaces it when non-zero.
+  `AgentGuide` entries for `dream` / `consolidate` and the MCP
+  `elfmem_dream` docstring updated to list the new field.
 - **`elfmem recall --frame` help** now lists `simulate` alongside `attention|self|task`.
   The `simulate` frame (Theory-of-Mind) shipped with the `mind` feature but was missing
   from the CLI help string, the MCP `elfmem_recall` docstring, and `docs/quickstart.md`.
