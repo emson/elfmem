@@ -426,6 +426,26 @@ def read_render_values_from_config(config_path: str | Path) -> tuple[str, str]:
         return "", ""
 
 
+def read_agent_name_from_config(config_path: str | Path | None) -> str:
+    """Return ``project.agent_name`` from config, or "" when absent/unreadable.
+
+    Same never-raises contract as ``read_render_values_from_config``. Used by
+    the AGENT.md fragment renderer to decide whether to include the
+    "Agent Identity" section: empty string → omit section (project has no
+    named agent), non-empty → render protocol bound to that name.
+    """
+    if config_path is None:
+        return ""
+    try:
+        import yaml
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        proj = data.get("project") or {}
+        return str(proj.get("agent_name", "")).strip()
+    except Exception:
+        return ""
+
+
 def _build_section(
     *,
     name: str,

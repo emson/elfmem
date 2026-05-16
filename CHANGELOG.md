@@ -9,6 +9,16 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`project.agent_name`** field in `.elfmem/config.yaml` and **`elfmem init --name`**
+  flag. When set, the rendered `.elfmem/AGENT.md` fragment includes an "Agent Identity"
+  section binding the name to the SELF-recall protocol — so the host LLM knows that
+  hearing the agent's name means "ground the response in the SELF frame." Empty/unset
+  → fragment renders as before, no behaviour change. Drift detection participates: a
+  rename surfaces in `elfmem agent-docs check` / `elfmem doctor` and is fixed by
+  `elfmem agent-docs install`. Eats its own dog food: this repo's hand-written
+  "Agent Identity: elf" section in CLAUDE.md is gone; the fragment supplies it.
+
 ---
 
 ## [0.13.3] — 2026-05-08

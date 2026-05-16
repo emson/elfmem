@@ -130,6 +130,18 @@ def init(
         str | None,
         typer.Option("--self", help="Seed SELF frame with this identity description"),
     ] = None,
+    agent_name: Annotated[
+        str,
+        typer.Option(
+            "--name",
+            help=(
+                "Agent invocation name (e.g. 'elf', 'Nim'). Renders the "
+                "'Agent Identity' section into .elfmem/AGENT.md so the host "
+                "LLM knows to recall SELF when called by name. Empty = no "
+                "named-agent behaviour."
+            ),
+        ),
+    ] = "",
     db: Annotated[
         str | None,
         typer.Option("--db", envvar="ELFMEM_DB", help="Database path (auto from project name)"),
@@ -268,6 +280,7 @@ def init(
                 name=proj_name,
                 db=resolved_db,
                 identity=self_description or "",
+                agent_name=agent_name,
                 created=datetime.date.today().isoformat(),
             )
         config_file.write_text(render_default_config(project_cfg), encoding="utf-8")
@@ -464,7 +477,10 @@ def init(
 
                 from elfmem.agent_docs import get_fragment_hash, render_agent_docs, write_lock_file
                 fragment_path = Path(resolved_config).parent.parent / "AGENT.md"
-                content = render_agent_docs()
+                # Source agent_name from live config — handles both fresh (just-written)
+                # and established (refresh-only) cases identically.
+                fragment_agent_name = _project.read_agent_name_from_config(resolved_config)
+                content = render_agent_docs(agent_name=fragment_agent_name)
                 fragment_path.write_text(content, encoding="utf-8")
                 lib_version = _pkg_version("elfmem")
                 hash_val = get_fragment_hash(content)
@@ -750,7 +766,13 @@ def doctor(
         fragment_path = proj_root / ".elfmem" / "AGENT.md"
         lock_path = proj_root / ".elfmem" / ".agent-docs.lock"
         lib_version = _pkg_version("elfmem")
-        drifted, reason = check_drift(fragment_path, lock_path, lib_version)
+        doctor_config_path = proj_root / ".elfmem" / "config.yaml"
+        doctor_agent_name = _project.read_agent_name_from_config(
+            doctor_config_path if doctor_config_path.exists() else None
+        )
+        drifted, reason = check_drift(
+            fragment_path, lock_path, lib_version, agent_name=doctor_agent_name
+        )
         if drifted:
             _check(
                 "Agent docs",
@@ -1104,10 +1126,14 @@ def agent_docs(
     root = Path.cwd()
     fragment_path = root / ".elfmem" / "AGENT.md"
     lock_path = root / ".elfmem" / ".agent-docs.lock"
+    config_path = root / ".elfmem" / "config.yaml"
+    fragment_agent_name = _project.read_agent_name_from_config(
+        config_path if config_path.exists() else None
+    )
 
     if action == "install":
         fragment_path.parent.mkdir(parents=True, exist_ok=True)
-        content = render_agent_docs()
+        content = render_agent_docs(agent_name=fragment_agent_name)
         fragment_path.write_text(content, encoding="utf-8")
         from elfmem.agent_docs import get_fragment_hash
 
@@ -1116,7 +1142,9 @@ def agent_docs(
         typer.echo(f"✓ {fragment_path}")
 
     elif action == "check":
-        drifted, reason = check_drift(fragment_path, lock_path, lib_version)
+        drifted, reason = check_drift(
+            fragment_path, lock_path, lib_version, agent_name=fragment_agent_name
+        )
         if not drifted:
             typer.echo(f"✓ Agent docs current ({lib_version})")
             raise typer.Exit(code=0)
@@ -1142,7 +1170,7 @@ def agent_docs(
         if not fragment_path.exists():
             typer.echo("Fragment missing. Run: elfmem agent-docs install")
             raise typer.Exit(code=1)
-        current = render_agent_docs()
+        current = render_agent_docs(agent_name=fragment_agent_name)
         existing = fragment_path.read_text(encoding="utf-8")
         if current == existing:
             typer.echo("No changes.")
