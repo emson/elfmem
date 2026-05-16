@@ -54,7 +54,8 @@ Closes the docs portion of [#50](https://github.com/emson/elfmem/issues/50) (ite
 non-existent `world` / `short_term` frames in CHANGELOG and guides; runtime FrameError
 now lists all four valid frames). Other items in #50 are tracked separately.
 
-### Added
+### Added — named-agent identity
+
 - **`project.agent_name`** field in `.elfmem/config.yaml` and **`elfmem init --name`**
   flag. When set, the rendered `.elfmem/AGENT.md` fragment includes an "Agent Identity"
   section binding the name to the SELF-recall protocol — so the host LLM knows that
@@ -69,7 +70,52 @@ now lists all four valid frames). Other items in #50 are tracked separately.
   `ConfigError` (with `.recovery`) when the config doesn't exist or lacks both the
   field and an `identity:` anchor — refuses to invent project-section structure.
 
+### Added — MCP/CLI parity (closes [#50](https://github.com/emson/elfmem/issues/50) items 2 + 3)
+
+- **`elfmem_dream` MCP tool now accepts `rescore`, `rescore_max`, `no_llm`,
+  `skip_contradictions`** — bringing it to parity with the v0.13.3 CLI flags
+  (`elfmem dream --rescore [--max N] --no-llm --skip-contradictions`). MCP
+  clients can now trigger deep-sleep rescoring, bypass the LLM during outages
+  or bulk loads, and skip the O(n²) contradiction loop for trusted ingestion.
+  Default invocation (`elfmem_dream()` with no args) is byte-identical to
+  pre-feature behaviour. Threading verified by tests.
+- **Five new MCP tools surfacing the Theory of Mind API**:
+  - `elfmem_mind_create(subject, goals?, beliefs?, fears?, motivations?)` →
+    creates a `mind`-category block, DURABLE decay, retrievable via the
+    `simulate` frame.
+  - `elfmem_mind_predict(mind_block_id, prediction, verify_at, reasoning?)` →
+    attaches a falsifiable prediction (decision block + `predicts` edge).
+  - `elfmem_mind_list()` → enumerates all mind blocks with prediction
+    statistics (count, hit/miss ratio, calibration).
+  - `elfmem_mind_show(mind_block_id)` → full view of one mind block with
+    every linked prediction and its outcome.
+  - `elfmem_mind_outcome(decision_block_id, hit, reason)` → closes a
+    prediction; Bayesian-calibrates both the decision and mind blocks.
+
+  Theory of Mind was Python-API-only since v0.7.0 — unreachable from any MCP
+  client (Claude Desktop, Cursor, etc.). The workaround was `remember(...,
+  tags=["mind/<subject>"])`, which bypassed all lifecycle protections. These
+  wrappers close that gap with the same docstring + agent-first contract
+  shape as the rest of the MCP surface.
+
+### Added — `AgentGuide` entries for previously-undocumented public methods
+
+Closes a pre-existing contract gap. Per CLAUDE.md: "every new public
+`MemorySystem` method must have a corresponding `AgentGuide` entry in
+`src/elfmem/guide.py`." Three methods shipped without one:
+
+- **`mind_list`** (since v0.7.0) — discovery for mind blocks.
+- **`mind_show`** (since v0.7.0) — detailed view of a single mind + predictions.
+- **`rescore`** (since v0.13.3) — standalone deep-sleep operation, the public
+  surface behind `dream(rescore=True)`.
+
+Each entry follows the `USE WHEN / DON'T USE WHEN / COST / RETURNS / NEXT`
+template and a runnable example. `elfmem guide rescore` / `elfmem guide
+mind_list` / `elfmem guide mind_show` now return proper guidance instead of
+a "valid method names" fallback.
+
 ### Migration
+
 - **`elfmem init --name X` is now state-aware on established instances.** Previously
   `init` was refresh-only on established installs and silently ignored `--name`. Now,
   when the flag is passed and differs from the current config value, only the
@@ -77,12 +123,21 @@ now lists all four valid frames). Other items in #50 are tracked separately.
   of the config — comments, blank lines, custom values — is preserved. Fresh installs
   continue to receive the field as part of the initial config write. No `--force`
   needed for the common rename path.
-- **Hash backwards-compatibility for the AGENT.md fragment.** The agent-docs
-  content hash mixes in `|agent_name=X` only when a name is set. Empty/unset
-  agent_name produces a hash byte-identical to pre-feature renders, so existing
-  installs upgrading to this version don't get a "edited" drift false-positive
-  from `elfmem agent-docs check` / `elfmem doctor` on the first run after upgrade.
-  Subsequent renames still surface as drift, as intended.
+- **Hash backwards-compatibility for the AGENT.md fragment (named agents).** The
+  agent-docs content hash mixes in `|agent_name=X` only when a name is set.
+  Empty/unset `agent_name` produces a hash byte-identical to pre-feature renders, so
+  existing installs upgrading to this version don't get a "edited" drift false-positive
+  from `elfmem agent-docs check` / `elfmem doctor`. Subsequent renames still surface
+  as drift, as intended.
+- **AGENT.md fragment hash changes for all existing installs (GUIDES additions).**
+  The `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and the
+  MCP-parity PR added three new entries (`mind_list`, `mind_show`, `rescore`).
+  Existing installs will see `elfmem agent-docs check` report drift (`stale_version`
+  if the lib version also bumped; otherwise `edited`). **Recovery is the existing
+  one:** `elfmem agent-docs install` regenerates and re-locks. No data migration.
+- **No behavioural change** for any pre-existing operation. The new MCP wrappers,
+  `AgentGuide` entries, and `agent_name` field are pure additions; default
+  `elfmem_dream()` and unnamed installs are byte-identical to the previous version.
 
 ---
 
