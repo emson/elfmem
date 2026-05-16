@@ -284,7 +284,7 @@ After ~10 outcomes, evidence dominates the LLM alignment prior. Your memory lear
 
 ```bash
 elfmem remember CONTENT [--tags t1,t2] [--category C] [--db PATH] [--json]
-elfmem recall QUERY [--top-k N] [--frame attention|self|task] [--db PATH] [--json]
+elfmem recall QUERY [--top-k N] [--frame attention|self|task|simulate] [--db PATH] [--json]
 elfmem status [--db PATH] [--json]
 elfmem outcome BLOCK_IDS SIGNAL [--weight N] [--source LABEL] [--db PATH] [--json]
 elfmem curate [--db PATH] [--json]

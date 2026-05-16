@@ -9,6 +9,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **`elfmem recall --frame` help** now lists `simulate` alongside `attention|self|task`.
+  The `simulate` frame (Theory-of-Mind) shipped with the `mind` feature but was missing
+  from the CLI help string, the MCP `elfmem_recall` docstring, and `docs/quickstart.md`.
+- **CLAUDE.md "Core Mental Model"** corrected from "Five frames (self · attention · task ·
+  world · short_term)" to the four built-ins that actually exist in `BUILTIN_FRAMES`:
+  `self · attention · task · simulate`. `world` and `short_term` were never implemented.
+
 ---
 
 ## [0.13.3] — 2026-05-08

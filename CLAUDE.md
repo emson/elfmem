@@ -9,8 +9,9 @@
 - **Breathing** — `dream()` / `consolidate()`: seconds, LLM-powered dedup + contradiction detection
 - **Sleep** — `curate()`: minutes, decay archival + graph pruning + top-K reinforcement
 
-**Five frames** — always select before retrieving context:
-`self` · `attention` · `task` · `world` · `short_term`
+**Four frames** — always select before retrieving context:
+`self` · `attention` · `task` · `simulate`
+(`simulate` is the Theory-of-Mind frame: blends `self` constitution with `mind/*` blocks to reason about modelled minds.)
 
 **Knowledge lifecycle:** BIRTH → GROWTH → MATURITY → DECAY → ARCHIVE
 Decay is session-aware (holidays don't kill knowledge). Reinforcement resets the clock.
