@@ -156,16 +156,17 @@ AGENT_FRIENDLY_CONTRACT = [
 
 ARCHITECTURE_DECISIONS = [
     (
-        "Three rhythms drive all design decisions: "
+        "Four rhythms drive all design decisions: "
         "Heartbeat (learn: milliseconds, no LLM, pure inbox insert), "
         "Breathing (dream/consolidate: seconds, LLM-powered dedup + contradiction detection), "
-        "Sleep (curate: minutes, decay archival + graph pruning + top-K reinforcement).",
+        "Sleep (curate: minutes, decay archival + graph pruning + top-K reinforcement), "
+        "Deep Sleep (dream --rescore: re-evaluate aged active blocks against current SELF).",
         ["team/architecture", "pattern/rhythms"],
     ),
     (
-        "Five frames for retrieval — always select before retrieving: "
-        "SELF (identity), ATTENTION (query-driven), TASK (goals), "
-        "WORLD (context), SHORT_TERM (recent). "
+        "Four frames for retrieval — always select before retrieving: "
+        "SELF (identity), ATTENTION (query-driven default), TASK (goals), "
+        "SIMULATE (Theory-of-Mind — self constitution + mind/* blocks). "
         "Frame selection dominates retrieval quality (~50% improvement).",
         ["team/architecture", "pattern/frames"],
     ),

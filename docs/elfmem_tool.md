@@ -276,15 +276,16 @@ signal = (csat_score - 1.0) / 4.0
 Retrieve different views of your memory:
 
 ```
-MCP:  elfmem_recall(query, frame="self" | "attention" | "task")
+MCP:  elfmem_recall(query, frame="self" | "attention" | "task" | "simulate")
 CLI:  elfmem recall "query" --frame attention
 Py:   await system.frame("attention", query=query)
 ```
 
-**Three frames:**
+**Four frames:**
 - **`self`** — Identity context (queryless). Agent's personality, values, long-term goals
 - **`attention`** — Query-driven. Most relevant knowledge for current task (default)
 - **`task`** — Goal/objective context. Current task, constraints, success criteria
+- **`simulate`** — Theory-of-Mind retrieval. Blends `self` constitution with `mind/*` blocks for reasoning about modelled minds (other agents, users). Score-boosts `self/` tags (10×), `mind` category (6×), `decision` category (5×)
 
 **Why frames?** Different retrieval modes for different purposes. Identity is stable; attention is dynamic.
 

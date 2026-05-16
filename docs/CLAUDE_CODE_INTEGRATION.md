@@ -276,20 +276,20 @@ self-tunes toward what actually works for your team.
 
 ---
 
-## Simulation-Based Calibration: The Fourth Rhythm
-
-For high-stakes or novel-domain decisions, agents can **simulate** before
-acting — generating scenarios, scoring them against knowledge, and
-pre-calibrating blocks without waiting for reality.
-
-elfmem's four rhythms:
+## The Four Rhythms
 
 | Rhythm | Direction | What it does |
 |--------|-----------|--------------|
 | Heartbeat (learn) | Past → Memory | Fast ingestion |
 | Breathing (dream) | Memory → Structure | Deep consolidation |
-| Sleep (curate) | Structure → Health | Maintenance |
-| **Imagination (simulate)** | **Memory → Future** | **Proactive calibration** |
+| Sleep (curate) | Structure → Health | Decay archival + edge pruning |
+| **Deep Sleep (`dream --rescore`)** | **Memory → Identity** | **Re-evaluate aged blocks vs current SELF** (v0.13.3) |
+
+Deep sleep is the rhythm that keeps a long-lived memory honest with itself: as new evidence shifts the SELF frame, older blocks are progressively re-scored so their alignment / summary / tags stay current.
+
+## Simulation-Based Calibration (`simulate` frame)
+
+`simulate` is a **frame**, not a rhythm — a Theory-of-Mind retrieval mode that blends the SELF constitution with `mind/*` blocks to reason about other agents, users, or hypothetical scenarios. For high-stakes or novel-domain decisions, agents can use the simulate frame to surface predictions, decisions, and identity context together, supporting pre-calibration without waiting for reality.
 
 Key concepts:
 - **Brier scores** track prediction accuracy over time

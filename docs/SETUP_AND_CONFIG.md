@@ -721,6 +721,18 @@ curl http://localhost:11434/api/tags
 # 3. Check firewall/networking
 ```
 
+### "json: unsupported value: NaN" from Ollama (bge-m3 / other embedding models)
+
+**Symptom:** elfmem's embedding adapter raises an `InternalServerError: 500` and the message contains `failed to encode response: json: unsupported value: NaN`. The vector returned by Ollama contains `NaN` floats, which JSON can't serialise.
+
+**Cause:** Ollama's flash-attention path produces `NaN` on some embedding models (reported with `bge-m3`).
+
+**Fix:** disable flash attention before starting Ollama:
+```bash
+OLLAMA_FLASH_ATTENTION=false ollama serve
+```
+Or set it permanently in your shell rc / systemd unit.
+
 ### High token usage
 **Tune in config:**
 ```yaml

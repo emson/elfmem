@@ -926,7 +926,7 @@ def recall(
     query: str,
     top_k: Annotated[int, typer.Option("--top-k", help="Max results")] = 5,
     frame: Annotated[
-        str, typer.Option("--frame", help="attention|self|task")
+        str, typer.Option("--frame", help="attention|self|task|simulate")
     ] = "attention",
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[

@@ -442,7 +442,7 @@ vecs = await embedding_svc.embed_batch(texts)  # Single API call
 
 ## The Harmony Model
 
-The system achieves balance through three rhythms:
+The system achieves balance through four rhythms:
 
 ### Heartbeat (Learn)
 ```
@@ -466,6 +466,16 @@ Frequency:  Every 40 active hours, or on request
 Cost:       1-5 seconds (database operations)
 Volume:     Full scan (all active blocks)
 Processing: Maintenance (archive, prune, reinforce)
+```
+
+### Deep Sleep (Rescore)  — *added in v0.13.3*
+```
+Frequency:  Periodic (driven by `last_scored_at` age + drift detection)
+Cost:       LLM call per block; bounded by --max
+Volume:     Selective (oldest / unscored first; one rotation drains the queue)
+Processing: Re-evaluate each block's alignment / summary / tags against
+            the *current* SELF, so identity drift doesn't silently leave
+            old blocks misaligned. Triggered by `dream --rescore`.
 ```
 
 ### The Natural Rhythm

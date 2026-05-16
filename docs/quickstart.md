@@ -262,13 +262,14 @@ Blocks decay during active sessions only. Memory survives weekends and restarts.
 | standard  | 0.010   | ~69h    | General knowledge (default) |
 | ephemeral | 0.050   | ~14h    | Session observations, temporary facts |
 
-### Three Frames
+### Four Frames
 
 | Frame | Purpose | When to Use |
 |-------|---------|-------------|
 | `attention` | Query-driven retrieval (default) | RAG, current task |
 | `self` | Agent identity and values | System prompt injection |
 | `task` | Goal-oriented context | Task planning, constraints |
+| `simulate` | Theory-of-Mind retrieval (self + `mind/*` blocks) | Reasoning about modelled minds (other agents, users) |
 
 ### Outcome Feedback
 
@@ -306,7 +307,7 @@ After ~10 outcomes, evidence dominates the LLM alignment prior. Your memory lear
 
 ```bash
 elfmem remember CONTENT [--tags t1,t2] [--category C] [--db PATH] [--json]
-elfmem recall QUERY [--top-k N] [--frame attention|self|task] [--db PATH] [--json]
+elfmem recall QUERY [--top-k N] [--frame attention|self|task|simulate] [--db PATH] [--json]
 elfmem status [--db PATH] [--json]
 elfmem outcome BLOCK_IDS SIGNAL [--weight N] [--source LABEL] [--db PATH] [--json]
 elfmem curate [--db PATH] [--json]
