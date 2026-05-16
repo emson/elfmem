@@ -472,14 +472,24 @@ def set_agent_name_in_config(config_path: str | Path, name: str) -> str:
     untouched.
 
     Returns the action taken: ``"replaced"``, ``"inserted"``, or ``"unchanged"``.
-    Raises ``FileNotFoundError`` if the config doesn't exist (caller should
-    distinguish established vs fresh) and ``ValueError`` if neither an
-    ``agent_name:`` line nor an ``identity:`` anchor can be found — refusing to
-    invent structure in a config we don't understand.
+    Raises ``ConfigError`` (with ``.recovery``) when the config doesn't exist
+    or when neither an ``agent_name:`` line nor an ``identity:`` anchor can be
+    found — refusing to invent structure in a config we don't understand. The
+    ``.recovery`` field on each error tells the agent the exact next command
+    to run.
     """
+    from elfmem.exceptions import ConfigError
+
     path = Path(config_path).expanduser()
     if not path.exists():
-        raise FileNotFoundError(path)
+        raise ConfigError(
+            f"No config at {path}.",
+            recovery=(
+                "Run `elfmem init --name <name>` to create the config "
+                "fresh, or pass `--config <path>` if your config lives "
+                "elsewhere."
+            ),
+        )
     quoted = f'"{name}"'
     text = path.read_text(encoding="utf-8")
 
@@ -496,9 +506,15 @@ def set_agent_name_in_config(config_path: str | Path, name: str) -> str:
 
     anchor = _IDENTITY_LINE_RE.search(text)
     if anchor is None:
-        raise ValueError(
-            f"No `agent_name:` line and no `identity:` anchor in {path}; "
-            "refusing to invent project-section structure."
+        raise ConfigError(
+            f"Neither `agent_name:` nor `identity:` found in {path}; "
+            "refusing to invent project-section structure.",
+            recovery=(
+                "Add `identity: \"\"` under the `project:` block in your "
+                "config.yaml, then re-run. Or run `elfmem init --force "
+                f"--name {name}` to regenerate the config from defaults "
+                "(destroys customisations)."
+            ),
         )
     # Insert immediately after identity line, matching its indentation.
     indent = anchor.group(1)[: len(anchor.group(1)) - len(anchor.group(1).lstrip())]

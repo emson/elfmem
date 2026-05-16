@@ -160,9 +160,27 @@ def test_set_agent_name_refuses_when_no_anchor(tmp_path: Path) -> None:
     """Won't invent project-section structure in a config it doesn't understand."""
     import pytest
 
+    from elfmem.exceptions import ConfigError
     from elfmem.project import set_agent_name_in_config
 
     cfg = tmp_path / "config.yaml"
     cfg.write_text("llm:\n  model: x\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="agent_name"):
+    with pytest.raises(ConfigError) as exc_info:
         set_agent_name_in_config(cfg, "elf")
+    # Agent-first contract: every elfmem exception carries an actionable
+    # .recovery field — not just a message string.
+    assert exc_info.value.recovery
+    assert "identity:" in exc_info.value.recovery or "init" in exc_info.value.recovery
+
+
+def test_set_agent_name_missing_config_raises_config_error(tmp_path: Path) -> None:
+    import pytest
+
+    from elfmem.exceptions import ConfigError
+    from elfmem.project import set_agent_name_in_config
+
+    nonexistent = tmp_path / "does_not_exist.yaml"
+    with pytest.raises(ConfigError) as exc_info:
+        set_agent_name_in_config(nonexistent, "elf")
+    assert exc_info.value.recovery
+    assert "init" in exc_info.value.recovery
