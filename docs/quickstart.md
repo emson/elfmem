@@ -160,6 +160,28 @@ elfmem guide recall       # detailed guide for recall
 elfmem guide outcome      # how to record outcome feedback
 ```
 
+### 6. (Optional) Give your agent a name
+
+A named agent gets a rendered "Agent Identity" section in `.elfmem/AGENT.md`
+that teaches the host LLM: *"when the user says `<name>`, recall the SELF
+frame first before responding."* Useful when you want the host LLM to
+behave as your named agent rather than generic Claude/GPT.
+
+```bash
+# Fresh install — set the name at init time
+elfmem init --name elf
+
+# Existing install — surgical config update, preserves comments
+elfmem init --name elf      # (idempotent: no-op if name already matches)
+```
+
+The flag writes `project.agent_name: "elf"` into `.elfmem/config.yaml`
+and re-renders `.elfmem/AGENT.md` with the protocol section. If you skip
+`--name`, elfmem behaves as plain memory — no named-agent ceremony.
+
+Want a different name later? Re-run with the new value — `init` updates
+just the `agent_name:` line in place; the rest of your config is untouched.
+
 ---
 
 ## Configuration
