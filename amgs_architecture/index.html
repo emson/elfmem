@@ -3374,6 +3374,9 @@
 <h2 id="architecture-specification">Architecture Specification<a class="headerlink" href="#architecture-specification" title="Permanent link">&para;</a></h2>
 <p><strong>Version 1.0 — March 2026</strong></p>
 <p><em>A graph-based, decay-aware, confidence-calibrated, context-assembling cognitive engine.</em></p>
+<blockquote>
+<p><strong>Status note (v0.13.x):</strong> This document is the <strong>original design specification</strong> and includes frames (<code>WORLD</code>, <code>SHORT_TERM</code>) and frame-composition presets (<code>SESSION</code>, <code>REASONING</code>, <code>BRIEFING</code>, <code>DEEP_RECALL</code>) that were <strong>not carried forward into the shipped implementation</strong>. The live frame registry is <code>self</code>, <code>attention</code>, <code>task</code>, <code>simulate</code> — see <code>src/elfmem/context/frames.py BUILTIN_FRAMES</code>. Refer to <code>docs/quickstart.md</code> and <code>elfmem guide</code> for the current authoritative surface; treat this document as historical design context, not implementation reference.</p>
+</blockquote>
 <hr />
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ol>

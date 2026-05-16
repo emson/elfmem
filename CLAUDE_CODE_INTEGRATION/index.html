@@ -1007,10 +1007,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#simulation-based-calibration-the-fourth-rhythm" class="md-nav__link">
+  <a href="#the-four-rhythms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulation-Based Calibration: The Fourth Rhythm
+        The Four Rhythms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simulation-based-calibration-simulate-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulation-Based Calibration (simulate frame)
       
     </span>
   </a>
@@ -2424,10 +2435,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#simulation-based-calibration-the-fourth-rhythm" class="md-nav__link">
+  <a href="#the-four-rhythms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulation-Based Calibration: The Fourth Rhythm
+        The Four Rhythms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simulation-based-calibration-simulate-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulation-Based Calibration (simulate frame)
       
     </span>
   </a>
@@ -2724,11 +2746,7 @@ decays equally and memory never improves.</p>
 <p>Over cycles, useful blocks rise in confidence. Noise decays. The memory
 self-tunes toward what actually works for your team.</p>
 <hr />
-<h2 id="simulation-based-calibration-the-fourth-rhythm">Simulation-Based Calibration: The Fourth Rhythm<a class="headerlink" href="#simulation-based-calibration-the-fourth-rhythm" title="Permanent link">&para;</a></h2>
-<p>For high-stakes or novel-domain decisions, agents can <strong>simulate</strong> before
-acting — generating scenarios, scoring them against knowledge, and
-pre-calibrating blocks without waiting for reality.</p>
-<p>elfmem's four rhythms:</p>
+<h2 id="the-four-rhythms">The Four Rhythms<a class="headerlink" href="#the-four-rhythms" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -2751,15 +2769,18 @@ pre-calibrating blocks without waiting for reality.</p>
 <tr>
 <td>Sleep (curate)</td>
 <td>Structure → Health</td>
-<td>Maintenance</td>
+<td>Decay archival + edge pruning</td>
 </tr>
 <tr>
-<td><strong>Imagination (simulate)</strong></td>
-<td><strong>Memory → Future</strong></td>
-<td><strong>Proactive calibration</strong></td>
+<td><strong>Deep Sleep (<code>dream --rescore</code>)</strong></td>
+<td><strong>Memory → Identity</strong></td>
+<td><strong>Re-evaluate aged blocks vs current SELF</strong> (v0.13.3)</td>
 </tr>
 </tbody>
 </table>
+<p>Deep sleep is the rhythm that keeps a long-lived memory honest with itself: as new evidence shifts the SELF frame, older blocks are progressively re-scored so their alignment / summary / tags stay current.</p>
+<h2 id="simulation-based-calibration-simulate-frame">Simulation-Based Calibration (<code>simulate</code> frame)<a class="headerlink" href="#simulation-based-calibration-simulate-frame" title="Permanent link">&para;</a></h2>
+<p><code>simulate</code> is a <strong>frame</strong>, not a rhythm — a Theory-of-Mind retrieval mode that blends the SELF constitution with <code>mind/*</code> blocks to reason about other agents, users, or hypothetical scenarios. For high-stakes or novel-domain decisions, agents can use the simulate frame to surface predictions, decisions, and identity context together, supporting pre-calibration without waiting for reality.</p>
 <p>Key concepts:
 - <strong>Brier scores</strong> track prediction accuracy over time
 - <strong>Fragility scores</strong> reveal when predictions rest on too few blocks

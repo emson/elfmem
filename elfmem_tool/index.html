@@ -3376,14 +3376,15 @@
 </span></code></pre></div></p>
 <h3 id="multiple-frames-different-context-views">Multiple Frames (Different Context Views)<a class="headerlink" href="#multiple-frames-different-context-views" title="Permanent link">&para;</a></h3>
 <p>Retrieve different views of your memory:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>MCP:  elfmem_recall(query, frame=&quot;self&quot; | &quot;attention&quot; | &quot;task&quot;)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>MCP:  elfmem_recall(query, frame=&quot;self&quot; | &quot;attention&quot; | &quot;task&quot; | &quot;simulate&quot;)
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>CLI:  elfmem recall &quot;query&quot; --frame attention
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Py:   await system.frame(&quot;attention&quot;, query=query)
 </span></code></pre></div>
-<p><strong>Three frames:</strong>
+<p><strong>Four frames:</strong>
 - <strong><code>self</code></strong> — Identity context (queryless). Agent's personality, values, long-term goals
 - <strong><code>attention</code></strong> — Query-driven. Most relevant knowledge for current task (default)
-- <strong><code>task</code></strong> — Goal/objective context. Current task, constraints, success criteria</p>
+- <strong><code>task</code></strong> — Goal/objective context. Current task, constraints, success criteria
+- <strong><code>simulate</code></strong> — Theory-of-Mind retrieval. Blends <code>self</code> constitution with <code>mind/*</code> blocks for reasoning about modelled minds (other agents, users). Score-boosts <code>self/</code> tags (10×), <code>mind</code> category (6×), <code>decision</code> category (5×)</p>
 <p><strong>Why frames?</strong> Different retrieval modes for different purposes. Identity is stable; attention is dynamic.</p>
 <h3 id="curate-explicit-maintenance">Curate (Explicit Maintenance)<a class="headerlink" href="#curate-explicit-maintenance" title="Permanent link">&para;</a></h3>
 <p>Manually trigger memory maintenance:</p>

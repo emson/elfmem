@@ -2471,6 +2471,9 @@
 
 
 <h1 id="operationalizing-the-cognitive-loop-executive-decision-frameworks">Operationalizing the Cognitive Loop — Executive Decision Frameworks<a class="headerlink" href="#operationalizing-the-cognitive-loop-executive-decision-frameworks" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Note (v0.13.x frame consolidation):</strong> This guide predates the frame registry consolidation. The live built-in frames are <code>self</code>, <code>attention</code>, <code>task</code>, and <code>simulate</code> (see <code>src/elfmem/context/frames.py BUILTIN_FRAMES</code>). Treat any reference to <code>WORLD</code> / <code>frame="world"</code> below as <code>frame="attention"</code> (query-driven retrieval — already weights similarity, recency, and graph centrality). Treat <code>SHORT_TERM</code> / <code>frame="short_term"</code> as <code>frame="attention"</code> as well (the recency weighting is built in). For perspective-taking / Theory-of-Mind retrieval, use <code>frame="simulate"</code>. Code examples below have been updated to use live frame names; narrative uppercase references remain as historical context.</p>
+</blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The cognitive loop is the feedback cycle that enables adaptive learning. It connects:
 - <strong>Constitutional blocks</strong> (SELF) — Why we learn (identity, values, principles)
@@ -2593,7 +2596,7 @@
 </span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>
 </span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>  // Get context via recursive recall
 </span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>  self_knowledge = recall(&quot;my values&quot;, frame=&quot;self&quot;)
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  world_knowledge = recall(&quot;context&quot;, frame=&quot;world&quot;)
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  world_knowledge = recall(&quot;context&quot;, frame=&quot;attention&quot;)
 </span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>
 </span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>  // Design experiment that resolves contradiction
 </span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>  experiment = design_resolution_experiment(
@@ -2625,7 +2628,7 @@
 <p><strong>Decision Framework:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>When learning something new:
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  // Step 1: Find related knowledge
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  related = recall(query, frame=&quot;world&quot;, top_k=10, expand_graph=YES)
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  related = recall(query, frame=&quot;attention&quot;, top_k=10, expand_graph=YES)
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  // Step 2: Understand relationship types
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  FOR each related_block IN related:
@@ -2793,7 +2796,7 @@
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  // Recall what you learned recently
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  recent = recall(
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    query=&quot;what did I learn in last 24 hours?&quot;,
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    frame=&quot;short_term&quot;,
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    frame=&quot;attention&quot;,
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    hours=24
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  )
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>

@@ -1185,6 +1185,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#json-unsupported-value-nan-from-ollama-bge-m3-other-embedding-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "json: unsupported value: NaN" from Ollama (bge-m3 / other embedding models)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#high-token-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2841,6 +2852,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#json-unsupported-value-nan-from-ollama-bge-m3-other-embedding-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "json: unsupported value: NaN" from Ollama (bge-m3 / other embedding models)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#high-token-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3559,29 +3581,36 @@
 </span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># 2. Verify base_url in config</span>
 </span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="c1"># 3. Check firewall/networking</span>
 </span></code></pre></div></p>
+<h3 id="json-unsupported-value-nan-from-ollama-bge-m3-other-embedding-models">"json: unsupported value: NaN" from Ollama (bge-m3 / other embedding models)<a class="headerlink" href="#json-unsupported-value-nan-from-ollama-bge-m3-other-embedding-models" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> elfmem's embedding adapter raises an <code>InternalServerError: 500</code> and the message contains <code>failed to encode response: json: unsupported value: NaN</code>. The vector returned by Ollama contains <code>NaN</code> floats, which JSON can't serialise.</p>
+<p><strong>Cause:</strong> Ollama's flash-attention path produces <code>NaN</code> on some embedding models (reported with <code>bge-m3</code>).</p>
+<p><strong>Fix:</strong> disable flash attention before starting Ollama:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nv">OLLAMA_FLASH_ATTENTION</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>ollama<span class="w"> </span>serve
+</span></code></pre></div>
+Or set it permanently in your shell rc / systemd unit.</p>
 <h3 id="high-token-usage">High token usage<a class="headerlink" href="#high-token-usage" title="Permanent link">&para;</a></h3>
 <p><strong>Tune in config:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">memory</span><span class="p">:</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">  </span><span class="nt">top_k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">  </span><span class="c1"># Retrieve fewer blocks per query</span>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
-</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="nt">llm</span><span class="p">:</span>
-</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span><span class="w">  </span><span class="c1"># Smaller responses</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nt">memory</span><span class="p">:</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">  </span><span class="nt">top_k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">  </span><span class="c1"># Retrieve fewer blocks per query</span>
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="nt">llm</span><span class="p">:</span>
+</span><span id="__span-42-5"><a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span><span class="w">  </span><span class="c1"># Smaller responses</span>
 </span></code></pre></div></p>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p><strong>Quickest start:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>agent.db
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>elfmem<span class="w"> </span>serve
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>agent.db
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>elfmem<span class="w"> </span>serve
 </span></code></pre></div></p>
 <p><strong>Production setup:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>/data/agent.db
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_CONFIG</span><span class="o">=</span>/etc/elfmem/config.yaml
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-...
-</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>elfmem<span class="w"> </span>serve
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>/data/agent.db
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_CONFIG</span><span class="o">=</span>/etc/elfmem/config.yaml
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-...
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a>elfmem<span class="w"> </span>serve
 </span></code></pre></div></p>
 <p><strong>Local development (Ollama):</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>./agent.db
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>elfmem<span class="w"> </span>serve<span class="w"> </span>--config<span class="w"> </span>./ollama-config.yaml
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span>./agent.db
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>elfmem<span class="w"> </span>serve<span class="w"> </span>--config<span class="w"> </span>./ollama-config.yaml
 </span></code></pre></div></p>
 <p>All three approaches work with the same codebase. Choose based on your deployment model.</p>
 

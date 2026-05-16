@@ -746,10 +746,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#three-frames" class="md-nav__link">
+  <a href="#four-frames" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Three Frames
+        Four Frames
       
     </span>
   </a>
@@ -2159,10 +2159,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#three-frames" class="md-nav__link">
+  <a href="#four-frames" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Three Frames
+        Four Frames
       
     </span>
   </a>
@@ -2447,7 +2447,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="three-frames">Three Frames<a class="headerlink" href="#three-frames" title="Permanent link">&para;</a></h3>
+<h3 id="four-frames">Four Frames<a class="headerlink" href="#four-frames" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2471,6 +2471,11 @@
 <td><code>task</code></td>
 <td>Goal-oriented context</td>
 <td>Task planning, constraints</td>
+</tr>
+<tr>
+<td><code>simulate</code></td>
+<td>Theory-of-Mind retrieval (self + <code>mind/*</code> blocks)</td>
+<td>Reasoning about modelled minds (other agents, users)</td>
 </tr>
 </tbody>
 </table>
@@ -2532,7 +2537,7 @@
 <hr />
 <h2 id="cli-quick-reference">CLI Quick Reference<a class="headerlink" href="#cli-quick-reference" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>elfmem<span class="w"> </span>remember<span class="w"> </span>CONTENT<span class="w"> </span><span class="o">[</span>--tags<span class="w"> </span>t1,t2<span class="o">]</span><span class="w"> </span><span class="o">[</span>--category<span class="w"> </span>C<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>elfmem<span class="w"> </span>recall<span class="w"> </span>QUERY<span class="w"> </span><span class="o">[</span>--top-k<span class="w"> </span>N<span class="o">]</span><span class="w"> </span><span class="o">[</span>--frame<span class="w"> </span>attention<span class="p">|</span>self<span class="p">|</span>task<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>elfmem<span class="w"> </span>recall<span class="w"> </span>QUERY<span class="w"> </span><span class="o">[</span>--top-k<span class="w"> </span>N<span class="o">]</span><span class="w"> </span><span class="o">[</span>--frame<span class="w"> </span>attention<span class="p">|</span>self<span class="p">|</span>task<span class="p">|</span>simulate<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>elfmem<span class="w"> </span>status<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>elfmem<span class="w"> </span>outcome<span class="w"> </span>BLOCK_IDS<span class="w"> </span>SIGNAL<span class="w"> </span><span class="o">[</span>--weight<span class="w"> </span>N<span class="o">]</span><span class="w"> </span><span class="o">[</span>--source<span class="w"> </span>LABEL<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>elfmem<span class="w"> </span>curate<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>

@@ -522,10 +522,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-solution-three-rhythms" class="md-nav__link">
+  <a href="#the-solution-four-rhythms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The solution: three rhythms
+        The solution: four rhythms
       
     </span>
   </a>
@@ -1762,10 +1762,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-solution-three-rhythms" class="md-nav__link">
+  <a href="#the-solution-four-rhythms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The solution: three rhythms
+        The solution: four rhythms
       
     </span>
   </a>
@@ -1846,7 +1846,7 @@
 <hr />
 <h2 id="the-problem">The problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
 <p>LLM agents are stateless by default. Every session starts from zero. Context windows fill up and reset. RAG retrieves documents but never learns from them. Most memory libraries either demand external infrastructure — vector databases, Redis, Postgres — or offer only a key-value store with no concept of decay, identity, or relevance.</p>
-<h2 id="the-solution-three-rhythms">The solution: three rhythms<a class="headerlink" href="#the-solution-three-rhythms" title="Permanent link">&para;</a></h2>
+<h2 id="the-solution-four-rhythms">The solution: four rhythms<a class="headerlink" href="#the-solution-four-rhythms" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemorySystem</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">system</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MemorySystem</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;agent.db&quot;</span><span class="p">)</span>
@@ -1884,6 +1884,12 @@
 <td><code>curate()</code></td>
 <td>Minutes — periodic</td>
 <td>Automatically on schedule</td>
+</tr>
+<tr>
+<td><strong>Deep Sleep</strong></td>
+<td><code>dream(rescore=True)</code></td>
+<td>Seconds per block — LLM</td>
+<td>Periodically, as identity drifts</td>
 </tr>
 </tbody>
 </table>

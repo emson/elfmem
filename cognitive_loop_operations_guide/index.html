@@ -2425,6 +2425,9 @@
 
 
 <h1 id="cognitive-loop-operations-guide-complete-framework">Cognitive Loop Operations Guide — Complete Framework<a class="headerlink" href="#cognitive-loop-operations-guide-complete-framework" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Note (v0.13.x frame consolidation):</strong> This guide predates the frame registry consolidation. The live built-in frames are <code>self</code>, <code>attention</code>, <code>task</code>, and <code>simulate</code> (see <code>src/elfmem/context/frames.py BUILTIN_FRAMES</code>). Treat any reference to <code>WORLD</code> / <code>frame="world"</code> below as <code>frame="attention"</code> (query-driven retrieval — already weights similarity, recency, and graph centrality). Treat <code>SHORT_TERM</code> / <code>frame="short_term"</code> as <code>frame="attention"</code> as well (the recency weighting is built in). For perspective-taking / Theory-of-Mind retrieval, use <code>frame="simulate"</code>. Code examples below have been updated to use live frame names; narrative uppercase references remain as historical context.</p>
+</blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The <strong>cognitive loop</strong> is the self-improving feedback system that enables adaptive learning. It consists of three integrated layers:</p>
 <ol>

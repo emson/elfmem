@@ -2790,9 +2790,9 @@
 </span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>
 </span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="gs">**recall(query, frame=&quot;attention&quot;, top_k=5)**</span>
 </span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="k">-</span><span class="w"> </span>Retrieve knowledge from MoveMyth&#39;s memory
-</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="k">-</span><span class="w"> </span>Frames: &quot;self&quot; (identity), &quot;attention&quot; (broad), &quot;task&quot; (goal),
-</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>  &quot;world&quot; (context), &quot;short_term&quot; (recent)
-</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="k">-</span><span class="w"> </span>Example: <span class="sb">`elfmem_recall(&quot;forecasting accuracy patterns&quot;, frame=&quot;world&quot;)`</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="k">-</span><span class="w"> </span>Frames: &quot;self&quot; (identity), &quot;attention&quot; (broad / default), &quot;task&quot; (goal),
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>  &quot;simulate&quot; (Theory-of-Mind — self + <span class="sb">`mind/*`</span> blocks)
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="k">-</span><span class="w"> </span>Example: <span class="sb">`elfmem_recall(&quot;forecasting accuracy patterns&quot;, frame=&quot;attention&quot;)`</span>
 </span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>
 </span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="gs">**remember(content, tags=[])**</span>
 </span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="k">-</span><span class="w"> </span>Store patterns, insights, and learnings
@@ -2824,7 +2824,7 @@
 </span><span id="__span-10-48"><a id="__codelineno-10-48" name="__codelineno-10-48" href="#__codelineno-10-48"></a><span class="gu">### Workflow Example</span>
 </span></code></pre></div>
 Before forecasting decision:
-  1. elfmem_recall("what has worked in similar forecasts", frame="world")
+  1. elfmem_recall("what has worked in similar forecasts", frame="attention")
   2. elfmem_recall("what do we value in accuracy", frame="self")
   3. Set expectation: "I expect Brier Index of 75%"</p>
 <p>After forecasting:
