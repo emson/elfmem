@@ -54,6 +54,22 @@ Closes the docs portion of [#50](https://github.com/emson/elfmem/issues/50) (ite
 non-existent `world` / `short_term` frames in CHANGELOG and guides; runtime FrameError
 now lists all four valid frames). Other items in #50 are tracked separately.
 
+### Added — named-agent identity
+
+- **`project.agent_name`** field in `.elfmem/config.yaml` and **`elfmem init --name`**
+  flag. When set, the rendered `.elfmem/AGENT.md` fragment includes an "Agent Identity"
+  section binding the name to the SELF-recall protocol — so the host LLM knows that
+  hearing the agent's name means "ground the response in the SELF frame." Empty/unset
+  → fragment renders as before, no behaviour change. Drift detection participates: a
+  rename surfaces in `elfmem agent-docs check` / `elfmem doctor` and is fixed by
+  `elfmem agent-docs install`. Eats its own dog food: this repo's hand-written
+  "Agent Identity: elf" section in CLAUDE.md is gone; the fragment supplies it.
+- **`project.set_agent_name_in_config(path, name)`** helper: surgical one-line update
+  of `project.agent_name` in a `config.yaml`, preserving comments and all other lines
+  byte-for-byte. Action returned is `"replaced"`, `"inserted"`, or `"unchanged"`. Raises
+  `ConfigError` (with `.recovery`) when the config doesn't exist or lacks both the
+  field and an `identity:` anchor — refuses to invent project-section structure.
+
 ### Added — MCP/CLI parity (closes [#50](https://github.com/emson/elfmem/issues/50) items 2 + 3)
 
 - **`elfmem_dream` MCP tool now accepts `rescore`, `rescore_max`, `no_llm`,
@@ -100,15 +116,28 @@ a "valid method names" fallback.
 
 ### Migration
 
-- **AGENT.md fragment hash changes for all existing installs.** The
-  `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and
-  this PR adds three new entries. Existing installs will see
-  `elfmem agent-docs check` report drift (`stale_version` if the lib version
-  also bumped; otherwise `edited`). **Recovery is the existing one:**
-  `elfmem agent-docs install` regenerates and re-locks. No data migration.
-- **No behavioural change** for any operation. The new MCP wrappers and
-  `AgentGuide` entries are pure additions; default `elfmem_dream()` is
-  byte-identical to the previous version.
+- **`elfmem init --name X` is now state-aware on established instances.** Previously
+  `init` was refresh-only on established installs and silently ignored `--name`. Now,
+  when the flag is passed and differs from the current config value, only the
+  `agent_name:` line is surgically updated (via `set_agent_name_in_config`); the rest
+  of the config — comments, blank lines, custom values — is preserved. Fresh installs
+  continue to receive the field as part of the initial config write. No `--force`
+  needed for the common rename path.
+- **Hash backwards-compatibility for the AGENT.md fragment (named agents).** The
+  agent-docs content hash mixes in `|agent_name=X` only when a name is set.
+  Empty/unset `agent_name` produces a hash byte-identical to pre-feature renders, so
+  existing installs upgrading to this version don't get a "edited" drift false-positive
+  from `elfmem agent-docs check` / `elfmem doctor`. Subsequent renames still surface
+  as drift, as intended.
+- **AGENT.md fragment hash changes for all existing installs (GUIDES additions).**
+  The `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and the
+  MCP-parity PR added three new entries (`mind_list`, `mind_show`, `rescore`).
+  Existing installs will see `elfmem agent-docs check` report drift (`stale_version`
+  if the lib version also bumped; otherwise `edited`). **Recovery is the existing
+  one:** `elfmem agent-docs install` regenerates and re-locks. No data migration.
+- **No behavioural change** for any pre-existing operation. The new MCP wrappers,
+  `AgentGuide` entries, and `agent_name` field are pure additions; default
+  `elfmem_dream()` and unnamed installs are byte-identical to the previous version.
 
 ---
 

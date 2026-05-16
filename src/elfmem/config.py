@@ -203,6 +203,7 @@ class ProjectConfig(BaseModel):
     name: str = ""
     db: str = ""        # path to the database file (may contain ~)
     identity: str = ""  # identity description for display and seeding
+    agent_name: str = ""  # invocation token — when user says this name, host LLM recalls SELF frame
     created: str = ""   # ISO date of initialisation
 
 
@@ -336,6 +337,7 @@ def render_default_config(project: ProjectConfig | None = None) -> str:
               name: "{project.name}"
               db: "{project.db}"
               identity: "{project.identity}"
+              agent_name: "{project.agent_name}"
               created: "{project.created}"
 
             """)

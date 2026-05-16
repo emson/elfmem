@@ -17,12 +17,15 @@ from typing import Any, cast
 from elfmem.guide import GUIDES
 
 
-def render_agent_docs() -> str:
+def render_agent_docs(agent_name: str = "") -> str:
     """Generate markdown fragment from guide.GUIDES.
 
     Returns the full markdown content ready to write to .elfmem/AGENT.md.
-    Includes: header with version/hash frontmatter, overview, and per-op
-    guidance cards.
+    Includes: header with version/hash frontmatter, overview, per-op
+    guidance cards, and — when ``agent_name`` is non-empty — an
+    "Agent Identity" section that binds the name to the SELF-recall
+    protocol. Empty ``agent_name`` omits the section entirely, preserving
+    legacy output exactly.
     """
     from importlib.metadata import version as pkg_version
 
@@ -31,8 +34,13 @@ def render_agent_docs() -> str:
     except Exception:
         lib_version = "unknown"
 
-    # Content hash for drift detection
-    guides_content = _guides_to_markdown(GUIDES)
+    # Content hash for drift detection. When the agent is unnamed, the hash
+    # input is *identical* to pre-feature renders — existing installs upgrading
+    # to this version don't see a false-positive "edited" drift. The identity
+    # suffix is mixed in only when a name is set, so subsequent renames still
+    # surface as drift and prompt re-install.
+    identity_marker = f"|agent_name={agent_name}" if agent_name else ""
+    guides_content = _guides_to_markdown(GUIDES) + identity_marker
     content_hash = hashlib.sha256(guides_content.encode()).hexdigest()[:16]
 
     # Frontmatter
@@ -93,7 +101,41 @@ def render_agent_docs() -> str:
     # Per-operation cards
     operations = _operation_cards(GUIDES)
 
-    return header + overview + python_note + operations
+    return header + _identity_section(agent_name) + overview + python_note + operations
+
+
+def _identity_section(name: str) -> str:
+    """Render the Agent Identity section, or "" when no name is set.
+
+    Bound to ``project.agent_name`` in ``.elfmem/config.yaml``. When present,
+    teaches the host LLM that the name is an invocation token: hearing it
+    means "ground the response in the SELF frame." When absent, elfmem
+    behaves as plain memory — no identity, no protocol, no ceremony.
+    """
+    if not name:
+        return ""
+    return (
+        f"## Agent Identity: {name}\n\n"
+        f"This agent is named **{name}**. When the user invokes "
+        f'"{name}" by name ("ask {name}", "what does {name} think", '
+        f"or any direct address), this is a directive to ground the "
+        f"response in the agent's constitutional identity stored in "
+        f"the SELF frame — not a generic LLM response.\n\n"
+        f"**Protocol on `{name}` invocation:**\n\n"
+        f"1. Run `elfmem recall --frame self \"<topic>\"` before responding. "
+        f"The SELF frame contains the agent's principles, design decisions, "
+        f"and identity blocks.\n"
+        f"2. For active-work questions also recall `--frame task`; for "
+        f"implementation or architecture questions also recall `--frame attention`.\n"
+        f"3. Frame the response *as {name}*: per the constitutional blocks "
+        f"that came back. {name} has opinions and may disagree when the "
+        f"SELF blocks or evidence point elsewhere.\n"
+        f"4. After a recall meaningfully informed the answer: "
+        f"`elfmem outcome <block-id> 0.9` on the most useful block.\n\n"
+        f"The constitutional blocks are living documents. If a SELF block "
+        f"conflicts with new evidence, propose updating it (via "
+        f"`elfmem remember --category self`) rather than ignoring it.\n\n"
+    )
 
 
 def _guides_to_markdown(guides: dict[str, Any]) -> str:
@@ -149,11 +191,16 @@ def read_lock_file(lock_path: Path) -> dict[str, str] | None:
 
 
 def check_drift(
-    fragment_path: Path, lock_path: Path, current_lib_version: str
+    fragment_path: Path,
+    lock_path: Path,
+    current_lib_version: str,
+    agent_name: str = "",
 ) -> tuple[bool, str]:
     """Check for agent-docs drift.
 
     Returns (is_drifted, reason). Reasons: 'missing' | 'stale_version' | 'edited' | 'ok'.
+    ``agent_name`` participates in the hash so a config rename surfaces as
+    drift and prompts ``elfmem agent-docs install`` to re-render.
     """
     if not fragment_path.exists():
         return True, "missing"
@@ -168,7 +215,7 @@ def check_drift(
     if lock_version != current_lib_version:
         return True, "stale_version"
 
-    current_content = render_agent_docs()
+    current_content = render_agent_docs(agent_name=agent_name)
     current_hash = get_fragment_hash(current_content)
     if current_hash != lock_hash:
         return True, "edited"

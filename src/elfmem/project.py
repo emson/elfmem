@@ -429,6 +429,104 @@ def read_render_values_from_config(config_path: str | Path) -> tuple[str, str]:
         return "", ""
 
 
+def read_agent_name_from_config(config_path: str | Path | None) -> str:
+    """Return ``project.agent_name`` from config, or "" when absent/unreadable.
+
+    Same never-raises contract as ``read_render_values_from_config``. Used by
+    the AGENT.md fragment renderer to decide whether to include the
+    "Agent Identity" section: empty string → omit section (project has no
+    named agent), non-empty → render protocol bound to that name.
+    """
+    if config_path is None:
+        return ""
+    try:
+        import yaml
+        with open(config_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        proj = data.get("project") or {}
+        return str(proj.get("agent_name", "")).strip()
+    except Exception:
+        return ""
+
+
+# Matches the ``agent_name:`` line inside the project block. Captures everything
+# up to and including the colon + leading whitespace so we can substitute just
+# the value. Limited to single-line scalars (the only form ``init`` writes).
+_AGENT_NAME_LINE_RE = re.compile(
+    r"^(\s*agent_name:\s*)(?:\".*?\"|'.*?'|[^\n#]*)(\s*(?:#.*)?)$",
+    re.MULTILINE,
+)
+# Matches the ``identity:`` line in the project block — used as the insertion
+# anchor when ``agent_name`` is missing entirely. We splice the new line in
+# immediately after, preserving every other byte of the file.
+_IDENTITY_LINE_RE = re.compile(
+    r"^(\s*identity:\s*(?:\".*?\"|'.*?'|[^\n]*))$",
+    re.MULTILINE,
+)
+
+
+def set_agent_name_in_config(config_path: str | Path, name: str) -> str:
+    """Surgically set ``project.agent_name`` in a config.yaml, preserving formatting.
+
+    Used by ``elfmem init --name X`` on an established instance, where a full
+    config rewrite would clobber the user's hand-edits and comments. We update
+    one line — either replacing an existing ``agent_name:`` value or inserting
+    one immediately after the ``identity:`` line — and leave every other byte
+    untouched.
+
+    Returns the action taken: ``"replaced"``, ``"inserted"``, or ``"unchanged"``.
+    Raises ``ConfigError`` (with ``.recovery``) when the config doesn't exist
+    or when neither an ``agent_name:`` line nor an ``identity:`` anchor can be
+    found — refusing to invent structure in a config we don't understand. The
+    ``.recovery`` field on each error tells the agent the exact next command
+    to run.
+    """
+    from elfmem.exceptions import ConfigError
+
+    path = Path(config_path).expanduser()
+    if not path.exists():
+        raise ConfigError(
+            f"No config at {path}.",
+            recovery=(
+                "Run `elfmem init --name <name>` to create the config "
+                "fresh, or pass `--config <path>` if your config lives "
+                "elsewhere."
+            ),
+        )
+    quoted = f'"{name}"'
+    text = path.read_text(encoding="utf-8")
+
+    existing = _AGENT_NAME_LINE_RE.search(text)
+    if existing is not None:
+        # Replace value, preserve indent / trailing comment.
+        new_text = _AGENT_NAME_LINE_RE.sub(
+            lambda m: f"{m.group(1)}{quoted}{m.group(2)}", text, count=1
+        )
+        if new_text == text:
+            return "unchanged"
+        path.write_text(new_text, encoding="utf-8")
+        return "replaced"
+
+    anchor = _IDENTITY_LINE_RE.search(text)
+    if anchor is None:
+        raise ConfigError(
+            f"Neither `agent_name:` nor `identity:` found in {path}; "
+            "refusing to invent project-section structure.",
+            recovery=(
+                "Add `identity: \"\"` under the `project:` block in your "
+                "config.yaml, then re-run. Or run `elfmem init --force "
+                f"--name {name}` to regenerate the config from defaults "
+                "(destroys customisations)."
+            ),
+        )
+    # Insert immediately after identity line, matching its indentation.
+    indent = anchor.group(1)[: len(anchor.group(1)) - len(anchor.group(1).lstrip())]
+    insertion = f"\n{indent}agent_name: {quoted}"
+    new_text = text[: anchor.end()] + insertion + text[anchor.end():]
+    path.write_text(new_text, encoding="utf-8")
+    return "inserted"
+
+
 def _build_section(
     *,
     name: str,
