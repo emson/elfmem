@@ -272,6 +272,16 @@ def init(
 
     if config_file.exists() and not force:
         config_action = "exists (skipped)"
+        # State-aware --name update on established instances: full config
+        # rewrite is too destructive, but silently dropping --name is too
+        # surprising. Surgically update just the agent_name field iff it was
+        # explicitly passed and differs from the current value. This preserves
+        # comments, custom values, and any hand-edits.
+        if agent_name and in_project:
+            current_name = _project.read_agent_name_from_config(resolved_config)
+            if current_name != agent_name:
+                action = _project.set_agent_name_in_config(resolved_config, agent_name)
+                config_action = f"exists (agent_name {action}: {current_name!r} → {agent_name!r})"
     else:
         project_cfg: ProjectConfig | None = None
         if in_project:

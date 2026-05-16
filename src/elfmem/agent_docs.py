@@ -34,9 +34,13 @@ def render_agent_docs(agent_name: str = "") -> str:
     except Exception:
         lib_version = "unknown"
 
-    # Content hash for drift detection — includes the identity section so
-    # renaming the agent registers as drift and prompts a re-install.
-    guides_content = _guides_to_markdown(GUIDES) + f"|agent_name={agent_name}"
+    # Content hash for drift detection. When the agent is unnamed, the hash
+    # input is *identical* to pre-feature renders — existing installs upgrading
+    # to this version don't see a false-positive "edited" drift. The identity
+    # suffix is mixed in only when a name is set, so subsequent renames still
+    # surface as drift and prompt re-install.
+    identity_marker = f"|agent_name={agent_name}" if agent_name else ""
+    guides_content = _guides_to_markdown(GUIDES) + identity_marker
     content_hash = hashlib.sha256(guides_content.encode()).hexdigest()[:16]
 
     # Frontmatter

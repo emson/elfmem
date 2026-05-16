@@ -18,6 +18,26 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   rename surfaces in `elfmem agent-docs check` / `elfmem doctor` and is fixed by
   `elfmem agent-docs install`. Eats its own dog food: this repo's hand-written
   "Agent Identity: elf" section in CLAUDE.md is gone; the fragment supplies it.
+- **`project.set_agent_name_in_config(path, name)`** helper: surgical one-line update
+  of `project.agent_name` in a `config.yaml`, preserving comments and all other lines
+  byte-for-byte. Action returned is `"replaced"`, `"inserted"`, or `"unchanged"`. Raises
+  on configs lacking both the field and an `identity:` anchor (refuses to invent
+  project-section structure in a config it doesn't recognise).
+
+### Migration
+- **`elfmem init --name X` is now state-aware on established instances.** Previously
+  `init` was refresh-only on established installs and silently ignored `--name`. Now,
+  when the flag is passed and differs from the current config value, only the
+  `agent_name:` line is surgically updated (via `set_agent_name_in_config`); the rest
+  of the config — comments, blank lines, custom values — is preserved. Fresh installs
+  continue to receive the field as part of the initial config write. No `--force`
+  needed for the common rename path.
+- **Hash backwards-compatibility for the AGENT.md fragment.** The agent-docs
+  content hash mixes in `|agent_name=X` only when a name is set. Empty/unset
+  agent_name produces a hash byte-identical to pre-feature renders, so existing
+  installs upgrading to this version don't get a "edited" drift false-positive
+  from `elfmem agent-docs check` / `elfmem doctor` on the first run after upgrade.
+  Subsequent renames still surface as drift, as intended.
 
 ---
 
