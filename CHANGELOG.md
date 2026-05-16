@@ -46,6 +46,13 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`examples/simulation_calibration.md`** and **`docs/CLAUDE_CODE_INTEGRATION.md`** no
   longer call the `simulate` frame "the fourth rhythm". `simulate` is a frame; the
   fourth rhythm is Deep Sleep / rescoring.
+- **`docs/SETUP_AND_CONFIG.md`** troubleshooting: documents the `OLLAMA_FLASH_ATTENTION=false`
+  fix for the "json: unsupported value: NaN" error users hit when running embedding
+  models (e.g. `bge-m3`) through Ollama.
+
+Closes the docs portion of [#50](https://github.com/emson/elfmem/issues/50) (item 4:
+non-existent `world` / `short_term` frames in CHANGELOG and guides; runtime FrameError
+now lists all four valid frames). Other items in #50 are tracked separately.
 
 ---
 
