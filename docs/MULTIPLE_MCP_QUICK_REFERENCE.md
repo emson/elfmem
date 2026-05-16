@@ -71,8 +71,11 @@ This project uses the **<PROJECT_NAME>_elfmem** MCP server.
 **elfmem_outcome(block_ids, signal, source="")**
 - Provide feedback (0.0-1.0) on retrieved blocks
 
-**elfmem_dream()**
-- Trigger consolidation
+**elfmem_dream(rescore=False, rescore_max=None, no_llm=False, skip_contradictions=False)**
+- Trigger consolidation. Default = process inbox normally.
+- `rescore=True`: deep-sleep mode — re-evaluate aged active blocks vs current SELF
+- `no_llm=True`: bypass LLM scoring (embed + promote only — for outages / bulk loads)
+- `skip_contradictions=True`: skip the O(n²) contradiction loop (trusted ingestion)
 
 **elfmem_curate()**
 - Trigger maintenance
@@ -82,6 +85,20 @@ This project uses the **<PROJECT_NAME>_elfmem** MCP server.
 
 **elfmem_guide(topic="")**
 - Get documentation
+
+**Theory of Mind (model other agents / users / stakeholders):**
+
+**elfmem_mind_create(subject, goals=[], beliefs=[], fears=[], motivations=[])**
+- Create a structured mental model. Returns mind block ID.
+
+**elfmem_mind_predict(mind_block_id, prediction, verify_at, reasoning=None)**
+- Attach a falsifiable prediction with a verify_at date.
+
+**elfmem_mind_list()** / **elfmem_mind_show(mind_block_id)**
+- List all minds with calibration stats / inspect one with linked predictions.
+
+**elfmem_mind_outcome(decision_block_id, hit, reason)**
+- Close a prediction; Bayesian-calibrates the mind model.
 ```
 
 ### Step 5: Restart Claude Code

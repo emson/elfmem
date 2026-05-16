@@ -13,9 +13,14 @@ import pytest
 
 from elfmem.api import MemorySystem
 from elfmem.types import (
+    ConsolidateResult,
     CurateResult,
     FrameResult,
     LearnResult,
+    MindOutcomeResult,
+    MindPredictResult,
+    MindShowResult,
+    MindSummary,
     OutcomeResult,
     ScoredBlock,
     SystemStatus,
@@ -160,6 +165,133 @@ class TestMcpTools:
         result = await _tool_guide(method="learn")
         assert result == "learn docs"
         mock_mem.guide.assert_called_once_with("learn")
+
+    # ── dream v0.13.3 flag parity (closes #50 item 2) ────────────────────────
+
+    async def test_dream_threads_rescore_flag(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_dream
+
+        mock_mem.dream.return_value = ConsolidateResult(
+            processed=0, promoted=0, deduplicated=0, edges_created=0,
+            rescored=5, rescore_failed=0,
+        )
+        await _tool_dream(rescore=True, rescore_max=5)
+        mock_mem.dream.assert_called_once_with(
+            skip_llm=False, skip_contradictions=False,
+            rescore=True, rescore_max=5,
+        )
+
+    async def test_dream_threads_no_llm_flag(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_dream
+
+        mock_mem.dream.return_value = ConsolidateResult(
+            processed=3, promoted=3, deduplicated=0, edges_created=0,
+        )
+        await _tool_dream(no_llm=True)
+        mock_mem.dream.assert_called_once_with(
+            skip_llm=True, skip_contradictions=False,
+            rescore=False, rescore_max=None,
+        )
+
+    async def test_dream_threads_skip_contradictions_flag(
+        self, mock_mem: AsyncMock
+    ) -> None:
+        from elfmem.mcp import _tool_dream
+
+        mock_mem.dream.return_value = ConsolidateResult(
+            processed=2, promoted=2, deduplicated=0, edges_created=1,
+        )
+        await _tool_dream(skip_contradictions=True)
+        mock_mem.dream.assert_called_once_with(
+            skip_llm=False, skip_contradictions=True,
+            rescore=False, rescore_max=None,
+        )
+
+    async def test_dream_default_flags_unchanged(self, mock_mem: AsyncMock) -> None:
+        """Default invocation must match pre-feature behaviour."""
+        from elfmem.mcp import _tool_dream
+
+        mock_mem.dream.return_value = ConsolidateResult(
+            processed=1, promoted=1, deduplicated=0, edges_created=0,
+        )
+        await _tool_dream()
+        mock_mem.dream.assert_called_once_with(
+            skip_llm=False, skip_contradictions=False,
+            rescore=False, rescore_max=None,
+        )
+
+    # ── Theory of Mind MCP tools (closes #50 item 3) ────────────────────────
+
+    async def test_mind_create_returns_block_id(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_mind_create
+
+        mock_mem.mind_create.return_value = LearnResult(
+            block_id="mind-abc", status="created"
+        )
+        result = await _tool_mind_create(subject="Alice", goals=["ship"])
+        assert result["block_id"] == "mind-abc"
+        mock_mem.mind_create.assert_called_once_with(
+            "Alice", goals=["ship"], beliefs=None, fears=None, motivations=None
+        )
+
+    async def test_mind_predict_returns_decision_id(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_mind_predict
+
+        mock_mem.mind_predict.return_value = MindPredictResult(
+            mind_block_id="m1",
+            decision_block_id="d1",
+            prediction="X",
+            verify_at="2026-06-01",
+            edge_action="created",
+        )
+        result = await _tool_mind_predict(
+            mind_block_id="m1", prediction="X", verify_at="2026-06-01"
+        )
+        assert result["decision_block_id"] == "d1"
+        assert result["edge_action"] == "created"
+
+    async def test_mind_list_returns_list_of_dicts(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_mind_list
+
+        mock_mem.mind_list.return_value = [
+            MindSummary(
+                block_id="m1", subject="Alice", confidence=0.7,
+                prediction_count=3, hit_count=2, miss_count=1,
+            )
+        ]
+        result = await _tool_mind_list()
+        assert isinstance(result, list)
+        assert result[0]["subject"] == "Alice"
+        assert result[0]["hit_count"] == 2
+
+    async def test_mind_show_returns_full_view(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_mind_show
+
+        mock_mem.mind_show.return_value = MindShowResult(
+            block_id="m1", subject="Alice", content="...", confidence=0.7,
+            predictions=[],
+        )
+        result = await _tool_mind_show(mind_block_id="m1")
+        assert result["subject"] == "Alice"
+        assert result["predictions"] == []
+
+    async def test_mind_outcome_returns_deltas(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_mind_outcome
+
+        mock_mem.mind_outcome.return_value = MindOutcomeResult(
+            mind_block_id="m1",
+            decision_block_id="d1",
+            hit=True,
+            reason="observed",
+            mind_confidence_delta=0.08,
+            decision_confidence_delta=0.10,
+            validates_edge_action="created",
+        )
+        result = await _tool_mind_outcome(
+            decision_block_id="d1", hit=True, reason="observed"
+        )
+        assert result["hit"] is True
+        assert result["mind_confidence_delta"] == 0.08
 
 
 # ── _mem() guard tests ─────────────────────────────────────────────────────────

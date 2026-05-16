@@ -280,6 +280,45 @@ GUIDES: dict[str, AgentGuide] = {
             "print(result)  # Curated: 2 archived, 1 edges pruned, 5 reinforced."
         ),
     ),
+    "rescore": AgentGuide(
+        name="rescore",
+        what="Deep-sleep: re-evaluate aged active blocks against the current SELF.",
+        when=(
+            "Periodic deep maintenance (e.g. weekly) — as the agent's identity drifts "
+            "through new learning, existing blocks need their alignment/summary/tags "
+            "refreshed against the *current* SELF. Also drains the queue of blocks "
+            "that were promoted via skip_llm=True or LLM-timeout fallback "
+            "(those have last_scored_at = NULL and are picked up first)."
+        ),
+        when_not=(
+            "Immediately after consolidate() — fresh blocks don't need rescoring. "
+            "In a tight loop; this is a deep, periodic rhythm, not an always-on one. "
+            "When the agent's SELF hasn't changed meaningfully since last rescore."
+        ),
+        cost=(
+            "LLM call per block (bounded by max_count). Selection drains NULL "
+            "last_scored_at first, then oldest-scored ascending. One full rotation "
+            "eventually visits every eligible block."
+        ),
+        returns=(
+            "dict with rescored (int), failed (int), attempted (int). Blocks with "
+            "category in {message, mind, decision, prediction} and any source_peer "
+            "are excluded by design — events and peer perspectives stay intact."
+        ),
+        next=(
+            "Re-check `doctor` scoring-drift section. Healthy state is "
+            "'0 unscored, N stale (>90d, X%)'. The same call surfaces partial "
+            "progress in subsequent rescore rounds via the rotation."
+        ),
+        example=(
+            "# Standalone deep-sleep\n"
+            "result = await system.rescore(max_count=20)\n"
+            "print(result)  # {'rescored': 18, 'failed': 0, 'attempted': 18}\n"
+            "\n"
+            "# Bundled with dream — process inbox, then rescore aged active\n"
+            "result = await system.dream(rescore=True, rescore_max=20)"
+        ),
+    ),
     "status": AgentGuide(
         name="status",
         what="Return a snapshot of system state with a suggested next action.",
@@ -584,6 +623,60 @@ GUIDES: dict[str, AgentGuide] = {
             "    hit=False,\n"
             "    reason='Requested full bespoke integration',\n"
             ")"
+        ),
+    ),
+    "mind_list": AgentGuide(
+        name="mind_list",
+        what="List all active mind blocks with calibration statistics.",
+        when=(
+            "Discovering which minds are modelled and how well-calibrated each is. "
+            "Use before recall to decide which subject's perspective to invoke. "
+            "Use as periodic dashboard — surfaces minds whose hit/miss ratio is "
+            "drifting away from the model's confidence."
+        ),
+        when_not="(Always safe to call. No side effects, no LLM.)",
+        cost="Fast. Database reads only.",
+        returns=(
+            "list[MindSummary] — each entry has block_id, subject, confidence, "
+            "prediction_count, hit_count, miss_count. Empty list when no minds "
+            "exist (not an error)."
+        ),
+        next=(
+            "For one mind in detail: mind_show(block_id). "
+            "For reasoning about a mind: frame('simulate', query='...')."
+        ),
+        example=(
+            "minds = await system.mind_list()\n"
+            "for m in minds:\n"
+            "    print(m)  # Mind: Alice (a1b2…) confidence=0.62 predictions=8 hit/total=5/7"
+        ),
+    ),
+    "mind_show": AgentGuide(
+        name="mind_show",
+        what="Show a single mind block with all linked predictions and their outcomes.",
+        when=(
+            "Inspecting a specific mind model before reasoning about it, before "
+            "running frame('simulate'), or when reviewing why a prediction series "
+            "is drifting from observed reality."
+        ),
+        when_not=(
+            "Discovering which minds exist — use mind_list() first. "
+            "Block id unknown — pass the block_id from mind_list() or mind_create()."
+        ),
+        cost="Fast. Database reads only.",
+        returns=(
+            "MindShowResult with block_id, subject, content, confidence, and "
+            "predictions (list of PredictionDetail — block_id, content, "
+            "confidence, verify_at, outcome). Outcome is 'hit'|'miss'|None."
+        ),
+        next=(
+            "Close any resolved predictions with mind_outcome(). "
+            "Or update the mind itself by calling mind_create() again — "
+            "near-duplicate handling supersedes the old model."
+        ),
+        example=(
+            "result = await system.mind_show(mind_block_id)\n"
+            "print(result)  # full mind + linked predictions, each tagged with outcome"
         ),
     ),
     "guide": AgentGuide(

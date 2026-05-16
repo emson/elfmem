@@ -54,6 +54,62 @@ Closes the docs portion of [#50](https://github.com/emson/elfmem/issues/50) (ite
 non-existent `world` / `short_term` frames in CHANGELOG and guides; runtime FrameError
 now lists all four valid frames). Other items in #50 are tracked separately.
 
+### Added — MCP/CLI parity (closes [#50](https://github.com/emson/elfmem/issues/50) items 2 + 3)
+
+- **`elfmem_dream` MCP tool now accepts `rescore`, `rescore_max`, `no_llm`,
+  `skip_contradictions`** — bringing it to parity with the v0.13.3 CLI flags
+  (`elfmem dream --rescore [--max N] --no-llm --skip-contradictions`). MCP
+  clients can now trigger deep-sleep rescoring, bypass the LLM during outages
+  or bulk loads, and skip the O(n²) contradiction loop for trusted ingestion.
+  Default invocation (`elfmem_dream()` with no args) is byte-identical to
+  pre-feature behaviour. Threading verified by tests.
+- **Five new MCP tools surfacing the Theory of Mind API**:
+  - `elfmem_mind_create(subject, goals?, beliefs?, fears?, motivations?)` →
+    creates a `mind`-category block, DURABLE decay, retrievable via the
+    `simulate` frame.
+  - `elfmem_mind_predict(mind_block_id, prediction, verify_at, reasoning?)` →
+    attaches a falsifiable prediction (decision block + `predicts` edge).
+  - `elfmem_mind_list()` → enumerates all mind blocks with prediction
+    statistics (count, hit/miss ratio, calibration).
+  - `elfmem_mind_show(mind_block_id)` → full view of one mind block with
+    every linked prediction and its outcome.
+  - `elfmem_mind_outcome(decision_block_id, hit, reason)` → closes a
+    prediction; Bayesian-calibrates both the decision and mind blocks.
+
+  Theory of Mind was Python-API-only since v0.7.0 — unreachable from any MCP
+  client (Claude Desktop, Cursor, etc.). The workaround was `remember(...,
+  tags=["mind/<subject>"])`, which bypassed all lifecycle protections. These
+  wrappers close that gap with the same docstring + agent-first contract
+  shape as the rest of the MCP surface.
+
+### Added — `AgentGuide` entries for previously-undocumented public methods
+
+Closes a pre-existing contract gap. Per CLAUDE.md: "every new public
+`MemorySystem` method must have a corresponding `AgentGuide` entry in
+`src/elfmem/guide.py`." Three methods shipped without one:
+
+- **`mind_list`** (since v0.7.0) — discovery for mind blocks.
+- **`mind_show`** (since v0.7.0) — detailed view of a single mind + predictions.
+- **`rescore`** (since v0.13.3) — standalone deep-sleep operation, the public
+  surface behind `dream(rescore=True)`.
+
+Each entry follows the `USE WHEN / DON'T USE WHEN / COST / RETURNS / NEXT`
+template and a runnable example. `elfmem guide rescore` / `elfmem guide
+mind_list` / `elfmem guide mind_show` now return proper guidance instead of
+a "valid method names" fallback.
+
+### Migration
+
+- **AGENT.md fragment hash changes for all existing installs.** The
+  `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and
+  this PR adds three new entries. Existing installs will see
+  `elfmem agent-docs check` report drift (`stale_version` if the lib version
+  also bumped; otherwise `edited`). **Recovery is the existing one:**
+  `elfmem agent-docs install` regenerates and re-locks. No data migration.
+- **No behavioural change** for any operation. The new MCP wrappers and
+  `AgentGuide` entries are pure additions; default `elfmem_dream()` is
+  byte-identical to the previous version.
+
 ---
 
 ## [0.13.3] — 2026-05-08
