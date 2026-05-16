@@ -134,7 +134,7 @@ class ElfDecisionMaker:
         - SELF frame provides constitutional veto (identity stays stable)
         - TASK frame provides goal alignment
         - ATTENTION frame provides situational context
-        - WORLD frame provides applicable patterns
+        - ATTENTION frame provides applicable patterns
         - outcome() reinforces blocks that led to good decisions
         - dream() consolidates decision patterns
         - curate() prunes weak patterns over time

@@ -56,8 +56,8 @@ AGENT_PATTERNS = [
     {
         "content": (
             "Frame selection is task-dependent: Choose retrieval frame by task type. "
-            "ATTENTION → novel problems (broad scope). TASK → goal-focused execution. SELF → values/identity conflicts. "
-            "WORLD → understanding context. SHORT_TERM → quick lookup. "
+            "ATTENTION → novel problems (broad scope, query-driven default). TASK → goal-focused execution. "
+            "SELF → values/identity conflicts. SIMULATE → perspective-taking / Theory-of-Mind (reasoning about other agents). "
             "Why: Different tasks need different knowledge. Frame optimization dramatically improves retrieval quality."
         ),
         "tags": ["agent-pattern/recall", "frame-selection", "core-heuristic"],
@@ -74,7 +74,7 @@ AGENT_PATTERNS = [
     {
         "content": (
             "Handle contradictions via recursive recall: When blocks contradict, don't pick one arbitrarily. "
-            "Query SELF frame (do my values guide me?) and WORLD frame (what's broader context?). "
+            "Query SELF frame (do my values guide me?) and ATTENTION frame (what's broader context?). "
             "Design resolution experiment to understand conflict. "
             "Why: Contradictions signal incomplete model or domain instability. Ignoring them compounds confusion. "
             "Recursive frames provide context for genuine resolution."
@@ -236,7 +236,7 @@ AGENT_PATTERNS = [
         "content": (
             "Anti-pattern: Ignore contradictions. Symptom: Retrieve Block A and Block B that contradict; pick one "
             "arbitrarily; contradiction festers. Why it fails: Contradictions indicate incomplete model; ignoring them "
-            "compounds confusion. Fix: Flag contradictions immediately. Query SELF/WORLD for context. Design resolution "
+            "compounds confusion. Fix: Flag contradictions immediately. Query SELF/ATTENTION for context. Design resolution "
             "experiment. Resolve explicitly, then re-learn."
         ),
         "tags": ["agent-pattern/anti-pattern", "learning-mistake", "debugging"],

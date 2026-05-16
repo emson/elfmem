@@ -139,7 +139,7 @@ Identity blocks use `permanent` decay with a half-life of ~80,000 hours. They an
 | Standard | ~69 hours | General knowledge |
 | Ephemeral | ~14 hours | Session observations, temporary facts |
 
-### Six frames: retrieval shaped by intent
+### Four frames: retrieval shaped by intent
 
 Each frame is a pre-configured scoring pipeline. The same knowledge scores differently depending on what the agent needs:
 
@@ -152,12 +152,6 @@ context = await system.frame("attention", query="async error handling")
 
 # "What should I do?" - balanced across all signals
 plan = await system.frame("task", query="refactor the API layer")
-
-# "What's the broader picture?" - weights similarity and graph centrality
-background = await system.frame("world", query="Python best practices")
-
-# "What just happened?" - weights recency above all
-recent = await system.frame("short_term")
 
 # "What would they do?" - inhabit another agent's perspective
 perspective = await system.frame("simulate", query="how will the user react?")
@@ -275,9 +269,9 @@ elfmem export knowledge.json --share public
 elfmem import peer_knowledge.json --from elf:trader
 ```
 
-### Three rhythms: learn, dream, curate
+### Four rhythms: learn, dream, curate, rescore
 
-Every operation maps to one of three biological rhythms:
+Every operation maps to one of four biological rhythms:
 
 ```python
 # HEARTBEAT - milliseconds, no API calls
@@ -295,9 +289,15 @@ if system.should_dream:
 # Call on schedule. Archives decayed blocks, prunes weak edges, reinforces top knowledge.
 result = await system.curate()
 print(result)  # "Curated: 2 archived, 3 edges pruned, 5 reinforced."
+
+# DEEP SLEEP - LLM-powered, periodic re-evaluation
+# Re-scores aged active blocks against the *current* SELF. Keeps alignment,
+# summaries, and tags fresh as identity drifts.
+result = await system.dream(rescore=True)
+print(result)  # "... 20 rescored, 0 failed."
 ```
 
-`learn()` is instant because it defers all expensive work to `dream()`. `dream()` does the heavy lifting (embedding, deduplication, contradiction detection, graph construction) in a single batch. `curate()` is the gardener: archiving what's faded, pruning weak connections, reinforcing what matters most.
+`learn()` is instant because it defers all expensive work to `dream()`. `dream()` does the heavy lifting (embedding, deduplication, contradiction detection, graph construction) in a single batch. `curate()` is the gardener: archiving what's faded, pruning weak connections, reinforcing what matters most. **Deep sleep** (rescoring) closes the loop: as the agent's identity evolves through new learning, existing memories are progressively re-evaluated so they remain aligned with the current self. Run it periodically, or as `elfmem dream --rescore [--max N]`.
 
 ### Knowledge graph: connections that strengthen through use
 
@@ -389,7 +389,7 @@ Decay is **session-aware**: the clock only ticks during active use. Knowledge su
 | Theory of Mind | Yes | No | No | No |
 | Peer communication | Yes | No | No | No |
 | Automatic migration | Yes | No | No | No |
-| Retrieval frames | 6 optimised | No | No | No |
+| Retrieval frames | 4 optimised | No | No | No |
 | MCP native | Yes | No | No | No |
 | Official SDKs only | Yes | No | Varies | No |
 

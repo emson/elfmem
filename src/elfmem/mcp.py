@@ -332,7 +332,8 @@ async def elfmem_recall(
 
     Use result.text directly in your LLM prompt. Block IDs in result.blocks
     can be passed to elfmem_outcome to record outcome feedback later.
-    frame: "attention" (query-driven, default) | "self" (identity) | "task" (goals).
+    frame: "attention" (query-driven, default) | "self" (identity) | "task" (goals)
+        | "simulate" (Theory-of-Mind retrieval — self constitution + mind/* blocks).
     """
     return await _tool_recall(query, top_k=top_k, frame=frame)
 

@@ -63,7 +63,7 @@ This project uses the **<PROJECT_NAME>_elfmem** MCP server.
 ## Available Operations
 
 **elfmem_recall(query, frame="attention", top_k=5)**
-- Retrieve knowledge (frames: self, attention, task, world, short_term)
+- Retrieve knowledge (frames: self, attention, task, simulate)
 
 **elfmem_remember(content, tags=[])**
 - Store knowledge with semantic tags

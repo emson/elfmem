@@ -467,7 +467,7 @@ The best architecture for elfmem is a **synthesis of D + C + A + F**:
 │                                                          │
 │  TIER 3 — Deep Causal Analysis (8-10 LLM calls):         │
 │    Full causal graph extraction                            │
-│    Multi-frame recall (SELF + WORLD + ATTENTION + TASK)    │
+│    Multi-frame recall (SELF + SIMULATE + ATTENTION + TASK) │
 │    Archetype modeling for multi-actor scenarios             │
 │    Ensemble of 5+ scenario sets                            │
 │    Supervisor reconciliation                               │
@@ -544,7 +544,7 @@ Traditional approach:
 
 Reflective approach:
   low confidence → trigger reconstruction cycle:
-    1. Recall from different frame (WORLD instead of TASK)
+    1. Recall from different frame (ATTENTION instead of TASK)
     2. Check consistency with related blocks via graph traversal
     3. Generate adversarial counter-scenario
     4. If reconstruction converges → higher justified confidence
