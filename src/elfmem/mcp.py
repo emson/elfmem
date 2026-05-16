@@ -141,8 +141,18 @@ async def _tool_curate() -> dict[str, Any]:
     return result.to_dict()
 
 
-async def _tool_dream() -> dict[str, Any]:
-    result = await _mem().dream()
+async def _tool_dream(
+    rescore: bool = False,
+    rescore_max: int | None = None,
+    no_llm: bool = False,
+    skip_contradictions: bool = False,
+) -> dict[str, Any]:
+    result = await _mem().dream(
+        skip_llm=no_llm,
+        skip_contradictions=skip_contradictions,
+        rescore=rescore,
+        rescore_max=rescore_max,
+    )
     if result is None:
         return {"message": "No pending blocks to consolidate", "status": "idle"}
     return result.to_dict()
@@ -184,6 +194,62 @@ async def _tool_disconnect(
 
 async def _tool_guide(method: str | None = None) -> str:
     return _mem().guide(method)
+
+
+# ── Theory of Mind tools (mind_*) ────────────────────────────────────────────
+
+
+async def _tool_mind_create(
+    subject: str,
+    goals: list[str] | None = None,
+    beliefs: list[str] | None = None,
+    fears: list[str] | None = None,
+    motivations: list[str] | None = None,
+) -> dict[str, Any]:
+    result = await _mem().mind_create(
+        subject,
+        goals=goals,
+        beliefs=beliefs,
+        fears=fears,
+        motivations=motivations,
+    )
+    return result.to_dict()
+
+
+async def _tool_mind_predict(
+    mind_block_id: str,
+    prediction: str,
+    verify_at: str,
+    reasoning: str | None = None,
+) -> dict[str, Any]:
+    result = await _mem().mind_predict(
+        mind_block_id,
+        prediction,
+        verify_at=verify_at,
+        reasoning=reasoning,
+    )
+    return result.to_dict()
+
+
+async def _tool_mind_list() -> list[dict[str, Any]]:
+    results = await _mem().mind_list()
+    return [r.to_dict() for r in results]
+
+
+async def _tool_mind_show(mind_block_id: str) -> dict[str, Any]:
+    result = await _mem().mind_show(mind_block_id)
+    return result.to_dict()
+
+
+async def _tool_mind_outcome(
+    decision_block_id: str,
+    hit: bool,
+    reason: str,
+) -> dict[str, Any]:
+    result = await _mem().mind_outcome(
+        decision_block_id, hit=hit, reason=reason
+    )
+    return result.to_dict()
 
 
 async def _tool_peer_send(
@@ -307,16 +373,41 @@ async def elfmem_curate() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def elfmem_dream() -> dict[str, Any]:
+async def elfmem_dream(
+    rescore: bool = False,
+    rescore_max: int | None = None,
+    no_llm: bool = False,
+    skip_contradictions: bool = False,
+) -> dict[str, Any]:
     """Deep consolidation: embed, align, detect contradictions, build graph.
 
     Call when elfmem_remember indicates should_dream=True, or when you want
     to consolidate pending knowledge. Safe at natural pause points.
 
     Embedding & LLM calls per pending block. Slow if many pending.
-    Returns: blocks processed, promoted, dedup'd, edges created.
+    Returns: blocks processed, promoted, dedup'd, edges created — plus
+    rescored / rescore_failed when rescore=True.
+
+    rescore: After processing the inbox, refresh aged or unscored active
+             blocks against the current SELF (deep-sleep mode, v0.13.3).
+             Selection: NULL last_scored_at first, then oldest by
+             last_scored_at. Mutually exclusive with no_llm=True.
+    rescore_max: Cap the number of blocks rescored in this call. None = use
+             the configured RescoreConfig.max_per_run.
+    no_llm: Bypass all LLM calls — embed + promote only. Use for outages,
+             bulk loads, cost-sensitive batches. Affected blocks have
+             last_scored_at=NULL and will be picked up first by a future
+             rescore=True call.
+    skip_contradictions: Keep LLM scoring but skip the O(n²) contradiction
+             detection loop. Use for trusted structured ingestion where
+             contradiction discovery isn't needed.
     """
-    return await _tool_dream()
+    return await _tool_dream(
+        rescore=rescore,
+        rescore_max=rescore_max,
+        no_llm=no_llm,
+        skip_contradictions=skip_contradictions,
+    )
 
 
 @mcp.tool()
@@ -379,6 +470,106 @@ async def elfmem_disconnect(
     Returns action: 'removed' | 'not_found' | 'guarded'.
     """
     return await _tool_disconnect(source, target, guard_relation=guard_relation, reason=reason)
+
+
+@mcp.tool()
+async def elfmem_mind_create(
+    subject: str,
+    goals: list[str] | None = None,
+    beliefs: list[str] | None = None,
+    fears: list[str] | None = None,
+    motivations: list[str] | None = None,
+) -> dict[str, Any]:
+    """Create a Theory of Mind block for a subject (another agent, user, stakeholder).
+
+    Stores a structured mental model — goals / beliefs / fears / motivations —
+    as a `mind` category block with DURABLE decay (~6 month half-life). The
+    model is retrievable via the `simulate` frame, and predictions about the
+    subject can be attached with elfmem_mind_predict.
+
+    USE WHEN: modelling a specific actor's likely behaviour for downstream
+    reasoning. DON'T USE WHEN: storing general facts about someone — use
+    elfmem_remember instead.
+
+    Returns: LearnResult with the mind block ID. Cost: instant, no LLM.
+    """
+    return await _tool_mind_create(
+        subject=subject,
+        goals=goals,
+        beliefs=beliefs,
+        fears=fears,
+        motivations=motivations,
+    )
+
+
+@mcp.tool()
+async def elfmem_mind_predict(
+    mind_block_id: str,
+    prediction: str,
+    verify_at: str,
+    reasoning: str | None = None,
+) -> dict[str, Any]:
+    """Add a falsifiable prediction linked to a mind block.
+
+    Creates a `decision` category block and a `predicts` edge to the mind
+    block. Predictions must have a verify_at date (ISO format) — the moment
+    when the prediction will become observable. Close the loop with
+    elfmem_mind_outcome when the date arrives.
+
+    USE WHEN: you have a specific, testable hypothesis about what a modelled
+    mind will do. DON'T USE WHEN: the claim is unfalsifiable or has no
+    verification date.
+
+    Returns: MindPredictResult with decision_block_id and edge status.
+    """
+    return await _tool_mind_predict(
+        mind_block_id=mind_block_id,
+        prediction=prediction,
+        verify_at=verify_at,
+        reasoning=reasoning,
+    )
+
+
+@mcp.tool()
+async def elfmem_mind_list() -> list[dict[str, Any]]:
+    """List all active mind blocks with prediction statistics.
+
+    USE WHEN: discovering which minds are modelled and their calibration.
+    Returns: list of mind summaries — subject, confidence, prediction counts,
+    hit/miss ratios. Cost: fast (DB reads only).
+    """
+    return await _tool_mind_list()
+
+
+@mcp.tool()
+async def elfmem_mind_show(mind_block_id: str) -> dict[str, Any]:
+    """Show a mind block with all linked predictions and outcomes.
+
+    USE WHEN: inspecting a specific mind model before reasoning about it,
+    or before running a simulate-frame retrieval grounded in this subject.
+    Returns: full content + predictions + closed outcomes. Cost: fast.
+    """
+    return await _tool_mind_show(mind_block_id)
+
+
+@mcp.tool()
+async def elfmem_mind_outcome(
+    decision_block_id: str,
+    hit: bool,
+    reason: str,
+) -> dict[str, Any]:
+    """Close a prediction: record hit/miss and calibrate the mind model.
+
+    USE WHEN: a prediction has resolved — the verify_at date has passed and
+    you can observe whether it was correct. Updates confidence on both the
+    decision block and the linked mind block via Bayesian calibration.
+    DON'T USE WHEN: the prediction hasn't resolved yet — wait for evidence.
+
+    Returns: MindOutcomeResult with confidence deltas.
+    """
+    return await _tool_mind_outcome(
+        decision_block_id=decision_block_id, hit=hit, reason=reason
+    )
 
 
 @mcp.tool()
