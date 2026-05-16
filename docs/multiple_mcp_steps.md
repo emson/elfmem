@@ -215,9 +215,9 @@ All elfmem operations (recall, remember, dream, curate, etc.) connect to:
 
 **recall(query, frame="attention", top_k=5)**
 - Retrieve knowledge from MoveMyth's memory
-- Frames: "self" (identity), "attention" (broad), "task" (goal),
-  "world" (context), "short_term" (recent)
-- Example: `elfmem_recall("forecasting accuracy patterns", frame="world")`
+- Frames: "self" (identity), "attention" (broad / default), "task" (goal),
+  "simulate" (Theory-of-Mind — self + `mind/*` blocks)
+- Example: `elfmem_recall("forecasting accuracy patterns", frame="attention")`
 
 **remember(content, tags=[])**
 - Store patterns, insights, and learnings
@@ -250,7 +250,7 @@ All elfmem operations (recall, remember, dream, curate, etc.) connect to:
 
 ```
 Before forecasting decision:
-  1. elfmem_recall("what has worked in similar forecasts", frame="world")
+  1. elfmem_recall("what has worked in similar forecasts", frame="attention")
   2. elfmem_recall("what do we value in accuracy", frame="self")
   3. Set expectation: "I expect Brier Index of 75%"
 

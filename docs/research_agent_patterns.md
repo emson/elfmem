@@ -1,5 +1,8 @@
 # Agent Usage Patterns for elfmem — Deep Research
 
+> **Note (v0.13.x frame consolidation):** This guide predates the frame registry consolidation. The live built-in frames are `self`, `attention`, `task`, and `simulate` (see `src/elfmem/context/frames.py BUILTIN_FRAMES`). Treat any reference to `WORLD` / `frame="world"` below as `frame="attention"` (query-driven retrieval — already weights similarity, recency, and graph centrality). Treat `SHORT_TERM` / `frame="short_term"` as `frame="attention"` as well (the recency weighting is built in). For perspective-taking / Theory-of-Mind retrieval, use `frame="simulate"`. Code examples below have been updated to use live frame names; narrative uppercase references remain as historical context.
+
+
 ## Overview
 
 This document captures the optimal patterns for how AI agents should interact with elfmem's four core operations: remember, recall, outcome, and curate. These patterns emerge from:
@@ -157,7 +160,7 @@ if contradictions_detected(blocks):
     self_blocks = recall(query, frame="self", top_k=3)
     # Do my values/identity guide me?
 
-    world_blocks = recall(query, frame="world", top_k=3)
+    world_blocks = recall(query, frame="attention", top_k=3)
     # What's the broader context?
 
     # Design resolution experiment:
@@ -840,7 +843,7 @@ TRANSITION SIGNALS:
 SESSION START (first recall):
   1. Recall recent context
      recent = recall(query="what did I learn last session?",
-                     frame="short_term",
+                     frame="attention",
                      hours=24)
   2. Review blocks created in last 24h
   3. Check for unresolved contradictions

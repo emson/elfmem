@@ -85,7 +85,10 @@ KEY_MODULES: dict[str, str] = {
     "src/elfmem/guide.py": "AgentGuide + GUIDES dict — add entry for every new public op",
     "tests/conftest.py": "Shared test fixtures — always use these",
     "CHANGELOG.md": "Update this for every user-facing change",
-    "docs/amgs_architecture.md": "Full technical specification",
+    "docs/amgs_architecture.md": (
+        "Original design spec (historical — see docs/quickstart.md "
+        "and 'elfmem guide' for the live surface)"
+    ),
 }
 
 _LOCAL_CONFIG_SUBDIR = ".elfmem"

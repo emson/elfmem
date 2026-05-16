@@ -4,6 +4,8 @@
 **Status**: Research / Evaluation
 **Context**: Analysis of an agent-based behavioural simulation plan from a prediction market system (KLS), evaluated against elfmem's existing simulation calibration architecture
 
+> **Frame-registry note (v0.13.x):** This research doc refers to a `WORLD` frame that was never implemented. The shipped frame registry is `self`, `attention`, `task`, `simulate`. The Theory-of-Mind / entity-profile concept described here is realised through the **`simulate` frame** plus `mind_*` operations (`mind_create`, `mind_predict`, `mind_outcome`). Read references to "WORLD frame" below as "the `simulate` frame plus `mind/*` blocks". The pre-existing `frame_type="world"` API calls were corrected to `frame="simulate"`; substitute `frame="attention"` instead if your intent is general context rather than perspective-taking.
+
 ---
 
 ## 1. What the Behavioural Simulation Plan Does
@@ -487,7 +489,7 @@ await system.learn(
 # Recall entity profile for simulation
 entity_blocks = await system.frame(
     "trump decision style and trigger conditions",
-    frame_type="world",
+    frame="simulate",
     top_k=5
 )
 ```
@@ -512,7 +514,7 @@ Implement within elfmem's existing architecture:
 
 ```python
 # Simulation as structured recall + scenario generation + outcome
-entity_context = await system.frame("trump iran decision patterns", frame_type="world")
+entity_context = await system.frame("trump iran decision patterns", frame="simulate")
 self_check = await system.frame("my calibration for geopolitical events", frame_type="self")
 
 # Generate scenarios (via LLM adapter, constrained by entity profiles)

@@ -192,7 +192,7 @@ async with system.session():
     pass
 
 # On session end, agent reflects:
-session_blocks = await system.recall("today's learnings", frame="short_term", top_k=10)
+session_blocks = await system.recall("today's learnings", frame="attention", top_k=10)
 
 # Agent identifies three connections from its working memory:
 connections = [

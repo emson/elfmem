@@ -8,7 +8,7 @@
 
 LLM agents are stateless by default. Every session starts from zero. Context windows fill up and reset. RAG retrieves documents but never learns from them. Most memory libraries either demand external infrastructure — vector databases, Redis, Postgres — or offer only a key-value store with no concept of decay, identity, or relevance.
 
-## The solution: three rhythms
+## The solution: four rhythms
 
 ```python
 from elfmem import MemorySystem
@@ -27,6 +27,7 @@ async with system.session():
 | **Heartbeat** | `learn()` | Milliseconds — no API | After every discovery |
 | **Breathing** | `dream()` | Seconds — one LLM call | At natural pause points |
 | **Sleep** | `curate()` | Minutes — periodic | Automatically on schedule |
+| **Deep Sleep** | `dream(rescore=True)` | Seconds per block — LLM | Periodically, as identity drifts |
 
 ---
 
