@@ -32,20 +32,22 @@ the *distribution* of outcomes before committing to action.
 
 ---
 
-## The Fourth Rhythm: Imagination
+## Simulation: A Frame, Not a Rhythm
 
-elfmem has three rhythms. Simulation adds a fourth:
+> **Terminology note (v0.13.3 onward):** elfmem's four rhythms are Heartbeat (`learn`), Breathing (`dream`), Sleep (`curate`), and Deep Sleep (`dream --rescore` — re-evaluation against current SELF). Simulation is implemented as the `simulate` **frame**, not as a rhythm: a Theory-of-Mind retrieval mode that blends the SELF constitution with `mind/*` blocks. The conceptual function described below (using memory to anticipate possible futures and pre-calibrate) is realised through the simulate frame plus the `mind_predict` / `mind_outcome` operations.
 
 | Rhythm | Operation | Timescale | Direction |
 |--------|-----------|-----------|-----------|
 | Heartbeat | learn/remember | milliseconds | Past → Memory |
 | Breathing | dream/consolidate | seconds | Memory → Structure |
 | Sleep | curate | minutes | Structure → Health |
-| **Imagination** | **simulate** | **seconds** | **Memory → Future** |
+| Deep Sleep | `dream --rescore` | seconds/block | Memory → Identity |
 
-Imagination is the only rhythm that looks *forward*. It generates possible
-futures from current knowledge and uses the distribution of those futures to
-calibrate memory *before* reality provides feedback.
+The simulate frame is the only retrieval mode that explicitly supports
+*forward* reasoning. It surfaces identity, mind models, and decisions
+together so the agent can generate possible futures from current
+knowledge and use the distribution of those futures to calibrate memory
+*before* reality provides feedback.
 
 ---
 
@@ -56,7 +58,7 @@ calibrate memory *before* reality provides feedback.
 Standard elfmem retrieval, multi-frame:
 
 ```python
-world_knowledge = recall("EU-China trade dynamics", frame="world", top_k=10)
+world_knowledge = recall("EU-China trade dynamics", frame="attention", top_k=10)
 self_knowledge  = recall("my analytical framework", frame="self", top_k=3)
 task_context    = recall("current question: carbon tariff impact", frame="task", top_k=5)
 ```

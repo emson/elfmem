@@ -6,6 +6,8 @@
 
 *A graph-based, decay-aware, confidence-calibrated, context-assembling cognitive engine.*
 
+> **Status note (v0.13.x):** This document is the **original design specification** and includes frames (`WORLD`, `SHORT_TERM`) and frame-composition presets (`SESSION`, `REASONING`, `BRIEFING`, `DEEP_RECALL`) that were **not carried forward into the shipped implementation**. The live frame registry is `self`, `attention`, `task`, `simulate` — see `src/elfmem/context/frames.py BUILTIN_FRAMES`. Refer to `docs/quickstart.md` and `elfmem guide` for the current authoritative surface; treat this document as historical design context, not implementation reference.
+
 ---
 
 ## Table of Contents

@@ -1,5 +1,8 @@
 # Operationalizing the Cognitive Loop — Executive Decision Frameworks
 
+> **Note (v0.13.x frame consolidation):** This guide predates the frame registry consolidation. The live built-in frames are `self`, `attention`, `task`, and `simulate` (see `src/elfmem/context/frames.py BUILTIN_FRAMES`). Treat any reference to `WORLD` / `frame="world"` below as `frame="attention"` (query-driven retrieval — already weights similarity, recency, and graph centrality). Treat `SHORT_TERM` / `frame="short_term"` as `frame="attention"` as well (the recency weighting is built in). For perspective-taking / Theory-of-Mind retrieval, use `frame="simulate"`. Code examples below have been updated to use live frame names; narrative uppercase references remain as historical context.
+
+
 ## Overview
 
 The cognitive loop is the feedback cycle that enables adaptive learning. It connects:
@@ -146,7 +149,7 @@ When contradictions detected:
 
   // Get context via recursive recall
   self_knowledge = recall("my values", frame="self")
-  world_knowledge = recall("context", frame="world")
+  world_knowledge = recall("context", frame="attention")
 
   // Design experiment that resolves contradiction
   experiment = design_resolution_experiment(
@@ -185,7 +188,7 @@ When contradictions detected:
 ```
 When learning something new:
   // Step 1: Find related knowledge
-  related = recall(query, frame="world", top_k=10, expand_graph=YES)
+  related = recall(query, frame="attention", top_k=10, expand_graph=YES)
 
   // Step 2: Understand relationship types
   FOR each related_block IN related:
@@ -374,7 +377,7 @@ START of session (5 minutes):
   // Recall what you learned recently
   recent = recall(
     query="what did I learn in last 24 hours?",
-    frame="short_term",
+    frame="attention",
     hours=24
   )
 

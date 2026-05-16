@@ -4,10 +4,11 @@
 
 ## Core Mental Model
 
-**Three rhythms** (every design decision maps to one of these):
+**Four rhythms** (every design decision maps to one of these):
 - **Heartbeat** — `learn()`: milliseconds, no LLM, pure inbox insert
 - **Breathing** — `dream()` / `consolidate()`: seconds, LLM-powered dedup + contradiction detection
 - **Sleep** — `curate()`: minutes, decay archival + graph pruning + top-K reinforcement
+- **Deep Sleep** — `dream(rescore=True)` / `rescore()`: re-evaluates aged active blocks against the *current* SELF; keeps alignment / summary / tags fresh as the agent's identity drifts (v0.13.3)
 
 **Four frames** — always select before retrieving context:
 `self` · `attention` · `task` · `simulate`

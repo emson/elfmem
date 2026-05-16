@@ -226,7 +226,7 @@ ALTER TABLE edges ADD COLUMN note TEXT;
 |------|---------------------|
 | `supports` | Prioritised in TASK frame expansion |
 | `contradicts` | Surface as counterpoint; suppress lower-confidence block |
-| `elaborates` | Prioritised in ATTENTION/WORLD frame expansion |
+| `elaborates` | Prioritised in ATTENTION frame expansion |
 | `co_occurs` | Standard expansion weight |
 | `outcome` | Highest expansion weight — proven useful |
 | `similar` | Standard expansion weight (current behaviour) |

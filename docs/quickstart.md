@@ -240,13 +240,14 @@ Blocks decay during active sessions only. Memory survives weekends and restarts.
 | standard  | 0.010   | ~69h    | General knowledge (default) |
 | ephemeral | 0.050   | ~14h    | Session observations, temporary facts |
 
-### Three Frames
+### Four Frames
 
 | Frame | Purpose | When to Use |
 |-------|---------|-------------|
 | `attention` | Query-driven retrieval (default) | RAG, current task |
 | `self` | Agent identity and values | System prompt injection |
 | `task` | Goal-oriented context | Task planning, constraints |
+| `simulate` | Theory-of-Mind retrieval (self + `mind/*` blocks) | Reasoning about modelled minds (other agents, users) |
 
 ### Outcome Feedback
 

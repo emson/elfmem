@@ -1226,7 +1226,7 @@ class MemorySystem:
         except ValueError as exc:
             raise FrameError(
                 str(exc),
-                recovery="Valid frames: 'self', 'attention', 'task'.",
+                recovery="Valid frames: 'self', 'attention', 'task', 'simulate'.",
             ) from exc
 
         k = top_k if top_k is not None else self._config.memory.top_k
@@ -1305,7 +1305,7 @@ class MemorySystem:
         except ValueError as exc:
             raise FrameError(
                 str(exc),
-                recovery="Valid frames: 'self', 'attention', 'task'.",
+                recovery="Valid frames: 'self', 'attention', 'task', 'simulate'.",
             ) from exc
 
         k = top_k if top_k is not None else self._config.memory.top_k

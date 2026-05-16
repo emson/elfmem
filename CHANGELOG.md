@@ -13,9 +13,39 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`elfmem recall --frame` help** now lists `simulate` alongside `attention|self|task`.
   The `simulate` frame (Theory-of-Mind) shipped with the `mind` feature but was missing
   from the CLI help string, the MCP `elfmem_recall` docstring, and `docs/quickstart.md`.
-- **CLAUDE.md "Core Mental Model"** corrected from "Five frames (self · attention · task ·
-  world · short_term)" to the four built-ins that actually exist in `BUILTIN_FRAMES`:
-  `self · attention · task · simulate`. `world` and `short_term` were never implemented.
+- **`MemorySystem.frame()` `FrameError.recovery`** now lists all four valid frames
+  (`'self', 'attention', 'task', 'simulate'`). Previously the recovery hint advertised
+  only three, so an agent that correctly called `frame("simulate")` and mistyped would
+  be told `simulate` doesn't exist.
+- **`elfmem guide` OVERVIEW** now describes **four rhythms** (Heartbeat → Breathing →
+  Sleep → Deep Sleep) and lists `rescore(max_count?)` in the operations table. The
+  agent-runtime surface (`guide.py`) was the last place still saying "three rhythms"
+  after v0.13.3 added the fourth.
+- **Stale-concept sweep across docs**: `README.md`, `CLAUDE.md`, `docs/index.md`,
+  `docs/quickstart.md`, `docs/elfmem_tool.md`, `docs/MULTIPLE_MCP_QUICK_REFERENCE.md`,
+  `docs/multiple_mcp_steps.md`, `docs/dreaming_architecture.md`, and
+  `docs/CLAUDE_CODE_INTEGRATION.md` updated to match the live registry: four frames
+  (self/attention/task/simulate) and four rhythms (the fourth being Deep Sleep /
+  `dream --rescore`, per CHANGELOG v0.13.3 — not the `simulate` frame, which is a
+  retrieval mode, not a temporal rhythm).
+- **Agent-pattern guides** (`docs/agent_usage_patterns_guide.md`,
+  `docs/cognitive_loop_operations_guide.md`, `docs/operationalize_cognitive_loop.md`,
+  `docs/research_agent_patterns.md`): added a top-of-file frame-consolidation note;
+  rewrote `frame="world"` / `frame="short_term"` code examples to use `frame="attention"`
+  so the snippets are runnable. Historical narrative `WORLD` / `SHORT_TERM` references
+  remain as context, mapped by the note.
+- **`docs/amgs_architecture.md`** flagged at the top as an **original design spec**:
+  describes frames (`WORLD`, `SHORT_TERM`) and frame-composition presets (`SESSION`,
+  `REASONING`, `BRIEFING`, `DEEP_RECALL`) that were not carried into the shipped
+  implementation. Readers are pointed at `docs/quickstart.md` / `elfmem guide` for the
+  current surface.
+- **Memory-seeding scripts**: `scripts/seed_team_memory.py` and
+  `scripts/learn_agent_patterns.py` were ingesting **"three rhythms" / "five frames"**
+  text into agent memory, propagating the stale model into any seeded project. Updated
+  to four rhythms and four frames.
+- **`examples/simulation_calibration.md`** and **`docs/CLAUDE_CODE_INTEGRATION.md`** no
+  longer call the `simulate` frame "the fourth rhythm". `simulate` is a frame; the
+  fourth rhythm is Deep Sleep / rescoring.
 
 ---
 
