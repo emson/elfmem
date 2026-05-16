@@ -37,6 +37,34 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   wrappers close that gap with the same docstring + agent-first contract
   shape as the rest of the MCP surface.
 
+### Added — `AgentGuide` entries for previously-undocumented public methods
+
+Closes a pre-existing contract gap. Per CLAUDE.md: "every new public
+`MemorySystem` method must have a corresponding `AgentGuide` entry in
+`src/elfmem/guide.py`." Three methods shipped without one:
+
+- **`mind_list`** (since v0.7.0) — discovery for mind blocks.
+- **`mind_show`** (since v0.7.0) — detailed view of a single mind + predictions.
+- **`rescore`** (since v0.13.3) — standalone deep-sleep operation, the public
+  surface behind `dream(rescore=True)`.
+
+Each entry follows the `USE WHEN / DON'T USE WHEN / COST / RETURNS / NEXT`
+template and a runnable example. `elfmem guide rescore` / `elfmem guide
+mind_list` / `elfmem guide mind_show` now return proper guidance instead of
+a "valid method names" fallback.
+
+### Migration
+
+- **AGENT.md fragment hash changes for all existing installs.** The
+  `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and
+  this PR adds three new entries. Existing installs will see
+  `elfmem agent-docs check` report drift (`stale_version` if the lib version
+  also bumped; otherwise `edited`). **Recovery is the existing one:**
+  `elfmem agent-docs install` regenerates and re-locks. No data migration.
+- **No behavioural change** for any operation. The new MCP wrappers and
+  `AgentGuide` entries are pure additions; default `elfmem_dream()` is
+  byte-identical to the previous version.
+
 ---
 
 ## [0.13.3] — 2026-05-08
