@@ -11,16 +11,27 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - **`contradictions_detected` now surfaced on `ConsolidateResult`** (closes
-  [#50](https://github.com/emson/elfmem/issues/50) item 1). Detection was
-  running and contradictions were being inserted into the contradictions
-  table, but the count never reached the result object — `to_dict()`
-  returned only `processed/promoted/deduplicated/edges_created`, so MCP
-  clients and CLI consumers couldn't tell whether the flagship
-  contradiction-detection feature had fired. New field
-  `ConsolidateResult.contradictions_detected: int = 0` carries the count
-  per call; `to_dict()` includes it; `summary` surfaces it when non-zero.
-  `AgentGuide` entries for `dream` / `consolidate` and the MCP
-  `elfmem_dream` docstring updated to list the new field.
+  [#50](https://github.com/emson/elfmem/issues/50) item 1). When contradiction
+  detection ran, the LLM-detected pairs were inserted into the contradictions
+  table — but the count never reached the result object. `to_dict()` returned
+  only `processed/promoted/deduplicated/edges_created`, so MCP clients and CLI
+  consumers couldn't tell whether the flagship contradiction-detection feature
+  had fired. New field `ConsolidateResult.contradictions_detected: int = 0`
+  carries the per-call LLM verdict (above-threshold pairs detected this batch,
+  not a cumulative DB row count); `to_dict()` includes it; `summary` surfaces
+  it when non-zero. `AgentGuide` entries for `dream` / `consolidate`, the MCP
+  `elfmem_dream` docstring, and `docs/dreaming_architecture.md` JSON example
+  updated to list the new field.
+
+  **Follow-up flagged**: contradiction detection only fires in a narrow
+  similarity band (`0.40 ≤ sim < 0.90`); above 0.90, the second block is
+  treated as a near-duplicate and supersedes the first, bypassing detection
+  entirely. This means high-similarity contradicting wording (e.g. two
+  birthday dates that share four of five tokens) may still report
+  `contradictions_detected: 0` even after this fix, because detection never
+  ran. See [`docs/plans/plan_contradiction_detection_band.md`](docs/plans/plan_contradiction_detection_band.md)
+  for the design discussion of a follow-up that runs contradiction detection
+  on near-dup candidates before superseding.
 - **`elfmem recall --frame` help** now lists `simulate` alongside `attention|self|task`.
   The `simulate` frame (Theory-of-Mind) shipped with the `mind` feature but was missing
   from the CLI help string, the MCP `elfmem_recall` docstring, and `docs/quickstart.md`.
@@ -140,12 +151,14 @@ a "valid method names" fallback.
   existing installs upgrading to this version don't get a "edited" drift false-positive
   from `elfmem agent-docs check` / `elfmem doctor`. Subsequent renames still surface
   as drift, as intended.
-- **AGENT.md fragment hash changes for all existing installs (GUIDES additions).**
-  The `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict, and the
-  MCP-parity PR added three new entries (`mind_list`, `mind_show`, `rescore`).
-  Existing installs will see `elfmem agent-docs check` report drift (`stale_version`
-  if the lib version also bumped; otherwise `edited`). **Recovery is the existing
-  one:** `elfmem agent-docs install` regenerates and re-locks. No data migration.
+- **AGENT.md fragment hash changes for all existing installs (GUIDES changes).**
+  The `_guides_to_markdown(GUIDES)` content hash depends on the GUIDES dict. This
+  release adds three new entries (`mind_list`, `mind_show`, `rescore`) and edits
+  the `returns` text on `dream` / `consolidate` to mention `contradictions_detected`.
+  Either change moves the hash. Existing installs will see `elfmem agent-docs check`
+  report drift (`stale_version` if the lib version also bumped; otherwise `edited`).
+  **Recovery is the existing one:** `elfmem agent-docs install` regenerates and
+  re-locks. No data migration.
 - **No behavioural change** for any pre-existing operation. The new MCP wrappers,
   `AgentGuide` entries, and `agent_name` field are pure additions; default
   `elfmem_dream()` and unnamed installs are byte-identical to the previous version.

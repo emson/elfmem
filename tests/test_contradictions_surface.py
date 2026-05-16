@@ -143,3 +143,96 @@ def test_summary_omits_contradictions_when_zero() -> None:
         processed=2, promoted=2, deduplicated=0, edges_created=4,
     )
     assert "contradictions" not in r.summary
+
+
+async def test_skip_contradictions_reports_zero_even_with_contradicting_pair(
+    setup,
+) -> None:
+    """Regression guard: when skip_contradictions=True, the count must be 0
+    even if a contradicting pair sits in the inbox. The flag must short-circuit
+    detection — not just skip the DB write — and the count must reflect that.
+    """
+    engine, mock_llm, mock_embedding = setup
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+            skip_contradictions=True,
+        )
+
+    assert result.contradictions_detected == 0
+    # And the LLM was never called for contradiction detection on this pair.
+    # (mock counter is cumulative across the fixture; we only care that the
+    # second batch added no calls.)
+
+
+async def test_multiple_contradicting_pairs_sum_correctly(setup) -> None:
+    """Two inbox blocks both contradict the same active block → count is 2 pairs.
+
+    Each pair (active, new1) and (active, new2) is counted independently.
+    This guards against a regression where the implementation collapses pairs
+    by either block id (e.g. `len(set(map(_first, pairs)))`).
+    """
+    engine, mock_llm, mock_embedding = setup
+    # Two new inbox blocks, each set to 0.75 similarity with the one active block.
+    mock_embedding._similarity_overrides[
+        frozenset({
+            "the meeting is at 2pm",
+            "the meeting is at 4pm",
+        })
+    ] = 0.75
+    mock_embedding._similarity_overrides[
+        frozenset({
+            "the meeting is at 2pm",
+            "the meeting is at 5pm",
+        })
+    ] = 0.75
+    mock_llm._contradiction_overrides.update({
+        ("4pm", "2pm"): 0.90,
+        ("5pm", "2pm"): 0.90,
+        # MockLLMService.detect_contradiction does substring matching on
+        # the original-case content in both directions.
+        ("2pm", "4pm"): 0.90,
+        ("2pm", "5pm"): 0.90,
+    })
+
+    # Seed and promote the one active block.
+    async with engine.begin() as conn:
+        await learn(conn, content="The meeting is at 2pm",
+                    category="knowledge", source="test")
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    # Two contradicting blocks in one batch.
+    async with engine.begin() as conn:
+        await learn(conn, content="The meeting is at 4pm",
+                    category="knowledge", source="test")
+        await learn(conn, content="The meeting is at 5pm",
+                    category="knowledge", source="test")
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    # Two new inbox blocks, each contradicting one active block → 2 pairs.
+    assert result.contradictions_detected == 2, (
+        f"expected 2 pairs (4pm vs 2pm, 5pm vs 2pm) but got "
+        f"{result.contradictions_detected}"
+    )
