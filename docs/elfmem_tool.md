@@ -560,6 +560,88 @@ guide = await agent_tools.elfmem_guide(method="outcome")
 
 ---
 
+### `elfmem_dream` flags (v0.13.3 / MCP parity added 0.14.0)
+
+```json
+{
+  "rescore": false,              // Deep-sleep: re-evaluate aged active blocks vs current SELF
+  "rescore_max": null,           // Cap rescore work per call (null = use config default)
+  "no_llm": false,               // Bypass LLM scoring (embed + promote only)
+  "skip_contradictions": false   // Skip O(n²) contradiction detection
+}
+```
+
+Default invocation `elfmem_dream()` with no args is unchanged from prior versions. Use the flags when:
+- `rescore=True` — periodically (e.g. weekly) to keep aged blocks aligned with the agent's current SELF
+- `no_llm=True` — during LLM outages, or for bulk ingestion where alignment can be rescored later
+- `skip_contradictions=True` — when ingesting trusted, pre-deduplicated data
+
+```python
+# Deep-sleep — rescore up to 20 aged blocks
+result = await agent_tools.elfmem_dream(rescore=True, rescore_max=20)
+# Returns: {"processed": 0, "promoted": 0, "rescored": 18, "rescore_failed": 0, ...}
+
+# Bulk ingestion — embed + promote, skip LLM and contradiction work
+result = await agent_tools.elfmem_dream(no_llm=True, skip_contradictions=True)
+```
+
+---
+
+### Theory of Mind tools (`elfmem_mind_*`)
+
+Model other agents, users, or stakeholders as **mind blocks** with explicit
+goals / beliefs / fears / motivations. Attach falsifiable predictions and
+close the loop with outcomes to calibrate the model. The `simulate` frame
+retrieves these together with your SELF constitution.
+
+```python
+# 1. Create a mind model
+mind = await agent_tools.elfmem_mind_create(
+    subject="Alice",
+    goals=["Ship the API refactor by Friday"],
+    beliefs=["Microservices are overengineered for our scale"],
+    fears=["Breaking the mobile app integration"],
+)
+mind_id = mind["block_id"]
+
+# 2. Add a falsifiable prediction
+pred = await agent_tools.elfmem_mind_predict(
+    mind_block_id=mind_id,
+    prediction="Alice will push back on splitting the monolith",
+    verify_at="2026-06-01",
+    reasoning="microservices belief + mobile-integration fear",
+)
+decision_id = pred["decision_block_id"]
+
+# 3. Retrieve perspective via the simulate frame
+ctx = await agent_tools.elfmem_recall(
+    query="how will Alice react to the proposal?", frame="simulate"
+)
+# ctx.text combines SELF constitution + mind/* blocks + decisions
+
+# 4. Close the prediction when it resolves
+await agent_tools.elfmem_mind_outcome(
+    decision_block_id=decision_id,
+    hit=True,
+    reason="Alice vetoed the split in Thursday's meeting, as predicted",
+)
+# Bayesian-calibrates both the decision block and the mind block
+
+# Discovery
+await agent_tools.elfmem_mind_list()           # all minds + calibration stats
+await agent_tools.elfmem_mind_show(mind_id)    # one mind + linked predictions
+```
+
+**When to use:** modelling a specific actor's likely behaviour for downstream
+reasoning, where you want to track prediction accuracy over time. Mind blocks
+use DURABLE decay (~6 month half-life) so models persist across sessions.
+
+**When NOT to use:** storing general facts about someone — use
+`elfmem_remember` instead. The mind/* tools are for *structured mental models
+that generate falsifiable predictions*, not as a category of free-text notes.
+
+---
+
 ## CLI Reference
 
 ### `elfmem remember`
