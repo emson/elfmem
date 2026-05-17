@@ -9,6 +9,47 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — `elfmem migrate-embeddings` (Phase 2 of [#50 follow-up](https://github.com/emson/elfmem/issues/50))
+
+The recovery path for the `EmbeddingLockError` introduced in Phase 1. Without
+this, a user hitting a mismatch could not re-embed their corpus without
+manual SQL surgery.
+
+- **`elfmem migrate-embeddings`** (new top-level command):
+  - Default mode: **estimate** (no writes). Reports block count, total
+    content character count, rough token estimate, and the target model.
+  - `--execute`: actually re-embed. Backs up the DB, re-embeds in batches
+    of ~50 within per-batch transactions, drops `origin IN ('similarity',
+    'co_retrieval')` edges (preserves `origin = 'user'`), updates the
+    embedding lock at the end. Auto-resumes if interrupted — already-
+    migrated blocks are skipped via the SQL `WHERE` filter.
+  - `--to <model>`: override target (default: `embeddings.model` from config).
+  - `--from <model>`: only migrate blocks currently tagged with this model.
+    Used to disambiguate heterogeneous-source DBs.
+  - `--batch <N>`: blocks per transaction (default 50).
+
+- **Critical design property**: the migration verb **bypasses** the
+  `LockedEmbeddingService` wrapper installed by `MemorySystem.from_config()`.
+  It constructs a bare `EmbeddingService` via `make_embedding_adapter()` and
+  a bare engine directly. If it went through `from_config()` the wrapper
+  would see the new model disagree with the OLD lock and self-block —
+  the recovery command would be unable to recover. Verified by
+  `test_execute_bypasses_locked_wrapper`.
+
+- **SQL NULL trap caught on review**: the resumability filter must be
+  `WHERE embedding_model IS NULL OR embedding_model != :target`. A naive
+  `!= :target` would silently skip NULL rows because `NULL != X` evaluates
+  to `NULL` (falsy in SQL). Verified by `test_estimate_counts_null_*` and
+  `test_execute_handles_null_*`.
+
+- **Embeds the same text consolidate.py does**: `summary.strip().lower()`
+  when summary is set; else `content.strip().lower()`. Matches what
+  `consolidate.py:343-344` writes to the `embedding` column. Verified by
+  `test_execute_uses_summary_when_present`.
+
+9 new tests covering estimate accuracy, execute correctness, resumability,
+NULL-row handling, wrapper-bypass, and the heterogeneous `--from` path.
+
 ### Added — embedding-model lock (Phase 1 of [#50 follow-up](https://github.com/emson/elfmem/issues/50))
 
 Closes the silent-corruption bug Dmitry reported after a month of production use:
