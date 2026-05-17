@@ -386,8 +386,9 @@ async def elfmem_dream(
     to consolidate pending knowledge. Safe at natural pause points.
 
     Embedding & LLM calls per pending block. Slow if many pending.
-    Returns: blocks processed, promoted, dedup'd, edges created — plus
-    rescored / rescore_failed when rescore=True.
+    Returns: blocks processed, promoted, dedup'd, edges created,
+    contradictions_detected — plus rescored / rescore_failed when
+    rescore=True.
 
     rescore: After processing the inbox, refresh aged or unscored active
              blocks against the current SELF (deep-sleep mode, v0.13.3).
