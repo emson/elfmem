@@ -1,0 +1,2409 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_embedding_lock/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: embedding-model lock + safe migration - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-embedding-model-lock-safe-migration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: embedding-model lock + safe migration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../graph_improvement_research/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The bug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source of truth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cached-write-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cached write-default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enforcement-single-wrapper-no-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement: single wrapper, no cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-backfill-path-one-shot-per-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One backfill path (one-shot per install)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#doctor-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Doctor surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration-verb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration verb
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-case-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge-case matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-deliberately-deferred-to-a-follow-up-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is deliberately deferred to a follow-up PR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation phases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-obligations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test obligations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-impact-014x-0150" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration impact (0.14.x → 0.15.0)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#long-term-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long-term effects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#principles-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Principles check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#origin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Origin
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_embedding_lock.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-embedding-model-lock-safe-migration">Plan: embedding-model lock + safe migration<a class="headerlink" href="#plan-embedding-model-lock-safe-migration" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: design — ready to implement after v0.14.0
+<strong>Driver</strong>: <a href="https://github.com/emson/elfmem/issues/50">issue #50 follow-up</a>
+<strong>Target</strong>: v0.15.0</p>
+<hr />
+<h2 id="the-bug">The bug<a class="headerlink" href="#the-bug" title="Permanent link">&para;</a></h2>
+<p>Today, changing <code>embeddings.model</code> in <code>config.yaml</code> silently corrupts the
+DB. Same-dim swaps produce noise cosines; different-dim swaps crash on
+first recall. Stored blocks already carry an <code>embedding_model</code> column —
+nothing reads it for safety.</p>
+<hr />
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<h3 id="source-of-truth">Source of truth<a class="headerlink" href="#source-of-truth" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Existing column</strong> <code>blocks.embedding_model</code>. Already populated. No schema
+  change needed; we start <em>trusting</em> it.</li>
+</ul>
+<h3 id="cached-write-default">Cached write-default<a class="headerlink" href="#cached-write-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>system_config["embedding_model_lock"]</code> (str) — the model new embeddings
+  get tagged with.</li>
+<li><code>system_config["embedding_dimensions_lock"]</code> (int) — set from
+  <code>len(first_real_vec)</code>, never from adapter config (which may truncate/pad).</li>
+</ul>
+<p>Two keys. No canary, no JSON blobs.</p>
+<h3 id="enforcement-single-wrapper-no-cache">Enforcement: single wrapper, no cache<a class="headerlink" href="#enforcement-single-wrapper-no-cache" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LockedEmbeddingService</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wraps EmbeddingService. Verifies the lock on every embed call —</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">    no cache. ~1 SELECT per embed (sub-ms vs LLM&#39;s 10-500ms — negligible</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">    overhead). Catches external lock changes (e.g. concurrent migration)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">    without any cache-invalidation mechanism.</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    BOTH `embed()` and `embed_batch()` are intercepted — consolidate.py</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">    uses embed_batch for the contradiction prefilter.</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inner</span><span class="p">,</span> <span class="n">engine</span><span class="p">):</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span> <span class="o">=</span> <span class="n">inner</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span> <span class="o">=</span> <span class="n">engine</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="nd">@property</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">model_name</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="nd">@property</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">dimensions</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">vec</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="k">return</span> <span class="n">vec</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">embed_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="n">vecs</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">embed_batch</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="k">if</span> <span class="n">vecs</span><span class="p">:</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>        <span class="k">return</span> <span class="n">vecs</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="c1"># Read both keys in one query</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>            <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>                <span class="s2">&quot;SELECT key, value FROM system_config &quot;</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>                <span class="s2">&quot;WHERE key IN (&#39;embedding_model_lock&#39;, &#39;embedding_dimensions_lock&#39;)&quot;</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>            <span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        <span class="n">stored</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>        <span class="n">stored_model</span> <span class="o">=</span> <span class="n">stored</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedding_model_lock&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">stored_model</span><span class="p">:</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>            <span class="c1"># Lock missing — set atomically (race-safe)</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>            <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>                <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>                    <span class="s2">&quot;INSERT OR IGNORE INTO system_config (key, value) VALUES &quot;</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>                    <span class="s2">&quot;(&#39;embedding_model_lock&#39;, :m), (&#39;embedding_dimensions_lock&#39;, :d)&quot;</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>                <span class="p">),</span> <span class="p">{</span><span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">))})</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>                <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>                    <span class="s2">&quot;SELECT key, value FROM system_config WHERE key IN (...)&quot;</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>                <span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>            <span class="n">stored</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>            <span class="n">stored_model</span> <span class="o">=</span> <span class="n">stored</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedding_model_lock&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>        <span class="n">stored_dims</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedding_dimensions_lock&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>        <span class="k">if</span> <span class="n">stored_model</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">or</span> <span class="n">stored_dims</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>            <span class="k">raise</span> <span class="n">EmbeddingLockError</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">recovery</span><span class="o">=...</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why no cache</strong>: a previous draft cached <code>_session_verified=True</code> after first
+call. But MCP-server sessions live for hours. If <code>migrate-embeddings</code> runs in
+another process and changes the lock, a cached MCP server keeps embedding with
+the stale adapter — silent corruption, the exact bug the lock is meant to
+prevent. Verify-on-every-call eliminates this without needing a generation
+counter or TTL invalidation. Cost: ~22 SELECTs per dream batch of 10 blocks
+(~22ms total) vs dream's own 5-60 second cost. Noise.</p>
+<p><strong>One enforcement point.</strong> Covers <code>consolidate</code>, <code>rescore</code>, any future embed
+caller. Race-free (SQLite atomic INSERT-OR-IGNORE + SELECT-back).
+No special-casing of tests — mock embedder's <code>model_name="mock"</code> locks
+naturally to "mock" in in-memory test DBs.</p>
+<p><strong>Critical design property: the migration command bypasses this wrapper.</strong>
+<code>elfmem migrate-embeddings</code> constructs its own bare <code>EmbeddingService</code> via
+<code>make_embedding_adapter()</code> and its own <code>create_engine()</code>; it does NOT go
+through <code>MemorySystem.from_config()</code>. If it did, the wrapper would see the
+new model disagree with the OLD lock and refuse to embed — the migration
+would self-block. Clean separation: admin operations operate below the
+agent-facing safety layer.</p>
+<h3 id="one-backfill-path-one-shot-per-install">One backfill path (one-shot per install)<a class="headerlink" href="#one-backfill-path-one-shot-per-install" title="Permanent link">&para;</a></h3>
+<p>On <code>MemorySystem.from_config()</code>, after <code>ensure_schema_current</code>, if lock is
+unset AND active blocks exist, three outcomes:</p>
+<table>
+<thead>
+<tr>
+<th>Block state</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Homogeneous known</strong> (all active blocks with <code>embedding_model</code> set agree on a single value)</td>
+<td>Set lock from that value via <code>INSERT OR IGNORE</code> (race-safe). Backfill any <code>NULL</code> / empty / <code>"unknown"</code> rows in the active set to the detected model. Transparent.</td>
+</tr>
+<tr>
+<td><strong>Heterogeneous known</strong> (two or more distinct known models)</td>
+<td>Raise <code>EmbeddingLockError</code> with recovery: <code>elfmem migrate-embeddings --from &lt;model&gt; --to &lt;model&gt; --execute</code></td>
+</tr>
+<tr>
+<td><strong>All-legacy</strong> (all active blocks have <code>NULL</code> / <code>""</code> / <code>"unknown"</code>)</td>
+<td>Raise <code>EmbeddingLockError</code> with recovery: <code>elfmem migrate-embeddings --execute</code>. <em>Don't</em> silently assume the current adapter is correct — if it isn't, backfill would be the source of corruption.</td>
+</tr>
+<tr>
+<td><strong>No active blocks</strong> (fresh DB)</td>
+<td>Skip backfill; the wrapper's first embed will set the lock.</td>
+</tr>
+</tbody>
+</table>
+<p>Dimensions for the lock are derived from <code>len(bytes_to_embedding(...))</code> on a
+representative stored vector — never from the adapter's <code>dimensions</code> config
+(which may truncate or pad).</p>
+<h3 id="doctor-surface">Doctor surface<a class="headerlink" href="#doctor-surface" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Embedding lock      OK (text-embedding-3-small, 1536-dim)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                    OR
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>                    FRESH (no lock yet — will set on first dream)
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>                    OR
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                    MISMATCH — DB locked to text-embedding-3-small;
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                    config says nomic-embed-text. Recover:
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                      • Edit embeddings.model in config to text-embedding-3-small
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                      • Or: elfmem migrate-embeddings --execute (re-embeds all)
+</span></code></pre></div>
+<p>Non-raising. Always usable to diagnose.</p>
+<h3 id="migration-verb">Migration verb<a class="headerlink" href="#migration-verb" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>elfmem migrate-embeddings              # default: estimate, no writes
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>elfmem migrate-embeddings --execute    # run (auto-resume on partial state)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>elfmem migrate-embeddings --to &lt;X&gt;     # rare: override target
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>elfmem migrate-embeddings --from &lt;X&gt; --to &lt;Y&gt;
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>                                       # heterogeneous-source disambiguation
+</span></code></pre></div>
+<p><strong><code>--execute</code> flow:</strong></p>
+<ol>
+<li>Construct a bare <code>EmbeddingService</code> via <code>make_embedding_adapter()</code> and
+   <code>create_engine(db_path)</code> directly. <strong>Do NOT use
+   <code>MemorySystem.from_config()</code></strong> — it would apply the lock wrapper and
+   self-block the migration.</li>
+<li>Backup DB via <code>create_backup(db_path, suffix="pre-migrate-embeddings")</code>.</li>
+<li>For each active block, in batches (default ~50) within a transaction:</li>
+<li>If <code>embedding_model</code> already matches target → skip (resumability).</li>
+<li>Else: embed content with the bare service; update <code>embedding</code> bytes
+     and <code>embedding_model</code> field. Track <code>len(vec)</code> of the most recent
+     embedding (used for the lock-dim update at the end — no separate
+     "probe" call needed).</li>
+<li>After all blocks committed:</li>
+<li>Drop edges where <code>origin IN ('similarity', 'co_retrieval')</code> —
+     similarity-derived. Preserve <code>origin = 'user'</code> (and any custom
+     user-asserted relations).</li>
+<li>The Hebbian <em>staging table</em> is preserved (block IDs unchanged) —
+     only materialised edges drop.</li>
+<li>Update lock keys in a single statement using <code>INSERT ... ON CONFLICT
+   DO UPDATE</code>.</li>
+<li>Print recommendation: <code>elfmem dream</code> to rebuild similarity edges from
+   the new vectors.</li>
+</ol>
+<p>Resumability is automatic from per-batch atomicity. Mid-run crashes leave
+blocks in mixed state; lock unchanged until step 5; <code>--execute</code> again
+skips already-migrated blocks.</p>
+<p><strong>SQL NULL-trap (caught on review)</strong>: the resumability filter must be:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">embedding_model</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">embedding_model</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="p">:</span><span class="n">target_model</span>
+</span></code></pre></div>
+<p>A naive <code>WHERE embedding_model != :target_model</code> would silently skip rows
+where <code>embedding_model IS NULL</code> because <code>NULL != X</code> evaluates to <code>NULL</code>
+(falsy in SQL). Those rows would remain unmigrated and fail the lock
+check later. Verified by <code>test_migrate_handles_null_embedding_model_rows</code>.</p>
+<p><strong>Estimate mode</strong> (default; no writes):
+- Reports block count to re-embed
+- Total content character count
+- Rough token estimate (<code>chars // 4</code> — close enough for back-of-envelope)
+- Cost depends on provider; defer real pricing tables.</p>
+<hr />
+<h2 id="edge-case-matrix">Edge-case matrix<a class="headerlink" href="#edge-case-matrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Scenario</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Race: two MCP boots, same DB</td>
+<td><code>INSERT OR IGNORE → SELECT-back</code> is atomic. Winner sets lock; loser raises if adapters disagree.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Race: two <code>from_config</code> calls against fresh DB</td>
+<td>Backfill uses <code>INSERT OR IGNORE</code> (matching wrapper). Loser's insert no-ops; verify catches downstream mismatch.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Mock embedding in tests</td>
+<td>model_name="mock" locks to "mock"; in-memory DB throws away with engine. No bypass needed.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Heterogeneous legacy install</td>
+<td>Backfill detects, raises with <code>--from/--to</code> recovery hint.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>NULL, empty string <code>""</code>, or <code>"unknown"</code> rows in legacy data</td>
+<td>All folded into a single legacy bucket and backfilled to dominant model.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>OpenAI returns truncated/padded vectors</td>
+<td><code>len(first_real_vec)</code> is the source of truth for dims; adapter config never trusted.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Migrate while MCP server running</td>
+<td>SQLite WAL serialises writes; next MCP session-start re-verifies, raises with restart hint.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Migration crash at block 7000 of 10000</td>
+<td>Per-batch atomicity; re-running <code>--execute</code> resumes; lock unchanged until completion.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Migration crash <em>between</em> last block commit and lock update</td>
+<td>Self-healing: re-run <code>--execute</code> skips all already-migrated blocks (no-op block loop) and just runs the lock update. Recoverable transient state, not corruption.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Empty active table</td>
+<td><code>migrate-embeddings --execute</code> is a no-op; lock stays unset until first real dream.</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Archived blocks</td>
+<td>Not in active set; migration ignores them. Documented as expected.</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Backup restored on different machine with different config</td>
+<td>Doctor surfaces both recovery commands; user picks based on intent (no separate <code>config sync</code> verb needed).</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Long-lived MemorySystem after external migrate</td>
+<td><code>reset_for_new_session()</code> on next <code>begin_session()</code> clears <code>_session_verified</code>; re-verification raises if adapter still configured for old model.</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>consolidate</code> calls <code>embed_batch</code> for contradiction prefilter</td>
+<td>Wrapper intercepts <code>embed_batch</code> AND <code>embed</code> — first call from either path triggers verification.</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Migration verb constructs through <code>from_config</code> (mistake)</td>
+<td>Would deadlock: wrapper applies, sees new model vs old lock, refuses. <strong>Migration must use bare <code>make_embedding_adapter()</code> + <code>create_engine()</code> directly.</strong> This is the most subtle pitfall — surface explicitly in tests.</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Hebbian staging across migration</td>
+<td>Block IDs unchanged → staging table stays valid. Only materialised edges drop.</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Co-retrieval-origin edges across migration</td>
+<td>Treated as similarity-derived (dropped with <code>origin = 'similarity'</code>). User-asserted edges (<code>origin = 'user'</code>) preserved.</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Peer-imported foreign-model blocks</td>
+<td>Enter inbox without embeddings; dreamed locally under current model. Lock applies normally — no special handling needed.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="what-is-deliberately-deferred-to-a-follow-up-pr">What is deliberately deferred to a follow-up PR<a class="headerlink" href="#what-is-deliberately-deferred-to-a-follow-up-pr" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Why deferred</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Canary fingerprint</strong> (catches Ollama silent weight updates)</td>
+<td>Real risk but no user has reported hitting it. Ship the obvious fix first; add canary in v0.16.0 if reports surface. Cost saved: 1 embed per boot, 1 config key, ~30 lines, an epsilon-tuning decision.</td>
+</tr>
+<tr>
+<td><strong>Multi-model retrieval</strong> (hybrid dense+sparse)</td>
+<td>Per-row column already supports it. Build when a user asks.</td>
+</tr>
+<tr>
+<td><strong>Cost-budget enforcement on migrate</strong></td>
+<td>Preview only, no hard cap. Auto-stopping mid-migration creates partial state we'd then have to recover from. Manual judgement.</td>
+</tr>
+<tr>
+<td><strong><code>elfmem config sync-from-db</code> verb</strong></td>
+<td>Doctor's recovery text "Edit <code>embeddings.model</code> in your config to <code>&lt;db-lock-model&gt;</code>" is enough. No new command needed.</td>
+</tr>
+<tr>
+<td><strong>Provider-deprecation runway mode</strong> (old reads + new writes during transition)</td>
+<td>Hypothetical; complex; covered by manual migration when deprecation hits.</td>
+</tr>
+<tr>
+<td><strong>Auto-fallback on migration failure</strong></td>
+<td>Manual recovery preferred; don't paper over failures.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="implementation-phases">Implementation phases<a class="headerlink" href="#implementation-phases" title="Permanent link">&para;</a></h2>
+<p><strong>Phase 1 — Lock infrastructure</strong> (~120 lines + tests)
+- <code>LockedEmbeddingService</code> wrapper (<code>src/elfmem/adapters/locked.py</code>)
+- <code>verify_or_set_embedding_lock</code> query function (<code>src/elfmem/db/queries.py</code>)
+- <code>backfill_embedding_lock_if_needed</code> helper called from
+  <code>MemorySystem.from_config()</code> after <code>ensure_schema_current</code>
+- Doctor lock-status surface (<code>src/elfmem/cli.py</code>)</p>
+<p><strong>Phase 2 — Migration tool</strong> (~200 lines + tests)
+- <code>elfmem migrate-embeddings --execute / --to / --from</code>
+  (default is estimate; no <code>--estimate</code> flag)
+- Per-batch transactions; auto-resume; backup; edge-drop;
+  lock update at end
+- Migration verb uses bare <code>make_embedding_adapter</code> +
+  <code>create_engine</code>, NOT <code>MemorySystem.from_config()</code>
+- Doctor surfaces the two recovery paths (config edit OR migrate)</p>
+<p>Phase 1 alone improves safety. Phase 2 makes the recovery path
+ergonomic.</p>
+<h2 id="test-obligations">Test obligations<a class="headerlink" href="#test-obligations" title="Permanent link">&para;</a></h2>
+<p>Each test obligation maps to a code-discipline rule stored in elf's memory:</p>
+<p><strong>Agent-perspective tests</strong> (every public surface; assert via observable state):
+- <code>test_dream_sets_lock_on_first_embed</code> — fresh DB, run dream, assert
+  <code>system_config</code> rows exist with correct values via <code>get_config()</code>
+  (not internal <code>_session_verified</code> state).
+- <code>test_dream_raises_on_model_mismatch</code> — pre-set lock to <code>"foo"</code>,
+  construct system with <code>MockEmbeddingService(model_name="bar")</code>,
+  assert <code>EmbeddingLockError</code> raised on first dream with <code>.recovery</code>
+  containing <code>"migrate-embeddings"</code>.
+- <code>test_doctor_reports_lock_status</code> — three subtests (fresh / ok /
+  mismatch); each constructs a doctor invocation and asserts the
+  reported text + exit code.</p>
+<p><strong>Backwards-compat tests</strong> (written FIRST for any hashed/serialized state change):
+- <code>test_legacy_install_homogeneous_blocks_backfills_silently</code> — pre-seed
+  DB with active blocks all tagged <code>embedding_model="text-embedding-3-small"</code>,
+  no lock; assert <code>from_config()</code> succeeds + lock set correctly.
+- <code>test_legacy_install_with_null_and_unknown_rows_backfilled</code> — mix of
+  NULL, <code>""</code>, <code>"unknown"</code>, and <code>"text-embedding-3-small"</code>; assert all
+  rows updated to the dominant model + lock set.
+- <code>test_legacy_install_heterogeneous_blocks_refuses_with_recovery</code> —
+  blocks with two different model values; assert <code>EmbeddingLockError</code>
+  with <code>.recovery</code> mentioning <code>--from</code> and <code>--to</code>.</p>
+<p><strong>Race-safety tests</strong>:
+- <code>test_backfill_insert_or_ignore_idempotent</code> — simulate two concurrent
+  backfill writes (call the helper twice in quick succession against
+  the same DB); both succeed, lock has consistent values.
+- <code>test_wrapper_first_call_atomic_set_and_select</code> — simulate two
+  wrapper instances embedding simultaneously against same fresh DB
+  with different adapter <code>model_name</code>s; one succeeds, one raises.</p>
+<p><strong>The pitfall test</strong> (specific to this feature's subtle deadlock):
+- <code>test_migrate_embeddings_does_not_self_block</code> — run migration end-to-end
+  on a DB that already has a lock; assert it completes without raising
+  <code>EmbeddingLockError</code> (proves the migration command bypasses the
+  wrapper, not via mock/fake but actual code path).</p>
+<p><strong>Coverage of both call paths</strong>:
+- <code>test_wrapper_intercepts_embed_batch_too</code> — call only <code>embed_batch</code>,
+  never <code>embed</code>, on a fresh wrapper; assert lock is set after.</p>
+<p>Total: ~10 focused tests for Phase 1, ~6 for Phase 2 (estimate-mode,
+execute end-to-end, resumability after mid-run interruption, edge drop,
+lock update at end, idempotent re-run).</p>
+<hr />
+<h2 id="migration-impact-014x-0150">Migration impact (0.14.x → 0.15.0)<a class="headerlink" href="#migration-impact-014x-0150" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>User state</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Healthy install, no model swap</td>
+<td>Transparent. Backfill sets lock from existing homogeneous <code>embedding_model</code> data on first session. No user action.</td>
+</tr>
+<tr>
+<td>Healthy install with NULL/"unknown" legacy rows</td>
+<td>Same — backfill folds NULLs into the dominant model. Logged.</td>
+</tr>
+<tr>
+<td>Already-heterogeneous install (rare; legacy unnoticed swap)</td>
+<td>Loud <code>EmbeddingLockError</code> on first session with <code>.recovery</code>. This is the failure we're surfacing — corruption the user already has.</td>
+</tr>
+<tr>
+<td>Fresh install on 0.15.0</td>
+<td>Lock set on first dream. No backfill needed.</td>
+</tr>
+</tbody>
+</table>
+<p>CHANGELOG note: under <code>### Changed</code>, flag the heterogeneous-install behaviour
+change with the migration recipe.</p>
+<hr />
+<h2 id="long-term-effects">Long-term effects<a class="headerlink" href="#long-term-effects" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>system_config</code> pattern stays small.</strong> Four invariants total
+  (<code>peer_identity</code>, <code>total_active_hours</code>, <code>embedding_model_lock</code>,
+  <code>embedding_dimensions_lock</code>). Watch for growth past a handful.</li>
+<li><strong>Multi-model future is unlocked, not closed.</strong> Per-row column already
+  supports hybrid retrieval; the lock is just the write-default.</li>
+<li><strong>The wrapping pattern</strong> ("wrap services that touch versioned state")
+  becomes a template. Reusable for future similar concerns.</li>
+</ul>
+<hr />
+<h2 id="principles-check">Principles check<a class="headerlink" href="#principles-check" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIMPLE</td>
+<td>~320 lines total; one enforcement point; two config keys.</td>
+</tr>
+<tr>
+<td>ELEGANT</td>
+<td>Per-row column is the truth; wrapper is single-purpose; session-scoped verification matches existing lifecycle.</td>
+</tr>
+<tr>
+<td>FLEXIBLE</td>
+<td>Per-row column supports any future multi-model design without refactor.</td>
+</tr>
+<tr>
+<td>ROBUST</td>
+<td>Race-free (atomic), session-scoped (catches external changes), backfill handles legacy.</td>
+</tr>
+<tr>
+<td>Functional Python</td>
+<td>Wrapper has one mutable field; rest is pure functions in <code>db/queries.py</code>.</td>
+</tr>
+<tr>
+<td>Fail fast</td>
+<td><code>EmbeddingLockError</code> at boundary; no defensive code in business logic.</td>
+</tr>
+<tr>
+<td>Agent-first contract</td>
+<td><code>.recovery</code> on exception; idempotent across sessions; doctor non-raising.</td>
+</tr>
+<tr>
+<td>Progressive disclosure</td>
+<td>Zero-config installs unaffected; existing installs auto-backfill; explicit action only for heterogeneous or intentional model change.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="origin">Origin<a class="headerlink" href="#origin" title="Permanent link">&para;</a></h2>
+<p>This plan was synthesised from a structured debate between two reviewing
+agents (logic-checker and consequences-reasoner) plus elf making calls,
+then simplified through a principles re-audit. Source of the original
+bug: Dmitry's month-of-production-use follow-up on
+<a href="https://github.com/emson/elfmem/issues/50">issue #50</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
