@@ -9,6 +9,20 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.14.0] — 2026-05-16
+
+Three threads land together: a docs sweep that brings every user-facing
+surface in line with the live frame registry; MCP/CLI parity for the
+v0.13.3 `dream` flags and the Theory of Mind API (closes external issue
+[#50](https://github.com/emson/elfmem/issues/50)); and a new opt-in concept,
+**named agents** — set `project.agent_name` and the rendered `.elfmem/AGENT.md`
+fragment teaches the host LLM what your agent's name means.
+
+No breaking changes. Existing installs without `agent_name` see no behavioural
+change; default `elfmem_dream()` is byte-identical to v0.13.3.
+
 ### Fixed
 - **`contradictions_detected` now surfaced on `ConsolidateResult`** (closes
   [#50](https://github.com/emson/elfmem/issues/50) item 1). When contradiction
