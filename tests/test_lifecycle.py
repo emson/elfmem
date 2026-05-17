@@ -272,7 +272,7 @@ class TestConsolidateSkipLLM:
         assert mock_llm.process_block_calls == 0
 
     async def test_skip_llm_promotes_neutral_confidence(self, system_setup) -> None:
-        """TC-L-008: skip_llm=True sets confidence to 0.50 (no alignment scoring)."""
+        """TC-L-008: skip_llm=True sets confidence to 0.50 (via _fallback_analysis)."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
             await learn(
@@ -285,6 +285,32 @@ class TestConsolidateSkipLLM:
             active = await get_active_blocks(conn)
         assert len(active) == 1
         assert abs(active[0]["confidence"] - 0.50) < TOL
+
+    async def test_sub_threshold_alignment_no_longer_clipped_to_floor(self, system_setup) -> None:
+        """v0.15.2 cliff fix: a block the LLM rates below the historical
+        threshold (0.70) now lands at confidence=alignment_score, not 0.50.
+
+        The fixture's default_alignment=0.65 is below the historic 0.70
+        threshold. Pre-fix, this block would have been flattened to 0.50.
+        Post-fix, the LLM's actual rating survives.
+        """
+        engine, mock_llm, mock_embedding = system_setup
+        # default_alignment in fixture is 0.65 — sub-threshold
+        async with engine.begin() as conn:
+            await learn(
+                conn,
+                content="something the llm rates below historical threshold",
+                category="knowledge",
+                source="api",
+            )
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding,
+                current_active_hours=1.0,
+            )
+            active = await get_active_blocks(conn)
+        assert len(active) == 1
+        # Cliff would have set this to 0.50; identity preserves the LLM's 0.65.
+        assert abs(active[0]["confidence"] - 0.65) < TOL
 
     async def test_skip_llm_second_batch_with_active_blocks(self, system_setup) -> None:
         """TC-L-009: skip_llm=True second consolidation batch correctly handles
