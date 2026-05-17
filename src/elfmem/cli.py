@@ -1446,6 +1446,263 @@ migrate_app = typer.Typer(
 app.add_typer(migrate_app, name="migrate")
 
 
+@app.command(name="migrate-embeddings")
+def migrate_embeddings(
+    execute: Annotated[
+        bool,
+        typer.Option("--execute", help="Actually re-embed (default: estimate only, no writes)"),
+    ] = False,
+    to_model: Annotated[
+        str | None,
+        typer.Option("--to", help="Override target model (default: embeddings.model from config)"),
+    ] = None,
+    from_model: Annotated[
+        str | None,
+        typer.Option(
+            "--from",
+            help=(
+                "Only migrate blocks currently tagged with this model. "
+                "Used to disambiguate heterogeneous-source DBs."
+            ),
+        ),
+    ] = None,
+    batch_size: Annotated[
+        int, typer.Option("--batch", help="Blocks per transaction (default 50)")
+    ] = 50,
+    db: Annotated[
+        str | None, typer.Option("--db", envvar="ELFMEM_DB")
+    ] = None,
+    config_path: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+) -> None:
+    """Migrate stored embeddings to a different model.
+
+    Default mode is **estimate** (no writes). Use ``--execute`` to actually
+    re-embed. Re-running ``--execute`` after an interruption resumes
+    automatically — blocks already at the target model are skipped.
+
+    Recovery for the ``EmbeddingLockError`` raised when ``embeddings.model``
+    in your config disagrees with the DB's lock.
+
+    \b
+    Examples:
+        # Estimate only (always run this first)
+        elfmem migrate-embeddings
+
+        # Execute (re-embed every active block under the configured model)
+        elfmem migrate-embeddings --execute
+
+        # Disambiguate a heterogeneous DB
+        elfmem migrate-embeddings --from old-model --to new-model --execute
+
+    The migration verb bypasses the LockedEmbeddingService wrapper by
+    construction — it uses ``make_embedding_adapter()`` and a bare engine
+    directly, so it can re-embed under the new model without self-blocking
+    against the old lock. See ``docs/plans/plan_embedding_lock.md``.
+    """
+    from elfmem.config import ElfmemConfig
+
+    # Resolve config + DB paths via the same chain other commands use.
+    resolved_config, resolved_db = _resolve_migrate_paths(config_path, db)
+    if not Path(resolved_db).exists():
+        typer.echo(f"DB not found: {resolved_db}", err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        cfg = (
+            ElfmemConfig.from_yaml(resolved_config)
+            if resolved_config and Path(resolved_config).exists()
+            else ElfmemConfig.from_env()
+        )
+    except Exception as e:
+        typer.echo(f"Config load failed: {e}", err=True)
+        raise typer.Exit(code=1) from None
+
+    # Determine target model
+    target = to_model or cfg.embeddings.model
+    if to_model is not None and to_model != cfg.embeddings.model:
+        # Mutate cfg so make_embedding_adapter builds for the target.
+        # cfg is local — never escapes this function.
+        cfg.embeddings.model = to_model
+
+    if execute:
+        _run(_migrate_embeddings_execute(resolved_db, cfg, target, from_model, batch_size))
+    else:
+        _run(_migrate_embeddings_estimate(resolved_db, target, from_model))
+
+
+def _resolve_migrate_paths(config_path: str | None, db: str | None) -> tuple[str, str]:
+    """Mirror the resolution chain used by other write commands."""
+    info = _project.get_project_info()
+    if info is not None:
+        resolved_config = config_path or str(info.config)
+        resolved_db = db or info.db
+    else:
+        resolved_config = config_path or str(Path("~/.elfmem/config.yaml").expanduser())
+        resolved_db = db or str(Path("~/.elfmem/agent.db").expanduser())
+    return str(Path(resolved_config).expanduser()), str(Path(resolved_db).expanduser())
+
+
+async def _migrate_embeddings_estimate(
+    db_path: str, target: str, from_model: str | None
+) -> None:
+    """Report what `--execute` would do, no writes."""
+    from sqlalchemy import text
+
+    from elfmem.db.engine import create_engine
+
+    engine = await create_engine(db_path)
+    try:
+        async with engine.connect() as conn:
+            # Critical SQL: must catch NULL embedding_model rows. The naive
+            # `embedding_model != :target` evaluates NULL as falsy and skips
+            # them. Use IS NULL OR != target.
+            query = (
+                "SELECT COUNT(*), COALESCE(SUM(LENGTH(content)), 0) "
+                "FROM blocks WHERE status = 'active' AND embedding IS NOT NULL "
+                "AND (embedding_model IS NULL OR embedding_model != :target)"
+            )
+            params: dict[str, object] = {"target": target}
+            if from_model is not None:
+                query += " AND embedding_model = :from_model"
+                params["from_model"] = from_model
+            row = (await conn.execute(text(query), params)).first()
+            count = int(row[0]) if row else 0
+            total_chars = int(row[1]) if row else 0
+    finally:
+        await engine.dispose()
+
+    typer.echo("Migration estimate:")
+    typer.echo(f"  blocks to re-embed:    {count}")
+    typer.echo(f"  total content chars:   {total_chars}")
+    typer.echo(f"  rough token estimate:  ~{total_chars // 4}")
+    typer.echo(f"  target model:          {target}")
+    if from_model is not None:
+        typer.echo(f"  source model (filter): {from_model}")
+    typer.echo("")
+    if count == 0:
+        typer.echo("Nothing to migrate. (Existing blocks already at target model.)")
+        return
+    typer.echo("This will:")
+    typer.echo("  • Create a backup of the DB")
+    typer.echo("  • Re-embed each block under the target model")
+    typer.echo("  • Drop edges where origin IN ('similarity', 'co_retrieval')")
+    typer.echo("    (preserves user-asserted edges)")
+    typer.echo("  • Update the embedding lock to the target model")
+    typer.echo("")
+    typer.echo("Run with --execute to proceed.")
+
+
+async def _migrate_embeddings_execute(
+    db_path: str,
+    cfg: object,  # ElfmemConfig — typed as object to avoid heavy import here
+    target: str,
+    from_model: str | None,
+    batch_size: int,
+) -> None:
+    """Actually re-embed. Auto-resumes if interrupted: blocks already at
+    target are skipped via the SQL filter.
+
+    Construct a BARE EmbeddingService — NOT through MemorySystem.from_config(),
+    which would apply the LockedEmbeddingService wrapper and self-block.
+    """
+    from sqlalchemy import text
+
+    from elfmem.adapters.factory import make_embedding_adapter
+    from elfmem.db.engine import create_engine
+    from elfmem.db.migrate import create_backup
+    from elfmem.db.queries import embedding_to_bytes
+    from elfmem.token_counter import TokenCounter
+
+    backup_path = create_backup(db_path, suffix="pre-migrate-embeddings")
+    if backup_path is None:
+        typer.echo(f"Backup failed for {db_path}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(f"Backup: {backup_path}")
+
+    counter = TokenCounter()
+    embedding_svc = make_embedding_adapter(cfg, counter)  # type: ignore[arg-type]
+    # Bare adapter — NOT wrapped. This is the deliberate bypass.
+
+    engine = await create_engine(db_path)
+    last_vec_len = 0
+    total_processed = 0
+    try:
+        # Loop pulling next batch until none left.
+        while True:
+            params: dict[str, object] = {"target": target, "limit": batch_size}
+            select_query = (
+                "SELECT id, content, summary FROM blocks "
+                "WHERE status = 'active' AND embedding IS NOT NULL "
+                "AND (embedding_model IS NULL OR embedding_model != :target)"
+            )
+            if from_model is not None:
+                select_query += " AND embedding_model = :from_model"
+                params["from_model"] = from_model
+            select_query += " LIMIT :limit"
+
+            async with engine.connect() as conn:
+                rows = (await conn.execute(text(select_query), params)).all()
+
+            if not rows:
+                break
+
+            # Embed + update each block in one transaction per batch
+            async with engine.begin() as conn:
+                for block_id, content, summary in rows:
+                    embed_text = (summary if summary else content).strip().lower()
+                    vec = await embedding_svc.embed(embed_text)
+                    last_vec_len = len(vec)
+                    await conn.execute(
+                        text(
+                            "UPDATE blocks SET embedding = :emb, embedding_model = :m "
+                            "WHERE id = :id"
+                        ),
+                        {
+                            "emb": embedding_to_bytes(vec),
+                            "m": target,
+                            "id": block_id,
+                        },
+                    )
+
+            total_processed += len(rows)
+            typer.echo(f"  ... {total_processed} blocks migrated")
+
+        if total_processed == 0:
+            typer.echo("Nothing to migrate — all blocks already at target.")
+            return
+
+        # Drop similarity-derived edges + update lock atomically
+        async with engine.begin() as conn:
+            edge_result = await conn.execute(
+                text(
+                    "DELETE FROM edges WHERE origin IN ('similarity', 'co_retrieval')"
+                )
+            )
+            edges_dropped = edge_result.rowcount or 0
+            await conn.execute(
+                text(
+                    "INSERT INTO system_config (key, value) VALUES "
+                    "('embedding_model_lock', :m), "
+                    "('embedding_dimensions_lock', :d) "
+                    "ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+                ),
+                {"m": target, "d": str(last_vec_len)},
+            )
+    finally:
+        await engine.dispose()
+
+    typer.echo("")
+    typer.echo("✓ Migration complete.")
+    typer.echo(f"  blocks migrated:  {total_processed}")
+    typer.echo(f"  edges dropped:    {edges_dropped} (similarity-derived)")
+    typer.echo(f"  new lock:         ({target}, {last_vec_len}-dim)")
+    typer.echo(f"  backup:           {backup_path}")
+    typer.echo("")
+    typer.echo("Run `elfmem dream` to rebuild similarity edges from the new vectors.")
+
+
 @migrate_app.callback()
 def _migrate_default(ctx: typer.Context) -> None:
     """Default action when 'elfmem migrate' is called with no subcommand: status."""
