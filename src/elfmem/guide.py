@@ -100,7 +100,7 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
-            "deduplicated, edges_created counts. "
+            "deduplicated, edges_created, contradictions_detected counts. "
             "None if inbox was empty. None is not an error."
         ),
         next=(
@@ -193,7 +193,8 @@ GUIDES: dict[str, AgentGuide] = {
         returns=(
             "ConsolidateResult with counts: processed (total inbox blocks), "
             "promoted (moved to active), deduplicated (near-duplicates found), "
-            "edges_created (knowledge graph edges built)."
+            "edges_created (knowledge graph edges built), contradictions_detected "
+            "(opposing pairs detected and inserted into the contradictions table)."
         ),
         next=(
             "Promoted blocks are now searchable via frame() and recall(). "

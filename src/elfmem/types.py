@@ -178,6 +178,12 @@ class ConsolidateResult:
     promoted: int
     deduplicated: int
     edges_created: int
+    # Contradictions detected and inserted into the contradictions table this
+    # call. Detection runs on every above-prefilter pair unless
+    # ``skip_contradictions=True``; the count was previously invisible from
+    # ``ConsolidateResult`` even though detection ran and rows were written.
+    # Surfaced in v0.14.0 (issue #50 item 1).
+    contradictions_detected: int = 0
     # Deep-sleep rescoring counts (v0.13.3). Populated when dream() is
     # called with rescore=True; otherwise zeros. Tracks the second phase
     # of dream — refreshing existing active blocks, separate from the
@@ -195,6 +201,8 @@ class ConsolidateResult:
             if self.deduplicated:
                 parts.append(f"{self.deduplicated} deduped")
             parts.append(f"{self.edges_created} edges")
+            if self.contradictions_detected:
+                parts.append(f"{self.contradictions_detected} contradictions")
         if self.rescored or self.rescore_failed:
             rs = f"{self.rescored} rescored"
             if self.rescore_failed:
@@ -216,6 +224,7 @@ class ConsolidateResult:
             "promoted": self.promoted,
             "deduplicated": self.deduplicated,
             "edges_created": self.edges_created,
+            "contradictions_detected": self.contradictions_detected,
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
         }

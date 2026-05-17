@@ -554,7 +554,8 @@ Agent: elfmem_remember("Max connections = 100")
 Agent: (at natural pause in task)
   elfmem_dream()
   → ... 15-30 seconds of deep processing ...
-  → {"processed": 10, "promoted": 9, "deduplicated": 1, "edges_created": 7}
+  → {"processed": 10, "promoted": 9, "deduplicated": 1, "edges_created": 7,
+     "contradictions_detected": 0, "rescored": 0, "rescore_failed": 0}
 ```
 
 **The agent stays in flow.** It learns rapidly. When it reaches a natural pause, it dreams. Knowledge integrates deeply. Then it resumes.

@@ -741,7 +741,11 @@ class MemorySystem:
           Fastest but blocks get neutral scoring and no summaries.
 
         RETURNS: ConsolidateResult with counts: processed, promoted,
-        deduplicated, edges_created. processed=0 means inbox was empty.
+        deduplicated, edges_created, contradictions_detected. processed=0
+        means inbox was empty. contradictions_detected is the per-call LLM
+        verdict (above-threshold pairs found this batch), not a cumulative
+        DB row count — some pairs may already exist in the contradictions
+        table from prior calls and are silently deduplicated on insert.
 
         NEXT: Promoted blocks are now searchable via frame() and recall().
         Also triggers curate() automatically if curate_interval has elapsed.

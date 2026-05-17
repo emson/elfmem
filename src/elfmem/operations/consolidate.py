@@ -567,4 +567,5 @@ async def consolidate(
         promoted=promoted,
         deduplicated=deduplicated,
         edges_created=edges_created,
+        contradictions_detected=len(contradiction_decisions),
     )
