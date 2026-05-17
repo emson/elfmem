@@ -9,6 +9,23 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.15.0] — 2026-05-17
+
+The embedding-model lock. Closes the silent-corruption risk Dmitry flagged
+after a month of production use: changing `embeddings.model` in
+`config.yaml` previously rendered the DB's stored vectors meaningless
+without warning, because cosines between different models' vector spaces
+are noise. Ships in two phases bundled together — the lock infrastructure
+that detects the mismatch, and the migration verb that lets users recover.
+
+No schema change. Existing healthy installs see no behavioural change on
+upgrade — the lock backfills transparently from the existing
+`blocks.embedding_model` column. Existing installs with already-heterogeneous
+data (rare; from a previous undetected model swap) get a loud
+`EmbeddingLockError` with a recovery hint pointing at `elfmem migrate-embeddings`.
+
 ### Added — `elfmem migrate-embeddings` (Phase 2 of [#50 follow-up](https://github.com/emson/elfmem/issues/50))
 
 The recovery path for the `EmbeddingLockError` introduced in Phase 1. Without
