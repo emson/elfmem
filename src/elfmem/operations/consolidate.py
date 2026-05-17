@@ -335,11 +335,14 @@ async def _collect_decisions(
         tags_map[block_id] = all_block_tags  # update for edge and contradiction scoring
 
         tier = determine_decay_tier(all_block_tags, category)
-        confidence = (
-            analysis.alignment_score
-            if analysis.alignment_score >= self_alignment_threshold
-            else 0.50
-        )
+        # v0.15.2: identity mapping aligns consolidate with rescore.py:245.
+        # Historic cliff (α<threshold → 0.50, else α) created a 0.20
+        # discontinuity at the threshold; the floor was a band-aid that
+        # masked the discontinuity it created. LLM-timeout / skip_llm
+        # blocks still land at 0.50 via _fallback_analysis() returning
+        # alignment_score=0.50. See docs/plans/plan_confidence_architecture.md
+        # and issue #50 for the full analysis.
+        confidence = analysis.alignment_score
         summary_text = analysis.summary or content
         summary_vec = await embedding_svc.embed(summary_text.strip().lower())
 

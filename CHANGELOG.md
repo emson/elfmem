@@ -11,6 +11,41 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.15.2] — 2026-05-17
+
+First milestone of the confidence architecture work driven by
+[issue #50](https://github.com/emson/elfmem/issues/50). The full analysis
+and four-milestone plan live in `docs/plans/plan_confidence_architecture.md`
+(internal — not yet published).
+
+### Fixed
+
+- `consolidate()` no longer snaps below-threshold alignment_scores to a
+  flat 0.50, removing the 0.20 step discontinuity at
+  `self_alignment_threshold=0.70`. The new mapping is identity
+  (`confidence = analysis.alignment_score`), aligning `consolidate.py`
+  with `rescore.py:245` — the two paths previously disagreed. A block
+  the LLM rates at α=0.65 now lands at confidence=0.65 instead of being
+  flattened to 0.50; this is a real boost for fresh blocks that just miss
+  the historical threshold. LLM-timeout / `skip_llm=True` paths still
+  land at confidence=0.50 because `_fallback_analysis()` returns
+  `alignment_score=0.50`. The `self_alignment_threshold` config field
+  is no longer consulted in the cliff but is retained as an accepted
+  parameter for backwards compatibility; a future release will deprecate
+  it formally once the architecture decision in
+  `plan_confidence_architecture.md` is finalised.
+
+### Note on scope
+
+This is the smallest-possible correctness fix and does NOT address
+the broader cold-start retrieval symptom Dmitry reported. Simulation
+work showed that the cliff contributes only ±0.03 to the ATTENTION
+score gap; the dominant term is centrality (±0.105). The retrieval
+side of the issue is the subject of v0.16.x work — see the architecture
+doc for the four-milestone plan.
+
+---
+
 ## [0.15.1] — 2026-05-17
 
 Two correctness fixes from [Dmitry's report (#50)](https://github.com/emson/elfmem/issues/50).
