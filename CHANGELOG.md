@@ -11,6 +11,42 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.15.1] — 2026-05-17
+
+Two correctness fixes from [Dmitry's report (#50)](https://github.com/emson/elfmem/issues/50).
+Both bugs caused silent under-reporting — one of data, one of usage.
+
+### Fixed
+
+- `connect(source, target, relation=X, if_exists='reinforce')` no longer
+  silently drops the caller's `relation` when it disagrees with the stored
+  edge. The default reinforce branch now raises `ConnectError` with a
+  `.recovery` hint pointing the agent at `if_exists='update'`. Passing no
+  relation (the new default) or a matching relation reinforces silently
+  as before — only explicit semantic conflict raises. The `relation`
+  parameter default changed from `"similar"` to `None` across
+  `MemorySystem.connect`, `connect_by_query`, `ConnectSpec`, and the
+  `elfmem_connect` MCP tool. Two consequent behaviour changes for callers
+  who relied on the old default:
+    - **reinforce** (default `if_exists`): callers who passed an explicit
+      relation matching the stored value are unaffected; callers passing
+      a conflicting relation now see a `ConnectError` instead of silent
+      drop — the recovery hint tells them how to proceed.
+    - **update**: `connect(A, B, if_exists='update')` with no relation
+      kwarg now preserves the stored relation (PATCH semantics). Previously
+      it silently reset to `"similar"`. Callers who relied on that reset
+      must now pass `relation="similar"` explicitly.
+- LLM and embedding token counters now record the call count even when
+  the provider omits `usage` (common on LM Studio, Ollama, and other
+  local OpenAI-compatible servers). Previously, missing or `None`
+  `usage.prompt_tokens` caused both token count *and* call count to be
+  dropped, so `elfmem status` lifetime counters under-reported on
+  local-server setups. `TokenCounter.record_llm` and `record_embedding`
+  now default their token arguments to `0`; adapters always call them
+  on completion.
+
+---
+
 ## [0.15.0] — 2026-05-17
 
 The embedding-model lock. Closes the silent-corruption risk Dmitry flagged

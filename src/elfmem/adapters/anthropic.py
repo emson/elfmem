@@ -72,12 +72,21 @@ class AnthropicLLMAdapter:
     def _effective_model(self, override: str | None) -> str:
         return override if override is not None else self._model
 
-    def _record_usage(self, usage: anthropic.types.Usage) -> None:
-        if self._token_counter is not None:
-            self._token_counter.record_llm(
-                input_tokens=usage.input_tokens,
-                output_tokens=usage.output_tokens,
-            )
+    def _record_usage(self, usage: anthropic.types.Usage | None) -> None:
+        """Always record the call; tokens are best-effort.
+
+        Symmetric with the OpenAI adapters. Anthropic's SDK always returns
+        usage in practice, but ``None`` is handled for safety.
+        """
+        if self._token_counter is None:
+            return
+        if usage is None:
+            self._token_counter.record_llm()
+            return
+        self._token_counter.record_llm(
+            input_tokens=usage.input_tokens or 0,
+            output_tokens=usage.output_tokens or 0,
+        )
 
     async def _call_tool(
         self,

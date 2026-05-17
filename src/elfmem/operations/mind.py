@@ -393,12 +393,16 @@ async def mind_outcome(
         edge_reinforce_delta=edge_reinforce_delta,
     )
 
-    # 3. Create validates edge: decision → mind
+    # 3. Reinforce the canonical mind↔decision edge on outcome closure.
+    # Edges are canonical, so the existing 'predicts' edge IS this edge.
+    # mind_show.predictions queries by relation_type='predicts', so we
+    # preserve the relation (omit it) rather than overwriting to 'validates'
+    # — outcome is signalled via record_outcome on the blocks (above).
     validates_result = await do_connect(
         conn,
         source=decision_block_id,
         target=mind_block_id,
-        relation="validates",
+        relation=None,
         weight=signal * 0.75,
         note=f"{'Hit' if hit else 'Miss'}: {reason[:80]}",
         if_exists="reinforce",

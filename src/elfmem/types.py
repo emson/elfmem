@@ -717,7 +717,7 @@ class ConnectSpec:
 
     source: str
     target: str
-    relation: str = "similar"
+    relation: str | None = None
     weight: float | None = None
     note: str | None = None
     if_exists: str = "reinforce"

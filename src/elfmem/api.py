@@ -1447,7 +1447,7 @@ class MemorySystem:
         self,
         source: str,
         target: str,
-        relation: str = "similar",
+        relation: str | None = None,
         *,
         weight: float | None = None,
         note: str | None = None,
@@ -1477,9 +1477,11 @@ class MemorySystem:
         Args:
             source: Block ID. Available from recall(), learn(), and outcome() results.
             target: Block ID. Edges are undirected; source/target order does not matter.
-            relation: Semantic type. Core types: 'similar' (default), 'supports',
-                'contradicts', 'elaborates', 'co_occurs', 'outcome'. Any other
-                string is stored as a custom type.
+            relation: Semantic type. Core types: 'similar' (used when omitted on
+                new edges), 'supports', 'contradicts', 'elaborates', 'co_occurs',
+                'outcome'. Any other string is stored as a custom type. Pass None
+                (or omit) to reinforce/update without asserting a relation —
+                this distinguishes "I don't care" from "I assert similar".
             weight: Edge strength [0.0, 1.0]. None uses the relation-type default.
             note: Optional description of why this connection exists.
             if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'.
@@ -1488,7 +1490,9 @@ class MemorySystem:
             SelfLoopError: source == target.
             BlockNotActiveError: block not found or not active.
             DegreeLimitError: degree cap full with only protected edges.
-            ConnectError: if_exists='error' and edge already exists.
+            ConnectError: if_exists='error' and edge already exists, OR
+                if_exists='reinforce' and an explicit relation conflicts with
+                the stored relation (.recovery points to if_exists='update').
         """
         async with self._engine.begin() as conn:
             result = await do_connect(
@@ -1555,7 +1559,7 @@ class MemorySystem:
         self,
         source_query: str,
         target_query: str,
-        relation: str = "similar",
+        relation: str | None = None,
         *,
         note: str | None = None,
         min_confidence: float = 0.70,

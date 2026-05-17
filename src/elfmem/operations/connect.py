@@ -40,7 +40,7 @@ async def do_connect(
     *,
     source: str,
     target: str,
-    relation: str,
+    relation: str | None,
     weight: float | None,
     note: str | None,
     if_exists: Literal["reinforce", "update", "skip", "error"],
@@ -48,7 +48,13 @@ async def do_connect(
     edge_reinforce_delta: float,
     current_active_hours: float | None,
 ) -> ConnectResult:
-    """Core connect logic. Called by MemorySystem.connect()."""
+    """Core connect logic. Called by MemorySystem.connect().
+
+    ``relation=None`` means "caller did not specify" — distinct from explicitly
+    passing ``"similar"``. On reinforce, an explicit relation that conflicts
+    with the stored value raises ``ConnectError`` so silent data loss cannot
+    occur; passing ``None`` (or a matching value) reinforces silently.
+    """
 
     # 1. Self-loop guard
     if source == target:
@@ -65,9 +71,10 @@ async def do_connect(
     # 3. Canonical ordering
     from_id, to_id = Edge.canonical(source, target)
 
-    # 4. Resolve weight — explicit > relation default > fallback; always clamp [0, 1]
+    # 4. Resolve effective relation for new-edge creation + weight defaults
+    effective_relation = relation if relation is not None else "similar"
     resolved_weight = weight if weight is not None else _RELATION_DEFAULT_WEIGHTS.get(
-        relation, _DEFAULT_WEIGHT_FALLBACK
+        effective_relation, _DEFAULT_WEIGHT_FALLBACK
     )
     resolved_weight = max(0.0, min(1.0, resolved_weight))
 
@@ -75,6 +82,8 @@ async def do_connect(
     existing = await queries.get_edge(conn, from_id, to_id)
 
     if existing is not None:
+        existing_relation = existing.get("relation_type", "similar")
+
         if if_exists == "error":
             raise ConnectError(
                 f"Edge already exists between {from_id[:8]}… and {to_id[:8]}…",
@@ -84,11 +93,12 @@ async def do_connect(
             return ConnectResult(
                 source_id=source,
                 target_id=target,
-                relation=existing.get("relation_type", "similar"),
+                relation=existing_relation,
                 weight=existing["weight"],
                 action="skipped",
             )
         if if_exists == "update":
+            # PATCH semantics: only fields explicitly provided are written.
             await queries.update_edge(
                 conn,
                 from_id=from_id,
@@ -101,12 +111,25 @@ async def do_connect(
             return ConnectResult(
                 source_id=source,
                 target_id=target,
-                relation=relation,
+                relation=relation if relation is not None else existing_relation,
                 weight=resolved_weight,
                 action="updated",
                 note=note,
             )
         # if_exists == "reinforce" (default)
+        # Surface explicit semantic conflict before silently keeping old relation.
+        if relation is not None and relation != existing_relation:
+            raise ConnectError(
+                f"Edge already exists between {from_id[:8]}… and {to_id[:8]}… "
+                f"with relation={existing_relation!r}, but reinforce was called "
+                f"with relation={relation!r}.",
+                recovery=(
+                    f"Use if_exists='update' to change the relation to {relation!r}, "
+                    f"if_exists='skip' to keep the existing edge unchanged, or omit "
+                    "the relation argument to reinforce the existing edge without "
+                    "asserting a relation."
+                ),
+            )
         new_weight = min(existing["weight"] + edge_reinforce_delta, 1.0)
         await queries.update_edge(
             conn,
@@ -118,7 +141,7 @@ async def do_connect(
         return ConnectResult(
             source_id=source,
             target_id=target,
-            relation=existing.get("relation_type", "similar"),
+            relation=existing_relation,
             weight=new_weight,
             action="reinforced",
         )
@@ -146,7 +169,7 @@ async def do_connect(
         from_id=from_id,
         to_id=to_id,
         weight=resolved_weight,
-        relation_type=relation,
+        relation_type=effective_relation,
         note=note,
         current_active_hours=current_active_hours,
     )
@@ -154,7 +177,7 @@ async def do_connect(
     return ConnectResult(
         source_id=source,
         target_id=target,
-        relation=relation,
+        relation=effective_relation,
         weight=resolved_weight,
         action="created",
         note=note,
