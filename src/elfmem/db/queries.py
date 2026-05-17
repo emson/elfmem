@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
-from sqlalchemy import Float, and_, cast, delete, func, or_, select, update
+from sqlalchemy import Float, and_, cast, delete, func, or_, select, text, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -900,6 +900,113 @@ async def set_config(conn: AsyncConnection, key: str, value: str) -> None:
             index_elements=["key"],
             set_={"value": value},
         )
+    )
+
+
+async def backfill_embedding_lock_if_needed(conn: AsyncConnection) -> None:
+    """One-shot backfill of the embedding-model lock for upgrades.
+
+    Called from ``MemorySystem.from_config()`` after ``ensure_schema_current``.
+    No-op if the lock is already set or if there are no active blocks with
+    embeddings (fresh DB; the wrapper will set the lock on first embed).
+
+    Three outcomes on existing data:
+
+    - **Homogeneous known**: all active blocks with a non-NULL non-empty
+      non-"unknown" ``embedding_model`` agree on one value. Sets the lock
+      to that model + the dimension derived from a sample stored vector;
+      backfills any NULL / "" / "unknown" rows in active blocks to the
+      detected model.
+
+    - **Heterogeneous known**: two or more distinct known models.
+      Raises ``EmbeddingLockError`` with disambiguation recovery hint.
+
+    - **All-legacy** (every active block has NULL / "" / "unknown"):
+      raises ``EmbeddingLockError`` with recovery pointing at
+      ``migrate-embeddings --execute``. We deliberately don't silently
+      assume the current adapter is correct — if it isn't, backfill
+      would be the cause of corruption.
+    """
+    from elfmem.exceptions import EmbeddingLockError
+
+    existing = await get_config(conn, "embedding_model_lock")
+    if existing:
+        return
+
+    # Distinct known models (excluding NULL / "" / "unknown")
+    rows = await conn.execute(
+        text(
+            "SELECT DISTINCT embedding_model FROM blocks "
+            "WHERE status = 'active' AND embedding IS NOT NULL "
+            "AND embedding_model IS NOT NULL "
+            "AND embedding_model NOT IN ('', 'unknown')"
+        )
+    )
+    known_models = sorted(r[0] for r in rows.all())
+
+    if len(known_models) > 1:
+        raise EmbeddingLockError(
+            "Stored blocks have heterogeneous embedding models: "
+            f"{known_models}. Cannot derive a single lock value.",
+            recovery=(
+                f"Run `elfmem migrate-embeddings --from {known_models[0]!r} "
+                f"--to {known_models[-1]!r} --execute` (or pick a different "
+                "target) to consolidate under one model."
+            ),
+        )
+
+    if not known_models:
+        any_block_row = (
+            await conn.execute(
+                text(
+                    "SELECT 1 FROM blocks WHERE status = 'active' "
+                    "AND embedding IS NOT NULL LIMIT 1"
+                )
+            )
+        ).first()
+        if any_block_row is None:
+            return  # fresh DB
+        raise EmbeddingLockError(
+            "All active blocks have unknown embedding_model "
+            "(NULL, empty, or 'unknown'). Cannot determine the correct lock.",
+            recovery=(
+                "Run `elfmem migrate-embeddings --execute` to re-embed all "
+                "blocks under the currently-configured model and set the lock."
+            ),
+        )
+
+    # Homogeneous known: detect dims from a sample vector + set lock.
+    detected_model = known_models[0]
+    dim_row = (
+        await conn.execute(
+            text(
+                "SELECT embedding FROM blocks "
+                "WHERE status = 'active' AND embedding IS NOT NULL "
+                "AND embedding_model = :m LIMIT 1"
+            ),
+            {"m": detected_model},
+        )
+    ).first()
+    if dim_row is None:
+        return  # racing; let the wrapper set it on first embed
+    detected_dims = len(bytes_to_embedding(dim_row[0]))
+
+    await conn.execute(
+        text(
+            "INSERT OR IGNORE INTO system_config (key, value) VALUES "
+            "('embedding_model_lock', :m), "
+            "('embedding_dimensions_lock', :d)"
+        ),
+        {"m": detected_model, "d": str(detected_dims)},
+    )
+    # Backfill legacy rows to the detected model
+    await conn.execute(
+        text(
+            "UPDATE blocks SET embedding_model = :m "
+            "WHERE status = 'active' AND embedding IS NOT NULL "
+            "AND (embedding_model IS NULL OR embedding_model IN ('', 'unknown'))"
+        ),
+        {"m": detected_model},
     )
 
 

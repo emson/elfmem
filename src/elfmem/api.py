@@ -240,6 +240,12 @@ class MemorySystem:
             # Backup is created automatically before the first migration.
             from elfmem.db.migrate import ensure_schema_current
             await ensure_schema_current(conn, db_path=db_path)
+            # One-shot embedding-lock backfill for existing installs.
+            # Sets the lock from existing data if homogeneous; raises with a
+            # clear recovery hint on heterogeneous or all-legacy state. No-op
+            # on fresh DBs (the wrapper will set the lock on first embed).
+            from elfmem.db.queries import backfill_embedding_lock_if_needed
+            await backfill_embedding_lock_if_needed(conn)
             # Seed _pending from DB so the advisory is accurate on restart.
             # Blocks that survived a crash or process restart are counted.
             initial_pending = await get_inbox_count(conn)
@@ -260,6 +266,13 @@ class MemorySystem:
 
         llm_svc = make_llm_adapter(cfg, counter)
         embedding_svc = make_embedding_adapter(cfg, counter)
+        # Wrap the embedding service so every embed call verifies the lock.
+        # The wrapper is the single enforcement point for embedding-model
+        # integrity; the migration verb deliberately bypasses it by using
+        # the bare adapter via its own factory call. See
+        # docs/plans/plan_embedding_lock.md.
+        from elfmem.adapters.locked import LockedEmbeddingService
+        embedding_svc = LockedEmbeddingService(embedding_svc, engine)
 
         project_root = _discover_project_root(config)
 
