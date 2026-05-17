@@ -194,6 +194,74 @@ class TestConnect:
         assert result.relation == "supports"
 
 
+# ── connect() reinforce semantics (v0.15.1: relation conflict surfacing) ──────
+
+
+class TestConnectReinforceRelationSemantics:
+    """The reinforce branch (default if_exists) must:
+      - preserve the stored relation when caller omits the relation kwarg
+      - reinforce silently when caller passes a matching relation
+      - raise ConnectError with .recovery when caller passes a conflicting
+        explicit relation (Dmitry's silent-drop bug, issue #50)
+    """
+
+    async def test_reinforce_with_omitted_relation_preserves_existing(self, system) -> None:
+        """connect(A, B) — no relation kwarg — must preserve the stored relation."""
+        from elfmem.db.queries import get_edge
+        from elfmem.types import Edge
+        id1, id2 = await _two_active_blocks(system)
+        await system.connect(id1, id2, "supports")
+        result = await system.connect(id1, id2)  # no relation arg → reinforce
+        assert result.action == "reinforced"
+        assert result.relation == "supports"
+        async with system._engine.connect() as conn:
+            from_id, to_id = Edge.canonical(id1, id2)
+            row = await get_edge(conn, from_id, to_id)
+        assert row["relation_type"] == "supports"  # persisted, not silently overwritten
+
+    async def test_reinforce_with_matching_relation_is_idempotent(self, system) -> None:
+        """Passing the same relation again must reinforce silently — no error."""
+        id1, id2 = await _two_active_blocks(system)
+        await system.connect(id1, id2, "contradicts")
+        result = await system.connect(id1, id2, "contradicts")
+        assert result.action == "reinforced"
+        assert result.relation == "contradicts"
+
+    async def test_reinforce_with_conflicting_relation_raises(self, system) -> None:
+        """Caller asserts a relation that disagrees with the stored one → fail loud."""
+        from elfmem.exceptions import ConnectError
+        id1, id2 = await _two_active_blocks(system)
+        await system.connect(id1, id2, "similar")
+        with pytest.raises(ConnectError) as exc_info:
+            await system.connect(id1, id2, "contradicts")  # default reinforce
+        # Recovery must tell the agent exactly how to resolve.
+        assert exc_info.value.recovery
+        assert "if_exists='update'" in exc_info.value.recovery
+
+    async def test_reinforce_conflict_does_not_mutate_stored_edge(self, system) -> None:
+        """When reinforce raises, the stored edge must be unchanged."""
+        from elfmem.db.queries import get_edge
+        from elfmem.exceptions import ConnectError
+        from elfmem.types import Edge
+        id1, id2 = await _two_active_blocks(system)
+        r1 = await system.connect(id1, id2, "similar")
+        with pytest.raises(ConnectError):
+            await system.connect(id1, id2, "supports")
+        async with system._engine.connect() as conn:
+            from_id, to_id = Edge.canonical(id1, id2)
+            row = await get_edge(conn, from_id, to_id)
+        assert row["relation_type"] == "similar"
+        assert abs(row["weight"] - r1.weight) < TOL  # weight not boosted either
+
+    async def test_reinforce_resolution_via_update_succeeds(self, system) -> None:
+        """The recovery path (switch to if_exists='update') actually works."""
+        id1, id2 = await _two_active_blocks(system)
+        await system.connect(id1, id2, "similar")
+        result = await system.connect(id1, id2, "contradicts", if_exists="update")
+        assert result.action == "updated"
+        assert result.relation == "contradicts"
+
+
 # ── connect() validation and errors ──────────────────────────────────────────
 
 class TestConnectErrors:

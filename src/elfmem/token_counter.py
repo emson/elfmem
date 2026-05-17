@@ -33,14 +33,23 @@ class TokenCounter:
         self._llm_calls: int = 0
         self._embedding_calls: int = 0
 
-    def record_llm(self, input_tokens: int, output_tokens: int) -> None:
-        """Record one completed LLM call."""
+    def record_llm(self, input_tokens: int = 0, output_tokens: int = 0) -> None:
+        """Record one completed LLM call.
+
+        Tokens default to 0 so adapters can record the call even when the
+        provider omits usage data (common on local OpenAI-compatible servers
+        like LM Studio and Ollama). Call counts stay trustworthy; token
+        counts remain best-effort.
+        """
         self._llm_input += input_tokens
         self._llm_output += output_tokens
         self._llm_calls += 1
 
-    def record_embedding(self, tokens: int) -> None:
-        """Record one completed embedding call."""
+    def record_embedding(self, tokens: int = 0) -> None:
+        """Record one completed embedding call.
+
+        Tokens default to 0 — see ``record_llm`` for the rationale.
+        """
         self._embedding += tokens
         self._embedding_calls += 1
 

@@ -485,7 +485,10 @@ GUIDES: dict[str, AgentGuide] = {
         returns=(
             "ConnectResult. action: 'created' (new edge), 'reinforced' (existing edge boosted), "
             "'updated' (relation/note changed), 'skipped' (edge exists, if_exists=skip). "
-            "If a lower-priority auto-edge was displaced, displaced_edge is set in result."
+            "If a lower-priority auto-edge was displaced, displaced_edge is set in result. "
+            "Note: under if_exists='reinforce' (default), passing an explicit relation that "
+            "conflicts with the stored relation raises ConnectError — the recovery hint "
+            "tells the agent to switch to if_exists='update'."
         ),
         next=(
             "No follow-up required. To undo, call disconnect(). "

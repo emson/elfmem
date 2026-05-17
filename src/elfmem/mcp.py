@@ -170,7 +170,7 @@ async def _tool_setup(
 async def _tool_connect(
     source: str,
     target: str,
-    relation: str = "similar",
+    relation: str | None = None,
     note: str | None = None,
     if_exists: str = "reinforce",
 ) -> dict[str, Any]:
@@ -442,7 +442,7 @@ async def elfmem_setup(
 async def elfmem_connect(
     source: str,
     target: str,
-    relation: str = "similar",
+    relation: str | None = None,
     note: str | None = None,
     if_exists: str = "reinforce",
 ) -> dict[str, Any]:
@@ -452,8 +452,12 @@ async def elfmem_connect(
     Block IDs are also available via system.last_recall_block_ids and
     system.last_learned_block_id after calling those tools.
 
-    relation: 'similar' | 'supports' | 'contradicts' | 'elaborates'
-              | 'co_occurs' | 'outcome' | <custom>
+    relation: 'similar' (used for new edges if omitted) | 'supports' |
+              'contradicts' | 'elaborates' | 'co_occurs' | 'outcome' | <custom>.
+              Omit to reinforce/update an existing edge without asserting a
+              relation — passing a value that conflicts with the stored relation
+              under if_exists='reinforce' raises (with .recovery pointing to
+              if_exists='update').
     if_exists: 'reinforce' (default) | 'update' | 'skip' | 'error'
     """
     return await _tool_connect(source, target, relation=relation, note=note, if_exists=if_exists)

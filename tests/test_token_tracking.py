@@ -347,7 +347,11 @@ class TestOpenAILLMAdapterTokenRecording:
         await adapter.process_block("block content", "self context")  # must not raise
 
     @pytest.mark.asyncio
-    async def test_handles_none_usage_gracefully(self):
+    async def test_records_call_when_usage_is_none(self):
+        """Local OpenAI-compatible servers (LM Studio, Ollama) often omit
+        ``usage``. The call still happened — we know that — so call count
+        must increment even when tokens are unknown.
+        """
         counter = TokenCounter()
         adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
         adapter._json_mode_supported = True
@@ -356,7 +360,29 @@ class TestOpenAILLMAdapterTokenRecording:
         response.usage = None
         adapter._client.chat.completions.create = AsyncMock(return_value=response)
         await adapter.process_block("block content", "self context")
-        assert counter.snapshot() == TokenUsage()  # nothing recorded
+        snap = counter.snapshot()
+        assert snap.llm_calls == 1
+        assert snap.llm_input_tokens == 0
+        assert snap.llm_output_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_records_call_when_token_fields_are_none(self):
+        """Some providers return a usage object with all-None token counts.
+        Call count still records; token counts coerce to 0.
+        """
+        counter = TokenCounter()
+        adapter = OpenAILLMAdapter(model="gpt-4o-mini", api_key="test-key", token_counter=counter)
+        adapter._json_mode_supported = True
+        adapter._client = MagicMock()
+        response = _make_openai_llm_response()
+        response.usage.prompt_tokens = None
+        response.usage.completion_tokens = None
+        adapter._client.chat.completions.create = AsyncMock(return_value=response)
+        await adapter.process_block("block content", "self context")
+        snap = counter.snapshot()
+        assert snap.llm_calls == 1
+        assert snap.llm_input_tokens == 0
+        assert snap.llm_output_tokens == 0
 
 
 # ── OpenAIEmbeddingAdapter token recording ────────────────────────────────────
@@ -403,7 +429,10 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
         await adapter.embed("test text")  # must not raise
 
     @pytest.mark.asyncio
-    async def test_handles_missing_usage_gracefully(self):
+    async def test_records_call_when_prompt_tokens_missing(self):
+        """LM Studio / Ollama often return ``usage.prompt_tokens=None``. The
+        embed call still happened, so the call count must increment.
+        """
         counter = TokenCounter()
         adapter = OpenAIEmbeddingAdapter(
             model="text-embedding-3-small", api_key="test-key", token_counter=counter
@@ -414,7 +443,40 @@ class TestOpenAIEmbeddingAdapterTokenRecording:
         response.usage.prompt_tokens = None  # no token data
         adapter._client.embeddings.create = AsyncMock(return_value=response)
         await adapter.embed("test text")
-        assert counter.snapshot() == TokenUsage()  # nothing recorded
+        snap = counter.snapshot()
+        assert snap.embedding_calls == 1
+        assert snap.embedding_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_records_call_when_usage_is_none(self):
+        """``response.usage`` itself absent — call still records."""
+        counter = TokenCounter()
+        adapter = OpenAIEmbeddingAdapter(
+            model="text-embedding-3-small", api_key="test-key", token_counter=counter
+        )
+        adapter._client = MagicMock()
+        response = _make_openai_embedding_response()
+        response.usage = None
+        adapter._client.embeddings.create = AsyncMock(return_value=response)
+        await adapter.embed("test text")
+        snap = counter.snapshot()
+        assert snap.embedding_calls == 1
+        assert snap.embedding_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_zero_tokens_records_call(self):
+        """Edge case: usage.prompt_tokens=0 must not be treated as 'no call'."""
+        counter = TokenCounter()
+        adapter = OpenAIEmbeddingAdapter(
+            model="text-embedding-3-small", api_key="test-key", token_counter=counter
+        )
+        adapter._client = MagicMock()
+        response = _make_openai_embedding_response(prompt_tokens=0)
+        adapter._client.embeddings.create = AsyncMock(return_value=response)
+        await adapter.embed("test text")
+        snap = counter.snapshot()
+        assert snap.embedding_calls == 1
+        assert snap.embedding_tokens == 0
 
     @pytest.mark.asyncio
     async def test_embed_batch_records_tokens(self):

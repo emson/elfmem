@@ -118,11 +118,21 @@ class OpenAILLMAdapter:
         return override if override is not None else self._model
 
     def _record_usage(self, usage: openai.types.CompletionUsage | None) -> None:
-        if usage is not None and self._token_counter is not None:
-            self._token_counter.record_llm(
-                input_tokens=usage.prompt_tokens,
-                output_tokens=usage.completion_tokens,
-            )
+        """Always record the call; tokens are best-effort.
+
+        Local OpenAI-compatible servers (LM Studio, Ollama) routinely omit
+        ``usage`` — without this, lifetime call counts under-report by 100%
+        in those environments.
+        """
+        if self._token_counter is None:
+            return
+        if usage is None:
+            self._token_counter.record_llm()
+            return
+        self._token_counter.record_llm(
+            input_tokens=usage.prompt_tokens or 0,
+            output_tokens=usage.completion_tokens or 0,
+        )
 
     async def _complete(self, prompt: str, model: str) -> str:
         """Single chat completion. Tries JSON mode; falls back to plain text.
@@ -251,12 +261,18 @@ class OpenAIEmbeddingAdapter:
         return self._client
 
     def _record_usage(self, usage: object) -> None:
-        """Record embedding token usage. Uses getattr for SDK version safety."""
+        """Always record the call; tokens are best-effort.
+
+        Symmetric with ``OpenAILLMAdapter._record_usage`` — see the rationale
+        there. ``getattr`` defends against SDK version drift; ``or 0`` defends
+        against providers that return ``prompt_tokens=None``.
+        """
         if self._token_counter is None:
             return
-        tokens = getattr(usage, "prompt_tokens", None)
-        if tokens:
-            self._token_counter.record_embedding(tokens=int(tokens))
+        tokens = (
+            getattr(usage, "prompt_tokens", None) if usage is not None else None
+        )
+        self._token_counter.record_embedding(tokens=int(tokens) if tokens else 0)
 
     @staticmethod
     def _normalise(raw: list[float]) -> np.ndarray:
