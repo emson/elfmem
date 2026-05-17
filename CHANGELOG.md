@@ -9,6 +9,52 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — embedding-model lock (Phase 1 of [#50 follow-up](https://github.com/emson/elfmem/issues/50))
+
+Closes the silent-corruption bug Dmitry reported after a month of production use:
+changing `embeddings.model` in `config.yaml` previously corrupted the DB without
+warning (cosine similarities between vectors from different models are noise).
+
+- **`LockedEmbeddingService`** (`src/elfmem/adapters/locked.py`): wraps the
+  configured `EmbeddingService`. Every `embed()` / `embed_batch()` call verifies
+  that the adapter's `model_name` and the produced vector's length match the
+  locked values stored in `system_config`. First-ever embed sets the lock
+  atomically (`INSERT OR IGNORE` + read-back, race-safe). No cache — verify on
+  every call avoids the staleness window that a per-session cache would create
+  for long-lived MCP-server sessions. Cost is one sub-ms SELECT per embed; the
+  surrounding LLM call is 10-500ms, so the overhead is noise.
+- **`backfill_embedding_lock_if_needed()`** (`src/elfmem/db/queries.py`): called
+  from `MemorySystem.from_config()` after schema migrations. Three outcomes for
+  existing installs:
+  - All active blocks with `embedding_model` set agree on one value →
+    transparent lock-set; legacy `NULL`/`""`/`"unknown"` rows backfilled.
+  - Two or more distinct known models → `EmbeddingLockError` with a recovery
+    pointing at `elfmem migrate-embeddings --from <model> --to <model> --execute`.
+  - All-legacy (every active block has unknown model) → `EmbeddingLockError`
+    with recovery pointing at `elfmem migrate-embeddings --execute`. We
+    deliberately don't silently assume the current adapter is correct.
+- **`EmbeddingLockError`**: new `ElfmemError` subclass; every raise carries a
+  `.recovery` field with the exact command the user/agent should run next
+  (per the agent-first contract).
+- **`elfmem doctor` "Embedding lock" surface**: non-raising; reports `OK`,
+  `FRESH` (no lock yet), or `MISMATCH` with both recovery commands. Diagnostic
+  must never be blocked by the state it's diagnosing.
+
+### Migration
+
+- **Healthy installs**: transparent. First boot after upgrade backfills the
+  lock from existing homogeneous `blocks.embedding_model` data. No user action.
+- **Installs with already-heterogeneous data** (rare; previous undetected model
+  swap): loud `EmbeddingLockError` on first command after upgrade. The error
+  surfaces existing corruption — it doesn't introduce a new failure. Recovery
+  via `migrate-embeddings` (Phase 2, shipping immediately after).
+- **No schema change**: the lock uses two new `system_config` keys
+  (`embedding_model_lock`, `embedding_dimensions_lock`). The per-row
+  `blocks.embedding_model` column already exists.
+
+Design rationale: see `docs/plans/plan_embedding_lock.md`. Phase 2 (the
+`elfmem migrate-embeddings` recovery command) ships next.
+
 ---
 
 ## [0.14.0] — 2026-05-16

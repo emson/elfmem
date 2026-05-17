@@ -117,3 +117,13 @@ class DegreeLimitError(ConnectError):
                 "call system.disconnect() to manually remove an edge."
             ),
         )
+
+
+class EmbeddingLockError(ElfmemError):
+    """Raised when the configured embedding model disagrees with the DB lock.
+
+    Cosines between vectors from different embedding models are noise — the
+    lock catches the swap before silent corruption spreads. Recovery either
+    aligns the config with the DB, or runs ``elfmem migrate-embeddings``
+    to re-embed everything under the new model.
+    """

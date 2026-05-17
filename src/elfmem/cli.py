@@ -702,6 +702,48 @@ def doctor(
         except Exception:
             pass
 
+    # ── Embedding lock ─────────────────────────────────────────────────────
+    # Per-row blocks.embedding_model is the truth; system_config holds the
+    # cached write-default. Doctor surfaces mismatches non-raising — the
+    # wrapper does the hard-fail; doctor explains.
+    if db_file.exists():
+        try:
+            lock = _run(_doctor_embedding_lock(db_path))
+            if lock is None:
+                pass  # DB inaccessible — covered by other checks
+            elif not lock["model"]:
+                _check(
+                    "Embedding lock", True,
+                    "FRESH (no lock yet — will set on first dream)",
+                )
+            else:
+                cfg_model = ""
+                try:
+                    from elfmem.config import ElfmemConfig
+                    cfg_obj = (
+                        ElfmemConfig.from_yaml(config_path)
+                        if config_path and Path(config_path).exists()
+                        else ElfmemConfig.from_env()
+                    )
+                    cfg_model = cfg_obj.embeddings.model
+                except Exception:
+                    pass
+                if not cfg_model or cfg_model == lock["model"]:
+                    _check(
+                        "Embedding lock", True,
+                        f"OK ({lock['model']}, {lock['dims']}-dim)",
+                    )
+                else:
+                    _check(
+                        "Embedding lock", False,
+                        f"MISMATCH — DB locked to {lock['model']!r}; "
+                        f"config says {cfg_model!r}",
+                        f"Edit embeddings.model to {lock['model']!r} OR "
+                        "run `elfmem migrate-embeddings --execute`",
+                    )
+        except Exception:
+            pass
+
     # ── API keys ───────────────────────────────────────────────────────────
 
     has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -2471,3 +2513,25 @@ async def _doctor_self_count(db_path: str) -> int:
         return count
     except Exception:
         return -1
+
+
+async def _doctor_embedding_lock(db_path: str) -> dict[str, str] | None:
+    """Read the embedding lock from system_config. Returns None if DB
+    is not accessible; returns ``{"model": "", "dims": ""}`` if no lock
+    is set yet; returns the stored values otherwise.
+
+    Doctor calls this without going through MemorySystem.from_config so
+    it never triggers the LockedEmbeddingService wrapper — diagnostic
+    must never be blocked by the very state it's diagnosing.
+    """
+    from elfmem.db.engine import create_engine
+    from elfmem.db.queries import get_config
+    try:
+        engine = await create_engine(db_path)
+        async with engine.connect() as conn:
+            model = await get_config(conn, "embedding_model_lock") or ""
+            dims = await get_config(conn, "embedding_dimensions_lock") or ""
+        await engine.dispose()
+        return {"model": model, "dims": dims}
+    except Exception:
+        return None
