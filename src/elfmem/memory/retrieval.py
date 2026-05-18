@@ -26,6 +26,7 @@ from elfmem.ports.services import EmbeddingService
 from elfmem.scoring import (
     ScoringWeights,
     compute_score,
+    effective_centrality,
     log_normalise_reinforcement,
 )
 from elfmem.types import ScoredBlock
@@ -332,7 +333,14 @@ def _stage_4_composite_score(
 
         recency = math.exp(-decay_lam * hours_since)
 
-        centrality = centralities.get(block_id, 0.0)
+        # v0.15.3: cold-start centrality floor for fresh blocks with few edges.
+        # Self-extinguishes as the block ages or builds graph connections.
+        # See docs/plans/plan_v0.15.3_centrality_floor.md.
+        raw_centrality = centralities.get(block_id, 0.0)
+        centrality = effective_centrality(
+            raw_centrality=raw_centrality,
+            recency=recency,
+        )
         reinforcement = log_normalise_reinforcement(
             int(block.get("reinforcement_count", 0)),
             max_reinforcement_count,

@@ -14,6 +14,7 @@ from elfmem.scoring import (
     compute_lambda_edge,
     compute_recency,
     compute_score,
+    effective_centrality,
     log_normalise_reinforcement,
 )
 from elfmem.types import DecayTier
@@ -254,3 +255,60 @@ def test_same_block_different_scores_per_frame() -> None:
     assert score_attention > score_task
     # TASK is balanced; SELF penalises high-sim, low-reinforcement content
     assert score_task > score_self
+
+
+# ---------------------------------------------------------------------------
+# v0.15.3: Cold-start centrality floor for fresh blocks with few edges
+# ---------------------------------------------------------------------------
+
+
+class TestEffectiveCentrality:
+    """Cold-start centrality floor — protects fresh blocks with few edges
+    from losing top-K retrieval to bedrock on centrality alone.
+
+    See docs/plans/plan_v0.15.3_centrality_floor.md.
+    """
+
+    def test_fresh_block_with_low_centrality_gets_floor(self) -> None:
+        """Brand-new block: centrality=0.0, recency=1.0 → floor=0.50."""
+        assert abs(effective_centrality(raw_centrality=0.0, recency=1.0) - 0.50) < TOL
+
+    def test_floor_decays_with_recency(self) -> None:
+        """Aging fresh block: floor scales linearly with recency."""
+        assert abs(effective_centrality(raw_centrality=0.0, recency=0.85) - 0.425) < TOL
+
+    def test_floor_stops_at_recency_boundary(self) -> None:
+        """At exactly recency=0.70, no floor (strict inequality)."""
+        assert effective_centrality(raw_centrality=0.0, recency=0.70) == 0.0
+
+    def test_floor_stops_below_recency_threshold(self) -> None:
+        """Below recency threshold, no floor regardless of centrality."""
+        assert effective_centrality(raw_centrality=0.0, recency=0.30) == 0.0
+        assert effective_centrality(raw_centrality=0.05, recency=0.50) == 0.05
+
+    def test_floor_stops_above_centrality_threshold(self) -> None:
+        """Established block (raw centrality ≥ 0.10): not protected."""
+        assert effective_centrality(raw_centrality=0.50, recency=1.0) == 0.50
+        assert effective_centrality(raw_centrality=0.95, recency=1.0) == 0.95
+
+    def test_block_at_centrality_boundary_unchanged(self) -> None:
+        """At exactly centrality=0.10, no floor (strict inequality)."""
+        assert effective_centrality(raw_centrality=0.10, recency=1.0) == 0.10
+
+    def test_never_lowers_centrality(self) -> None:
+        """Floor only raises; never lowers — score rankings shift only in
+        favour of fresh blocks, never against them."""
+        for raw in [0.0, 0.05, 0.09, 0.10, 0.50, 0.95]:
+            for rec in [0.0, 0.30, 0.70, 0.85, 1.0]:
+                assert effective_centrality(raw_centrality=raw, recency=rec) >= raw
+
+    def test_idempotent(self) -> None:
+        """Applying twice yields same result."""
+        once = effective_centrality(raw_centrality=0.0, recency=1.0)
+        twice = effective_centrality(raw_centrality=once, recency=1.0)
+        assert once == twice
+
+    def test_old_block_unaffected(self) -> None:
+        """An old block keeps its raw centrality regardless of value."""
+        assert effective_centrality(raw_centrality=0.0, recency=0.10) == 0.0
+        assert effective_centrality(raw_centrality=0.50, recency=0.10) == 0.50
