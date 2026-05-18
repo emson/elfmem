@@ -133,6 +133,43 @@ def compute_recency(tier: DecayTier, hours_since_reinforced: float) -> float:
     return math.exp(-lam * hours_since_reinforced)
 
 
+# Cold-start centrality floor parameters — defensible constants, not config knobs.
+# See docs/plans/plan_v0.15.3_centrality_floor.md for full rationale.
+# Briefly: protects fresh blocks (high recency) with few graph edges (low
+# centrality) from losing top-K retrieval to bedrock on centrality alone.
+# Self-extinguishes as the block ages OR builds graph connections.
+_COLD_START_RECENCY_THRESHOLD: float = 0.70   # ≈ 35h on STANDARD tier
+_COLD_START_CENTRALITY_THRESHOLD: float = 0.10  # ≤ ~1 edge in a typical graph
+_COLD_START_FLOOR_STRENGTH: float = 0.50      # peak floor at recency=1.0
+
+
+def effective_centrality(
+    *,
+    raw_centrality: float,
+    recency: float,
+) -> float:
+    """Apply cold-start centrality floor for fresh, low-edge blocks.
+
+    USE WHEN:  Called by retrieval before feeding centrality into compute_score().
+               Protects fresh blocks from losing top-K to bedrock on graph
+               centrality alone.
+    DON'T USE: For curation, archival, or any non-retrieval decision — those
+               should see the raw graph-derived centrality.
+    COST:      O(1) per block. Pure arithmetic.
+    RETURNS:   float in [0.0, 1.0]. Equal to raw_centrality when the block has
+               either established edges (raw_centrality ≥ 0.10) or is no longer
+               fresh (recency ≤ 0.70). Otherwise applies a recency-scaled floor.
+    NEXT:      The floor self-extinguishes — once recency falls below threshold
+               or edges accumulate, the block competes on actual graph position.
+    """
+    if (
+        raw_centrality < _COLD_START_CENTRALITY_THRESHOLD
+        and recency > _COLD_START_RECENCY_THRESHOLD
+    ):
+        return max(raw_centrality, _COLD_START_FLOOR_STRENGTH * recency)
+    return raw_centrality
+
+
 def log_normalise_reinforcement(count: int, max_count: int) -> float:
     """Log-normalised reinforcement score.
 

@@ -11,6 +11,33 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.15.3] — 2026-05-18
+
+Second milestone of the memory-scoring architecture work driven by
+[issue #50](https://github.com/emson/elfmem/issues/50). v0.15.2 removed
+the confidence cliff (which contributed ±0.03 to the retrieval gap).
+This release addresses the *dominant* term in Dmitry's symptom: graph
+centrality, which contributed ±0.105 — 3.5× larger than the cliff.
+
+### Fixed
+
+- Fresh blocks no longer lose top-K retrieval to bedrock on graph
+  centrality alone. A cold-start centrality floor lifts blocks with
+  few edges (raw centrality < 0.10) and high recency (> 0.70) to a
+  recency-scaled floor value (peak 0.50 × recency at recency = 1.0).
+  The floor self-extinguishes as the block either ages or builds
+  graph connections — no permanent protection. Affects retrieval
+  scoring only; curation, archival, and visualisation paths see raw
+  centrality unchanged. Implemented as a new pure helper
+  `effective_centrality()` in `src/elfmem/scoring.py`. The frozen
+  `compute_score()` formula is unchanged; the floor adjusts the
+  centrality input before scoring. See
+  `docs/plans/plan_v0.15.3_centrality_floor.md` for the full design
+  rationale, including edge-case analysis and per-tier freshness
+  window behaviour.
+
+---
+
 ## [0.15.2] — 2026-05-17
 
 First milestone of the confidence architecture work driven by
