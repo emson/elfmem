@@ -6,7 +6,7 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-23 (post-v0.17 release). Reviewed quarterly. Open issues at
+> **Last reviewed**: 2026-05-23 (post-v0.18 release). Reviewed quarterly. Open issues at
 > [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
@@ -40,6 +40,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.18.0** | Manual constitutional review — `review_constitutional()` surfaces drifted constitutional blocks; `accept_amendment()` applies with audit + (α, β) preservation; `revert_amendment()` one-step undo; CLI + MCP surfaces ([#67](https://github.com/emson/elfmem/pull/67)) | 2026-05-23 |
 | ✅ **v0.17.0** | Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) ([#65](https://github.com/emson/elfmem/pull/65)) | 2026-05-23 |
 | ✅ **v0.15.3** | Cold-start centrality floor for fresh blocks ([#61](https://github.com/emson/elfmem/issues/61)) | 2026-05-17 |
 | ✅ **v0.15.2** | Removed confidence cliff at alignment_score=0.70 ([#60](https://github.com/emson/elfmem/issues/60)) | 2026-05-16 |
@@ -53,24 +54,25 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## In Progress
 
-_Nothing currently committed. v0.18 scope is observation-driven — see **Next**._
+_Nothing currently committed. v0.19 scope is observation-driven — see **Next**._
 
 ---
 
 ## Next
 
-Driven by signal from v0.17 in production. Specific items not yet committed.
+Driven by production signal from v0.17 and v0.18. Specific items not yet committed.
 
-### 📋 v0.18 — Production signal response
+### 📋 v0.19 — Production signal response
 
-v0.17 shipped on 2026-05-23. Telemetry window now open. Concrete scope depends on:
+v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.19 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in [archived plan](docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
-- ≥3 months of v0.17 telemetry from real instances (i.e., not before ~2026-08-23)
-- Any newly-observed systematic failure modes
+- ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
+- Any newly-observed systematic failure modes — especially around the new amendment loop
 
-Likely candidates (each requires its own ADR before committing):
-- Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
-- Stronger rescore tuning if v0.17 defaults need adjustment
+Possible v0.19 candidates (each requires its own ADR before committing):
+- **Amendment loop tuning** if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
+- **Stronger rescore tuning** if v0.17 defaults need adjustment
+- **Scheduled review triggers** — `dream(review=True)` integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)
 
 ---
 
@@ -78,21 +80,20 @@ Likely candidates (each requires its own ADR before committing):
 
 These are research directions, not commitments. Each requires a Decision Record before becoming a roadmap item.
 
-### 🔍 Constitutional / identity evolution
+### 🔍 Constitutional / identity evolution — automatic mechanisms
 
-The structural problem: PERMANENT-tier blocks (`λ=0.00001`, half-life 47.5y) cannot evolve. As the agent's identity drifts over years, constitutional blocks ossify.
+The manual review cycle (shipped in v0.18) addresses the MANUAL side of constitutional evolution. The **automatic** mechanisms remain deferred per [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md):
 
-Research has explored four mechanism families:
 - **Architecture M**: exclude constitutional from ATTENTION candidate pool; inject as preamble at frame render. Big help under drift (+33pp), real cost under stability (−7pp).
 - **Model C (ego_strength)**: Darwinian — constitutional earn persistence via positive outcomes. Adds 4 magic numbers + 1 table.
 - **Model D**: distributed feedback across top-N constitutional (fixes Model C hoarding, adds cost).
 - **Self-architecting agent**: hill-climb in parameter space; agent picks its own configuration. Simulation showed it underperforms fixed strategies.
 
-**Status**: deferred until production signal demands a mechanism. The simulations explored the design space but did not produce a decisively-better-than-baseline result for any user class. See [`docs/research/constitutional_evolution.md`](docs/research/constitutional_evolution.md).
+**Status**: deferred until production signal from v0.18 manual review demands an automatic complement. The simulations explored the design space but did not produce a decisively-better-than-baseline result for any user class.
 
 ### 🔍 MemoryAgentBench / LoCoMo participation
 
-Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the v0.17 critical path.
+Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the current critical path.
 
 ### 🔍 Multi-context (work-self vs personal-self)
 
