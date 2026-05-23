@@ -967,6 +967,200 @@ GUIDES: dict[str, AgentGuide] = {
             "peer = await system.peer_trust('elf:trader', set_value=0.8)"
         ),
     ),
+    "review_constitutional": AgentGuide(
+        name="review_constitutional",
+        what=(
+            "READ-ONLY: surface self/constitutional blocks whose content has "
+            "drifted from the agent's empirical operational identity (the "
+            "centroid of recently-reinforced ordinary blocks). Returns "
+            "LLM-generated amendment proposals; applies NOTHING. The cycle "
+            "is MANUAL by design — see ADR 0003 / ADR 0004."
+        ),
+        when=(
+            "Periodic or on-demand self-examination — once a week, after a "
+            "long working session, or whenever the agent suspects its tagged "
+            "constitutional principles no longer match how it actually "
+            "operates. Safe to call any time: cold-start short-circuits with "
+            "insufficient_history=True before any LLM call."
+        ),
+        when_not=(
+            "On a fresh database with little operational history — the call "
+            "is harmless but uninformative (insufficient_history=True). "
+            "Inside a tight loop: one call surfaces every drifted block "
+            "above threshold; no need to call repeatedly."
+        ),
+        cost=(
+            "LLM call per drifted constitutional block (bounded by "
+            "max_proposals, default 5). Two read-only DB queries up front; "
+            "zero LLM calls when history is insufficient."
+        ),
+        returns=(
+            "ConstitutionalReviewResult with: proposals (sorted by drift "
+            "DESC), reviewed_count, skipped_count, failed_proposal_count, "
+            "insufficient_history. Each ProposedAmendment carries block_id, "
+            "original_content, proposed_content, rationale, drift_score."
+        ),
+        next=(
+            "For each proposal worth applying, call accept_amendment(block_id, "
+            "proposed_content, rationale). Rejecting is silent — proposals "
+            "are ephemeral; if you don't accept, nothing is stored. "
+            "Per-call overrides: drift_threshold (default 0.35), "
+            "max_proposals, min_block_evidence (default α+β ≥ 2.0), "
+            "min_age_days (default 30)."
+        ),
+        example=(
+            "result = await system.review_constitutional()\n"
+            "for proposal in result.proposals:\n"
+            "    print(proposal)\n"
+            "    # Drift 0.42; original: 'I prioritise speed over thoroughness.'\n"
+            "    # Proposed: 'I balance speed and thoroughness on consequential decisions.'\n"
+            "    if agent_decides_to_accept(proposal):\n"
+            "        amend = await system.accept_amendment(\n"
+            "            proposal.block_id,\n"
+            "            proposal.proposed_content,\n"
+            "            proposal.rationale,\n"
+            "            drift_score=proposal.drift_score,\n"
+            "        )\n"
+            "        print(f'Applied amendment {amend.amendment_id}')"
+        ),
+    ),
+    "accept_amendment": AgentGuide(
+        name="accept_amendment",
+        what=(
+            "MUTATING: apply a proposed amendment to a constitutional block. "
+            "Writes the new content, captures a pre/post audit row, clears "
+            "summary and last_scored_at so the next rescore regenerates "
+            "them. Beta sufficient statistics (α, β), reinforcement_count, "
+            "and last_reinforced_at are preserved — content edits are NOT "
+            "knowledge-confirmation events. Frame cache for 'self' is "
+            "invalidated."
+        ),
+        when=(
+            "An EXPLICIT decision has been made — a proposal from "
+            "review_constitutional has been reviewed and the agent (or user) "
+            "wants to commit it. The acceptor argument records who decided: "
+            "'agent' (default; agent self-applying), 'user' (CLI/human), or "
+            "'system' (automated path, rare)."
+        ),
+        when_not=(
+            "You're not certain you want to mutate the constitutional block. "
+            "There is no preview mode — the write happens. Use list_amendments "
+            "+ revert_amendment afterwards if you change your mind."
+        ),
+        cost=(
+            "One embedding call (the new content) + one short DB transaction. "
+            "The embedding runs OUTSIDE the transaction so a slow network "
+            "call never holds a write lock."
+        ),
+        returns=(
+            "AmendmentResult with amendment_id (the new audit row id), "
+            "block_id, pre_content, post_content, timestamp, acceptor."
+        ),
+        next=(
+            "The amended block goes to the front of the rescore queue "
+            "(last_scored_at=NULL). Optionally call dream(rescore=True) to "
+            "refresh alignment/tags immediately, or let the periodic rescore "
+            "pass pick it up. To undo, call revert_amendment(amendment_id)."
+        ),
+        example=(
+            "# Apply a proposal from a prior review\n"
+            "amend = await system.accept_amendment(\n"
+            "    proposal.block_id,\n"
+            "    proposal.proposed_content,\n"
+            "    proposal.rationale,\n"
+            "    drift_score=proposal.drift_score,\n"
+            ")\n"
+            "print(amend)  # Amendment 7 applied to blk-abcd1234… by agent at ...\n"
+            "\n"
+            "# Out-of-band edit (drift_score=None → recompute against current centroid)\n"
+            "amend = await system.accept_amendment(\n"
+            "    'blk-abcd1234',\n"
+            "    'Revised principle text.',\n"
+            "    rationale='Manual correction after misalignment was observed.',\n"
+            ")"
+        ),
+    ),
+    "revert_amendment": AgentGuide(
+        name="revert_amendment",
+        what=(
+            "MUTATING: one-step undo. Restore block.content to "
+            "amendment.pre_content (NOT to the original-from-creation "
+            "content). Stamps reverted_at on the audit row — history is "
+            "preserved, never deleted. Clears summary + last_scored_at so "
+            "the restored content is re-evaluated by the next rescore."
+        ),
+        when=(
+            "An amendment was a mistake and the agent wants the block back at "
+            "its immediately-prior content. To walk a chain A1→A2→A3 back to "
+            "original, call revert_amendment three times — newest first."
+        ),
+        when_not=(
+            "You want to inspect history before reverting — use "
+            "list_amendments first. You already reverted this amendment — "
+            "the call raises AmendmentAlreadyReverted (with .recovery)."
+        ),
+        cost=(
+            "One embedding call (the restored content) + one short DB "
+            "transaction with two UPDATEs."
+        ),
+        returns=(
+            "AmendmentResult describing the restoration. post_content is the "
+            "restored content; pre_content is what was on the block "
+            "immediately before the revert. acceptor='system' (revert is a "
+            "system audit event distinct from the original accept)."
+        ),
+        next=(
+            "The block is queued for rescore (last_scored_at=NULL). Audit "
+            "trail now shows reverted_at on the original row, plus the "
+            "revert itself is observable via the modified row."
+        ),
+        example=(
+            "history = await system.list_amendments(block_id='blk-abcd1234')\n"
+            "last_accept = next(r for r in history if r.reverted_at is None)\n"
+            "result = await system.revert_amendment(last_accept.id)\n"
+            "print(result)  # Amendment 7 applied to blk-abcd1234… by system at ..."
+        ),
+    ),
+    "list_amendments": AgentGuide(
+        name="list_amendments",
+        what=(
+            "READ-ONLY: list amendment history, newest first. Optionally "
+            "filter by block_id. Reverted amendments are INCLUDED — absence "
+            "would corrupt the audit trail; the reverted_at field "
+            "distinguishes them."
+        ),
+        when=(
+            "Inspecting audit history before deciding to revert, or surfacing "
+            "the constitutional change log to the agent's working context. "
+            "Always available — does not raise for an unknown block_id "
+            "(absence is information: returns an empty list)."
+        ),
+        when_not=(
+            "You only need the most recent AmendmentResult — accept_amendment "
+            "already returned it. You need raw rows — this returns typed "
+            "AmendmentRecord objects."
+        ),
+        cost="Fast. One indexed SELECT bounded by limit (default 100).",
+        returns=(
+            "list[AmendmentRecord] in timestamp DESC order. Each record "
+            "carries id, block_id, timestamp, pre_content, post_content, "
+            "pre_summary, post_summary, drift_score, rationale, acceptor, "
+            "and reverted_at (None when the amendment is still active)."
+        ),
+        next=(
+            "Pick an amendment id and call revert_amendment if you want to "
+            "undo it. The id field is what revert_amendment takes."
+        ),
+        example=(
+            "# All recent amendments across all blocks\n"
+            "recent = await system.list_amendments(limit=10)\n"
+            "for r in recent:\n"
+            "    print(r)\n"
+            "\n"
+            "# Just one block's history\n"
+            "history = await system.list_amendments(block_id='blk-abcd1234')"
+        ),
+    ),
 }
 
 # ── Overview ──────────────────────────────────────────────────────────────────

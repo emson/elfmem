@@ -9,23 +9,54 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.18.0] — 2026-05-23
+
+First milestone of the constitutional review work. v0.18 ships the
+manual constitutional review mechanism deferred by
+[ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md): a
+read-only ``review_constitutional()`` call surfaces drifted
+``self/constitutional`` blocks as LLM-proposed amendments, and an
+explicit ``accept_amendment()`` applies them with a full pre/post audit
+trail. The design choice is recorded in
+[ADR 0004](docs/decisions/0004-manual-constitutional-review.md): every
+mechanism rejected by ADR 0003 was AUTOMATIC; this one is structurally
+different — manual surface, explicit consent, one-step undo, no
+scheduled trigger anywhere in the pipeline.
+
+The earlier longitudinal Monte-Carlo simulation
+(``scripts/longitudinal_sim/mc_constitutional_review.py`` in the
+research compilation) reported **+9-14pp retrieval quality across the
+drifting scenarios with zero stable-case tax** — the property all four
+automatic mechanisms in ADR 0003 failed to deliver. The headline
+regression test for the end-to-end loop is in
+``tests/test_amendment_apply.py::TestIntegration::test_review_accept_then_re_review_skips_cooled_block``:
+accept one of two drifted proposals, re-run review immediately, the
+amended block is in cooldown and only the un-accepted block is
+re-surfaced.
+
+This release is purely additive — every existing operation behaves
+exactly as in 0.17.
+
 ### Added
-- Schema v5: ``block_amendments`` audit table — substrate for v0.18
+- Schema v5: ``block_amendments`` audit table — substrate for
   constitutional review (MANUAL surfacing + explicit accept; see
-  [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)).
-  No behaviour change yet; later commits add the review/accept/revert API.
+  [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)
+  and [ADR 0004](docs/decisions/0004-manual-constitutional-review.md)).
 - Result types: ``ProposedAmendment``, ``ConstitutionalReviewResult``,
   ``AmendmentResult``, ``AmendmentRecord`` (exported from ``elfmem``).
 - Drift detection module ``elfmem.operations.review`` — pure math
   (``compute_drift``, ``recent_self_centroid``) plus pure-read DB
   helpers (``fetch_recent_reinforced_embeddings``,
-  ``fetch_constitutional_blocks``). No public API surface yet.
-- ``MemorySystem.review_constitutional()`` — surfaces drifted
+  ``fetch_constitutional_blocks``).
+- ``MemorySystem.review_constitutional()`` — READ-ONLY: surfaces drifted
   ``self/constitutional`` blocks as LLM-proposed amendments. MANUAL
   cycle: nothing is applied without an explicit ``accept_amendment``
-  call (commit 4). Returns ``ConstitutionalReviewResult`` with the
-  proposals, reviewed/skipped/failed counts, and an
-  ``insufficient_history`` flag for fresh databases.
+  call. Returns ``ConstitutionalReviewResult`` with the proposals,
+  reviewed/skipped/failed counts, and an ``insufficient_history`` flag
+  for fresh databases (cold-start safe — no LLM calls when history is
+  insufficient).
 - ``ReviewConfig`` (nested under ``ElfmemConfig`` as ``review``) with
   9 tunables: ``drift_threshold`` (0.35), ``min_recent_reinforced_blocks``
   (20), ``window_hours`` (30d), ``min_reinforcement`` (2), ``top_n`` (50),
@@ -35,8 +66,8 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   ``AnthropicLLMAdapter``, ``OpenAILLMAdapter``, and ``MockLLMService``.
 - ``AMENDMENT_PROPOSAL_PROMPT`` in ``elfmem.prompts``.
 - ``MemorySystem.accept_amendment(block_id, proposed_content, ...)`` —
-  applies a proposed amendment to a constitutional block. Embedding
-  runs OUTSIDE the DB transaction; the transaction itself inserts one
+  MUTATING: applies a proposed amendment to a constitutional block.
+  Embedding runs OUTSIDE the DB transaction; the transaction inserts one
   ``block_amendments`` audit row and updates the block (content,
   embedding, ``summary = NULL``, ``last_scored_at = NULL``). The Beta
   sufficient statistics (α, β), ``reinforcement_count``, and

@@ -77,6 +77,10 @@ KEY_MODULES: dict[str, str] = {
     "src/elfmem/api.py": "MemorySystem — all public operations",
     "src/elfmem/types.py": "Result types, exceptions",
     "src/elfmem/operations/": "learn, consolidate, curate, outcome, recall, peer",
+    "src/elfmem/operations/review.py": (
+        "v0.18 constitutional review — drift math, "
+        "review_constitutional, accept/revert/list_amendments"
+    ),
     "src/elfmem/db/migrate.py": "Schema migration + backup utilities",
     "src/elfmem/adapters/factory.py": "make_llm_adapter() / make_embedding_adapter()",
     "src/elfmem/adapters/anthropic.py": "AnthropicLLMAdapter — Claude via official SDK",
