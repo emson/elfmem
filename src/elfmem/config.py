@@ -101,6 +101,15 @@ class MemoryConfig(BaseModel):
     # Weight for Hebbian-promoted co_retrieval edges.
     # Above similarity floor (0.40), below outcome-confirmed (0.80).
 
+    # Deep-sleep rescore — additive Bayesian update (v0.17)
+    rescore_evidence_weight: float = Field(default=0.5, ge=0.0)
+    # Weight of the rescore alignment as a Beta-Binomial evidence event.
+    # 0.0 disables the confidence update (alignment refresh only).
+    # 0.5 is the calibrated default: blocks with mature evidence (α+β ≫ 1)
+    # barely move on rescore; cold blocks track the new alignment.
+    # See ADR 0002 and docs/plans/plan_memory_scoring.md for the empirical
+    # validation (22× reduction in rescore damage at α=15, β=2).
+
     co_retrieval_staging_max: int = 1000
     # Maximum staging dict entries. Evicts lowest-count pairs when exceeded.
     # Defensive cap — Phase 1 usage (50–500 blocks, top_k≤20) stays well below.

@@ -190,6 +190,7 @@ async def rescore_blocks(
     block_ids: list[str],
     llm: object,         # LLMService — typed as object to avoid circular import
     embedding_svc: object,  # EmbeddingService
+    evidence_weight: float = 0.5,
 ) -> dict[str, int]:
     """Re-run the LLM analysis on each block id and update its scoring.
 
@@ -197,6 +198,11 @@ async def rescore_blocks(
     - Read content from DB.
     - Run ``llm.process_block`` (alignment + summary + tags).
     - Re-embed the new summary.
+    - Fold the new alignment into the Beta posterior as one weighted
+      evidence event (additive update; v0.17, ADR 0002) rather than
+      clobbering ``confidence``. Mature blocks (α + β ≫ 1) barely move;
+      cold blocks (still at the promotion prior, α + β = 1) track the
+      new alignment closely.
     - Persist the refreshed analysis with ``last_scored_at = now``.
 
     On LLM timeout: leaves the block as-is (last_scored_at stays NULL or
@@ -206,12 +212,18 @@ async def rescore_blocks(
     Does not touch contradictions or graph edges. Edge regeneration is
     deferred to a future ``--rebuild-edges`` patch (cost is O(N²)).
 
+    Args:
+        evidence_weight: weight of the new alignment as a Beta-Binomial
+            evidence event. 0.0 disables the confidence update (alignment
+            metadata still refreshed). Validated upstream by config.
+
     Returns ``{"rescored": N, "failed": M, "attempted": N+M}``.
     """
     import asyncio
 
     from elfmem.db.queries import get_block, update_block_scoring
     from elfmem.operations.consolidate import _LLM_PROCESS_TIMEOUT
+    from elfmem.operations.outcome import compute_bayesian_update_ab
 
     rescored = 0
     failed = 0
@@ -239,15 +251,24 @@ async def rescore_blocks(
         summary_vec = await embedding_svc.embed(  # type: ignore[attr-defined]
             summary_text.strip().lower()
         )
+
+        new_alpha, new_beta, _ = compute_bayesian_update_ab(
+            float(block["success_count"]),
+            float(block["failure_count"]),
+            signal=analysis.alignment_score,
+            weight=evidence_weight,
+        )
+
         await update_block_scoring(
             conn,
             block_id,
-            confidence=analysis.alignment_score,
             self_alignment=analysis.alignment_score,
             embedding=summary_vec,
             embedding_model=embedding_svc.model_name,  # type: ignore[attr-defined]
             summary=analysis.summary,
             last_scored_at=now_iso,
+            success_count=new_alpha,
+            failure_count=new_beta,
         )
         rescored += 1
 

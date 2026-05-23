@@ -447,11 +447,16 @@ async def _apply_decisions(
         # last_scored_at: NULL when the LLM was bypassed (skip_llm or
         # timeout fallback) — flags the block for catch-up via
         # `dream --rescore`. Otherwise stamped with the current time.
+        # v0.17: seed Beta sufficient statistics at promotion with total mass
+        # 1.0 — α = confidence, β = 1 - confidence. This keeps the invariant
+        # ``confidence == α / (α + β)`` from birth, so the first outcome
+        # update doesn't have to "earn back" the alignment-derived confidence.
+        promotion_alpha = d.confidence
+        promotion_beta = 1.0 - d.confidence
         if d.llm_skipped:
             await update_block_scoring(
                 conn,
                 d.block_id,
-                confidence=d.confidence,
                 self_alignment=d.alignment_score,
                 decay_lambda=d.decay_lambda,
                 embedding=d.summary_embedding,
@@ -459,12 +464,13 @@ async def _apply_decisions(
                 token_count=d.token_count,
                 summary=d.summary,
                 clear_last_scored_at=True,
+                success_count=promotion_alpha,
+                failure_count=promotion_beta,
             )
         else:
             await update_block_scoring(
                 conn,
                 d.block_id,
-                confidence=d.confidence,
                 self_alignment=d.alignment_score,
                 decay_lambda=d.decay_lambda,
                 embedding=d.summary_embedding,
@@ -472,6 +478,8 @@ async def _apply_decisions(
                 token_count=d.token_count,
                 summary=d.summary,
                 last_scored_at=datetime.now(UTC).isoformat(),
+                success_count=promotion_alpha,
+                failure_count=promotion_beta,
             )
         await update_block_status(conn, d.block_id, "active")
         promoted_ids.append(d.block_id)

@@ -986,6 +986,7 @@ class MemorySystem:
             return await rescore_blocks(
                 conn, block_ids=candidates,
                 llm=self._llm, embedding_svc=self._embedding,
+                evidence_weight=self._config.memory.rescore_evidence_weight,
             )
 
     async def dream(
