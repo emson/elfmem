@@ -34,6 +34,26 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - ``LLMService.propose_amendment`` protocol method, implemented by
   ``AnthropicLLMAdapter``, ``OpenAILLMAdapter``, and ``MockLLMService``.
 - ``AMENDMENT_PROPOSAL_PROMPT`` in ``elfmem.prompts``.
+- ``MemorySystem.accept_amendment(block_id, proposed_content, ...)`` —
+  applies a proposed amendment to a constitutional block. Embedding
+  runs OUTSIDE the DB transaction; the transaction itself inserts one
+  ``block_amendments`` audit row and updates the block (content,
+  embedding, ``summary = NULL``, ``last_scored_at = NULL``). The Beta
+  sufficient statistics (α, β), ``reinforcement_count``, and
+  ``last_reinforced_at`` are deliberately unchanged — content edits are
+  not knowledge-confirmation events. Invalidates the ``self`` frame cache.
+- ``MemorySystem.revert_amendment(amendment_id)`` — one-step undo:
+  restores ``block.content`` to the amendment's ``pre_content`` (not the
+  original-from-creation content). Stamps ``reverted_at`` on the audit
+  row rather than deleting it. Raises ``AmendmentAlreadyReverted`` on a
+  double revert.
+- ``MemorySystem.list_amendments(block_id=None, limit=100)`` — newest-first
+  audit history, optionally filtered by block. Returns
+  ``list[AmendmentRecord]`` (includes reverted amendments — absence
+  would corrupt the audit trail).
+- Exceptions: ``BlockNotFound``, ``AmendmentNotFound``,
+  ``AmendmentAlreadyReverted``. Each carries a ``.recovery`` field per
+  the agent-first contract; exported from ``elfmem``.
 
 ---
 

@@ -22,7 +22,10 @@ from importlib.metadata import version as _version
 from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, LoggingConfig
 from elfmem.exceptions import (
+    AmendmentAlreadyReverted,
+    AmendmentNotFound,
     BlockNotActiveError,
+    BlockNotFound,
     ConfigError,
     ConnectError,
     DegreeLimitError,
@@ -124,5 +127,8 @@ __all__ = [
     "ConnectError",
     "SelfLoopError",
     "BlockNotActiveError",
+    "BlockNotFound",
     "DegreeLimitError",
+    "AmendmentNotFound",
+    "AmendmentAlreadyReverted",
 ]

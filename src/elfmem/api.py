@@ -50,6 +50,8 @@ from elfmem.session import begin_session as _begin_session
 from elfmem.session import end_session as _end_session
 from elfmem.token_counter import TokenCounter
 from elfmem.types import (
+    AmendmentRecord,
+    AmendmentResult,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
@@ -1839,6 +1841,141 @@ class MemorySystem:
             )
         self._record_op("review_constitutional", result.summary)
         return result
+
+    async def accept_amendment(
+        self,
+        block_id: str,
+        proposed_content: str,
+        rationale: str | None = None,
+        *,
+        drift_score: float | None = None,
+        acceptor: str = "agent",
+    ) -> AmendmentResult:
+        """Apply a proposed amendment to a constitutional block.
+
+        USE WHEN: A ``ProposedAmendment`` from ``review_constitutional()`` has
+        been reviewed and the agent or user wants to commit it. Writes the
+        new content, captures a pre/post audit row in ``block_amendments``,
+        and clears stale ``summary`` / ``last_scored_at`` so the next rescore
+        regenerates them against the new content.
+
+        DON'T USE WHEN: You only want to inspect history (``list_amendments``)
+        or undo a previous edit (``revert_amendment``).
+
+        COST: One embedding call + one short DB transaction (INSERT amendment
+        + UPDATE block). The embedding runs BEFORE the transaction so a slow
+        network round-trip never holds a write lock.
+
+        RETURNS: ``AmendmentResult`` with the new ``amendment_id`` and a
+        snapshot of pre/post content.
+
+        NEXT: The block is queued for rescore (``last_scored_at = NULL``).
+        Optionally call ``dream(rescore=True)`` to refresh alignment/tags
+        immediately; otherwise the periodic rescore pass picks it up.
+
+        Args:
+            block_id: The constitutional block being amended.
+            proposed_content: Replacement content (typically from
+                ``ProposedAmendment.proposed_content``).
+            rationale: Optional audit rationale (typically from
+                ``ProposedAmendment.rationale``).
+            drift_score: If supplied, stored in the audit row verbatim.
+                When ``None`` the operation recomputes drift against the
+                current operational centroid — accurate but adds one
+                read query.
+            acceptor: ``"agent"`` (default), ``"user"``, or ``"system"``.
+
+        Raises:
+            BlockNotFound: ``block_id`` does not exist.
+        """
+        from elfmem.operations.review import (
+            _compute_current_drift,
+        )
+        from elfmem.operations.review import (
+            accept_amendment as _accept,
+        )
+        if drift_score is None:
+            current_hours = self._current_active_hours()
+            async with self._engine.connect() as conn:
+                drift_score = await _compute_current_drift(
+                    conn,
+                    block_id=block_id,
+                    review_cfg=self._config.review,
+                    current_active_hours=current_hours,
+                )
+        result = await _accept(
+            self._engine,
+            self._embedding,
+            self._frame_cache,
+            block_id=block_id,
+            proposed_content=proposed_content,
+            rationale=rationale,
+            drift_score=drift_score,
+            acceptor=acceptor,
+        )
+        self._record_op("accept_amendment", result.summary)
+        return result
+
+    async def revert_amendment(self, amendment_id: int) -> AmendmentResult:
+        """Undo one amendment: restore the block to its immediate prior state.
+
+        USE WHEN: An amendment was a mistake. Revert is one-step: the block
+        returns to whatever ``pre_content`` was when this amendment was
+        applied — NOT to the original-from-creation content. To walk
+        further back, call ``revert_amendment`` again on the next-older
+        amendment.
+
+        DON'T USE WHEN: You want to inspect history first — use
+        ``list_amendments``.
+
+        COST: One embedding call (BEFORE the transaction) + a short
+        transaction with two UPDATEs.
+
+        RETURNS: ``AmendmentResult`` describing the restoration. The audit
+        row gains a non-null ``reverted_at`` rather than being deleted —
+        history is preserved.
+
+        NEXT: The block is queued for rescore (``last_scored_at = NULL``).
+
+        Raises:
+            AmendmentNotFound: invalid ``amendment_id``.
+            AmendmentAlreadyReverted: the row already carries
+                ``reverted_at``; the block is already at its pre-amendment
+                state.
+        """
+        from elfmem.operations.review import revert_amendment as _revert
+        result = await _revert(
+            self._engine,
+            self._embedding,
+            self._frame_cache,
+            amendment_id=amendment_id,
+        )
+        self._record_op("revert_amendment", result.summary)
+        return result
+
+    async def list_amendments(
+        self,
+        *,
+        block_id: str | None = None,
+        limit: int = 100,
+    ) -> list[AmendmentRecord]:
+        """List amendments, newest first; optionally filter by block_id.
+
+        USE WHEN: Inspecting audit history before deciding to revert, or
+        surfacing the constitutional change log to the agent.
+        DON'T USE WHEN: You only need the most recent ``AmendmentResult`` —
+        ``accept_amendment`` already returned it.
+        COST: One indexed SELECT bounded by ``limit``.
+        RETURNS: list of ``AmendmentRecord`` in ``timestamp DESC`` order;
+            empty list when there is no history.
+        NEXT: Pick an ``id`` and call ``revert_amendment`` if needed.
+        """
+        from elfmem.operations.review import (
+            list_amendments as _list_amendments,
+        )
+        return await _list_amendments(
+            self._engine, block_id=block_id, limit=limit,
+        )
 
     # ── Peer communication operations ───────────────────────────────────────
 

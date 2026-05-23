@@ -35,11 +35,24 @@ import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from elfmem.types import ConstitutionalReviewResult, ProposedAmendment
+from elfmem.exceptions import (
+    AmendmentAlreadyReverted,
+    AmendmentNotFound,
+    BlockNotFound,
+)
+from elfmem.types import (
+    AmendmentRecord,
+    AmendmentResult,
+    ConstitutionalReviewResult,
+    ProposedAmendment,
+)
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncEngine
+
     from elfmem.config import ReviewConfig
-    from elfmem.ports.services import LLMService
+    from elfmem.context.frames import FrameCache
+    from elfmem.ports.services import EmbeddingService, LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -509,3 +522,308 @@ async def review_constitutional(
         insufficient_history=False,
         failed_proposal_count=failed_proposal_count,
     )
+
+
+# ── Apply path (commit 4): accept / revert / list ────────────────────────────
+
+
+def _normalise_for_embedding(content: str) -> str:
+    """Match the embedding-input convention used by consolidate / rescore."""
+    return content.strip().lower()
+
+
+def _parse_timestamp(raw: object) -> datetime:
+    """Coerce a DB timestamp (SQLite returns str OR datetime) to aware UTC."""
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=UTC)
+    if isinstance(raw, str) and raw:
+        # SQLite's CURRENT_TIMESTAMP returns "YYYY-MM-DD HH:MM:SS" (space, no tz).
+        normalised = raw.replace(" ", "T") if " " in raw and "T" not in raw else raw
+        try:
+            ts = datetime.fromisoformat(normalised)
+        except ValueError:
+            return datetime.now(UTC)
+        return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+    return datetime.now(UTC)
+
+
+def _row_to_amendment_record(row: dict[str, object]) -> AmendmentRecord:
+    reverted_raw = row.get("reverted_at")
+    reverted_at = _parse_timestamp(reverted_raw) if reverted_raw else None
+    raw_id = row["id"]
+    raw_drift = row["drift_score"]
+    return AmendmentRecord(
+        id=int(raw_id) if isinstance(raw_id, (int, float, str)) else 0,
+        block_id=str(row["block_id"]),
+        timestamp=_parse_timestamp(row.get("timestamp")),
+        pre_content=str(row["pre_content"]),
+        post_content=str(row["post_content"]),
+        pre_summary=(
+            str(row["pre_summary"]) if row.get("pre_summary") is not None else None
+        ),
+        post_summary=(
+            str(row["post_summary"]) if row.get("post_summary") is not None else None
+        ),
+        drift_score=(
+            float(raw_drift) if isinstance(raw_drift, (int, float)) else 0.0
+        ),
+        rationale=(
+            str(row["rationale"]) if row.get("rationale") is not None else None
+        ),
+        acceptor=str(row["acceptor"]),
+        reverted_at=reverted_at,
+    )
+
+
+async def _compute_current_drift(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    review_cfg: ReviewConfig,
+    current_active_hours: float,
+) -> float:
+    """Recompute drift_score for a block against today's operational centroid.
+
+    Used by ``accept_amendment`` when the caller did NOT pass a drift_score
+    from a recent ``review_constitutional`` result. Returns 0.0 (no drift
+    audit signal) when the centroid cannot be built — accept still proceeds
+    because the agent has explicitly chosen to apply the proposal.
+    """
+    from elfmem.db.queries import bytes_to_embedding, get_block
+
+    block = await get_block(conn, block_id)
+    if block is None:
+        return 0.0
+    emb_bytes = block.get("embedding")
+    if not isinstance(emb_bytes, bytes) or not emb_bytes:
+        return 0.0
+    embeddings = await fetch_recent_reinforced_embeddings(
+        conn,
+        window_hours=review_cfg.window_hours,
+        min_reinforcement=review_cfg.min_reinforcement,
+        top_n=review_cfg.top_n,
+        current_active_hours=current_active_hours,
+    )
+    centroid = recent_self_centroid(embeddings)
+    if centroid is None:
+        return 0.0
+    return compute_drift(bytes_to_embedding(emb_bytes), centroid)
+
+
+async def accept_amendment(
+    engine: AsyncEngine,
+    embedding_svc: EmbeddingService,
+    frame_cache: FrameCache,
+    *,
+    block_id: str,
+    proposed_content: str,
+    rationale: str | None,
+    drift_score: float,
+    acceptor: str,
+) -> AmendmentResult:
+    """Apply a proposed amendment to a constitutional block.
+
+    USE WHEN: The agent or user has reviewed a ``ProposedAmendment`` and
+        wants to commit it. Single source of truth for the apply path.
+    DON'T USE WHEN: You only want to inspect history (``list_amendments``)
+        or undo a previous edit (``revert_amendment``).
+    COST: One embedding call (BEFORE the DB transaction so a slow network
+        round-trip does not hold a write lock) + one short transaction
+        containing one INSERT into block_amendments and one UPDATE on
+        blocks. O(1) overall.
+    RETURNS: ``AmendmentResult`` with the new amendment_id and pre/post
+        content snapshot.
+    NEXT: The block goes to the front of the rescore queue
+        (``last_scored_at = NULL``); ``dream --rescore`` regenerates
+        ``summary`` / tags / alignment against the new content.
+
+    Side effects:
+    - ``blocks.content`` ← proposed_content
+    - ``blocks.embedding`` ← embed(normalised proposed_content)
+    - ``blocks.summary`` ← NULL  (stale; rescore regenerates)
+    - ``blocks.last_scored_at`` ← NULL  (rescore queue front)
+    - ``blocks.success_count`` / ``failure_count`` UNCHANGED — content edits
+      are not knowledge confirmation events.
+    - ``blocks.reinforcement_count`` / ``last_reinforced_at`` UNCHANGED.
+    - ``block_amendments`` ← new audit row capturing pre/post state.
+    - Frame cache: ``self`` frame invalidated.
+
+    Raises:
+        BlockNotFound: ``block_id`` does not exist.
+    """
+    # Step 1: read pre-state. Short read transaction so we know what to embed
+    # against and what to capture in the audit row before any writes.
+    from elfmem.db.queries import (
+        get_block,
+        insert_amendment,
+        update_block_content,
+    )
+
+    async with engine.connect() as conn:
+        block = await get_block(conn, block_id)
+    if block is None:
+        raise BlockNotFound(block_id)
+
+    pre_content = str(block["content"])
+    pre_summary_raw = block.get("summary")
+    pre_summary = (
+        str(pre_summary_raw) if isinstance(pre_summary_raw, str) else None
+    )
+
+    # Step 2: embed the new content OUTSIDE the transaction. Embedding is a
+    # network call; holding the write transaction across it would needlessly
+    # serialise unrelated DB activity.
+    new_embedding = await embedding_svc.embed(
+        _normalise_for_embedding(proposed_content)
+    )
+
+    # Step 3: single short transaction — insert audit row, update block.
+    async with engine.begin() as conn:
+        amendment_id = await insert_amendment(
+            conn,
+            block_id=block_id,
+            pre_content=pre_content,
+            post_content=proposed_content,
+            pre_summary=pre_summary,
+            post_summary=None,  # post_summary regenerated by next rescore
+            drift_score=drift_score,
+            rationale=rationale,
+            acceptor=acceptor,
+        )
+        await update_block_content(
+            conn,
+            block_id=block_id,
+            content=proposed_content,
+            embedding=new_embedding,
+            embedding_model=embedding_svc.model_name,
+        )
+        # Read the row back so the returned timestamp matches what was stored.
+        ts_row = (await conn.execute(
+            text("SELECT timestamp FROM block_amendments WHERE id = :id"),
+            {"id": amendment_id},
+        )).first()
+
+    # Step 4: invalidate the self frame — constitutional content just changed.
+    frame_cache.invalidate("self")
+
+    timestamp = (
+        _parse_timestamp(ts_row[0]) if ts_row is not None else datetime.now(UTC)
+    )
+    return AmendmentResult(
+        amendment_id=amendment_id,
+        block_id=block_id,
+        pre_content=pre_content,
+        post_content=proposed_content,
+        timestamp=timestamp,
+        acceptor=acceptor,
+    )
+
+
+async def revert_amendment(
+    engine: AsyncEngine,
+    embedding_svc: EmbeddingService,
+    frame_cache: FrameCache,
+    *,
+    amendment_id: int,
+) -> AmendmentResult:
+    """Undo one amendment: restore block.content to amendment.pre_content.
+
+    USE WHEN: An amendment was a mistake and the agent or user wants the
+        block back at its immediately-prior content.
+    DON'T USE WHEN: You want to roll back through multiple amendments —
+        call ``revert_amendment`` repeatedly, newest first, to walk back
+        through the history. There is no "revert to original" shortcut;
+        the audit chain is one-step-at-a-time on purpose.
+    COST: One embedding call (BEFORE the transaction) + a transaction with
+        one UPDATE on the amendment row and one UPDATE on the block.
+    RETURNS: ``AmendmentResult`` describing the revert (post_content =
+        the restored ``pre_content``; pre_content = what was on the block
+        immediately before the revert).
+    NEXT: Block re-enters the rescore queue with ``last_scored_at = NULL``.
+
+    Raises:
+        AmendmentNotFound: no row with that id.
+        AmendmentAlreadyReverted: the amendment row already has a
+            non-null ``reverted_at`` — refusing to write a double-revert
+            into the audit trail.
+    """
+    from elfmem.db.queries import (
+        get_amendment,
+        get_block,
+        mark_amendment_reverted,
+        update_block_content,
+    )
+
+    async with engine.connect() as conn:
+        amendment = await get_amendment(conn, amendment_id)
+    if amendment is None:
+        raise AmendmentNotFound(amendment_id)
+    if amendment.get("reverted_at") is not None:
+        raise AmendmentAlreadyReverted(amendment_id)
+
+    block_id = str(amendment["block_id"])
+    target_content = str(amendment["pre_content"])
+
+    async with engine.connect() as conn:
+        block = await get_block(conn, block_id)
+    if block is None:
+        # Pathological — FK CASCADE would have removed the amendment too.
+        raise BlockNotFound(block_id)
+    pre_revert_content = str(block["content"])
+
+    # Embed restored content OUTSIDE the transaction (same rationale as accept).
+    new_embedding = await embedding_svc.embed(
+        _normalise_for_embedding(target_content)
+    )
+
+    async with engine.begin() as conn:
+        await mark_amendment_reverted(conn, amendment_id)
+        await update_block_content(
+            conn,
+            block_id=block_id,
+            content=target_content,
+            embedding=new_embedding,
+            embedding_model=embedding_svc.model_name,
+        )
+        ts_row = (await conn.execute(
+            text("SELECT reverted_at FROM block_amendments WHERE id = :id"),
+            {"id": amendment_id},
+        )).first()
+
+    frame_cache.invalidate("self")
+
+    timestamp = (
+        _parse_timestamp(ts_row[0]) if ts_row is not None else datetime.now(UTC)
+    )
+    return AmendmentResult(
+        amendment_id=amendment_id,
+        block_id=block_id,
+        pre_content=pre_revert_content,
+        post_content=target_content,
+        timestamp=timestamp,
+        acceptor="system",  # revert is a system-driven audit event
+    )
+
+
+async def list_amendments(
+    engine: AsyncEngine,
+    *,
+    block_id: str | None = None,
+    limit: int = 100,
+) -> list[AmendmentRecord]:
+    """List amendments, newest first; optionally filter by block_id.
+
+    USE WHEN: Inspecting audit history before deciding to revert.
+    DON'T USE WHEN: You only need the latest applied amendment summary —
+        ``AmendmentResult`` from ``accept_amendment`` already carries that.
+    COST: One indexed SELECT bounded by ``limit``.
+    RETURNS: list of ``AmendmentRecord`` in ``timestamp DESC`` order;
+        empty list when there is no history (never raises for an
+        unknown block_id — absence is information).
+    NEXT: Pick an amendment id and call ``revert_amendment`` if needed.
+    """
+    from elfmem.db.queries import list_amendments as _db_list
+
+    async with engine.connect() as conn:
+        rows = await _db_list(conn, block_id=block_id, limit=limit)
+    return [_row_to_amendment_record(r) for r in rows]
