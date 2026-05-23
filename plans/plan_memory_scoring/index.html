@@ -1983,6 +1983,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#post-validation-update-2026-05-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Post-validation update (2026-05-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#executive-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2287,15 +2298,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#v0170-exploration-bonus-power-law-experiment-3-5-days" class="md-nav__link">
+  <a href="#v0170-exploration-bonus-3-5-days" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.17.0 — Exploration bonus + power-law experiment (3-5 days)
+        v0.17.0 — Exploration bonus (3-5 days)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="v0.17.0 — Exploration bonus + power-law experiment (3-5 days)">
+    <nav class="md-nav" aria-label="v0.17.0 — Exploration bonus (3-5 days)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2314,17 +2325,6 @@
     <span class="md-ellipsis">
       
         Code
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-opt-in" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why opt-in
       
     </span>
   </a>
@@ -2544,10 +2544,21 @@
 
 
 <h1 id="plan-memory-scoring-architecture-v015x-through-v018x">Plan: Memory Scoring Architecture — v0.15.x through v0.18.x<a class="headerlink" href="#plan-memory-scoring-architecture-v015x-through-v018x" title="Permanent link">&para;</a></h1>
-<p><strong>Status</strong>: plan — ready for review and approval
+<p><strong>Status</strong>: active for v0.16/v0.17 implementation (post-empirical-validation)
 <strong>Driver</strong>: <a href="https://github.com/emson/elfmem/issues/50">issue #50</a> + the architectural inconsistencies surfaced during analysis
-<strong>Synthesises</strong>: <code>docs/research/memory_scoring_survey.md</code> (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic)
-<strong>Author</strong>: elf, after orchestrating the team</p>
+<strong>Synthesises</strong>: <code>docs/research/memory_scoring_survey.md</code> (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic) + Monte Carlo validation from 2026-05-22/23 (see <a href="../../research/scoring_proposed_evaluation/"><code>docs/research/scoring_proposed_evaluation.md</code></a>)
+<strong>Author</strong>: elf, after orchestrating the team
+<strong>Decisions binding this plan</strong>: <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a> (power-law rejected), <a href="../../decisions/0002-v017-scope/">ADR 0002</a> (v0.17 four-change bundle), <a href="../../decisions/0003-defer-constitutional-evolution/">ADR 0003</a> (constitutional evolution deferred)</p>
+<hr />
+<h2 id="post-validation-update-2026-05-23">⚡ Post-validation update (2026-05-23)<a class="headerlink" href="#post-validation-update-2026-05-23" title="Permanent link">&para;</a></h2>
+<p>After the 3-agent review that produced the original plan, the proposals were empirically validated via Monte Carlo simulation (<code>scripts/longitudinal_sim/mc_scoring_proposed.py</code>):</p>
+<ul>
+<li><strong>v0.16 additive rescore</strong>: confirmed — 22× reduction in rescore damage; +12pp recent_reach under weekly rescore</li>
+<li><strong>v0.17 exploration bonus</strong>: confirmed — +5.6pp quality at 730 simulated days (compounds over time)</li>
+<li><strong>v0.17 power-law decay</strong>: <strong>REJECTED</strong> — see <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>. Simulation showed −5 to −7.6pp quality and catastrophic recent_reach drops (−44 to −66pp) across all 4 scenarios. <strong>Do not ship this mechanism — not even behind a flag.</strong></li>
+</ul>
+<p>The shippable v0.17 scope is the <strong>four-change bundle in <a href="../../decisions/0002-v017-scope/">ADR 0002</a></strong>: sufficient statistics + additive rescore + arithmetic peer merge + exploration bonus (κ=0.05). Total ~330 LOC.</p>
+<p>The original plan content below remains the canonical specification for the four shippable mechanisms. Sections describing power-law decay are retained for historical context but are marked REJECTED inline.</p>
 <hr />
 <h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
 <p>The research paper proposes a sweeping architectural overhaul (3 new schema columns, 1 new table, 5-channel composite scoring, FSRS-5 stability, Zettelkasten auto-linking, hierarchical compression — ~500 LOC across 4 minor versions). A 3-agent review (Consistency, Research, Critic) converged on a much sharper conclusion:</p>
@@ -2578,9 +2589,9 @@
 </tr>
 <tr>
 <td><strong>v0.17.0</strong></td>
-<td>Exploration bonus from variance; power-law decay as opt-in experiment</td>
-<td>3 days, ~80 LOC</td>
-<td>medium (experimental flag)</td>
+<td>Exploration bonus from variance (power-law decay REJECTED — <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>)</td>
+<td>3 days, ~30 LOC</td>
+<td>low</td>
 </tr>
 <tr>
 <td><strong>v0.18+</strong></td>
@@ -2623,7 +2634,7 @@
 <ul>
 <li><strong>Ship the actual fix for Dmitry's symptom this week.</strong> Centrality floor. 3 lines.</li>
 <li><strong>Ship the load-bearing architectural change next.</strong> Sufficient statistics + additive rescore. ~250 LOC.</li>
-<li><strong>Ship the high-value low-risk follow-ups</strong> once the substrate exists. Exploration bonus. Power-law as experiment.</li>
+<li><strong>Ship the high-value low-risk follow-ups</strong> once the substrate exists. Exploration bonus. ~~Power-law as experiment~~ (REJECTED per <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>).</li>
 <li><strong>Defer everything speculative.</strong> Event log, FSRS mechanics, Zettelkasten auto-linking, hierarchical abstract tier. Each waits for an empirical case.</li>
 </ul>
 <p>Crucially: <strong>keep elfmem's existing vocabulary</strong> (<code>confidence</code>, <code>alignment_score</code>, <code>outcome_evidence</code>, <code>decay_lambda</code>). The semantic clarification is in what these mean and how they update, not in renaming them. Park's "importance" terminology is not non-negotiable; ours works.</p>
@@ -2806,17 +2817,16 @@
 <h3 id="ships_1">Ships<a class="headerlink" href="#ships_1" title="Permanent link">&para;</a></h3>
 <p>1–2 weeks after v0.15.3 approval. Minor release v0.16.0.</p>
 <hr />
-<h2 id="v0170-exploration-bonus-power-law-experiment-3-5-days">v0.17.0 — Exploration bonus + power-law experiment (3-5 days)<a class="headerlink" href="#v0170-exploration-bonus-power-law-experiment-3-5-days" title="Permanent link">&para;</a></h2>
+<h2 id="v0170-exploration-bonus-3-5-days">v0.17.0 — Exploration bonus (3-5 days)<a class="headerlink" href="#v0170-exploration-bonus-3-5-days" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Power-law decay REJECTED</strong> — see <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>. Empirically refuted by <code>mc_scoring_proposed.py</code>: −5 to −7.6pp quality and −44 to −66pp recent_reach across all 4 scenarios. The power-law code samples in this section are retained as historical record only; do not implement.</p>
+</blockquote>
 <h3 id="scope_2">Scope<a class="headerlink" href="#scope_2" title="Permanent link">&para;</a></h3>
-<p>Two small additions that the v0.16 substrate enables:</p>
+<p><strong>One</strong> small addition that the v0.16 substrate enables:</p>
 <ol>
-<li>
-<p><strong>Exploration bonus from variance</strong>: blocks with high utility uncertainty get a small ranking lift. This is the principled answer to "fresh blocks need to be discoverable" once the cold-start centrality floor (v0.15.3) has stopped them being invisible.</p>
-</li>
-<li>
-<p><strong>Power-law retrievability as opt-in</strong>: A/B against the existing exponential <code>decay_lambda</code> model. Behind a feature flag. Allow real-world data to vote.</p>
-</li>
+<li><strong>Exploration bonus from variance</strong>: blocks with high utility uncertainty get a small ranking lift. This is the principled answer to "fresh blocks need to be discoverable" once the cold-start centrality floor (v0.15.3) has stopped them being invisible. Validated: +5.6pp quality at 730 simulated days.</li>
 </ol>
+<p>~~2. Power-law retrievability as opt-in~~ — <strong>REJECTED</strong> (<a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>). Do not implement.</p>
 <h3 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h3>
 <p><strong><code>src/elfmem/scoring.py</code></strong> — add exploration term:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">variance</span> <span class="o">=</span> <span class="p">(</span>
@@ -2830,27 +2840,18 @@
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      <span class="o">+</span> <span class="n">weights</span><span class="o">.</span><span class="n">reinforcement</span> <span class="o">*</span> <span class="n">reinforcement</span> <span class="o">+</span> <span class="n">exploration</span>
 </span></code></pre></div></p>
 <p><code>kappa</code> is a hardcoded constant (Critic agent: "the κ hyperparameter is exactly the kind of knob we should hardcode at a defensible value"). Default <code>kappa = 0.05</code> — small enough not to dominate, large enough to surface high-uncertainty blocks above bedrock when similarity is comparable.</p>
-<p><strong><code>src/elfmem/scoring.py</code></strong> — power-law retrievability as flag:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">use_power_law_decay</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">retrievability</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">elapsed_hours</span> <span class="o">/</span> <span class="n">stability</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">else</span><span class="p">:</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">retrievability</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">decay_lambda</span> <span class="o">*</span> <span class="n">elapsed_hours</span><span class="p">)</span>  <span class="c1"># current default</span>
-</span></code></pre></div></p>
-<p>Where <code>stability</code> is bootstrapped from <code>1 / decay_lambda</code> for backwards compat.</p>
-<h3 id="why-opt-in">Why opt-in<a class="headerlink" href="#why-opt-in" title="Permanent link">&para;</a></h3>
-<p>The Research agent grades power-law as A for flashcards, D for agent memory. The Critic agent calls it "fashion, not calibration." We adopt the <em>form</em> behind a flag so users can A/B; we don't make it the default until we have evidence on actual elfmem traces.</p>
+<p>~~Power-law retrievability~~ — <strong>REJECTED</strong>. See <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a> for full empirical refutation. Continue using <code>exp(-decay_lambda * elapsed_hours)</code>.</p>
 <h3 id="config_1">Config<a class="headerlink" href="#config_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>memory.kappa: float = 0.05</code> (hardcoded by default; configurable for tuning)</li>
-<li><code>memory.use_power_law_decay: bool = False</code> (experimental flag)</li>
 </ul>
 <h3 id="tests_2">Tests<a class="headerlink" href="#tests_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>test_exploration_bonus_lifts_high_variance_blocks</code> — block with <code>(α=0.5, β=0.5)</code> (max variance) ranks higher than block with <code>(α=10, β=10)</code> (same mean, low variance) when other signals match.</li>
-<li><code>test_power_law_decay_flag_swaps_formula</code> — with flag on/off, retrievability uses different formula but is monotonic in elapsed time.</li>
+<li><code>test_exploration_bonus_long_horizon_regression</code> — pinning the +5.6pp quality at 730-day simulation per <a href="../../research/scoring_proposed_evaluation/"><code>docs/research/scoring_proposed_evaluation.md</code></a>.</li>
 </ul>
 <h3 id="risk_2">Risk<a class="headerlink" href="#risk_2" title="Permanent link">&para;</a></h3>
-<p>Medium. Exploration bonus is small (κ=0.05) but changes top-K composition. Power-law is opt-in so risk-isolated. Both changes are reversible.</p>
+<p>Low. Exploration bonus is small (κ=0.05) but changes top-K composition. Change is reversible via κ=0.0 config.</p>
 <h3 id="ships_2">Ships<a class="headerlink" href="#ships_2" title="Permanent link">&para;</a></h3>
 <p>3–5 days after v0.16.0 approval. Minor release v0.17.0.</p>
 <hr />
@@ -2964,6 +2965,7 @@
 <hr />
 <h2 id="appendix-draft-follow-up-question-for-dmitry-issue-50">Appendix — draft follow-up question for Dmitry (issue #50)<a class="headerlink" href="#appendix-draft-follow-up-question-for-dmitry-issue-50" title="Permanent link">&para;</a></h2>
 <blockquote>
+<p><strong>Status (2026-05-24)</strong>: posting deferred until after v0.17 ships. The intent is to give Dmitry a substantive release to react to (v0.17 fixes the rescore clobber that affected his weekly-rescore workflow) rather than asking him to investigate v0.15.3 in isolation. Draft preserved below for reuse.</p>
 <p>Hi Dmitry — v0.15.3 shipped the cold-start centrality floor we discussed; the change is at <code>src/elfmem/scoring.py:effective_centrality()</code>. Before we lock in the next architectural step (v0.16, sufficient statistics + additive rescore), we did a numerical re-check against the real scoring path and found one regime where the floor alone may not be enough:</p>
 <p>The floor closes ~0.075 of weighted score gap. That's sufficient when the competing "bedrock" blocks have <strong>reinforcement = 0</strong> (e.g. fresh constitutional content, blocks never co-retrieved). It's <strong>not</strong> sufficient when bedrock has reinforcement ≈ 1.0 — typical for blocks that have been co-retrieved many times or are constitutional SELF content that's been around for a while.</p>
 <p>Could you confirm one of:</p>

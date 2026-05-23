@@ -2560,7 +2560,7 @@
 What's shipped, what's next, what we've considered and explicitly rejected.</p>
 <p><strong>What this is not</strong>: a calendar. elfmem is solo OSS. Dates are illustrative;
 sequence is what matters.</p>
-<p><strong>Last reviewed</strong>: 2026-05-23. Reviewed quarterly. Open issues at
+<p><strong>Last reviewed</strong>: 2026-05-24. Reviewed quarterly. Open issues at
 <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
 </blockquote>
 <hr />
@@ -2634,8 +2634,8 @@ sequence is what matters.</p>
 </tr>
 <tr>
 <td>✅ <strong>v0.15.0</strong></td>
-<td>Release stabilisation; MCP gaps closed</td>
-<td>2026-05-12</td>
+<td>Embedding-model lock — closes silent-corruption risk from changing <code>embeddings.model</code> (<a href="https://github.com/emson/elfmem/pull/56">#56</a>, <a href="https://github.com/emson/elfmem/pull/57">#57</a>)</td>
+<td>2026-05-17</td>
 </tr>
 <tr>
 <td>✅ <strong>v0.14.x</strong></td>
@@ -2693,8 +2693,7 @@ sequence is what matters.</p>
 - Any newly-observed systematic failure modes</p>
 <p>Likely candidates (each requires its own ADR before committing):
 - Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
-- Stronger rescore tuning if v0.16 defaults need adjustment
-- Embedding model lock (Dmitry's silent-corruption report, <a href="docs/research/embedding_lock.md">research notes</a> — <em>to be filed</em>)</p>
+- Stronger rescore tuning if v0.16 defaults need adjustment</p>
 <hr />
 <h2 id="exploring">Exploring<a class="headerlink" href="#exploring" title="Permanent link">&para;</a></h2>
 <p>These are research directions, not commitments. Each requires a Decision Record before becoming a roadmap item.</p>
