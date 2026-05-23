@@ -131,6 +131,16 @@ Run `elfmem doctor --modules` for the live module map (always current — mainta
 
 **Rule: when adding a new significant module, add one line to `KEY_MODULES` in `project.py`.**
 
+## Project documentation structure
+
+- **`ROADMAP.md`** (repo root) — single source of truth for direction. Status: Released / In Progress / Next / Exploring / Rejected. Linked from mkdocs as `docs/roadmap.md`.
+- **`docs/plans/`** — implementation plans. Only `plan_memory_scoring.md` is active; the rest are frozen historical artifacts. Shipped/superseded plans move to `docs/plans/archive/`. See `docs/plans/README.md`.
+- **`docs/decisions/`** — Architecture Decision Records (ADRs), append-only. Each load-bearing decision (especially rejections) gets an ADR. See `docs/decisions/README.md` for format.
+- **`docs/research/`** — research that informed decisions; long-term-evolution work compiled under `docs/research/long_term_evolution/`. Methodology under `docs/research/methodology/`. Raw exploratory notes that fed compiled artifacts under `_archived/`.
+- **`scripts/longitudinal_sim/`** — permanent simulation harness. In-memory only; safety asserts refuse to touch real DB. Reusable for any future scoring evaluation.
+
+**Rule: when shipping a feature, move its plan to `docs/plans/archive/` and update `ROADMAP.md`. When rejecting a proposal, write an ADR in `docs/decisions/` with the trigger condition that would justify revisiting.**
+
 
 ## elfmem — elf's Memory
 

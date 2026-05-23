@@ -312,3 +312,109 @@ class TestEffectiveCentrality:
         """An old block keeps its raw centrality regardless of value."""
         assert effective_centrality(raw_centrality=0.0, recency=0.10) == 0.0
         assert effective_centrality(raw_centrality=0.50, recency=0.10) == 0.50
+
+
+# ---------------------------------------------------------------------------
+# v0.15.3 numerical regression — locks in the cold-start gap-closure numbers
+# against the REAL scoring path (ATTENTION_WEIGHTS + compute_score +
+# effective_centrality). Source: scripts/verify_v0_15_3_scoring.py.
+# ---------------------------------------------------------------------------
+
+
+class TestColdStartGapRegression:
+    """Numerical regression fixture for v0.15.3.
+
+    The original plan was built on a simulation that used
+        ATTENTION = (sim=0.60, conf=0.15, rec=0.10, cent=0.15, reinf=0.00)
+    but the shipped ATTENTION_WEIGHTS are
+        (sim=0.35, conf=0.15, rec=0.25, cent=0.15, reinf=0.10).
+    Recency weight is 2.5× higher and reinforcement is non-zero in production.
+    These tests pin the *real* gap-closure numbers so future scoring tweaks
+    can't silently re-open the cold-start hole.
+    """
+
+    # Canonical scenarios (kwargs for compute_score, minus weights).
+    NEW_BLOCK = dict(similarity=0.74, confidence=0.65, recency=1.0,
+                     centrality=0.0, reinforcement=0.0)
+    BEDROCK_REINFORCED = dict(similarity=0.62, confidence=0.95, recency=0.70,
+                              centrality=0.80, reinforcement=1.0)
+    BEDROCK_NO_REINF = dict(similarity=0.62, confidence=0.95, recency=0.70,
+                            centrality=0.80, reinforcement=0.0)
+
+    def _floored(self, block: dict) -> dict:
+        return {**block, "centrality": effective_centrality(
+            raw_centrality=block["centrality"], recency=block["recency"],
+        )}
+
+    def test_floor_closes_exactly_0_075_of_weighted_gap(self) -> None:
+        """The floor raises centrality from 0.0 to 0.5 at recency=1.0, which
+        at centrality_weight=0.15 closes exactly 0.075 of weighted gap."""
+        pre = compute_score(**self.NEW_BLOCK, weights=ATTENTION_WEIGHTS)
+        post = compute_score(**self._floored(self.NEW_BLOCK), weights=ATTENTION_WEIGHTS)
+        assert abs((post - pre) - 0.075) < TOL
+
+    def test_wide_similarity_gap_floor_surfaces_new_block(self) -> None:
+        """S1: similarity 0.92 vs 0.55 — floor flips ranking from −0.0605 to +0.0145."""
+        new = dict(self.NEW_BLOCK, similarity=0.92)
+        bedrock = dict(self.BEDROCK_REINFORCED, similarity=0.55)
+        new_score = compute_score(**self._floored(new), weights=ATTENTION_WEIGHTS)
+        bedrock_score = compute_score(**bedrock, weights=ATTENTION_WEIGHTS)
+        assert abs(new_score - 0.7445) < TOL
+        assert abs(bedrock_score - 0.7300) < TOL
+        assert new_score > bedrock_score
+
+    def test_tight_gap_reinforced_bedrock_floor_INSUFFICIENT(self) -> None:
+        """S1b: similarity 0.74 vs 0.62 — when bedrock has reinforcement=1.0,
+        the centrality floor alone is NOT enough. Margin remains −0.073.
+
+        This is a deliberate regression fixture: if a future change closes
+        this gap (e.g. a reinforcement floor, or exploration bonus from v0.17),
+        update the expected value — but the change should be intentional.
+        """
+        new_score = compute_score(**self._floored(self.NEW_BLOCK), weights=ATTENTION_WEIGHTS)
+        bedrock_score = compute_score(**self.BEDROCK_REINFORCED, weights=ATTENTION_WEIGHTS)
+        assert abs(new_score - 0.6815) < TOL
+        assert abs(bedrock_score - 0.7545) < TOL
+        assert new_score < bedrock_score
+        assert abs((new_score - bedrock_score) - (-0.0730)) < TOL
+
+    def test_tight_gap_unreinforced_bedrock_floor_SUFFICIENT(self) -> None:
+        """S1b': same tight similarity gap, but bedrock has reinforcement=0.0
+        (e.g. integration-test setup). Floor surfaces new block by +0.027."""
+        new_score = compute_score(**self._floored(self.NEW_BLOCK), weights=ATTENTION_WEIGHTS)
+        bedrock_score = compute_score(**self.BEDROCK_NO_REINF, weights=ATTENTION_WEIGHTS)
+        assert abs(new_score - 0.6815) < TOL
+        assert abs(bedrock_score - 0.6545) < TOL
+        assert new_score > bedrock_score
+
+    def test_floor_decays_with_recency_in_full_score(self) -> None:
+        """As recency falls, the floor scales linearly until the threshold,
+        then snaps to raw centrality. Verifies the cliff is at recency=0.70."""
+        bedrock_score = compute_score(**self.BEDROCK_NO_REINF, weights=ATTENTION_WEIGHTS)
+
+        def score_at(rec: float) -> float:
+            floored = effective_centrality(raw_centrality=0.0, recency=rec)
+            return compute_score(
+                similarity=0.74, confidence=0.65, recency=rec,
+                centrality=floored, reinforcement=0.0,
+                weights=ATTENTION_WEIGHTS,
+            )
+
+        # At recency=1.0: wins by +0.027
+        assert score_at(1.0) - bedrock_score > 0.02
+        # Just above threshold (recency=0.71): floor still applies but reduced
+        assert effective_centrality(raw_centrality=0.0, recency=0.71) > 0.0
+        # At threshold (recency=0.70): floor stops; sharp drop
+        assert effective_centrality(raw_centrality=0.0, recency=0.70) == 0.0
+        # Below threshold: bedrock dominates by a widening margin
+        assert score_at(0.50) < bedrock_score
+        assert score_at(0.10) < score_at(0.50)
+
+    def test_established_block_score_unchanged_by_floor(self) -> None:
+        """A block with raw_centrality=0.15 (above threshold) gets no floor —
+        score is identical to the no-floor baseline. Guards against the floor
+        accidentally being applied to established blocks."""
+        block = dict(self.NEW_BLOCK, centrality=0.15)
+        raw = compute_score(**block, weights=ATTENTION_WEIGHTS)
+        floored = compute_score(**self._floored(block), weights=ATTENTION_WEIGHTS)
+        assert raw == floored

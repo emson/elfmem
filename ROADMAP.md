@@ -1,0 +1,179 @@
+# elfmem Roadmap
+
+> **What this is**: the public-facing roadmap for elfmem. One source of truth.
+> What's shipped, what's next, what we've considered and explicitly rejected.
+>
+> **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
+> sequence is what matters.
+>
+> **Last reviewed**: 2026-05-23. Reviewed quarterly. Open issues at
+> [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
+
+---
+
+## Project axioms
+
+These don't change between releases. They constrain what we ship.
+
+- **Agent-first**: every public API serves the agent's read → call → interpret → next loop
+- **Biological grounding**: four rhythms (heartbeat / breathing / sleep / deep sleep), four frames (self / attention / task / simulate)
+- **No magic numbers** — hardcoded constants must be defensible from first principles, not from flashcard fits
+- **SIMPLE · ELEGANT · FLEXIBLE · ROBUST** — `docs/coding_principles.md`
+- **Ship minimum, measure, then earn each layer** — solo OSS cannot sustain unbounded complexity growth
+- **SQLite + zero external services** — backwards-compatible, file-portable, no cloud lock-in
+
+---
+
+## Status legend
+
+| Symbol | Meaning |
+|---|---|
+| ✅ | Released |
+| 🚧 | In Progress |
+| 📋 | Next (committed, not yet started) |
+| 🔍 | Exploring (research, no commitment) |
+| ❌ | Rejected (with reason) |
+
+---
+
+## Recently Released
+
+| Version | Highlights | Date |
+|---|---|---|
+| ✅ **v0.15.3** | Cold-start centrality floor for fresh blocks ([#61](https://github.com/emson/elfmem/issues/61)) | 2026-05-17 |
+| ✅ **v0.15.2** | Removed confidence cliff at alignment_score=0.70 ([#60](https://github.com/emson/elfmem/issues/60)) | 2026-05-16 |
+| ✅ **v0.15.1** | Surface `connect()` relation conflicts; fix token under-counting ([#59](https://github.com/emson/elfmem/issues/59)) | 2026-05-14 |
+| ✅ **v0.15.0** | Release stabilisation; MCP gaps closed | 2026-05-12 |
+| ✅ **v0.14.x** | Theory of Mind tools in MCP; dream flags exposed | 2026-05-10 |
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.
+
+---
+
+## In Progress
+
+### 🚧 v0.16 / v0.17 — Sufficient statistics + adaptive scoring
+
+Single bundle. Scope ~330 LOC. Issues to be filed for each item.
+
+| Item | Description | Status |
+|---|---|---|
+| Sufficient statistics | Materialise `(success_count, failure_count)` as honest Beta-Binomial columns; `confidence` stays as denormalised view for backward compat | Designed |
+| Additive rescore | `dream(rescore=True)` folds new alignment as weighted evidence event instead of overwriting confidence. **22× reduction** in rescore damage on N>5 blocks (validated) | Designed |
+| Arithmetic peer merge | `(local_α + remote_α × trust, local_β + remote_β × trust)` — the principled merge that sufficient stats enable | Designed |
+| Exploration bonus | `kappa × sqrt(Beta_variance)` term in compute_score, κ=0.05 hardcoded. **+5.6pp quality at 730 days** in simulation; small short-term cost | Designed |
+
+**Plan**: [`docs/plans/plan_memory_scoring.md`](docs/plans/plan_memory_scoring.md)
+**Decisions**: [`docs/decisions/0001-power-law-decay-rejected.md`](docs/decisions/0001-power-law-decay-rejected.md), [`docs/decisions/0002-v017-scope.md`](docs/decisions/0002-v017-scope.md)
+**Validating research**: [`docs/research/scoring_proposed_evaluation.md`](docs/research/scoring_proposed_evaluation.md)
+
+---
+
+## Next
+
+Driven by signal from v0.17 in production. Specific items not yet committed.
+
+### 📋 v0.18 — Production signal response
+
+Concrete scope depends on:
+- Dmitry's v0.15.3 follow-up answer ([draft question](docs/plans/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
+- ≥3 months of v0.17 telemetry from real instances
+- Any newly-observed systematic failure modes
+
+Likely candidates (each requires its own ADR before committing):
+- Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
+- Stronger rescore tuning if v0.16 defaults need adjustment
+- Embedding model lock (Dmitry's silent-corruption report, [research notes](docs/research/embedding_lock.md) — *to be filed*)
+
+---
+
+## Exploring
+
+These are research directions, not commitments. Each requires a Decision Record before becoming a roadmap item.
+
+### 🔍 Constitutional / identity evolution
+
+The structural problem: PERMANENT-tier blocks (`λ=0.00001`, half-life 47.5y) cannot evolve. As the agent's identity drifts over years, constitutional blocks ossify.
+
+Research has explored four mechanism families:
+- **Architecture M**: exclude constitutional from ATTENTION candidate pool; inject as preamble at frame render. Big help under drift (+33pp), real cost under stability (−7pp).
+- **Model C (ego_strength)**: Darwinian — constitutional earn persistence via positive outcomes. Adds 4 magic numbers + 1 table.
+- **Model D**: distributed feedback across top-N constitutional (fixes Model C hoarding, adds cost).
+- **Self-architecting agent**: hill-climb in parameter space; agent picks its own configuration. Simulation showed it underperforms fixed strategies.
+
+**Status**: deferred until production signal demands a mechanism. The simulations explored the design space but did not produce a decisively-better-than-baseline result for any user class. See [`docs/research/constitutional_evolution.md`](docs/research/constitutional_evolution.md).
+
+### 🔍 MemoryAgentBench / LoCoMo participation
+
+Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the v0.17 critical path.
+
+### 🔍 Multi-context (work-self vs personal-self)
+
+Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.
+
+---
+
+## Rejected
+
+Things we considered and decided **not** to do. Documented so they aren't relitigated.
+
+### ❌ Power-law retrievability decay (FSRS-style)
+
+**Considered**: replacing `exp(-λt)` with `(1 + 0.5t/stability)^(-0.5)`.
+**Why rejected**: simulation across 4 scenarios showed −5 to −7.6pp quality and **−44 to −66pp recent_reach** (catastrophic). Fat tails keep stale blocks competitive against fresh ones. Power-law works for flashcards; refuted for agent memory.
+**Decision Record**: [`docs/decisions/0001-power-law-decay-rejected.md`](docs/decisions/0001-power-law-decay-rejected.md)
+**Trigger to revisit**: only if MemoryAgentBench shows power-law wins on agent workloads (none reported as of 2026-05).
+
+### ❌ FSRS-5 19-parameter stability machinery
+
+**Considered**: importing the FSRS-5 difficulty/stability mechanics wholesale.
+**Why rejected**: 19 magic numbers fitted to flashcard data; no fitting infrastructure for agent traces. Violates "no magic numbers" by an order of magnitude.
+**Trigger to revisit**: ≥10,000 outcome events in production from real elfmem deployments AND a fitting pipeline.
+
+### ❌ `block_events` event log table
+
+**Considered**: a full per-event log for replay and audit.
+**Why rejected**: `block_outcomes` already captures the only event type with non-trivial signal. Replay is a research affordance, not a user affordance.
+**Trigger to revisit**: real user demand for compliance / replay features.
+
+### ❌ Hierarchical abstract tier (raw / summary / abstract)
+
+**Considered**: MemoryOS-style three-tier hierarchy.
+**Why rejected**: existing summary-block mechanism is sufficient. Adding a third tier is imitation without measured benefit.
+**Trigger to revisit**: measurement of context-bloat retrieval defects on real queries.
+
+### ❌ Zettelkasten auto-linking on consolidate
+
+**Considered**: LLM-driven automatic `connect()` calls during dream().
+**Why rejected**: `connect()` already exists for explicit use; auto-linking introduces LLM failure modes without measured gain.
+**Trigger to revisit**: evidence that explicit `connect()` is undertilised by real agents AND a validation strategy for LLM-judged links.
+
+### ❌ Renaming `confidence → utility`
+
+**Considered**: aligning vocabulary with cognitive-science papers (Park's "importance").
+**Why rejected**: `confidence` is elfmem's brand-term used across `outcome()`, `consolidate()`, MCP, AgentGuide, CLI. Rename has high churn cost for zero behavioural value.
+**Trigger to revisit**: never. Terminology decision is settled.
+
+---
+
+## Long-term north star
+
+Not committed, but where this is heading.
+
+- **v0.18+**: production signal response (above)
+- **v0.19**: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed
+- **v0.20+**: earned architectural features (only the deferred items that empirical evidence supports)
+- **v1.0**: public API freeze. Stable for years. Backwards-compatible changes only.
+
+**Discipline**: every subsequent layer must be earned with evidence — not designed in advance.
+
+---
+
+## How this roadmap is maintained
+
+- **Quarterly review**: at start of each quarter, re-evaluate "In Progress" and "Next" against actual user signal
+- **Per-release update**: at each minor release, move items from "In Progress" to "Recently Released"; revisit "Exploring"
+- **Decision Records**: every "Rejected" item or major architectural choice gets an ADR in `docs/decisions/`
+- **Issue links**: each roadmap item should link to a GitHub issue once filed; discussions happen there
+
+If something here is wrong, file an issue. Pull requests against this file are welcome.
