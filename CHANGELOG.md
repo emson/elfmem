@@ -9,6 +9,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Schema v5: ``block_amendments`` audit table — substrate for v0.18
+  constitutional review (MANUAL surfacing + explicit accept; see
+  [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)).
+  No behaviour change yet; later commits add the review/accept/revert API.
+- Result types: ``ProposedAmendment``, ``ConstitutionalReviewResult``,
+  ``AmendmentResult``, ``AmendmentRecord`` (exported from ``elfmem``).
+
 ---
 
 ## [0.17.0] — 2026-05-23

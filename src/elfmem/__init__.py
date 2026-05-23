@@ -35,11 +35,14 @@ from elfmem.exceptions import (
 )
 from elfmem.policy import ConsolidationPolicy
 from elfmem.types import (
+    AmendmentRecord,
+    AmendmentResult,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
     ConnectsResult,
     ConsolidateResult,
+    ConstitutionalReviewResult,
     CurateResult,
     DisconnectResult,
     DisplacedEdge,
@@ -59,6 +62,7 @@ from elfmem.types import (
     PeerInfo,
     PeerSendResult,
     PredictionDetail,
+    ProposedAmendment,
     ScoredBlock,
     SetupResult,
     SystemStatus,
@@ -92,6 +96,11 @@ __all__ = [
     "ConnectSpec",
     "DisconnectResult",
     "DisplacedEdge",
+    # Constitutional review types (v0.18)
+    "ProposedAmendment",
+    "ConstitutionalReviewResult",
+    "AmendmentResult",
+    "AmendmentRecord",
     # Mind (Theory of Mind) types
     "MindSummary",
     "MindPredictResult",
