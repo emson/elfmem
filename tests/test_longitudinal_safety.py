@@ -11,7 +11,6 @@ import os
 from pathlib import Path
 
 import pytest
-
 from scripts.longitudinal_sim.safety import (
     SafetyViolation,
     assert_in_memory_only,
