@@ -1,0 +1,3063 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_memory_scoring/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: Memory Scoring Architecture — v0.15.x through v0.18.x - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-memory-scoring-architecture-v015x-through-v018x" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: Memory Scoring Architecture — v0.15.x through v0.18.x
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-agent-team-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the agent team found
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What the agent team found">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#consistency-agent-alignment-with-elfmem-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consistency agent — alignment with elfmem principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-agent-evidence-grading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Research agent — evidence grading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#critic-agent-cut-to-the-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critic agent — cut to the core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#my-synthesis-as-elf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        My synthesis as elf
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-ship-verification-of-v0153-2026-05-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-ship verification of v0.15.3 (2026-05-18)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0153-centrality-cold-start-floor-this-week" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.15.3 — Centrality cold-start floor (this week)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.15.3 — Centrality cold-start floor (this week)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ships
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0160-sufficient-statistics-additive-rescore-1-2-weeks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.16.0 — Sufficient statistics + additive rescore (1-2 weeks)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.16.0 — Sufficient statistics + additive rescore (1-2 weeks)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renaming-and-terminology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renaming and terminology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentguide-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AgentGuide updates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ships_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ships
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0170-exploration-bonus-power-law-experiment-3-5-days" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.17.0 — Exploration bonus + power-law experiment (3-5 days)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.17.0 — Exploration bonus + power-law experiment (3-5 days)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-opt-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why opt-in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ships_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ships
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v018-deferred-items-with-explicit-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.18+ — Deferred items, with explicit triggers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.18+ — Deferred items, with explicit triggers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#event-log-table-block_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event log table (block_events)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fsrs-5-stability-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSRS-5 stability mechanics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hierarchical-abstract-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hierarchical abstract tier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zettelkasten-auto-linking-on-consolidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zettelkasten auto-linking on consolidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-frame-weight-retuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-frame weight retuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm-as-evidence-calibration-elfmem-doctor-recalibrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM-as-evidence calibration (elfmem doctor --recalibrate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-we-are-explicitly-not-adopting-from-the-research-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What we are explicitly NOT adopting from the research paper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#long-term-north-star-where-this-is-heading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long-term north star — where this is heading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-asks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision asks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-draft-follow-up-question-for-dmitry-issue-50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix — draft follow-up question for Dmitry (issue #50)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_memory_scoring.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-memory-scoring-architecture-v015x-through-v018x">Plan: Memory Scoring Architecture — v0.15.x through v0.18.x<a class="headerlink" href="#plan-memory-scoring-architecture-v015x-through-v018x" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: plan — ready for review and approval
+<strong>Driver</strong>: <a href="https://github.com/emson/elfmem/issues/50">issue #50</a> + the architectural inconsistencies surfaced during analysis
+<strong>Synthesises</strong>: <code>docs/research/memory_scoring_survey.md</code> (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic)
+<strong>Author</strong>: elf, after orchestrating the team</p>
+<hr />
+<h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>The research paper proposes a sweeping architectural overhaul (3 new schema columns, 1 new table, 5-channel composite scoring, FSRS-5 stability, Zettelkasten auto-linking, hierarchical compression — ~500 LOC across 4 minor versions). A 3-agent review (Consistency, Research, Critic) converged on a much sharper conclusion:</p>
+<p><strong>Most of the proposal is correct in direction but premature in detail.</strong> Only one architectural change is genuinely load-bearing today: making rescore additive over Bayesian sufficient statistics. Everything else — event log, FSRS mechanics, power-law retrievability, hierarchical tiers, Zettelkasten auto-linking — needs empirical evidence elfmem doesn't yet have.</p>
+<p>Crucially, <strong>Dmitry's actual symptom is a retrieval-side problem</strong> (centrality cold-start gap), not a storage-side one. The minimum fix for his report is three lines in <code>scoring.py</code> — not a multi-version architectural overhaul.</p>
+<p>This plan therefore proposes:</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Scope</th>
+<th>Effort</th>
+<th>Risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>v0.15.3</strong></td>
+<td>Centrality cold-start floor — Dmitry's actual fix</td>
+<td>1 day, ~10 LOC</td>
+<td>very low</td>
+</tr>
+<tr>
+<td><strong>v0.16.0</strong></td>
+<td>Sufficient statistics <code>(α, β)</code> + additive rescore + peer merge</td>
+<td>1 week, ~250 LOC</td>
+<td>low</td>
+</tr>
+<tr>
+<td><strong>v0.17.0</strong></td>
+<td>Exploration bonus from variance; power-law decay as opt-in experiment</td>
+<td>3 days, ~80 LOC</td>
+<td>medium (experimental flag)</td>
+</tr>
+<tr>
+<td><strong>v0.18+</strong></td>
+<td>DEFERRED — event log, FSRS mechanics, hierarchical tiers, Zettelkasten auto-link</td>
+<td>—</td>
+<td>speculative until empirical case</td>
+</tr>
+</tbody>
+</table>
+<p>Total committed scope: <strong>~3 weeks across 3 minor versions, ~340 LOC</strong> — versus the paper's 8 weeks and ~2000 LOC. Most of the saved scope is genuine work-not-done, not work-rushed.</p>
+<hr />
+<h2 id="what-the-agent-team-found">What the agent team found<a class="headerlink" href="#what-the-agent-team-found" title="Permanent link">&para;</a></h2>
+<p>The full agent reports are summarised here; they should be read in full when reviewing this plan.</p>
+<h3 id="consistency-agent-alignment-with-elfmem-principles">Consistency agent — alignment with elfmem principles<a class="headerlink" href="#consistency-agent-alignment-with-elfmem-principles" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Keep</strong>: additive rescore, sufficient-statistics storage, three-channel conceptual decomposition, power-law for retrievability <em>eventually</em>.</li>
+<li><strong>Reject</strong>: the new <code>block_events</code> table (showpiece — <code>block_outcomes</code> already exists for the only event type that matters), FSRS-5's 19-parameter stability machinery (violates "no magic numbers" by an order of magnitude), the rename <code>confidence → utility</code> (elfmem's brand-term used across <code>outcome()</code>, <code>consolidate()</code>, MCP, AgentGuide, CLI — keep our terminology), Difficulty as a separate channel (only exists so FSRS updates compile).</li>
+<li><strong>Single highest-leverage change</strong>: materialise <code>(success_count, failure_count)</code> and make rescore additive. ~200 LOC. Dissolves 3 named bugs.</li>
+</ul>
+<h3 id="research-agent-evidence-grading">Research agent — evidence grading<a class="headerlink" href="#research-agent-evidence-grading" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>A-grade (billion-scale validation)</strong>: power-law decay for human memory; multi-signal retrieval generally.</li>
+<li><strong>B-grade (strong recent cross-system support)</strong>: Zettelkasten linking (A-MEM), per-item adaptive forgetting, hierarchical compression, three-signal scoring.</li>
+<li><strong>C-grade (theoretical + few adopters)</strong>: Beta-Binomial sufficient stats for agent memory (extrapolation from BKT — strong analogy but new domain), event log for memory scoring (ESAA shows low overhead but no scoring system has shipped it yet).</li>
+<li><strong>D-grade (speculative)</strong>: Thompson-style exploration bonus κ for agent retrieval (untuned), <code>w_llm = 1.0</code> calibration (LLM judges shown systematically biased), FSRS-5 parameters for non-flashcard data.</li>
+<li><strong>Missed from paper</strong>: KAR³L + LECTOR (content-aware FSRS for embeddings — more relevant to elfmem than vanilla FSRS-5), ByteRover 2.0 (92.2 LoCoMo), Mem0 token-efficient algorithm, MemoryAgentBench (better benchmark than LoCoMo for update/conflict-resolution), outcome-based exploration paper (more apt than Thompson sampling for LLMs).</li>
+<li><strong>Recommendation</strong>: adopt only A/B-graded items; ship C-graded items behind feature flags with empirical validation; defer D-graded items until tuning data exists.</li>
+</ul>
+<h3 id="critic-agent-cut-to-the-core">Critic agent — cut to the core<a class="headerlink" href="#critic-agent-cut-to-the-core" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Dmitry's literal fix</strong>: 3-line centrality cold-start floor in <code>scoring.py</code>. Direct attack on the term that empirically dominates the gap.</li>
+<li><strong>Load-bearing</strong>: only additive rescore via sufficient stats. Everything else is elective.</li>
+<li><strong>Cargo-cult / showpiece</strong>: FSRS-5 mechanics ("fashion, not calibration"), power-law retrievability as default ("paying complexity tax for an unmeasured benefit"), hierarchical abstract tier ("pure MemoryOS imitation"), Zettelkasten auto-linking (<code>connect()</code> already exists; auto-linking introduces failure modes), event log table (replay is a research affordance, not a user affordance).</li>
+<li><strong>Irreducible architecture</strong>: two columns (<code>success_count</code>, <code>failure_count</code>), one scoring tweak (centrality floor), one additive update rule (rescore). ~150 LOC. Ships in v0.16.0. Fixes Dmitry. Fixes rescore clobber. Enables principled peer merge.</li>
+<li><strong>Minority view</strong>: if elfmem's "biological memory" claim is the product moat, then shipping the cognitive-science-grounded architecture IS the product — and trimming it makes elfmem indistinguishable from "vector store with confidence column." But: one maintainer, 8 weeks, four minor versions — the half-life of architectural ambition in solo OSS is about one release cycle. Ship minimum, measure, then earn each layer.</li>
+</ul>
+<h3 id="my-synthesis-as-elf">My synthesis as elf<a class="headerlink" href="#my-synthesis-as-elf" title="Permanent link">&para;</a></h3>
+<p>The three agents agree more than they disagree. Where they diverge, the disagreements are about pace and ambition, not direction. <strong>All three accept the same destination; they differ on how quickly to get there.</strong></p>
+<p>The right answer is the Critic's pace with the Research agent's evidence-grading discipline and the Consistency agent's vocabulary preservation. That gives us:</p>
+<ul>
+<li><strong>Ship the actual fix for Dmitry's symptom this week.</strong> Centrality floor. 3 lines.</li>
+<li><strong>Ship the load-bearing architectural change next.</strong> Sufficient statistics + additive rescore. ~250 LOC.</li>
+<li><strong>Ship the high-value low-risk follow-ups</strong> once the substrate exists. Exploration bonus. Power-law as experiment.</li>
+<li><strong>Defer everything speculative.</strong> Event log, FSRS mechanics, Zettelkasten auto-linking, hierarchical abstract tier. Each waits for an empirical case.</li>
+</ul>
+<p>Crucially: <strong>keep elfmem's existing vocabulary</strong> (<code>confidence</code>, <code>alignment_score</code>, <code>outcome_evidence</code>, <code>decay_lambda</code>). The semantic clarification is in what these mean and how they update, not in renaming them. Park's "importance" terminology is not non-negotiable; ours works.</p>
+<hr />
+<h2 id="post-ship-verification-of-v0153-2026-05-18">Post-ship verification of v0.15.3 (2026-05-18)<a class="headerlink" href="#post-ship-verification-of-v0153-2026-05-18" title="Permanent link">&para;</a></h2>
+<p>After v0.15.3 shipped (commit <code>99a5779</code>), we re-ran the cold-start scenarios against the <strong>real</strong> scoring path (<code>compute_score</code> + <code>effective_centrality</code> + <code>ATTENTION_WEIGHTS</code>) rather than the simulation's local copy. See <code>scripts/verify_v0_15_3_scoring.py</code> and the regression fixture <code>tests/test_scoring.py::TestColdStartGapRegression</code>.</p>
+<p><strong>Finding: the simulation used the wrong ATTENTION weights.</strong> Production weights are <code>(sim=0.35, conf=0.15, rec=0.25, cent=0.15, reinf=0.10)</code>. The simulation used <code>(0.60, 0.15, 0.10, 0.15, 0.00)</code>. Two channels were materially mis-weighted:</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Sim weight</th>
+<th>Real weight</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>recency</td>
+<td>0.10</td>
+<td>0.25</td>
+<td>Fresh blocks already get 2.5× more lift in production than the sim modelled</td>
+</tr>
+<tr>
+<td>reinforcement</td>
+<td>0.00</td>
+<td>0.10</td>
+<td>Bedrock with reinforcement=1.0 has a 0.10 ranking moat the sim ignored</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Consequence: v0.15.3 only fully closes the cold-start gap when competing bedrock is unreinforced.</strong></p>
+<p>Concrete numbers from the regression fixture (tight similarity gap, new sim=0.74 vs bedrock sim=0.62):</p>
+<table>
+<thead>
+<tr>
+<th>Bedrock state</th>
+<th>Margin pre-floor</th>
+<th>Margin post-floor</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reinforcement=0 (e.g. integration-test setup)</td>
+<td>−0.048</td>
+<td><strong>+0.027</strong></td>
+<td>new block surfaces ✓</td>
+</tr>
+<tr>
+<td>reinforcement=1 (typical for constitutional/aged content)</td>
+<td>−0.148</td>
+<td><strong>−0.073</strong></td>
+<td>bedrock still wins ✗</td>
+</tr>
+</tbody>
+</table>
+<p>The floor always closes exactly 0.075 of weighted gap (<code>centrality_weight × floor_strength = 0.15 × 0.50</code>). Whether that's enough depends entirely on whether competing bedrock has accumulated reinforcement.</p>
+<p><strong>Implication for v0.16 / v0.17 sequencing:</strong>
+- The architectural case for v0.16 (sufficient stats + additive rescore + peer merge) is <strong>unchanged</strong> — those changes solve rescore-clobber and peer merge, which are independent of the cold-start retrieval question.
+- The exploration bonus from v0.17 may need to move earlier if Dmitry's affected blocks are competing against reinforced bedrock — it is the natural counterweight to a reinforcement moat, and the v0.16 sufficient-stats substrate is what makes its variance term computable.
+- The pre-v0.16 integration test (<code>test_cold_start_centrality.py</code>) passes because it uses unreinforced bedrock. It is not a sufficient witness on its own; the new regression fixture pins both regimes.</p>
+<p><strong>Open question for Dmitry (issue #50 follow-up):</strong> does his cold-start symptom persist on v0.15.3 specifically when the competing bedrock blocks have accumulated reinforcement? See draft question at the foot of this document.</p>
+<hr />
+<h2 id="v0153-centrality-cold-start-floor-this-week">v0.15.3 — Centrality cold-start floor (this week)<a class="headerlink" href="#v0153-centrality-cold-start-floor-this-week" title="Permanent link">&para;</a></h2>
+<h3 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h3>
+<p>A freshness-aware centrality floor in retrieval scoring. Three to ten lines in <code>src/elfmem/scoring.py</code>. No schema change. No new config. No new tests beyond one regression.</p>
+<h3 id="change">Change<a class="headerlink" href="#change" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># In compute_centrality() or wherever the centrality term is constructed:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">effective_centrality</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">recency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">raw_centrality</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fresh blocks get a centrality floor while their graph position is establishing.</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">    Cold-start blocks (few edges, high recency) would otherwise lose top-K to bedrock</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">    centrality even with much better semantic match. The floor decays as recency does.</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">edges</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;edge_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">if</span> <span class="n">edges</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">recency</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">raw_centrality</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">recency</span><span class="p">)</span>  <span class="c1"># decays naturally with recency</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">raw_centrality</span>
+</span></code></pre></div>
+<h3 id="why-this-works">Why this works<a class="headerlink" href="#why-this-works" title="Permanent link">&para;</a></h3>
+<p>Per the simulation <code>/tmp/confidence_sim.py</code>, the bedrock-vs-new score gap in ATTENTION decomposes as:
+- similarity: +0.07 advantage for new block
+- confidence: -0.015 (cliff was the cause; v0.15.2 fixed it)
+- recency: +0.030 advantage for new block
+- centrality: <strong>−0.105</strong> the killer term
+- reinforcement: −0.015</p>
+<p>Centrality is 3.5× confidence's contribution. The cliff fix (v0.15.2) addressed the second-smallest term. This addresses the largest one.</p>
+<p>The floor automatically decays as the block ages (recency falls), so cold-start protection is temporary — once a block is no longer "fresh", it earns centrality through actual graph position.</p>
+<h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>New: <code>test_cold_start_block_surfaces_top_k</code> — fresh block with <code>sim=0.74</code> beats bedrock with <code>sim=0.62, conf=0.95, centrality=0.80</code>.</li>
+<li>Existing tests should pass unchanged (no behaviour change for non-cold-start blocks).</li>
+</ul>
+<h3 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">&para;</a></h3>
+<p>None. Pure scoring change.</p>
+<h3 id="risk">Risk<a class="headerlink" href="#risk" title="Permanent link">&para;</a></h3>
+<p>Very low. Pure scoring math. Reversible.</p>
+<h3 id="ships">Ships<a class="headerlink" href="#ships" title="Permanent link">&para;</a></h3>
+<p>Within 1 day of approval. Patch release v0.15.3.</p>
+<hr />
+<h2 id="v0160-sufficient-statistics-additive-rescore-1-2-weeks">v0.16.0 — Sufficient statistics + additive rescore (1-2 weeks)<a class="headerlink" href="#v0160-sufficient-statistics-additive-rescore-1-2-weeks" title="Permanent link">&para;</a></h2>
+<h3 id="scope_1">Scope<a class="headerlink" href="#scope_1" title="Permanent link">&para;</a></h3>
+<p>The one load-bearing architectural change. Materialise the Beta-Binomial sufficient statistics already implicit in <code>outcome_evidence</code> + <code>confidence</code> as first-class columns. Make rescore additive. Make peer merge arithmetic. Keep <code>confidence</code> as a denormalised cache for backwards compat.</p>
+<h3 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h3>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">blocks</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">success_count</span><span class="w"> </span><span class="nb">REAL</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">blocks</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">failure_count</span><span class="w"> </span><span class="nb">REAL</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1">-- Bootstrap from existing values (one-time on first open under v0.16):</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">UPDATE</span><span class="w"> </span><span class="n">blocks</span><span class="w"> </span><span class="k">SET</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="n">success_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">confidence</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">outcome_evidence</span><span class="p">),</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="n">failure_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">confidence</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">outcome_evidence</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">success_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">failure_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">5</span><span class="p">;</span>
+</span></code></pre></div>
+<p><code>confidence</code> column <strong>stays</strong> as a denormalised view, updated on every (α, β) write:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">confidence</span> <span class="o">=</span> <span class="n">success_count</span> <span class="o">/</span> <span class="p">(</span><span class="n">success_count</span> <span class="o">+</span> <span class="n">failure_count</span><span class="p">)</span>
+</span></code></pre></div></p>
+<p>This preserves every existing reader (<code>scoring.py</code>, <code>mind.py</code>'s <code>confidence ≥ 0.5</code> classifier, MCP tools, CLI) without modification. The semantics is unchanged for callers; the storage is now honest about what it represents.</p>
+<h3 id="code-changes">Code changes<a class="headerlink" href="#code-changes" title="Permanent link">&para;</a></h3>
+<p><strong><code>src/elfmem/operations/outcome.py</code></strong> — <code>compute_bayesian_update</code> becomes a write to <code>(α, β)</code> and recomputes <code>confidence</code>:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_bayesian_update</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">success_count</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">failure_count</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">signal</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns (new_success, new_failure, new_confidence).&quot;&quot;&quot;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">new_s</span> <span class="o">=</span> <span class="n">success_count</span> <span class="o">+</span> <span class="n">signal</span> <span class="o">*</span> <span class="n">weight</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">new_f</span> <span class="o">=</span> <span class="n">failure_count</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">signal</span><span class="p">)</span> <span class="o">*</span> <span class="n">weight</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">new_c</span> <span class="o">=</span> <span class="n">new_s</span> <span class="o">/</span> <span class="p">(</span><span class="n">new_s</span> <span class="o">+</span> <span class="n">new_f</span><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">new_s</span><span class="p">,</span> <span class="n">new_f</span><span class="p">,</span> <span class="n">new_c</span><span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong><code>src/elfmem/operations/rescore.py:245</code></strong> — additive instead of destructive:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Old: confidence = analysis.alignment_score  (clobbered outcome history)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># New: fold as one weighted evidence event</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">new_s</span><span class="p">,</span> <span class="n">new_f</span><span class="p">,</span> <span class="n">new_c</span> <span class="o">=</span> <span class="n">compute_bayesian_update</span><span class="p">(</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">block</span><span class="p">[</span><span class="s2">&quot;success_count&quot;</span><span class="p">],</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;failure_count&quot;</span><span class="p">],</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">signal</span><span class="o">=</span><span class="n">analysis</span><span class="o">.</span><span class="n">alignment_score</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">weight</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">rescore_evidence_weight</span><span class="p">,</span>  <span class="c1"># default 0.5</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<p>This is the single highest-value change in the entire plan. Per simulation S3b, additive rescore reduces clobber damage by ~30× (Δ=0.30 → Δ=0.014).</p>
+<p><strong><code>src/elfmem/operations/peer.py:_peer_confidence</code></strong> — arithmetic merge:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">merge_peer_evidence</span><span class="p">(</span><span class="n">local_s</span><span class="p">,</span> <span class="n">local_f</span><span class="p">,</span> <span class="n">remote_s</span><span class="p">,</span> <span class="n">remote_f</span><span class="p">,</span> <span class="n">trust</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">return</span> <span class="p">(</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">local_s</span> <span class="o">+</span> <span class="n">remote_s</span> <span class="o">*</span> <span class="n">trust</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">local_f</span> <span class="o">+</span> <span class="n">remote_f</span> <span class="o">*</span> <span class="n">trust</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="p">)</span>
+</span></code></pre></div></p>
+<p>This is the only mathematically principled way to merge two peers' views of the same block. It enables the peer protocol's epistemic coherence without ad-hoc trust scaling.</p>
+<h3 id="config">Config<a class="headerlink" href="#config" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>memory.outcome_evidence_weight: float = 1.0</code> — already implicit; make explicit</li>
+<li><code>memory.llm_initial_weight: float = 1.0</code> — how strongly LLM rating bootstraps the prior on <code>consolidate</code></li>
+<li><code>memory.rescore_evidence_weight: float = 0.5</code> — how strongly rescore folds new ratings (half-weight by default since rescore is a re-assessment, not a fresh observation)</li>
+</ul>
+<p>Three knobs, all defensible defaults, all configurable for users who want to tune.</p>
+<h3 id="renaming-and-terminology">Renaming and terminology<a class="headerlink" href="#renaming-and-terminology" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Keep <code>confidence</code></strong> as the public-facing column name and term. It is the elfmem brand-term.</li>
+<li><strong>Keep <code>alignment_score</code></strong> for the LLM-rated identity dimension. Already exists, already plays Park's "importance" role.</li>
+<li>The new internal columns are <code>success_count</code> and <code>failure_count</code> — descriptive Bayesian-sufficient-statistic names, no jargon imported.</li>
+</ul>
+<h3 id="tests_1">Tests<a class="headerlink" href="#tests_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>test_rescore_additive</code> — block at confidence=0.85 with 20 outcome events, rescore with α=0.55, new confidence within Δ=0.05 of 0.85 (not clobbered to 0.55).</li>
+<li><code>test_peer_merge_arithmetic</code> — two peers with <code>(α=10, β=2)</code> and <code>(α=2, β=10)</code> merge to <code>(α=12, β=12) → confidence=0.5</code>.</li>
+<li><code>test_outcome_updates_sufficient_stats</code> — <code>outcome(signal=1.0, weight=1.0)</code> increments <code>success_count</code> by 1.0, leaves <code>failure_count</code> unchanged.</li>
+<li><code>test_confidence_column_is_derived_view</code> — <code>confidence == success_count / (success_count + failure_count)</code> always.</li>
+<li>All existing <code>outcome()</code>, <code>rescore()</code>, <code>peer_send/inbox</code> tests pass unchanged.</li>
+</ul>
+<h3 id="agentguide-updates">AgentGuide updates<a class="headerlink" href="#agentguide-updates" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>outcome()</code> — updated docstring noting <code>success_count</code>/<code>failure_count</code> are now first-class</li>
+<li><code>rescore()</code> — updated docstring noting rescore is now additive</li>
+<li><code>peer_send()</code>/<code>peer_inbox()</code> — updated docstring noting merge is arithmetic</li>
+</ul>
+<h3 id="migration_1">Migration<a class="headerlink" href="#migration_1" title="Permanent link">&para;</a></h3>
+<p>One-time additive ALTER TABLE on first open under v0.16. Bootstrap from existing <code>(confidence, outcome_evidence)</code>. No data loss. Reversible — keep <code>confidence</code> column.</p>
+<h3 id="risk_1">Risk<a class="headerlink" href="#risk_1" title="Permanent link">&para;</a></h3>
+<p>Low. Existing readers see equivalent values. New code path is pure-function and well-tested (the math is 30 years old). Migration is additive.</p>
+<h3 id="ships_1">Ships<a class="headerlink" href="#ships_1" title="Permanent link">&para;</a></h3>
+<p>1–2 weeks after v0.15.3 approval. Minor release v0.16.0.</p>
+<hr />
+<h2 id="v0170-exploration-bonus-power-law-experiment-3-5-days">v0.17.0 — Exploration bonus + power-law experiment (3-5 days)<a class="headerlink" href="#v0170-exploration-bonus-power-law-experiment-3-5-days" title="Permanent link">&para;</a></h2>
+<h3 id="scope_2">Scope<a class="headerlink" href="#scope_2" title="Permanent link">&para;</a></h3>
+<p>Two small additions that the v0.16 substrate enables:</p>
+<ol>
+<li>
+<p><strong>Exploration bonus from variance</strong>: blocks with high utility uncertainty get a small ranking lift. This is the principled answer to "fresh blocks need to be discoverable" once the cold-start centrality floor (v0.15.3) has stopped them being invisible.</p>
+</li>
+<li>
+<p><strong>Power-law retrievability as opt-in</strong>: A/B against the existing exponential <code>decay_lambda</code> model. Behind a feature flag. Allow real-world data to vote.</p>
+</li>
+</ol>
+<h3 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h3>
+<p><strong><code>src/elfmem/scoring.py</code></strong> — add exploration term:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">variance</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">block</span><span class="p">[</span><span class="s2">&quot;success_count&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;failure_count&quot;</span><span class="p">]</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="o">/</span> <span class="p">((</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;success_count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;failure_count&quot;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>       <span class="o">*</span> <span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;success_count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;failure_count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">exploration</span> <span class="o">=</span> <span class="n">kappa</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">score</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">similarity</span> <span class="o">*</span> <span class="n">sim</span> <span class="o">+</span> <span class="n">weights</span><span class="o">.</span><span class="n">confidence</span> <span class="o">*</span> <span class="n">confidence</span> \
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>      <span class="o">+</span> <span class="n">weights</span><span class="o">.</span><span class="n">recency</span> <span class="o">*</span> <span class="n">recency</span> <span class="o">+</span> <span class="n">weights</span><span class="o">.</span><span class="n">centrality</span> <span class="o">*</span> <span class="n">centrality</span> \
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      <span class="o">+</span> <span class="n">weights</span><span class="o">.</span><span class="n">reinforcement</span> <span class="o">*</span> <span class="n">reinforcement</span> <span class="o">+</span> <span class="n">exploration</span>
+</span></code></pre></div></p>
+<p><code>kappa</code> is a hardcoded constant (Critic agent: "the κ hyperparameter is exactly the kind of knob we should hardcode at a defensible value"). Default <code>kappa = 0.05</code> — small enough not to dominate, large enough to surface high-uncertainty blocks above bedrock when similarity is comparable.</p>
+<p><strong><code>src/elfmem/scoring.py</code></strong> — power-law retrievability as flag:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">use_power_law_decay</span><span class="p">:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">retrievability</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">elapsed_hours</span> <span class="o">/</span> <span class="n">stability</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">else</span><span class="p">:</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">retrievability</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">decay_lambda</span> <span class="o">*</span> <span class="n">elapsed_hours</span><span class="p">)</span>  <span class="c1"># current default</span>
+</span></code></pre></div></p>
+<p>Where <code>stability</code> is bootstrapped from <code>1 / decay_lambda</code> for backwards compat.</p>
+<h3 id="why-opt-in">Why opt-in<a class="headerlink" href="#why-opt-in" title="Permanent link">&para;</a></h3>
+<p>The Research agent grades power-law as A for flashcards, D for agent memory. The Critic agent calls it "fashion, not calibration." We adopt the <em>form</em> behind a flag so users can A/B; we don't make it the default until we have evidence on actual elfmem traces.</p>
+<h3 id="config_1">Config<a class="headerlink" href="#config_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>memory.kappa: float = 0.05</code> (hardcoded by default; configurable for tuning)</li>
+<li><code>memory.use_power_law_decay: bool = False</code> (experimental flag)</li>
+</ul>
+<h3 id="tests_2">Tests<a class="headerlink" href="#tests_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>test_exploration_bonus_lifts_high_variance_blocks</code> — block with <code>(α=0.5, β=0.5)</code> (max variance) ranks higher than block with <code>(α=10, β=10)</code> (same mean, low variance) when other signals match.</li>
+<li><code>test_power_law_decay_flag_swaps_formula</code> — with flag on/off, retrievability uses different formula but is monotonic in elapsed time.</li>
+</ul>
+<h3 id="risk_2">Risk<a class="headerlink" href="#risk_2" title="Permanent link">&para;</a></h3>
+<p>Medium. Exploration bonus is small (κ=0.05) but changes top-K composition. Power-law is opt-in so risk-isolated. Both changes are reversible.</p>
+<h3 id="ships_2">Ships<a class="headerlink" href="#ships_2" title="Permanent link">&para;</a></h3>
+<p>3–5 days after v0.16.0 approval. Minor release v0.17.0.</p>
+<hr />
+<h2 id="v018-deferred-items-with-explicit-triggers">v0.18+ — Deferred items, with explicit triggers<a class="headerlink" href="#v018-deferred-items-with-explicit-triggers" title="Permanent link">&para;</a></h2>
+<p>Each of the following items in the research paper is deferred until empirical evidence justifies the work. Each is paired with a concrete trigger condition.</p>
+<h3 id="event-log-table-block_events">Event log table (<code>block_events</code>)<a class="headerlink" href="#event-log-table-block_events" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we want to either (a) replay scoring history with a different formula, or (b) provide audit-trail features to users for compliance/debugging. Until then, <code>block_outcomes</code> already captures the only event type with non-trivial signal.</p>
+<h3 id="fsrs-5-stability-mechanics">FSRS-5 stability mechanics<a class="headerlink" href="#fsrs-5-stability-mechanics" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we have ≥10,000 outcome events in production from real elfmem deployments and can fit the 19 parameters from actual data. Until then, our <code>decay_lambda</code> per-tier is defensible and we have no fitting infrastructure.</p>
+<h3 id="hierarchical-abstract-tier">Hierarchical abstract tier<a class="headerlink" href="#hierarchical-abstract-tier" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we measure a context-bloat retrieval defect on real elfmem queries. Until then, the existing summary-block mechanism is sufficient.</p>
+<h3 id="zettelkasten-auto-linking-on-consolidate">Zettelkasten auto-linking on consolidate<a class="headerlink" href="#zettelkasten-auto-linking-on-consolidate" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we have evidence that manual <code>connect()</code> is undertilised by agents (e.g., few agent-issued connect() calls per dream cycle) AND we have a way to validate LLM-judged links don't introduce phantom edges. Until then, encouraging explicit <code>connect()</code> in AgentGuide is sufficient.</p>
+<h3 id="per-frame-weight-retuning">Per-frame weight retuning<a class="headerlink" href="#per-frame-weight-retuning" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we have head-to-head benchmark data (MemoryAgentBench, LoCoMo) showing current weights are suboptimal. Until then, current weights are reasonable.</p>
+<h3 id="llm-as-evidence-calibration-elfmem-doctor-recalibrate">LLM-as-evidence calibration (<code>elfmem doctor --recalibrate</code>)<a class="headerlink" href="#llm-as-evidence-calibration-elfmem-doctor-recalibrate" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger</strong>: when we observe systematic miscalibration on a held-out test set. Until then, <code>w_llm = 1.0</code> is a defensible default and instrumentation is premature.</p>
+<hr />
+<h2 id="what-we-are-explicitly-not-adopting-from-the-research-paper">What we are explicitly NOT adopting from the research paper<a class="headerlink" href="#what-we-are-explicitly-not-adopting-from-the-research-paper" title="Permanent link">&para;</a></h2>
+<p>To make this concrete, the items rejected (with reasoning):</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Why rejected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rename <code>confidence → utility</code></td>
+<td>elfmem brand-term; rename has high churn cost for zero behavioural value</td>
+</tr>
+<tr>
+<td>Rename <code>alignment_score → importance</code></td>
+<td>Park's terminology has flashcard baggage; ours fits elfmem's identity framing</td>
+</tr>
+<tr>
+<td>Full event log table</td>
+<td><code>block_outcomes</code> already captures the only event type with non-trivial signal; replay is research luxury, not user value</td>
+</tr>
+<tr>
+<td>FSRS-5 19-parameter stability update</td>
+<td>No fitting infrastructure; cargo-cult on flashcard-fit numbers</td>
+</tr>
+<tr>
+<td>Difficulty <code>D</code> as separate channel</td>
+<td>Only exists so FSRS updates compile; no independent semantic justification</td>
+</tr>
+<tr>
+<td>Three-tier hierarchy (raw/summary/abstract)</td>
+<td>Summaries are sufficient; abstract tier is MemoryOS imitation without measured benefit</td>
+</tr>
+<tr>
+<td>Zettelkasten auto-linking</td>
+<td><code>connect()</code> exists; auto-linking introduces LLM failure modes without measured gain</td>
+</tr>
+<tr>
+<td>Per-frame weight retuning in v0.16</td>
+<td>16 magic numbers shipped as defaults with no tuning data is parameter explosion</td>
+</tr>
+<tr>
+<td><code>elfmem privacy --forget</code> / <code>--recalibrate</code> CLI</td>
+<td>Scope creep; not memory-scoring work</td>
+</tr>
+</tbody>
+</table>
+<p>These can each be revisited when their respective triggers are met. None is permanently rejected; all are deferred until evidence justifies them.</p>
+<hr />
+<h2 id="long-term-north-star-where-this-is-heading">Long-term north star — where this is heading<a class="headerlink" href="#long-term-north-star-where-this-is-heading" title="Permanent link">&para;</a></h2>
+<p>The three-version plan (v0.15.3 → v0.16.0 → v0.17.0) takes elfmem to a state where:</p>
+<ul>
+<li>Confidence is a derived view over honest Bayesian sufficient statistics</li>
+<li>Rescore preserves earned outcome evidence rather than clobbering it</li>
+<li>Peer merge is mathematically principled</li>
+<li>Fresh blocks have cold-start protection that decays gracefully</li>
+<li>High-uncertainty blocks get a small exploration lift</li>
+<li>Power-law decay is available for users who want to experiment</li>
+</ul>
+<p>This is <strong>80% of the research paper's value at 17% of its proposed scope.</strong></p>
+<p>Beyond v0.17, the natural progression — once empirical evidence accumulates — is:</p>
+<ul>
+<li><strong>v0.18.x — Benchmarking</strong>: contribute elfmem as an entrant to MemoryAgentBench. Measure head-to-head against MemMachine, A-MEM, Mem0. Use real data to retune weights, validate power-law on agent traces.</li>
+<li><strong>v0.19.x — Earned architectural features</strong>: based on benchmark results, ship the deferred items that empirical evidence supports. Likely candidates: power-law as default if A/B wins; weights retuning; possibly Zettelkasten if <code>connect()</code> is shown undertilised.</li>
+<li><strong>v0.20.x — Event log if needed</strong>: only if replay or audit features are user-requested or if a v0.19 scoring change requires the substrate.</li>
+<li><strong>v1.0 — Interface freeze</strong>: lock the public API once scoring architecture is empirically grounded.</li>
+</ul>
+<p>The key discipline: <strong>earn each subsequent layer with evidence</strong>. The research paper synthesises five decades of work — but elfmem is a specific system with specific users and specific traces. Each adoption decision should be validated against elfmem's own data, not just against the paper's synthesis.</p>
+<hr />
+<h2 id="decision-asks">Decision asks<a class="headerlink" href="#decision-asks" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Approve v0.15.3</strong> (centrality floor, 1 day) — ships Dmitry's actual fix this week?</li>
+<li><strong>Approve v0.16.0</strong> (sufficient stats + additive rescore + peer merge, 1-2 weeks) — the load-bearing architectural change?</li>
+<li><strong>Approve v0.17.0</strong> (exploration bonus + power-law flag, 3-5 days) — the polish on top of the substrate?</li>
+<li><strong>Approve the deferred list</strong> — explicit confirmation that event log, FSRS mechanics, hierarchical tiers, Zettelkasten auto-link, and renames are not v0.16-v0.17 scope?</li>
+<li><strong>Publish the research paper</strong> (<code>docs/research/memory_scoring_survey.md</code>) so external readers (Dmitry, others) can validate the analysis? Currently untracked.</li>
+</ol>
+<p>Recommend: yes to all five. Start with v0.15.3 today.</p>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>docs/research/memory_scoring_survey.md</code> — full 7500-word research paper</li>
+<li><code>docs/plans/plan_confidence_architecture.md</code> — preliminary Path L vs Path G plan (now superseded by this document)</li>
+<li><code>/tmp/confidence_sim.py</code> — 5-mapping × 5-scenario simulation (numerical basis)</li>
+<li>Agent reports in this session transcript: Consistency agent, Research agent (<code>accb8f19a332428ff</code>), Critic agent (<code>a4e49c97d3fef0bb8</code>)</li>
+<li><code>docs/coding_principles.md</code> — SIMPLE · ELEGANT · FLEXIBLE · ROBUST</li>
+<li><code>docs/agent_friendly_principles.md</code> — agent-first contract</li>
+<li>elfmem CLAUDE.md — four rhythms, four frames, project axioms</li>
+</ul>
+<hr />
+<p><em>This plan is opinionated where the research paper was descriptive. It commits to scope, sequence, and explicit rejections. It can still be revised — but each revision should engage with the agent reports' specific arguments, not just propose alternative ambitions.</em></p>
+<hr />
+<h2 id="appendix-draft-follow-up-question-for-dmitry-issue-50">Appendix — draft follow-up question for Dmitry (issue #50)<a class="headerlink" href="#appendix-draft-follow-up-question-for-dmitry-issue-50" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Hi Dmitry — v0.15.3 shipped the cold-start centrality floor we discussed; the change is at <code>src/elfmem/scoring.py:effective_centrality()</code>. Before we lock in the next architectural step (v0.16, sufficient statistics + additive rescore), we did a numerical re-check against the real scoring path and found one regime where the floor alone may not be enough:</p>
+<p>The floor closes ~0.075 of weighted score gap. That's sufficient when the competing "bedrock" blocks have <strong>reinforcement = 0</strong> (e.g. fresh constitutional content, blocks never co-retrieved). It's <strong>not</strong> sufficient when bedrock has reinforcement ≈ 1.0 — typical for blocks that have been co-retrieved many times or are constitutional SELF content that's been around for a while.</p>
+<p>Could you confirm one of:</p>
+<ol>
+<li>After upgrading to v0.15.3, does your originally-reported symptom (fresh relevant blocks not surfacing in top-K) appear resolved on real queries?</li>
+<li>If it persists, are the blocks that <em>do</em> surface ahead of the missed fresh block ones with high reinforcement counts (<code>elfmem inspect &lt;id&gt;</code> shows reinforcement) — or are they unreinforced bedrock?</li>
+</ol>
+<p>A <code>(query, expected_id, actual_top3_with_reinforcement_counts)</code> triple would let us tell exactly which regime you're in. If it's the reinforced-bedrock regime, we'll likely bring the v0.17 exploration bonus forward rather than waiting on the v0.16 substrate.</p>
+<p>Numerical detail and the regression fixture pinning both regimes:
+- <code>scripts/verify_v0_15_3_scoring.py</code>
+- <code>tests/test_scoring.py::TestColdStartGapRegression</code>
+- <code>docs/plans/plan_memory_scoring.md</code> — "Post-ship verification of v0.15.3" section</p>
+</blockquote>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

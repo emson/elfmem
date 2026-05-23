@@ -1,0 +1,4366 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/research/memory_scoring_survey/">
+      
+      
+        <link rel="prev" href="../scoring_proposed_evaluation/">
+      
+      
+        <link rel="next" href="../methodology/longitudinal_evaluation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Memory Scoring Survey - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#scoring-memory-for-evolving-agents-a-research-survey-and-synthesis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Memory Scoring Survey
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#abstract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abstract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Introduction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-the-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 The problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-why-this-question-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Why this question now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-scope-and-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Scope and method
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-background-and-related-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Background and related work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Background and related work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-classical-foundations-forgetting-curves-and-activation-theory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Classical foundations: forgetting curves and activation theory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-spaced-repetition-sm-2-fsrs-5-hlr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Spaced repetition: SM-2 → FSRS-5 → HLR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-generative-agents-tripartite-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Generative agents: tripartite scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-production-agent-memory-systems-20242026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Production agent memory systems (2024–2026)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-bayesian-online-inference-and-knowledge-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Bayesian online inference and knowledge tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-continual-learning-and-catastrophic-forgetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 Continual learning and catastrophic forgetting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-problem-formulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Problem formulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cross-system-synthesis-recurring-principles-and-divergences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cross-system synthesis — recurring principles and divergences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Cross-system synthesis — recurring principles and divergences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-convergent-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Convergent principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 Convergent principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-multi-signal-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — Multi-signal scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-sufficient-statistics-state-not-point-estimates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Sufficient-statistics state, not point estimates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-per-item-adaptive-forgetting-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Per-item adaptive forgetting rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-power-law-retrievability-not-exponential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Power-law retrievability, not exponential
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-topological-structure-over-flat-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5 — Topological structure over flat retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p6-event-log-as-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P6 — Event log as audit trail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-where-sota-diverges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Where SOTA diverges
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 Where SOTA diverges">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1-how-to-weight-competing-signals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1 — How to weight competing signals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-how-to-detect-useful-retrieval-without-explicit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2 — How to detect "useful retrieval" without explicit feedback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-how-to-maintain-calibration-as-state-evolves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3 — How to maintain calibration as state evolves
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-convergence-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The convergence model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-proposed-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Proposed framework
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Proposed framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-architectural-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Architectural decomposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-power-law-retrievability-with-adaptive-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Power-law retrievability with adaptive stability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-bayesian-utility-with-sufficient-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Bayesian utility with sufficient statistics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-importance-as-a-separate-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Importance as a separate axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-event-log-as-source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Event log as source of truth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56-composite-retrieval-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 Composite retrieval scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#57-graph-integration-zettelkasten-linking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.7 Graph integration: Zettelkasten linking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#58-hierarchical-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.8 Hierarchical compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-mathematical-formalism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Mathematical formalism
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Mathematical formalism">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Notation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-derived-quantities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Derived quantities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-score-function-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Score function specification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-update-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Update rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-implications-and-challenges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Implications and challenges
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Implications and challenges">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-scale-event-log-growth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Scale: event log growth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-migration-from-existing-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Migration from existing systems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-privacy-and-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Privacy and security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75-implementation-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 Implementation complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-open-problems-and-future-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Open problems and future work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Open problems and future work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-calibration-of-llm-as-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Calibration of LLM-as-evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-detecting-useful-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Detecting useful retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-optimal-for-exploration-bonus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Optimal κ for exploration bonus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-fsrs-5-parameters-for-non-flashcard-domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 FSRS-5 parameters for non-flashcard domains
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-multi-frame-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 Multi-frame composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#86-event-log-compaction-without-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.6 Event log compaction without loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#87-hierarchical-retrieval-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.7 Hierarchical retrieval algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#88-empirical-benchmark-for-elfmem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.8 Empirical benchmark for elfmem
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cognitive-science-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cognitive science foundations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spaced-repetition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spaced repetition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generative-agents-and-llm-agent-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generative agents and LLM agent memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#knowledge-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continual-learning-and-catastrophic-forgetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continual learning and catastrophic forgetting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal artefacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#abstract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abstract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Introduction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-the-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 The problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-why-this-question-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Why this question now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-scope-and-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Scope and method
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-background-and-related-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Background and related work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Background and related work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-classical-foundations-forgetting-curves-and-activation-theory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Classical foundations: forgetting curves and activation theory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-spaced-repetition-sm-2-fsrs-5-hlr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Spaced repetition: SM-2 → FSRS-5 → HLR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-generative-agents-tripartite-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Generative agents: tripartite scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-production-agent-memory-systems-20242026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Production agent memory systems (2024–2026)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-bayesian-online-inference-and-knowledge-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Bayesian online inference and knowledge tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-continual-learning-and-catastrophic-forgetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 Continual learning and catastrophic forgetting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-problem-formulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Problem formulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cross-system-synthesis-recurring-principles-and-divergences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cross-system synthesis — recurring principles and divergences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Cross-system synthesis — recurring principles and divergences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-convergent-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Convergent principles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 Convergent principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-multi-signal-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — Multi-signal scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-sufficient-statistics-state-not-point-estimates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Sufficient-statistics state, not point estimates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-per-item-adaptive-forgetting-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Per-item adaptive forgetting rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-power-law-retrievability-not-exponential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Power-law retrievability, not exponential
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-topological-structure-over-flat-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5 — Topological structure over flat retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p6-event-log-as-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P6 — Event log as audit trail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-where-sota-diverges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Where SOTA diverges
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 Where SOTA diverges">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1-how-to-weight-competing-signals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1 — How to weight competing signals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-how-to-detect-useful-retrieval-without-explicit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2 — How to detect "useful retrieval" without explicit feedback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-how-to-maintain-calibration-as-state-evolves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3 — How to maintain calibration as state evolves
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-convergence-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The convergence model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-proposed-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Proposed framework
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Proposed framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-architectural-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Architectural decomposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-power-law-retrievability-with-adaptive-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Power-law retrievability with adaptive stability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-bayesian-utility-with-sufficient-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Bayesian utility with sufficient statistics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-importance-as-a-separate-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Importance as a separate axis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-event-log-as-source-of-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Event log as source of truth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56-composite-retrieval-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 Composite retrieval scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#57-graph-integration-zettelkasten-linking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.7 Graph integration: Zettelkasten linking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#58-hierarchical-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.8 Hierarchical compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-mathematical-formalism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Mathematical formalism
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Mathematical formalism">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Notation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-derived-quantities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Derived quantities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-score-function-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Score function specification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-update-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Update rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-implications-and-challenges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Implications and challenges
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Implications and challenges">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-scale-event-log-growth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Scale: event log growth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-migration-from-existing-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Migration from existing systems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-privacy-and-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Privacy and security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75-implementation-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 Implementation complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-open-problems-and-future-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Open problems and future work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Open problems and future work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-calibration-of-llm-as-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Calibration of LLM-as-evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-detecting-useful-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Detecting useful retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-optimal-for-exploration-bonus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Optimal κ for exploration bonus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-fsrs-5-parameters-for-non-flashcard-domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 FSRS-5 parameters for non-flashcard domains
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-multi-frame-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 Multi-frame composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#86-event-log-compaction-without-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.6 Event log compaction without loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#87-hierarchical-retrieval-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.7 Hierarchical retrieval algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#88-empirical-benchmark-for-elfmem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.8 Empirical benchmark for elfmem
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cognitive-science-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cognitive science foundations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spaced-repetition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spaced repetition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generative-agents-and-llm-agent-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generative agents and LLM agent memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#knowledge-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continual-learning-and-catastrophic-forgetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continual learning and catastrophic forgetting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal artefacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/research/memory_scoring_survey.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="scoring-memory-for-evolving-agents-a-research-survey-and-synthesis">Scoring Memory for Evolving Agents — A Research Survey and Synthesis<a class="headerlink" href="#scoring-memory-for-evolving-agents-a-research-survey-and-synthesis" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: research document — under review, not yet a plan
+<strong>Author</strong>: elf (Ben Emson, with Claude Sonnet 4.6 collaboration)
+<strong>Date</strong>: 2026-05-17
+<strong>Driver</strong>: <a href="https://github.com/emson/elfmem/issues/50">elfmem issue #50</a> — Dmitry's "I just told it something important and it ignored that next turn" report</p>
+<hr />
+<h2 id="abstract">Abstract<a class="headerlink" href="#abstract" title="Permanent link">&para;</a></h2>
+<p>How should an LLM agent's persistent memory rank its own contents for retrieval, promote items that prove useful, and let unused items fade — over weeks, months, and many thousands of items?</p>
+<p>This survey reviews five decades of relevant research across cognitive science (ACT-R, Ebbinghaus), educational data mining (Bayesian Knowledge Tracing, FSRS-5, Half-Life Regression), generative-agent memory (Park et al.'s memory stream), production LLM agent memory systems (MemGPT, A-MEM, Mem0, MemMachine, SimpleMem), continual learning for neural networks (EWC, FOREVER, SuRe), and Bayesian online inference. We find broad convergence on six principles: multi-signal scoring, sufficient-statistics state, per-block adaptive forgetting, power-law retrievability, topological structure, and event-log audit trails. We also find sharp divergence on three open questions: how to weight competing signals, how to detect "useful retrieval" without explicit feedback, and how to maintain calibration as system state evolves.</p>
+<p>We synthesise these findings into a candidate architecture for the elfmem library, identifying four high-leverage upgrades to its current confidence-as-scalar model: (1) decompose confidence into three orthogonal channels (importance, utility, retrievability) following Park 2023, (2) adopt FSRS-5's power-law forgetting curve with per-block stability, (3) store Bayesian sufficient statistics rather than point estimates, and (4) make retrieval and rescoring additive over an event log rather than destructive overwrites. We close with a discussion of scale, security, and migration challenges, and identify open problems that warrant further investigation before architectural commitment.</p>
+<hr />
+<h2 id="1-introduction">1. Introduction<a class="headerlink" href="#1-introduction" title="Permanent link">&para;</a></h2>
+<h3 id="11-the-problem">1.1 The problem<a class="headerlink" href="#11-the-problem" title="Permanent link">&para;</a></h3>
+<p>A persistent agent memory must answer three questions on every retrieval:</p>
+<ol>
+<li><strong>What is in this memory</strong> — semantic match between query and stored content.</li>
+<li><strong>How much should we trust it</strong> — has past use validated this memory's correctness?</li>
+<li><strong>How available should it be right now</strong> — is it fresh, fading, or forgotten?</li>
+</ol>
+<p>Most contemporary systems collapse questions (2) and (3) into a single scalar — commonly called <em>confidence</em>, <em>importance</em>, or <em>score</em> — which is updated on every relevant event. This collapse is the source of many observed defects:</p>
+<ul>
+<li>Cliffs and discontinuities at threshold boundaries (elfmem #50)</li>
+<li>Destructive rescore that erases earned utility (elfmem rescore.py:245)</li>
+<li>Peer transfer cannot epistemically merge two opinions</li>
+<li>Fresh items fail to surface despite high relevance</li>
+<li>Bedrock items dominate forever, freezing the system against new knowledge</li>
+<li>Performance degrades 15–43 percentage points over quarterly versus weekly evaluation windows in 2026 LLM-agent memory benchmarks (<a href="https://mem0.ai/blog/state-of-ai-agent-memory-2026">State of AI Agent Memory 2026</a>)</li>
+</ul>
+<p>These are not implementation accidents — they are predictable consequences of single-scalar conflation. The same defects appear in domain after domain whenever a scoring system tries to compress multiple semantically distinct quantities into one persistent number that is overwritten by every operation.</p>
+<h3 id="12-why-this-question-now">1.2 Why this question now<a class="headerlink" href="#12-why-this-question-now" title="Permanent link">&para;</a></h3>
+<p>Three converging pressures make this an open question worth investing in:</p>
+<p><strong>Persistence is becoming the default.</strong> Until 2024, most production LLM agents were session-scoped — memory complications could be deferred. In 2025–2026, agents are increasingly persistent over months (<a href="https://medium.com/@adnanmasood/continual-learning-the-missing-capability-for-reliable-ai-at-scale-c225e1a523de">Continual Learning: The Missing Capability for Reliable AI at Scale</a>), and the durability problem moves from research curiosity to engineering reality.</p>
+<p><strong>Scoring is now empirically benchmarked.</strong> LoCoMo, AMA-Bench, and similar benchmarks (<a href="https://arxiv.org/html/2602.22769v1">AMA-Bench</a>) allow head-to-head comparison of memory systems. The 2026 leaderboard is genuinely competitive: MemMachine (0.9169), A-MEM, Mem0, and others within points of each other, with architecture choices showing measurable impact.</p>
+<p><strong>Cognitive science and ML are finally converging.</strong> FSRS-5 (deployed at Anki's billion-review scale) confirms that power-law forgetting is empirically superior to exponential decay for human memory. Park et al. 2023's "memory stream" approach validates tripartite scoring (importance + recency + relevance) for agents. Continual-learning research on catastrophic forgetting in neural networks has independently arrived at replay-based and regularisation-based methods that mirror the spaced-repetition findings.</p>
+<p>The question is no longer "what might work" but "given five decades of converging evidence across disciplines, what should the architecture actually be."</p>
+<h3 id="13-scope-and-method">1.3 Scope and method<a class="headerlink" href="#13-scope-and-method" title="Permanent link">&para;</a></h3>
+<p>This survey covers approaches relevant to <strong>scoring memory items in persistent agent systems where</strong>:</p>
+<ul>
+<li>Items have heterogeneous semantic content (not numeric features)</li>
+<li>The system has no oracle for ground truth — feedback is partial and noisy</li>
+<li>Items must be promoted, degraded, and possibly forgotten over time</li>
+<li>Multi-agent and peer-sharing scenarios may be supported</li>
+<li>The system must scale from 100 to 100,000+ items</li>
+<li>The system runs against persistent SQL-style storage, not in-memory only</li>
+</ul>
+<p>We deliberately exclude: pure information-retrieval ranking (TF-IDF, BM25, learning-to-rank for static corpora), recommendation systems for collaborative filtering, and graph-database trust propagation algorithms — except where they cross-pollinate with the memory question above.</p>
+<p>Empirical evidence comes from: (a) published benchmarks (LoCoMo, AMA-Bench), (b) a custom simulation of five candidate scoring approaches against synthetic agent workloads (<code>/tmp/confidence_sim.py</code> in the elfmem repository), and (c) the elfmem codebase as a concrete case study.</p>
+<hr />
+<h2 id="2-background-and-related-work">2. Background and related work<a class="headerlink" href="#2-background-and-related-work" title="Permanent link">&para;</a></h2>
+<p>We organise the prior art into six streams, ordered roughly by recency of contribution.</p>
+<h3 id="21-classical-foundations-forgetting-curves-and-activation-theory">2.1 Classical foundations: forgetting curves and activation theory<a class="headerlink" href="#21-classical-foundations-forgetting-curves-and-activation-theory" title="Permanent link">&para;</a></h3>
+<p>The empirical study of memory decay begins with Hermann Ebbinghaus's 1885 self-experiments, which established that recall probability decays approximately exponentially with time since encoding. The functional form <code>R(t) = exp(-t/S)</code> — where <code>R</code> is retrievability and <code>S</code> is memory strength — remained dominant for over a century.</p>
+<p>Anderson's <strong>ACT-R</strong> (Adaptive Control of Thought — Rational), developed from 1976 and refined through the 1990s, formalised memory as <strong>activation</strong>: the log-sum of past-use events, each decayed by a power-law of elapsed time:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>A_i = ln(Σ_k t_k^{-d})  +  contextual_terms  +  noise
+</span></code></pre></div>
+<p>Where <code>t_k</code> is time since the k-th past retrieval of item <code>i</code>, <code>d ≈ 0.5</code> is the decay parameter. Crucially, activation is <strong>computed at query time from an event log</strong>, not stored as state. Successful retrievals leave new events that lift future activation.</p>
+<p>ACT-R has been the gold-standard cognitive model for retrieval for 30 years. It has been validated against thousands of human-memory experiments and inspires modern memory architectures including FSRS, A-MEM, and Generative Agents.</p>
+<h3 id="22-spaced-repetition-sm-2-fsrs-5-hlr">2.2 Spaced repetition: SM-2 → FSRS-5 → HLR<a class="headerlink" href="#22-spaced-repetition-sm-2-fsrs-5-hlr" title="Permanent link">&para;</a></h3>
+<p>The applied side of memory science is spaced repetition — the practical art of scheduling reviews to maximise long-term retention.</p>
+<p><strong>SM-2</strong> (Wozniak, 1985) introduced the now-universal "answer easy/good/hard/again" rating loop. Each item carries an interval; correct answers multiply the interval (ease factor ≈ 2.5), wrong answers reset it. SM-2 powered SuperMemo through the 1990s and remains Anki's legacy default.</p>
+<p><strong>Half-Life Regression</strong> (Settles &amp; Meeder at Duolingo, 2016) reframed the problem as supervised learning: predict the <em>half-life</em> <code>h</code> of a word in a student's memory given features. The model <code>p(recall) = 2^{-Δ/h}</code> is functionally equivalent to exponential decay with <code>h = S·ln(2)</code>. Duolingo reported a 45% reduction in recall-prediction error versus baselines and a 12% increase in user engagement after deployment (<a href="https://research.duolingo.com/papers/settles.acl16.pdf">Settles &amp; Meeder 2016</a>).</p>
+<p><strong>FSRS-5</strong> (Open Spaced Repetition project, 2024) is the current state-of-the-art, deployed at Anki scale (billions of reviews). It models three components:</p>
+<ul>
+<li><strong>Difficulty</strong> <code>D</code> ∈ [1, 10] — how inherently hard the item is</li>
+<li><strong>Stability</strong> <code>S</code> — current memory strength; hours until retrievability falls to 0.9</li>
+<li><strong>Retrievability</strong> <code>R(t) = (1 + F·t/S)^C</code> — <strong>power-law</strong>, with FSRS-5 fitting <code>F ≈ 0.5, C ≈ -0.5</code></li>
+</ul>
+<p>Critically, FSRS-5 rejects exponential decay in favour of power-law on empirical grounds: across billions of reviews, the power-law form better predicts long-term recall.</p>
+<p>On each review, FSRS-5 updates <code>S</code> non-linearly:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>S_new = S · (1 + e^a · (11 - D) · S^b · (e^{c(1-R)} - 1))   on success
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>S_new = D^c · S^{-d} · (1 - R)^e · (e^{f(1 - signal)})        on failure
+</span></code></pre></div>
+<p>Two key behavioural properties fall out:</p>
+<ul>
+<li><strong>Desirable difficulty</strong> — successful recalls at low retrievability give larger stability gains than at high retrievability. The system rewards intervals where the answer was at the edge of forgetting.</li>
+<li><strong>Per-item adaptation</strong> — each item has its own <code>(D, S)</code> evolving from history. Easy items grow stable quickly; hard items remain fragile.</li>
+</ul>
+<p>FSRS-5 fits 19 floating-point parameters from user data. For agents, we either fit these from synthetic traces or ship defaults derived from FSRS's published values.</p>
+<h3 id="23-generative-agents-tripartite-scoring">2.3 Generative agents: tripartite scoring<a class="headerlink" href="#23-generative-agents-tripartite-scoring" title="Permanent link">&para;</a></h3>
+<p>Park et al.'s 2023 "Generative Agents: Interactive Simulacra of Human Behavior" (<a href="https://ar5iv.labs.arxiv.org/html/2304.03442">arxiv:2304.03442</a>) introduced the <strong>memory stream</strong> architecture that has since become the dominant pattern for LLM agent memory.</p>
+<p>Each memory item carries a natural-language description, a creation timestamp, and a most-recent-access timestamp. Retrieval combines three signals normalised to [0, 1]:</p>
+<ul>
+<li><strong>Recency</strong> — exponential decay since last access</li>
+<li><strong>Importance</strong> — an LLM-rated integer (1–10) assigned at write time, "is this mundane or core?"</li>
+<li><strong>Relevance</strong> — cosine similarity between query embedding and item embedding</li>
+</ul>
+<p>Min-max normalised and equal-weighted:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>score = α·recency + β·importance + γ·relevance
+</span></code></pre></div>
+<p>(Park et al. use <code>α = β = γ = 1</code>.)</p>
+<p>The architectural commitments here are subtle but consequential:</p>
+<ul>
+<li><strong>Importance is a separate axis</strong>, not derived from utility or recency. It is set by the LLM at write-time and refreshed only on re-encoding events.</li>
+<li><strong>No single confidence value</strong> — three signals composed at retrieval, none of them updated by every operation.</li>
+<li><strong>Recency uses exponential decay</strong> (Park et al. predate FSRS-5's power-law evidence).</li>
+<li><strong>Items are not actively forgotten</strong> — they fade in ranking but remain in storage.</li>
+</ul>
+<p>The Generative Agents paper has inspired the majority of subsequent LLM agent memory work. Its three-axis decomposition is the most widely adopted pattern in 2024–2026 systems.</p>
+<h3 id="24-production-agent-memory-systems-20242026">2.4 Production agent memory systems (2024–2026)<a class="headerlink" href="#24-production-agent-memory-systems-20242026" title="Permanent link">&para;</a></h3>
+<p>A wave of practical agent-memory systems has emerged since 2024, benchmarked against each other on LoCoMo, AMA-Bench, and similar evaluations.</p>
+<p><strong>MemGPT</strong> (Packer et al., Berkeley 2024) treats LLM context as RAM and external memory as disk, with paging operations the LLM can invoke. Scoring is implicit — items are paged based on LLM-issued instructions rather than a continuous score. MemGPT pioneered the OS-inspired memory hierarchy but is token-heavy at scale.</p>
+<p><strong>A-MEM</strong> (2025, <a href="https://arxiv.org/pdf/2502.12110">arxiv:2502.12110</a>) takes a Zettelkasten approach: each new memory is written as a "note" that automatically links to top-K related existing notes via embedding similarity. The link graph is the central data structure. A-MEM reports 85–93% token reduction versus MemGPT and 2× better multi-hop reasoning. The Zettelkasten linking pattern — where new notes find their place by attaching to existing relevant ones — converges with elfmem's <code>connect()</code> operation.</p>
+<p><strong>Mem0</strong> (<a href="https://arxiv.org/pdf/2504.19413">arxiv:2504.19413</a>) emphasises <strong>memory update operations</strong> (insert / modify / delete) rather than append-only memory. An LLM judges whether a new observation should create a new memory, modify an existing one, or be discarded. Mem0 reports 26% accuracy gains over OpenAI's reference memory implementation at 91% lower latency. The "memory is not append-only" principle is the key architectural commitment.</p>
+<p><strong>MemMachine</strong> (<a href="https://arxiv.org/html/2604.04853v1">arxiv:2604.04853</a>, 2026) leads the LoCoMo benchmark at 0.9169. Its core innovation is <strong>ground-truth preservation</strong>: every original observation is stored verbatim alongside its summaries, so corrupted summaries can be regenerated. The system reaches deeper benchmark scores than Mem0, Zep, Memobase, LangMem, and OpenAI's baseline.</p>
+<p><strong>Memory OS of AI Agent</strong> (<a href="https://aclanthology.org/2025.emnlp-main.1318.pdf">ACL 2025</a>) formalises an OS-inspired three-tier hierarchy: short-term (in-context), mid-term (recent active), long-term (archived but recoverable). Items migrate between tiers based on access patterns and aging — the explicit borrowing of cache eviction policies (LRU/LFU/ARC) into memory management.</p>
+<p><strong>SimpleMem</strong> (2026) achieved +29.6 points on temporal queries and +23.1 points on multi-hop reasoning by adopting <strong>single-pass hierarchical extraction + multi-signal retrieval</strong>, evidence that the multi-signal pattern continues to dominate as benchmarks grow more demanding.</p>
+<p>The cross-cutting pattern: every leading 2024–2026 system uses ≥3 retrieval signals, separates importance/utility from recency, and treats memory as updateable rather than append-only.</p>
+<h3 id="25-bayesian-online-inference-and-knowledge-tracing">2.5 Bayesian online inference and knowledge tracing<a class="headerlink" href="#25-bayesian-online-inference-and-knowledge-tracing" title="Permanent link">&para;</a></h3>
+<p>The educational-AI community has worked on a closely related problem for two decades: <strong>knowledge tracing</strong> — given a student's history of correct/incorrect answers, estimate their current mastery probability for each skill.</p>
+<p><strong>Bayesian Knowledge Tracing</strong> (Corbett &amp; Anderson 1995) models each skill as a Hidden Markov Model with four parameters: <code>p(learn)</code>, <code>p(slip)</code>, <code>p(guess)</code>, <code>p(forget)</code>. The posterior <code>p(knows skill | observations)</code> is updated by every observed answer. BKT remained the gold standard until ~2015 and is still widely deployed.</p>
+<p><strong>Deep Knowledge Tracing</strong> (Piech et al. 2015) replaced the per-skill HMM with an LSTM over the student's full answer history. Reported large gains but lost the interpretability of BKT's <code>p(knows)</code>.</p>
+<p><strong>Bayesian Cognitive-aware Key-Value Memory Networks</strong> (BCKVMN, 2024) is a hybrid that combines DKVMN's memory-network substrate with Bayesian update layers, restoring interpretability while keeping deep-learning expressiveness (<a href="https://www.sciencedirect.com/science/article/abs/pii/S0957417424018001">Cognitive-aware Key–Value Memory Networks for Knowledge Tracing</a>).</p>
+<p>The relevant takeaway for agent memory: <strong>Bayesian sufficient statistics (α, β counts under a Beta-Binomial model) are the canonical way to track "how much do we know about this item" under partial feedback.</strong> This is what knowledge tracing has converged on after 30 years.</p>
+<p>A Beta(α, β) posterior has three properties no point-estimate has:</p>
+<ul>
+<li><strong>Additive evidence</strong> — new observations compose by addition: <code>(α + s, β + (1-s))</code></li>
+<li><strong>Native uncertainty</strong> — variance <code>αβ / ((α+β)²(α+β+1))</code> quantifies how much we know</li>
+<li><strong>Decay-compatible</strong> — old evidence can be down-weighted via <code>α' = αλ + s</code>, <code>β' = βλ + (1-s)</code></li>
+</ul>
+<p>These properties dissolve the "rescore clobbers outcome history" defect at architectural level: rescore is simply another evidence event added to the count, not an overwrite.</p>
+<h3 id="26-continual-learning-and-catastrophic-forgetting">2.6 Continual learning and catastrophic forgetting<a class="headerlink" href="#26-continual-learning-and-catastrophic-forgetting" title="Permanent link">&para;</a></h3>
+<p>Neural-network research has its own version of the problem: how do you train on stream B without destroying what was learned on stream A? This is "catastrophic forgetting" and has been heavily studied since the 1990s.</p>
+<p>The dominant strategies divide into four families:</p>
+<ul>
+<li><strong>Regularisation</strong> — penalise updates that move away from previously-important parameters. <strong>Elastic Weight Consolidation</strong> (Kirkpatrick et al. 2017) uses the Fisher Information Matrix; reduced forgetting on knowledge-graph tasks from 12.62% to 6.85% in 2025 evaluations.</li>
+<li><strong>Replay</strong> — periodically interleave examples from old streams during new training. <strong>FOREVER</strong> (2026) explicitly adopts the Ebbinghaus forgetting curve to schedule replays.</li>
+<li><strong>Architecture-based</strong> — assign different parameters to different tasks (PNNs, MoE).</li>
+<li><strong>Surprise-driven</strong> — <strong>SuRe</strong> (2025, <a href="https://arxiv.org/abs/2511.22367">arxiv:2511.22367</a>) prioritises replay of high-NLL (most surprising) sequences. Self-Distillation Fine-Tuning (SDFT, MIT/ETH 2025) distills the model's existing knowledge into the new training signal.</li>
+</ul>
+<p>The most important conceptual import to agent memory: <strong>forgetting is structural, not accidental</strong>. Without explicit replay/regularisation, learned content actively interferes with new content. The Ebbinghaus curve is empirically observed in LLMs themselves, not just human subjects. Recent results show forgetting in LLMs "exhibits structured temporal patterns resembling human memory decay, with rapid early performance drops followed by slower degradation" (<a href="https://arxiv.org/html/2601.03938v1">FOREVER 2026</a>).</p>
+<p>The corollary for memory systems: <strong>spaced rehearsal of old items is not a nice-to-have. It is a prerequisite for long-term durability.</strong></p>
+<hr />
+<h2 id="3-problem-formulation">3. Problem formulation<a class="headerlink" href="#3-problem-formulation" title="Permanent link">&para;</a></h2>
+<p>Let <code>M = {m_1, ..., m_N}</code> be the memory store. Each item <code>m_i</code> has:</p>
+<ul>
+<li>Content <code>c_i</code> (text)</li>
+<li>Embedding <code>e_i ∈ ℝ^D</code></li>
+<li>Event log <code>E_i = [(type, signal, weight, time), ...]</code></li>
+<li>Possibly-derived state <code>θ_i</code> (sufficient statistics, stability, etc.)</li>
+</ul>
+<p>We must define a retrieval function <code>score: (m_i, query, frame, time) → ℝ</code> that, given:</p>
+<ul>
+<li>The query embedding <code>q</code></li>
+<li>The retrieval frame (SELF, ATTENTION, TASK, SIMULATE) which determines weighting</li>
+<li>The current time <code>t</code></li>
+</ul>
+<p>Returns a real-valued score whose top-K under that score is the "best" memory selection.</p>
+<p>We require the system to support four operations beyond retrieval:</p>
+<ul>
+<li><strong>Promote</strong> — observed positive evidence raises an item's future-retrieval probability</li>
+<li><strong>Degrade</strong> — observed negative evidence (or disuse) lowers it</li>
+<li><strong>Re-evaluate</strong> — periodically reassess against drifting SELF</li>
+<li><strong>Merge</strong> — combine state from a peer agent's view of the same item</li>
+</ul>
+<p>The conflation problem we identified empirically is precisely this: most current systems use a single scalar <code>c_i</code> updated by every operation, which prevents principled implementations of merge (no arithmetic combines two scalars), re-evaluate (must overwrite to update), and the promote/degrade pair (must use a single update rule for two semantically different events).</p>
+<p>The decomposition we'll propose is straightforward: replace <code>c_i</code> with three semantically distinct quantities — <code>importance_i</code>, <code>utility_i</code>, <code>retrievability_i</code> — each with its own update rules, composed at retrieval time.</p>
+<hr />
+<h2 id="4-cross-system-synthesis-recurring-principles-and-divergences">4. Cross-system synthesis — recurring principles and divergences<a class="headerlink" href="#4-cross-system-synthesis-recurring-principles-and-divergences" title="Permanent link">&para;</a></h2>
+<h3 id="41-convergent-principles">4.1 Convergent principles<a class="headerlink" href="#41-convergent-principles" title="Permanent link">&para;</a></h3>
+<p>Across the systems surveyed, six principles recur with notable consistency:</p>
+<h4 id="p1-multi-signal-scoring">P1 — Multi-signal scoring<a class="headerlink" href="#p1-multi-signal-scoring" title="Permanent link">&para;</a></h4>
+<p>Every leading 2024–2026 system uses ≥3 retrieval signals: Park (recency + importance + relevance), A-MEM (link-graph + relevance), SimpleMem (multi-signal retrieval explicitly named in title). The single-confidence scalar appears nowhere in the SOTA.</p>
+<p>The mathematical reason: a single scalar can only represent one one-dimensional ordering. The four properties retrieval must reflect (semantic match, learned utility, freshness, identity-alignment) are not co-monotonic and cannot be projected onto one axis without information loss.</p>
+<h4 id="p2-sufficient-statistics-state-not-point-estimates">P2 — Sufficient-statistics state, not point estimates<a class="headerlink" href="#p2-sufficient-statistics-state-not-point-estimates" title="Permanent link">&para;</a></h4>
+<p>BKT stores <code>(p_learned, observations)</code>. FSRS-5 stores <code>(D, S, last_review)</code>. Mem0 maintains a structured store updateable by LLM operations. None of the leading systems use a single confidence number per item as their state.</p>
+<p>The recurring substrate is the <strong>Beta-Binomial sufficient statistics</strong> <code>(α, β)</code>: success and failure counts. From these, the posterior mean <code>α/(α+β)</code> recovers a "confidence-like" number; the variance <code>αβ/((α+β)²(α+β+1))</code> gives uncertainty; new evidence composes by addition.</p>
+<h4 id="p3-per-item-adaptive-forgetting-rate">P3 — Per-item adaptive forgetting rate<a class="headerlink" href="#p3-per-item-adaptive-forgetting-rate" title="Permanent link">&para;</a></h4>
+<p>FSRS's per-card stability is the most heavily validated example. The principle generalises: forgetting rate should be a function of item history, not a global constant or a tier-based one.</p>
+<p>Items the system has validated through many positive outcomes should fade slowly. Items repeatedly contradicted by outcomes should fade quickly. Items never tested should fade at a default rate. The forgetting rate is itself a learned quantity.</p>
+<h4 id="p4-power-law-retrievability-not-exponential">P4 — Power-law retrievability, not exponential<a class="headerlink" href="#p4-power-law-retrievability-not-exponential" title="Permanent link">&para;</a></h4>
+<p>This is the most recent empirical update. Ebbinghaus's exponential form <code>R(t) = exp(-t/S)</code> was the default for a century. FSRS-5's power-law form <code>R(t) = (1 + F·t/S)^C</code> better fits Anki's billion-review dataset and is now the empirical default for human-memory modeling.</p>
+<p>For agent memory, the evidence base is thinner — but the FSRS finding aligns with general scaling-law observations in machine learning and human cognition. Power-law decay produces fatter tails (more long-lived items) which is desirable for systems that should preserve rare-but-valuable knowledge.</p>
+<h4 id="p5-topological-structure-over-flat-retrieval">P5 — Topological structure over flat retrieval<a class="headerlink" href="#p5-topological-structure-over-flat-retrieval" title="Permanent link">&para;</a></h4>
+<p>Pure vector-search retrieval (top-K by cosine) is dominated in benchmarks by systems that exploit graph structure: A-MEM Zettelkasten, Zep's temporal knowledge graph, RAPTOR's recursive trees, MemMachine's hierarchical organisation. The improvement is consistent (often 10–20+ points on multi-hop reasoning benchmarks).</p>
+<p>The mechanism: spreading activation across graph edges lets memory recall related-but-not-similar items that pure vector search misses. elfmem's existing knowledge-graph substrate already enables this; the question is how aggressively to use it in retrieval.</p>
+<h4 id="p6-event-log-as-audit-trail">P6 — Event log as audit trail<a class="headerlink" href="#p6-event-log-as-audit-trail" title="Permanent link">&para;</a></h4>
+<p>A-MEM, MemMachine, and FOREVER all store the originating events rather than (or alongside) derived state. The pattern: state is a view computed from events; events are the source of truth.</p>
+<p>The architectural payoff is that operations like rescore become <strong>additive</strong> (append a new event with new evidence) rather than <strong>destructive</strong> (overwrite the current state with the new estimate). The rescore-clobbering-outcome bug in elfmem v0.13.3 is exactly the bug this pattern dissolves.</p>
+<h3 id="42-where-sota-diverges">4.2 Where SOTA diverges<a class="headerlink" href="#42-where-sota-diverges" title="Permanent link">&para;</a></h3>
+<p>Three questions remain genuinely open in 2026:</p>
+<h4 id="d1-how-to-weight-competing-signals">D1 — How to weight competing signals<a class="headerlink" href="#d1-how-to-weight-competing-signals" title="Permanent link">&para;</a></h4>
+<p>Park 2023 uses equal weights with min-max normalisation. Modern systems sometimes learn weights from data via reinforcement learning or hindsight optimisation. For an open-source library shipped to many users, none of those is appropriate.</p>
+<p>The practical answer that appears across systems is <strong>per-frame configurable weights</strong>: SELF frame weights identity-alignment heavily; ATTENTION frame weights freshness heavily; TASK frame weights validated utility heavily. elfmem already implements per-frame weights — the question is which signals each frame should consume.</p>
+<h4 id="d2-how-to-detect-useful-retrieval-without-explicit-feedback">D2 — How to detect "useful retrieval" without explicit feedback<a class="headerlink" href="#d2-how-to-detect-useful-retrieval-without-explicit-feedback" title="Permanent link">&para;</a></h4>
+<p>For the system to learn, it needs to know which retrievals were useful and which weren't. Park 2023 relies on LLM-generated reflection. A-MEM relies on explicit agent confirmation. Mem0 uses LLM judgment in the update phase. FSRS-5 relies on explicit student ratings.</p>
+<p>None of these is automatic. An open question is whether an agent can self-report (via a <code>confirm()</code> API) or whether useful-retrieval must be inferred (the retrieved item's content appears in the agent's next operation, or the operation succeeds with high confidence).</p>
+<p>elfmem's <code>outcome()</code> mechanism is one specific answer — explicit agent-issued positive/negative feedback after the fact. The question is whether implicit signals (next-step usage patterns) should additionally feed the system.</p>
+<h4 id="d3-how-to-maintain-calibration-as-state-evolves">D3 — How to maintain calibration as state evolves<a class="headerlink" href="#d3-how-to-maintain-calibration-as-state-evolves" title="Permanent link">&para;</a></h4>
+<p>The LLM rating used for importance is itself a noisy measurement. If the LLM systematically over-rates blocks about topic X, blocks about X will dominate retrieval forever. Multi-day calibration drift is observed in production systems (<a href="https://mem0.ai/blog/state-of-ai-agent-memory-2026">State of AI Agent Memory 2026</a>).</p>
+<p>Mitigations proposed in the literature: (a) periodic rescoring against current state (elfmem's deep-sleep rescore), (b) explicit calibration runs against held-out test sets, (c) Bayesian variance penalising over-confident estimates. None is universally adopted.</p>
+<h3 id="43-the-convergence-model">4.3 The convergence model<a class="headerlink" href="#43-the-convergence-model" title="Permanent link">&para;</a></h3>
+<p>Synthesising the convergent principles produces a candidate model whose shape recurs in nearly every successful system:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>state per item:
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    embedding e
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    event log E = [...]
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    derived: (α, β) — Bayesian sufficient statistics for utility
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    derived: stability S, difficulty D — FSRS-style forgetting parameters
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    semi-derived: importance i — LLM-rated, refreshed periodically
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>score at query time = weighted sum of (
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    semantic similarity to query,
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    utility posterior mean,
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    retrievability R(t),
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    importance i,
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    exploration bonus proportional to uncertainty
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>)
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>every operation appends to event log; state is updated incrementally;
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>nothing is overwritten.
+</span></code></pre></div>
+<p>This is the shape we'll formalise in §5.</p>
+<hr />
+<h2 id="5-proposed-framework">5. Proposed framework<a class="headerlink" href="#5-proposed-framework" title="Permanent link">&para;</a></h2>
+<h3 id="51-architectural-decomposition">5.1 Architectural decomposition<a class="headerlink" href="#51-architectural-decomposition" title="Permanent link">&para;</a></h3>
+<p>We propose decomposing memory state into three orthogonal channels:</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Stored as</th>
+<th>Updated by</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Importance</strong></td>
+<td>scalar <code>i ∈ [0,1]</code></td>
+<td>LLM rating at write; refreshed by rescore</td>
+<td>"How core or mundane is this content with respect to current SELF?"</td>
+</tr>
+<tr>
+<td><strong>Utility</strong></td>
+<td>sufficient stats <code>(α, β)</code></td>
+<td>every outcome() event; consolidate folds in LLM rating as evidence</td>
+<td>"How often has this proved correct/useful when applied?"</td>
+</tr>
+<tr>
+<td><strong>Retrievability</strong></td>
+<td>stability <code>S</code>, difficulty <code>D</code>, last-event time</td>
+<td>every relevant event; FSRS-style updates</td>
+<td>"How available is this item right now under power-law forgetting?"</td>
+</tr>
+</tbody>
+</table>
+<p>The three channels capture semantically distinct dimensions. None is derivable from the others; each updates by different events; each contributes to retrieval scoring differently across frames.</p>
+<h3 id="52-power-law-retrievability-with-adaptive-stability">5.2 Power-law retrievability with adaptive stability<a class="headerlink" href="#52-power-law-retrievability-with-adaptive-stability" title="Permanent link">&para;</a></h3>
+<p>Following FSRS-5, retrievability for item <code>i</code> at time <code>t</code> is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>R_i(t) = (1 + F · (t - t_last_event_i) / S_i)^C
+</span></code></pre></div>
+<p>With FSRS-5 defaults <code>F = 0.5, C = -0.5</code>. At <code>t = t_last_event</code>, <code>R = 1.0</code>. As <code>t - t_last</code> grows, <code>R</code> falls following a power-law (slower than exponential).</p>
+<p>Stability <code>S_i</code> updates on every retrievability-relevant event. On positive outcome:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>S_new = S · (1 + e^a · (11 - D) · S^b · (e^{c(1-R)} - 1))
+</span></code></pre></div>
+<p>On negative outcome or contradicting evidence:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>S_new = D^c · S^{-d} · (1 - R)^e · e^{f·(1 - signal)}
+</span></code></pre></div>
+<p>Coefficients <code>(a, b, c, d, e, f)</code> are FSRS-5 defaults, made configurable for elfmem-specific tuning over time.</p>
+<p>Difficulty <code>D_i</code> updates on outcomes as well, sliding upward on failures and downward on successes:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>delta_D = -k · (signal - 0.5) · 2.0
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>D_new = clamp(D + (10 - D) · delta_D / 9.0, 1.0, 10.0)
+</span></code></pre></div>
+<p>Where <code>k</code> is a learning-rate coefficient.</p>
+<h3 id="53-bayesian-utility-with-sufficient-statistics">5.3 Bayesian utility with sufficient statistics<a class="headerlink" href="#53-bayesian-utility-with-sufficient-statistics" title="Permanent link">&para;</a></h3>
+<p>Following 30 years of knowledge tracing precedent, utility is modeled as a Beta-Binomial posterior over a hidden "is-this-useful" parameter <code>θ_i ∈ [0,1]</code>. We store two counters per block:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>α_i — accumulated success evidence (positive observations)
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>β_i — accumulated failure evidence (negative observations)
+</span></code></pre></div>
+<p>The mean utility is <code>α/(α+β)</code>; the variance is <code>αβ/((α+β)²(α+β+1))</code>. New evidence updates additively:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>on outcome(signal, weight):
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    α += signal * weight
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    β += (1 - signal) * weight
+</span></code></pre></div>
+<p>On consolidate (LLM rating folded as evidence, weighted):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>α += LLM_alignment * w_llm
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>β += (1 - LLM_alignment) * w_llm
+</span></code></pre></div>
+<p>On peer import (other agent's view of the same content, trust-weighted):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>α += α_other * trust
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>β += β_other * trust
+</span></code></pre></div>
+<p>The architectural payoff: <strong>rescore is no longer destructive</strong>. Periodic re-evaluation against drifting SELF folds in a new evidence event with weight <code>w_rescore</code>, adding to the counts. Past outcomes are never overwritten.</p>
+<p>Optional: time-weight decay of old evidence via <code>α' = α·λ + s</code>, <code>β' = β·λ + (1-s)</code> with decay coefficient <code>λ ∈ (0, 1]</code>. With <code>λ = 1</code> evidence is permanent; with <code>λ &lt; 1</code> old evidence is gradually downweighted. This is the standard online-learning extension.</p>
+<h3 id="54-importance-as-a-separate-axis">5.4 Importance as a separate axis<a class="headerlink" href="#54-importance-as-a-separate-axis" title="Permanent link">&para;</a></h3>
+<p>Following Park 2023, <strong>importance is rated by the LLM at write time and refreshed by deep-sleep rescore</strong>. It is <em>not</em> updated by retrieval-side events. The semantic distinction:</p>
+<ul>
+<li><strong>Importance</strong> answers "is this content fundamentally core to the agent's identity?"</li>
+<li><strong>Utility</strong> answers "has this content proven useful when applied?"</li>
+</ul>
+<p>A block can be high-importance but never used (a deeply-held principle not yet tested). A block can be high-utility but low-importance (an effective heuristic for a narrow domain). These are uncorrelated quantities.</p>
+<p>elfmem's existing <code>analysis.alignment_score</code> already plays this role — we relabel it <code>importance</code> to match Park's terminology and clarify the semantics.</p>
+<h3 id="55-event-log-as-source-of-truth">5.5 Event log as source of truth<a class="headerlink" href="#55-event-log-as-source-of-truth" title="Permanent link">&para;</a></h3>
+<p>A new <code>block_events</code> table stores every retrieval-relevant operation:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>block_events:
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    block_id        TEXT
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    event_type      TEXT   -- learn, consolidate, outcome, recall_hit,
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>                            -- rescore, peer_import, connect
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    signal          REAL   -- [0,1] for outcome-type events
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    weight          REAL   -- evidence strength
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    t               REAL   -- event time in active hours
+</span></code></pre></div>
+<p>Every memory-touching operation appends a row. The derived state on <code>blocks</code> is updated incrementally — when an outcome event is logged, <code>α</code>, <code>β</code>, <code>S</code>, and <code>D</code> are updated atomically. The event log itself is never modified.</p>
+<p>This pattern decouples derivation from storage: at any point we can recompute derived state from the event log, allowing us to change update formulas in future versions without data migration. It also enables audit, replay, and what-if analysis ("what if we had used different update rules?").</p>
+<h3 id="56-composite-retrieval-scoring">5.6 Composite retrieval scoring<a class="headerlink" href="#56-composite-retrieval-scoring" title="Permanent link">&para;</a></h3>
+<p>The retrieval score combines five terms:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>score(m_i, query, frame, t) =
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>      w_sim         · cosine(query, m_i.embedding)
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    + w_utility     · α_i / (α_i + β_i)
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    + w_retrieve    · R_i(t)
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    + w_importance  · importance_i
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    + κ             · sqrt(utility_variance_i)
+</span></code></pre></div>
+<p>The exploration term <code>κ · sqrt(variance)</code> is Thompson-sampling-inspired: items with high utility uncertainty get a small bonus, lifting them into retrieval for exploration. This is the mathematical answer to "fresh blocks fail top-K" — uncertainty is high for new items, so they get a discoverable exploration lift.</p>
+<p>Frame-specific weight choices (initial proposed defaults, to be tuned):</p>
+<table>
+<thead>
+<tr>
+<th>Frame</th>
+<th>w_sim</th>
+<th>w_util</th>
+<th>w_retrieve</th>
+<th>w_importance</th>
+<th>κ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELF</td>
+<td>0.30</td>
+<td>0.10</td>
+<td>0.15</td>
+<td>0.40</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>ATTENTION</td>
+<td>0.55</td>
+<td>0.15</td>
+<td>0.20</td>
+<td>0.05</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>TASK</td>
+<td>0.40</td>
+<td>0.30</td>
+<td>0.15</td>
+<td>0.10</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>SIMULATE</td>
+<td>0.45</td>
+<td>0.15</td>
+<td>0.20</td>
+<td>0.15</td>
+<td>0.05</td>
+</tr>
+</tbody>
+</table>
+<p>SELF frame retrieves identity-defining content — weighted heavily on importance. ATTENTION frame retrieves recently-relevant context — weighted on freshness and similarity. TASK frame retrieves proven approaches — weighted on utility. SIMULATE frame blends SELF and ATTENTION for theory-of-mind reasoning. These should be empirically tuned.</p>
+<h3 id="57-graph-integration-zettelkasten-linking">5.7 Graph integration: Zettelkasten linking<a class="headerlink" href="#57-graph-integration-zettelkasten-linking" title="Permanent link">&para;</a></h3>
+<p>elfmem already implements a knowledge graph via <code>connect()</code>. We propose to extend it with <strong>automatic Zettelkasten-style linking</strong> during dream consolidation:</p>
+<ul>
+<li>On consolidate, compute top-K most-similar existing active blocks for each new block.</li>
+<li>For each candidate <code>(new, existing)</code> pair above a similarity threshold, propose an edge.</li>
+<li>Edges are proposed at low initial weight; outcomes-on-either-side reinforce them.</li>
+</ul>
+<p>The retrieval score gains an optional graph-spreading term (used in SIMULATE frame primarily):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>score&#39; = score + w_graph · max_neighbor_score(item, query)
+</span></code></pre></div>
+<p>This spreads activation through the graph — neighbors of high-scoring items get a lift. The mechanism is faithful to ACT-R's contextual term and to A-MEM's Zettelkasten architecture.</p>
+<h3 id="58-hierarchical-compression">5.8 Hierarchical compression<a class="headerlink" href="#58-hierarchical-compression" title="Permanent link">&para;</a></h3>
+<p>Following MemoryOS and SimpleMem, we propose three representation tiers per cluster of related blocks:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Representation</th>
+<th>Cardinality</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raw</td>
+<td>original block content</td>
+<td>always 1:1</td>
+</tr>
+<tr>
+<td>Summary</td>
+<td>LLM-condensed version</td>
+<td>1 per dream cycle that touched the block</td>
+</tr>
+<tr>
+<td>Abstract</td>
+<td>high-level "what is this cluster about"</td>
+<td>created when cluster reaches N members</td>
+</tr>
+</tbody>
+</table>
+<p>Retrieval can begin at the abstract tier for breadth, descend to summaries for context, drop to raws for verbatim citation. This addresses the 15–43-point quarterly degradation observed in 2026 benchmarks (largely a context-bloat problem) by making the most-recently-relevant content available without serializing the full memory.</p>
+<p>elfmem already has summary blocks; the abstract tier is the new addition.</p>
+<hr />
+<h2 id="6-mathematical-formalism">6. Mathematical formalism<a class="headerlink" href="#6-mathematical-formalism" title="Permanent link">&para;</a></h2>
+<h3 id="61-notation">6.1 Notation<a class="headerlink" href="#61-notation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_i</code></td>
+<td>i-th memory item</td>
+</tr>
+<tr>
+<td><code>t</code></td>
+<td>current time (active hours)</td>
+</tr>
+<tr>
+<td><code>t^{last}_i</code></td>
+<td>time of last event on item i</td>
+</tr>
+<tr>
+<td><code>E_i</code></td>
+<td>event log for item i</td>
+</tr>
+<tr>
+<td><code>α_i, β_i</code></td>
+<td>Beta-Binomial success/failure counts</td>
+</tr>
+<tr>
+<td><code>S_i, D_i</code></td>
+<td>FSRS stability, difficulty</td>
+</tr>
+<tr>
+<td><code>importance_i</code></td>
+<td>LLM-rated [0,1]</td>
+</tr>
+<tr>
+<td><code>R_i(t)</code></td>
+<td>retrievability at time t</td>
+</tr>
+<tr>
+<td><code>u_i</code></td>
+<td>utility posterior mean</td>
+</tr>
+<tr>
+<td><code>v_i</code></td>
+<td>utility posterior variance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-derived-quantities">6.2 Derived quantities<a class="headerlink" href="#62-derived-quantities" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>u_i        = α_i / (α_i + β_i)                                — posterior mean
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>v_i        = α_i β_i / ((α_i + β_i)² (α_i + β_i + 1))         — posterior variance
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>R_i(t)     = (1 + 0.5 · (t - t^{last}_i) / S_i)^{-0.5}        — FSRS-5 retrievability
+</span></code></pre></div>
+<h3 id="63-properties">6.3 Properties<a class="headerlink" href="#63-properties" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Holds?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Monotonicity in α</td>
+<td>Yes (∂u/∂α &gt; 0)</td>
+<td>More positive evidence → higher utility</td>
+</tr>
+<tr>
+<td>Monotonicity in t</td>
+<td>R decreasing in t</td>
+<td>Older items have lower retrievability</td>
+</tr>
+<tr>
+<td>Continuity</td>
+<td>Yes for all signals</td>
+<td>No cliffs, smooth differentiable</td>
+</tr>
+<tr>
+<td>Idempotence of no-op</td>
+<td>Yes</td>
+<td>Adding <code>(0, 0)</code> evidence leaves <code>(α, β)</code> unchanged</td>
+</tr>
+<tr>
+<td>Composability over peers</td>
+<td>Yes for utility</td>
+<td><code>(α_1 + α_2, β_1 + β_2)</code> is a valid posterior</td>
+</tr>
+<tr>
+<td>Composability over time</td>
+<td>Yes via event log</td>
+<td>Replay possible</td>
+</tr>
+<tr>
+<td>Calibration to LLM signal</td>
+<td>Honest under <code>w_llm = 1.0</code></td>
+<td><code>(0.5·w_llm + α, 0.5·w_llm + β)</code> treats LLM as one observation</td>
+</tr>
+<tr>
+<td>Native uncertainty</td>
+<td>Yes</td>
+<td>Variance gives exploration bonus</td>
+</tr>
+<tr>
+<td>Range coverage</td>
+<td>Full [0,1] for u; [0,1] for R</td>
+<td>Both signals can reach any value in [0,1]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-score-function-specification">6.4 Score function specification<a class="headerlink" href="#64-score-function-specification" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>score(m_i, query, frame, t):
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    sim         = cosine(query_embedding, m_i.embedding)
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    utility     = u_i
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    retrieve    = R_i(t)
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    importance  = m_i.importance
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    explore     = κ · sqrt(v_i)
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    return  frame.w_sim       · sim
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>          + frame.w_utility   · utility
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>          + frame.w_retrieve  · retrieve
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>          + frame.w_importance · importance
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>          + frame.kappa        · explore
+</span></code></pre></div>
+<p>All five terms are in [0, 1]; the score is in [0, sum_of_weights]. With weights summing to ≤ 1, scores are in [0, 1]. With κ in [0, 0.1], the exploration term is bounded.</p>
+<h3 id="65-update-rules">6.5 Update rules<a class="headerlink" href="#65-update-rules" title="Permanent link">&para;</a></h3>
+<p><strong>On <code>learn</code> (new block written to inbox):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>α_i = w_init · 0.5
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>β_i = w_init · 0.5
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>S_i = S_init               (default 24 hours)
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>D_i = D_init               (default 5.0)
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>importance_i = 0.5         (refined at consolidate)
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>t^{last}_i = t
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>append event(type=learn, weight=w_init)
+</span></code></pre></div>
+<p><strong>On <code>consolidate</code> (LLM-rated, promoted to active):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>importance_i = LLM_alignment_score
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>α_i += LLM_alignment_score · w_llm
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>β_i += (1 - LLM_alignment_score) · w_llm
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>t^{last}_i = t
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>append event(type=consolidate, signal=LLM_alignment_score, weight=w_llm)
+</span></code></pre></div>
+<p><strong>On <code>outcome(signal, weight)</code>:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>α_i += signal · weight
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>β_i += (1 - signal) · weight
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>S_i = update_stability(S_i, D_i, R_i(t), signal)
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>D_i = update_difficulty(D_i, signal)
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>t^{last}_i = t
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>append event(type=outcome, signal=signal, weight=weight)
+</span></code></pre></div>
+<p><strong>On <code>rescore</code> (deep-sleep, refresh against current SELF):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>importance_i = new_LLM_alignment_score
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>α_i += new_LLM_alignment_score · w_rescore
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>β_i += (1 - new_LLM_alignment_score) · w_rescore
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>t^{last}_i = t
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>append event(type=rescore, signal=new_LLM_alignment_score, weight=w_rescore)
+</span></code></pre></div>
+<p>Crucially, rescore is <strong>additive</strong> — it does not overwrite prior outcome evidence.</p>
+<p><strong>On <code>peer_import</code> (other agent's view of the same content):</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>α_i += α_other · trust_factor
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>β_i += β_other · trust_factor
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>S_i = max(S_i, S_other · trust_factor)
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>t^{last}_i = t
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>append event(type=peer_import, signal=α_other/(α_other+β_other), weight=trust_factor)
+</span></code></pre></div>
+<p>This makes peer merging arithmetic — the only sufficient-statistics-based merge that exists.</p>
+<hr />
+<h2 id="7-implications-and-challenges">7. Implications and challenges<a class="headerlink" href="#7-implications-and-challenges" title="Permanent link">&para;</a></h2>
+<h3 id="71-scale-event-log-growth">7.1 Scale: event log growth<a class="headerlink" href="#71-scale-event-log-growth" title="Permanent link">&para;</a></h3>
+<p>The event log grows monotonically with system age. At 100,000 blocks × N events per block × M bytes per event, storage costs are real but bounded. FSRS-5 ships with billions of reviews in production via simple SQL backends; the scaling problem is solvable but needs attention.</p>
+<p>Mitigations:
+- <strong>Tiered retention</strong>: keep last 90 days verbatim, summary statistics for older.
+- <strong>Pruning archival</strong>: when a block is archived, prune its event log to summary statistics; preserve <code>α</code>, <code>β</code>, <code>S</code>, <code>D</code> only.
+- <strong>Event compaction</strong>: dream cycles can compact runs of similar events into aggregate events (e.g., 5 positive outcomes within 24 hours → one aggregate event with weight=5).</p>
+<h3 id="72-calibration">7.2 Calibration<a class="headerlink" href="#72-calibration" title="Permanent link">&para;</a></h3>
+<p>The proposal trusts the LLM's <code>alignment_score</code> as evidence. If the LLM is miscalibrated (overconfident on some topics, underconfident on others), the system inherits this. The variance term <code>v_i</code> partially compensates — items the LLM is uncertain about get exploration bonuses — but no mechanism fully eliminates LLM calibration drift.</p>
+<p>The recommended mitigation: <strong>explicit recalibration runs</strong>. Periodically (perhaps monthly), the system runs a held-out test set against current LLM behavior and updates the <code>w_llm</code> weight if systematic miscalibration is detected. This is implementable as an <code>elfmem doctor --recalibrate</code> command.</p>
+<h3 id="73-migration-from-existing-systems">7.3 Migration from existing systems<a class="headerlink" href="#73-migration-from-existing-systems" title="Permanent link">&para;</a></h3>
+<p>elfmem currently stores a single <code>confidence</code> scalar updated by consolidate, outcome, and rescore. Migration to the proposed framework requires:</p>
+<ol>
+<li><strong>Schema migration</strong>: add <code>success_count</code>, <code>failure_count</code>, <code>stability</code>, <code>difficulty</code>, <code>last_event_t</code> columns. Bootstrap from current values: <code>α = c · κ</code>, <code>β = (1-c) · κ</code> with <code>κ = prior_strength</code>. Stability bootstrapped from <code>decay_lambda</code> (S = 1/λ).</li>
+<li><strong>Event log bootstrap</strong>: synthesise events from existing <code>block_outcomes</code> table (one event per past outcome) and from current block state (one "consolidate" event from existing confidence).</li>
+<li><strong>Backwards compatibility</strong>: keep <code>confidence</code> column as a denormalised view (<code>confidence = α/(α+β)</code>); existing readers see equivalent values.</li>
+</ol>
+<p>Migration is one-time per database, additive (no data loss), and reversible (we keep <code>confidence</code> until v0.18.0 at least).</p>
+<h3 id="74-privacy-and-security">7.4 Privacy and security<a class="headerlink" href="#74-privacy-and-security" title="Permanent link">&para;</a></h3>
+<p>The event log is sensitive — it captures detailed usage patterns. Two concerns:</p>
+<ul>
+<li><strong>Peer merging</strong>: a malicious peer could flood low-quality blocks to corrupt utility estimates. Mitigation: trust-weighted merge with per-source rate limits.</li>
+<li><strong>Audit replay</strong>: the event log enables exact reconstruction of agent behavior. Mitigation: encrypt at rest if user opt-in; provide <code>elfmem privacy --forget block_id</code> that purges events for a specific item.</li>
+</ul>
+<h3 id="75-implementation-complexity">7.5 Implementation complexity<a class="headerlink" href="#75-implementation-complexity" title="Permanent link">&para;</a></h3>
+<p>The framework adds ~2 schema columns, one new table, and ~500 LOC across consolidate, outcome, rescore, and scoring. The complexity is real but bounded; FSRS-5 has been implemented in 100 lines of Python (<a href="https://borretti.me/article/implementing-fsrs-in-100-lines">Borretti's implementation</a>).</p>
+<p>Per-frame weight tuning is the largest hidden cost — empirical evaluation against test workloads is required to set sensible defaults.</p>
+<hr />
+<h2 id="8-open-problems-and-future-work">8. Open problems and future work<a class="headerlink" href="#8-open-problems-and-future-work" title="Permanent link">&para;</a></h2>
+<h3 id="81-calibration-of-llm-as-evidence">8.1 Calibration of LLM-as-evidence<a class="headerlink" href="#81-calibration-of-llm-as-evidence" title="Permanent link">&para;</a></h3>
+<p>The framework treats LLM alignment_score as one observation worth <code>w_llm</code> evidence. Is <code>w_llm = 1.0</code> (one outcome event) the right calibration? If the LLM is more reliable than a single outcome, <code>w_llm</code> should be higher; if less, lower. Empirical work on LLM-as-judge calibration is ongoing in the broader ML community.</p>
+<h3 id="82-detecting-useful-retrieval">8.2 Detecting useful retrieval<a class="headerlink" href="#82-detecting-useful-retrieval" title="Permanent link">&para;</a></h3>
+<p>Without explicit feedback, the system cannot reinforce items that were retrieved and proved useful. Park 2023 uses reflection; A-MEM uses confirmation; FSRS-5 uses explicit ratings. For elfmem, an explicit <code>confirm()</code> API or implicit "next-operation-references-block" heuristic both have merit. This deserves its own design study.</p>
+<h3 id="83-optimal-for-exploration-bonus">8.3 Optimal κ for exploration bonus<a class="headerlink" href="#83-optimal-for-exploration-bonus" title="Permanent link">&para;</a></h3>
+<p>Thompson sampling theory suggests κ ≈ 1.0 in normalised form; for our composite score the right value depends on the variance distribution. Empirical tuning required.</p>
+<h3 id="84-fsrs-5-parameters-for-non-flashcard-domains">8.4 FSRS-5 parameters for non-flashcard domains<a class="headerlink" href="#84-fsrs-5-parameters-for-non-flashcard-domains" title="Permanent link">&para;</a></h3>
+<p>FSRS-5 is fit to flashcard-review data. Whether the same parameters generalise to agent-memory data (where "reviews" are heterogeneous events) is an open question. A user-fit version of FSRS for elfmem deployment data is worth exploring.</p>
+<h3 id="85-multi-frame-composition">8.5 Multi-frame composition<a class="headerlink" href="#85-multi-frame-composition" title="Permanent link">&para;</a></h3>
+<p>The framework specifies per-frame weights but does not address what happens when an agent's needs span frames (e.g., "what do I know about X and how is it relevant to my current task?"). Composing frames principled — perhaps as a mixture distribution — is open.</p>
+<h3 id="86-event-log-compaction-without-loss">8.6 Event log compaction without loss<a class="headerlink" href="#86-event-log-compaction-without-loss" title="Permanent link">&para;</a></h3>
+<p>The pruning strategies in §7.1 are lossy in principle (aggregate events lose timing information). Designing compaction that preserves what matters for scoring (recency-weighted aggregate counts) while discarding bulk is an applied research question.</p>
+<h3 id="87-hierarchical-retrieval-algorithm">8.7 Hierarchical retrieval algorithm<a class="headerlink" href="#87-hierarchical-retrieval-algorithm" title="Permanent link">&para;</a></h3>
+<p>The three-tier representation (raw/summary/abstract) needs a concrete retrieval algorithm: when do we ascend the hierarchy versus stay at raw? MemoryOS uses an OS-style page-fault analogy; whether that's the best approach for our use case is open.</p>
+<h3 id="88-empirical-benchmark-for-elfmem">8.8 Empirical benchmark for elfmem<a class="headerlink" href="#88-empirical-benchmark-for-elfmem" title="Permanent link">&para;</a></h3>
+<p>elfmem currently lacks a head-to-head benchmark against MemMachine, A-MEM, Mem0 on LoCoMo or AMA-Bench. Building this benchmark — or contributing elfmem as an entrant to existing benchmarks — would let us empirically compare design choices.</p>
+<hr />
+<h2 id="9-conclusion">9. Conclusion<a class="headerlink" href="#9-conclusion" title="Permanent link">&para;</a></h2>
+<p>The question "how should an agent's memory rank itself?" has been studied for five decades across cognitive science, education, and machine learning. The convergent answer across these traditions:</p>
+<ol>
+<li><strong>Decompose</strong> the question into orthogonal axes — importance, utility, retrievability, semantic match — rather than collapsing them into a single confidence scalar.</li>
+<li><strong>Store sufficient statistics</strong>, not point estimates — <code>(α, β)</code> Beta-Binomial counts compose additively under new evidence.</li>
+<li><strong>Adapt forgetting per item</strong>, not by global rule — FSRS-5's per-item stability is the most empirically validated example.</li>
+<li><strong>Use power-law retrievability</strong>, not exponential — the empirical evidence from billions of reviews favours <code>(1 + F·t/S)^C</code> over <code>exp(-t/S)</code>.</li>
+<li><strong>Build retrieval over a graph</strong>, not a flat list — topological structure consistently outperforms vector search.</li>
+<li><strong>Treat events as the source of truth</strong>, with derived state as a view — this makes update operations additive, rescore non-destructive, and peer merging arithmetic.</li>
+</ol>
+<p>These six principles are not novel — each has been articulated in multiple traditions for years. What is novel in 2026 is their convergence into a single architecture that production agent-memory systems are independently arriving at. elfmem can adopt this convergence directly, building on its existing strong substrate (knowledge graph, outcome-driven evidence, four-rhythm consolidation) rather than re-inventing.</p>
+<p>The proposed framework — three orthogonal channels, sufficient-statistics state, FSRS-5 retrievability, event-log audit trail, frame-weighted composite scoring with exploration bonus — synthesises five decades of work into a concrete architecture for elfmem v0.16–v0.19. The architecture is principled, scalable, and addresses the specific defects observed in the current system (cliff, rescore clobber, cold-start gap, peer-merge incoherence) at the structural level rather than through symptomatic patches.</p>
+<p>What remains is empirical validation: per-frame weight tuning, FSRS-5 parameter fitting for our domain, head-to-head benchmarking against the SOTA. These are bounded engineering problems, not open architectural ones. The framework is ready for implementation planning.</p>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<h3 id="cognitive-science-foundations">Cognitive science foundations<a class="headerlink" href="#cognitive-science-foundations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Anderson, J.R. (1996). "ACT: A simple theory of complex cognition." <em>American Psychologist</em>.</li>
+<li>Ebbinghaus, H. (1885). <em>Über das Gedächtnis</em>. (English translation: <em>Memory: A Contribution to Experimental Psychology</em>, 1913.)</li>
+</ul>
+<h3 id="spaced-repetition">Spaced repetition<a class="headerlink" href="#spaced-repetition" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler">The FSRS Algorithm — open-spaced-repetition Wiki</a></li>
+<li><a href="https://expertium.github.io/Algorithm.html">Expertium: A Technical Explanation of FSRS</a></li>
+<li><a href="https://borretti.me/article/implementing-fsrs-in-100-lines">Borretti: Implementing FSRS in 100 Lines</a></li>
+<li><a href="https://domenic.me/fsrs/">Denicola: Spaced Repetition Systems Have Gotten Way Better</a></li>
+<li><a href="https://research.duolingo.com/papers/settles.acl16.pdf">Settles &amp; Meeder (2016) — A Trainable Spaced Repetition Model for Language Learning (Duolingo HLR)</a></li>
+<li><a href="https://www.pnas.org/doi/pdf/10.1073/pnas.1815156116">PNAS: Enhancing human learning via spaced repetition optimization</a></li>
+</ul>
+<h3 id="generative-agents-and-llm-agent-memory">Generative agents and LLM agent memory<a class="headerlink" href="#generative-agents-and-llm-agent-memory" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://ar5iv.labs.arxiv.org/html/2304.03442">Park et al. (2023) — Generative Agents: Interactive Simulacra of Human Behavior</a></li>
+<li><a href="https://arxiv.org/pdf/2502.12110">A-Mem: Agentic Memory for LLM Agents (2025)</a></li>
+<li><a href="https://arxiv.org/pdf/2504.19413">Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory (2025)</a></li>
+<li><a href="https://arxiv.org/html/2604.04853v1">MemMachine: Ground-Truth-Preserving Memory System (2026)</a></li>
+<li><a href="https://aclanthology.org/2025.emnlp-main.1318.pdf">Memory OS of AI Agent (EMNLP 2025)</a></li>
+<li><a href="https://mem0.ai/blog/state-of-ai-agent-memory-2026">State of AI Agent Memory 2026 — mem0.ai</a></li>
+<li><a href="https://arxiv.org/html/2603.07670v1">Memory for Autonomous LLM Agents: Mechanisms, Evaluation, Frontiers (survey, 2026)</a></li>
+<li><a href="https://www.preprints.org/manuscript/202603.0359">LLM Agent Memory: A Survey from a Unified Representation–Management Perspective</a></li>
+<li><a href="https://arxiv.org/html/2602.22769v1">AMA-Bench: Evaluating Long-Horizon Memory for Agentic Applications</a></li>
+<li><a href="https://arxiv.org/html/2404.00573v1">Dynamic Human-like Memory Recall and Consolidation in LLM-Based Agents (2026)</a></li>
+<li><a href="https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2025.1591618/full">Enhancing Memory Retrieval in Generative Agents — Frontiers (2025)</a></li>
+<li><a href="https://stevekinney.com/writing/agent-memory-systems">Memory Systems for AI Agents — Steve Kinney</a></li>
+</ul>
+<h3 id="knowledge-tracing">Knowledge tracing<a class="headerlink" href="#knowledge-tracing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Corbett, A.T. &amp; Anderson, J.R. (1995). "Knowledge Tracing: Modeling the Acquisition of Procedural Knowledge."</li>
+<li>Piech, C. et al. (2015). "Deep Knowledge Tracing."</li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0957417424018001">Bayesian Cognitive-aware Key-Value Memory Networks for Knowledge Tracing (2024)</a></li>
+<li><a href="https://arxiv.org/html/2105.15106v4">A Survey of Knowledge Tracing: Models, Variants, and Applications</a></li>
+<li><a href="https://dl.acm.org/doi/10.1145/3729605.3729620">Deep Learning Based Knowledge Tracing: A Review (2025)</a></li>
+</ul>
+<h3 id="continual-learning-and-catastrophic-forgetting">Continual learning and catastrophic forgetting<a class="headerlink" href="#continual-learning-and-catastrophic-forgetting" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Kirkpatrick, J. et al. (2017). "Overcoming catastrophic forgetting in neural networks." (EWC) <em>PNAS</em>.</li>
+<li><a href="https://arxiv.org/html/2601.03938v1">FOREVER: Forgetting Curve-Inspired Memory Replay for Language Model Continual Learning (2026)</a></li>
+<li><a href="https://arxiv.org/abs/2511.22367">SuRe: Surprise-Driven Prioritised Replay for Continual LLM Learning (2025)</a></li>
+<li><a href="https://dl.acm.org/doi/10.1145/3735633">Continual Learning of Large Language Models: A Comprehensive Survey (CSUR 2025)</a></li>
+</ul>
+<h3 id="internal-artefacts">Internal artefacts<a class="headerlink" href="#internal-artefacts" title="Permanent link">&para;</a></h3>
+<ul>
+<li>elfmem repository, <code>/tmp/confidence_sim.py</code> — 5-mapping × 5-scenario simulation</li>
+<li>elfmem <code>docs/plans/plan_confidence_architecture.md</code> — preliminary architectural plan (untracked)</li>
+<li>elfmem <code>docs/coding_principles.md</code> — implementation constraints (SIMPLE, ELEGANT, FLEXIBLE, ROBUST)</li>
+</ul>
+<hr />
+<p><em>This document is research, not yet design. The framework proposed here is a synthesis of prior work; the specific choices for elfmem (parameter values, weight defaults, migration sequencing) are open for review and refinement. A planning document will follow.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

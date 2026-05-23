@@ -1,0 +1,3163 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/archive/plan_v0.15.3_centrality_floor/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: v0.15.3 — Cold-start centrality floor - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-v0153-cold-start-centrality-floor" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: v0.15.3 — Cold-start centrality floor
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-background-where-the-bug-actually-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Background: where the bug actually lives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Background: where the bug actually lives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-retrieval-call-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The retrieval call path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-why-centrality-starts-at-00-for-fresh-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Why centrality starts at 0.0 for fresh blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-why-we-dont-simply-re-weight-centrality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Why we don't simply re-weight centrality
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The fix
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The fix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-new-pure-function-in-scoringpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 New pure function in scoring.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-call-site-change-in-memoryretrievalpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Call-site change in memory/retrieval.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-why-this-is-a-scoringpy-helper-not-a-compute_score-modification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Why this is a scoring.py helper, not a compute_score() modification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-why-these-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Why these constants
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Why these constants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-_cold_start_recency_threshold-070" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 _COLD_START_RECENCY_THRESHOLD = 0.70
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-_cold_start_centrality_threshold-010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 _COLD_START_CENTRALITY_THRESHOLD = 0.10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-_cold_start_floor_strength-050" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 _COLD_START_FLOOR_STRENGTH = 0.50
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-why-not-config-knobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Why not config knobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-call-path-consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Call-path consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Call-path consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-what-this-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 What this changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-what-the-floor-does-not-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 What the floor does NOT do
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Edge cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Edge cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-bedrock-blocks-high-centrality-may-be-fresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Bedrock blocks (high centrality, may be fresh)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-old-blocks-low-recency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Old blocks (low recency)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-recently-archived-blocks-re-activated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Recently-archived blocks re-activated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-empty-graph-no-edges-anywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Empty graph (no edges anywhere)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-single-edge-counts-as-established" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Single edge counts as "established"?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-recency-exactly-at-070" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Recency exactly at 0.70
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-centrality-exactly-at-010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Centrality exactly at 0.10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#68-float-precision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.8 Float precision
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#69-concurrent-retrieval-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.9 Concurrent retrieval calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#610-frame-specific-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.10 Frame-specific behaviour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#611-block-aging-across-the-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.11 Block aging across the boundary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#612-block-gaining-its-2nd-edge-across-the-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.12 Block gaining its 2nd edge across the boundary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-unit-tests-for-effective_centrality-new-in-teststest_scoringpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Unit tests for effective_centrality() (new in tests/test_scoring.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-integration-test-in-teststest_recallpy-or-similar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Integration test in tests/test_recall.py or similar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-no-regression-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 No-regression tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-test-count-and-runtime-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Test count and runtime impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-documentation-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Documentation updates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Documentation updates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-changelog-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 CHANGELOG entry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-no-agentguide-update-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 No AgentGuide update needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-internal-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Internal documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-no-claudemd-update-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 No CLAUDE.md update needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-migration-and-backwards-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Migration and backwards compatibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Migration and backwards compatibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-no-schema-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 No schema migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-no-data-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 No data migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-behaviour-change-is-monotonic-friendly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Behaviour change is monotonic-friendly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-rollback-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 Rollback path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Risks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-open-questions-deferred-to-v016" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Open questions (deferred to v0.16+)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-implementation-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Implementation checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-decision-asks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Decision asks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/archive/plan_v0.15.3_centrality_floor.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-v0153-cold-start-centrality-floor">Plan: v0.15.3 — Cold-start centrality floor<a class="headerlink" href="#plan-v0153-cold-start-centrality-floor" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: design — ready to implement after approval
+<strong>Driver</strong>: <a href="https://github.com/emson/elfmem/issues/50">issue #50</a> — Dmitry's "I just told it something important and it ignored that next turn"
+<strong>Target</strong>: v0.15.3 (patch release)
+<strong>Parent plan</strong>: <code>docs/plans/plan_memory_scoring.md</code> (the three-version programme: v0.15.3 → v0.16.0 → v0.17.0)
+<strong>Author</strong>: elf</p>
+<hr />
+<h2 id="1-summary">1. Summary<a class="headerlink" href="#1-summary" title="Permanent link">&para;</a></h2>
+<p>A 10-line change in retrieval scoring that protects fresh blocks from losing top-K to bedrock blocks on centrality alone. This is <strong>Dmitry's actual fix</strong> — the v0.15.2 cliff removal addressed a real but small defect (±0.03 score impact); the centrality cold-start gap is the dominant term (±0.105 impact, 3.5× larger).</p>
+<p><strong>Scope</strong>: one new pure function <code>effective_centrality()</code> in <code>scoring.py</code>, one call-site change in <code>memory/retrieval.py</code>, ~10 LOC, no schema change, no new config, no migration.</p>
+<p><strong>Why this works</strong>: the simulation <code>/tmp/confidence_sim.py</code> decomposed the score gap and showed centrality is the killer term. A fresh block at <code>similarity=0.74, conf=0.85, recency=1.0, centrality=0.10, reinforcement=0</code> loses to bedrock at <code>similarity=0.62, conf=0.95, recency=0.70, centrality=0.80, reinforcement=1.0</code> by Δ=-0.018. The 0.70 centrality gap dominates the 0.12 similarity gap when multiplied by frame weights.</p>
+<hr />
+<h2 id="2-background-where-the-bug-actually-lives">2. Background: where the bug actually lives<a class="headerlink" href="#2-background-where-the-bug-actually-lives" title="Permanent link">&para;</a></h2>
+<h3 id="21-the-retrieval-call-path">2.1 The retrieval call path<a class="headerlink" href="#21-the-retrieval-call-path" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>MemorySystem.recall(query) / .frame(name, query)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   ↓ src/elfmem/api.py
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>do_recall / do_frame
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   ↓ src/elfmem/operations/recall.py (delegates)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   ↓ src/elfmem/memory/retrieval.py
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>_stage_1_candidate_selection  (top-K by cosine + 1-hop expansion)
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>_stage_2_filter               (status, min_confidence, frame-specific)
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>_stage_3_compute_centrality   (calls memory.graph.compute_centrality)
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>   ↓ centralities: dict[block_id, float] in [0.0, 1.0]
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>_stage_4_compute_scores       ← where centrality enters the score formula
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>   ↓ for each block:
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>     centrality = centralities.get(block_id, 0.0)   ← raw, no floor today
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>     score = compute_score(sim, conf, recency, centrality, reinf, weights)
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>_stage_5_mmr_diversity        (diversity selection)
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>_stage_6_contradiction_suppression
+</span></code></pre></div>
+<p>The floor enters at <code>_stage_4_compute_scores</code>, line ~335 of <code>memory/retrieval.py</code>. Single insertion point.</p>
+<h3 id="22-why-centrality-starts-at-00-for-fresh-blocks">2.2 Why centrality starts at 0.0 for fresh blocks<a class="headerlink" href="#22-why-centrality-starts-at-00-for-fresh-blocks" title="Permanent link">&para;</a></h3>
+<p><code>memory/graph.py:compute_centrality()</code> computes <code>weighted_degree / max_weighted_degree</code> across the candidate set. A block with zero edges has weighted_degree=0 → centrality=0.0. Even after consolidation creates a few similarity edges, a brand-new block has 1-3 edges versus bedrock blocks with 10+. Normalised centrality remains very low (&lt;0.10) for at least a week of agent usage.</p>
+<p>This is correct behaviour for the <em>meaning</em> of centrality (the block isn't yet central to the knowledge graph). It's incorrect behaviour for <em>retrieval ranking</em> of fresh blocks the agent genuinely cares about.</p>
+<h3 id="23-why-we-dont-simply-re-weight-centrality">2.3 Why we don't simply re-weight centrality<a class="headerlink" href="#23-why-we-dont-simply-re-weight-centrality" title="Permanent link">&para;</a></h3>
+<p>The "obvious" fix is to lower ATTENTION's centrality weight from 0.15. But:</p>
+<ul>
+<li>That penalises bedrock equally and forever (not just during cold-start)</li>
+<li>It treats a symptom rather than the cause (centrality is fine; it's the <em>initial value</em> that's stale)</li>
+<li>Other frames (SELF=0.25, TASK=0.20, SIMULATE=0.20) would need separate retuning</li>
+<li>The change affects all queries, even those where bedrock dominance is desirable</li>
+</ul>
+<p>A <em>floor</em> targeted at the cold-start window is surgical: it only intervenes when both conditions hold (centrality is low AND block is fresh), and it decays naturally as the block ages.</p>
+<hr />
+<h2 id="3-the-fix">3. The fix<a class="headerlink" href="#3-the-fix" title="Permanent link">&para;</a></h2>
+<h3 id="31-new-pure-function-in-scoringpy">3.1 New pure function in <code>scoring.py</code><a class="headerlink" href="#31-new-pure-function-in-scoringpy" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Cold-start floor parameters — defensible constants, not config knobs.</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># See docs/plans/plan_v0.15.3_centrality_floor.md for rationale.</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_COLD_START_RECENCY_THRESHOLD</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.70</span>   <span class="c1"># ≈ 35h on STANDARD tier</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">_COLD_START_CENTRALITY_THRESHOLD</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span>  <span class="c1"># ≤ ~10% of max weighted degree</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">_COLD_START_FLOOR_STRENGTH</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.50</span>      <span class="c1"># peak floor at recency=1.0</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">effective_centrality</span><span class="p">(</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">raw_centrality</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">recency</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply cold-start centrality floor for fresh, low-edge blocks.</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    USE WHEN:  Called by retrieval (_stage_4_compute_scores) before feeding</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">               centrality into compute_score(). Protects fresh blocks from</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">               losing top-K to bedrock on graph centrality alone.</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">    DON&#39;T USE: For curation, archival, or any non-retrieval decision —</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="sd">               those should see the raw graph-derived centrality.</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="sd">    COST:      O(1) per block. Pure arithmetic.</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="sd">    RETURNS:   float in [0.0, 1.0]. Equal to raw_centrality when the block</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="sd">               has either established edges (raw_centrality ≥ threshold) or</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="sd">               is no longer fresh (recency ≤ threshold). Otherwise applies</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="sd">               a recency-scaled floor.</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="sd">    The floor decays automatically as the block ages — once recency falls</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="sd">    below threshold, the floor stops applying and the block competes on</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="sd">    its actual graph position. This makes the cold-start protection</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="sd">    self-extinguishing.</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="k">if</span> <span class="n">raw_centrality</span> <span class="o">&lt;</span> <span class="n">_COLD_START_CENTRALITY_THRESHOLD</span> <span class="ow">and</span> <span class="n">recency</span> <span class="o">&gt;</span> <span class="n">_COLD_START_RECENCY_THRESHOLD</span><span class="p">:</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">raw_centrality</span><span class="p">,</span> <span class="n">_COLD_START_FLOOR_STRENGTH</span> <span class="o">*</span> <span class="n">recency</span><span class="p">)</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="k">return</span> <span class="n">raw_centrality</span>
+</span></code></pre></div>
+<p>Properties of this function:</p>
+<ul>
+<li><strong>Pure</strong>: no I/O, no state, deterministic</li>
+<li><strong>Monotonic in raw_centrality</strong>: never <em>lowers</em> the value (always <code>max(raw, floor)</code> or <code>raw</code> directly)</li>
+<li><strong>Self-extinguishing</strong>: as recency falls, the floor falls; once recency ≤ 0.70, no floor at all</li>
+<li><strong>Self-limiting</strong>: as the block gains edges (raw_centrality rises past 0.10), no floor at all</li>
+<li><strong>Idempotent</strong>: applying twice gives same result as applying once</li>
+<li><strong>No discontinuity</strong>: at the boundary (recency=0.70+ε), the floor is 0.50·0.70 = 0.35 — well above the centrality_threshold=0.10, so no jump in scores at the boundary</li>
+<li><strong>Continuous in recency</strong> in the active region: floor decays linearly with recency</li>
+</ul>
+<h3 id="32-call-site-change-in-memoryretrievalpy">3.2 Call-site change in <code>memory/retrieval.py</code><a class="headerlink" href="#32-call-site-change-in-memoryretrievalpy" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># In _stage_4_compute_scores, around line 335:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">recency</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">decay_lam</span> <span class="o">*</span> <span class="n">hours_since</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># OLD:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">centrality</span> <span class="o">=</span> <span class="n">centralities</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># NEW:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">raw_centrality</span> <span class="o">=</span> <span class="n">centralities</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">centrality</span> <span class="o">=</span> <span class="n">effective_centrality</span><span class="p">(</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">raw_centrality</span><span class="o">=</span><span class="n">raw_centrality</span><span class="p">,</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">recency</span><span class="o">=</span><span class="n">recency</span><span class="p">,</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Note: we apply the floor to the centrality that feeds <code>compute_score()</code>, but the <code>ScoredBlock.centrality</code> field (returned to callers) should report the <em>effective</em> centrality, not the raw — because that's what determined the score. Consumers comparing <code>ScoredBlock.centrality</code> to score components should see consistent values.</p>
+<h3 id="33-why-this-is-a-scoringpy-helper-not-a-compute_score-modification">3.3 Why this is a <code>scoring.py</code> helper, not a <code>compute_score()</code> modification<a class="headerlink" href="#33-why-this-is-a-scoringpy-helper-not-a-compute_score-modification" title="Permanent link">&para;</a></h3>
+<p><code>scoring.py:4</code> documents that <code>compute_score()</code> is <em>frozen</em> — its formula is part of the stable contract. Changing it would be a breaking version change. The cold-start floor is therefore implemented as a separate helper that adjusts the <em>input</em> before calling <code>compute_score()</code>. The formula itself remains unchanged.</p>
+<p>This preserves the existing contract while adding the new behaviour at the right architectural layer.</p>
+<hr />
+<h2 id="4-why-these-constants">4. Why these constants<a class="headerlink" href="#4-why-these-constants" title="Permanent link">&para;</a></h2>
+<h3 id="41-_cold_start_recency_threshold-070">4.1 <code>_COLD_START_RECENCY_THRESHOLD = 0.70</code><a class="headerlink" href="#41-_cold_start_recency_threshold-070" title="Permanent link">&para;</a></h3>
+<p>Per tier:
+- PERMANENT (λ=0.00001): recency 0.70 at ~35000 hours (~4 years) — effectively always fresh, but PERMANENT tier blocks are constitutional bedrock and already have high centrality, so the floor doesn't activate
+- DURABLE (λ=0.001): recency 0.70 at ~357 hours (~15 days)
+- STANDARD (λ=0.010): recency 0.70 at ~35.7 hours (~1.5 days)
+- EPHEMERAL (λ=0.050): recency 0.70 at ~7.1 hours</p>
+<p>The cold-start window naturally scales with the block's decay tier. EPHEMERAL blocks get a short protection window; DURABLE blocks get weeks. This matches semantic intuition: a more important block (DURABLE/PERMANENT tier) deserves longer protection from being out-ranked by bedrock.</p>
+<h3 id="42-_cold_start_centrality_threshold-010">4.2 <code>_COLD_START_CENTRALITY_THRESHOLD = 0.10</code><a class="headerlink" href="#42-_cold_start_centrality_threshold-010" title="Permanent link">&para;</a></h3>
+<p><code>weighted_degree</code> is the sum of edge weights touching the block. Default edge weights for new connections are 0.65 (similar), 0.75 (supports), etc. A block with one default edge in a graph where the top block has degree 6.5 has normalised centrality = 0.10. So <code>&lt; 0.10</code> corresponds roughly to "0-1 edges of default weight in a typical graph."</p>
+<p>This threshold is the boundary between "no graph position yet" and "starting to establish position."</p>
+<h3 id="43-_cold_start_floor_strength-050">4.3 <code>_COLD_START_FLOOR_STRENGTH = 0.50</code><a class="headerlink" href="#43-_cold_start_floor_strength-050" title="Permanent link">&para;</a></h3>
+<p>Peak floor at recency=1.0 is 0.50 — half of the maximum possible centrality. In ATTENTION frame (centrality weight 0.15), this contributes 0.15 × 0.50 = 0.075 to the score for a perfectly-fresh block with no edges, vs bedrock at 0.15 × 0.80 = 0.12. Gap reduces from 0.12 to 0.045 — enough that a semantically-relevant fresh block (similarity advantage of 0.10+) can win.</p>
+<p>The choice of 0.50 (not 0.70 or 0.30) trades off two concerns:
+- Higher floor → fresh blocks more competitive, but irrelevant fresh blocks might also surface
+- Lower floor → safer against irrelevant blocks, but doesn't fully fix Dmitry's symptom</p>
+<p>0.50 is the round-number middle ground. It gives fresh-and-relevant blocks a competitive shot without making irrelevant fresh blocks dominant.</p>
+<h3 id="44-why-not-config-knobs">4.4 Why not config knobs<a class="headerlink" href="#44-why-not-config-knobs" title="Permanent link">&para;</a></h3>
+<p>These are not exposed as <code>ElfmemConfig</code> fields because:
+- Each adds API surface that must be supported forever
+- Users have no way to know what "good" values are without empirical measurement
+- The plan's principle (per <code>plan_memory_scoring.md</code>) is to hardcode defensible defaults and add knobs only when users request tuning
+- If v0.16.0 evidence shows the constants are wrong, this is a single-file change to ship in v0.16.1</p>
+<hr />
+<h2 id="5-call-path-consequences">5. Call-path consequences<a class="headerlink" href="#5-call-path-consequences" title="Permanent link">&para;</a></h2>
+<h3 id="51-what-this-changes">5.1 What this changes<a class="headerlink" href="#51-what-this-changes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Touches centrality?</th>
+<th>Affected by floor?</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recall(query)</code></td>
+<td>Yes (via <code>_stage_4</code>)</td>
+<td>Yes</td>
+<td>This is the target path</td>
+</tr>
+<tr>
+<td><code>frame(name, query)</code></td>
+<td>Yes (via <code>_stage_4</code>)</td>
+<td>Yes</td>
+<td>Same target path</td>
+</tr>
+<tr>
+<td><code>frame(name)</code> (queryless)</td>
+<td>Yes — uses <code>renormalized_without_similarity()</code></td>
+<td>Yes</td>
+<td>Centrality weight is <em>higher</em> without similarity (rescaled). Floor still applies.</td>
+</tr>
+<tr>
+<td><code>connect_by_query(s, t)</code></td>
+<td>Yes (calls <code>recall</code> internally)</td>
+<td>Yes</td>
+<td>Inherited</td>
+</tr>
+<tr>
+<td><code>curate()</code></td>
+<td>Yes (different code in <code>curate.py:256</code>)</td>
+<td><strong>No</strong></td>
+<td>Curation centrality is computed separately; archival decisions should see raw graph state</td>
+</tr>
+<tr>
+<td><code>viz/data.py</code></td>
+<td>Yes (visualization)</td>
+<td><strong>No</strong></td>
+<td>Visualization shows actual graph; floor is a retrieval-only concept</td>
+</tr>
+<tr>
+<td><code>mind_show()</code> / <code>mind_list()</code></td>
+<td>No (uses confidence)</td>
+<td>N/A</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-what-the-floor-does-not-do">5.2 What the floor does NOT do<a class="headerlink" href="#52-what-the-floor-does-not-do" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Does not change centrality stored anywhere</strong> — <code>compute_centrality()</code> in <code>memory/graph.py</code> is unchanged; the floor is applied locally at retrieval-time only</li>
+<li><strong>Does not affect curation/archival</strong> — <code>curate.py</code> uses its own centrality computation and is untouched. Fresh blocks are protected from archival by their decay tier and recency, not by this floor.</li>
+<li><strong>Does not affect graph visualization</strong> — the viz layer should show the agent's actual graph state</li>
+<li><strong>Does not affect contradiction suppression</strong> — that uses confidence, not centrality</li>
+<li><strong>Does not affect MMR diversity</strong> — MMR operates on scored blocks; whether a block makes it to MMR is what the floor changes, and that's the intended effect</li>
+</ul>
+<hr />
+<h2 id="6-edge-cases">6. Edge cases<a class="headerlink" href="#6-edge-cases" title="Permanent link">&para;</a></h2>
+<h3 id="61-bedrock-blocks-high-centrality-may-be-fresh">6.1 Bedrock blocks (high centrality, may be fresh)<a class="headerlink" href="#61-bedrock-blocks-high-centrality-may-be-fresh" title="Permanent link">&para;</a></h3>
+<p>A constitutional PERMANENT block might be high-centrality (0.80) and high-recency (~1.0 always). The <code>centrality &lt; 0.10</code> gate prevents the floor from applying. Existing behaviour preserved. ✓</p>
+<h3 id="62-old-blocks-low-recency">6.2 Old blocks (low recency)<a class="headerlink" href="#62-old-blocks-low-recency" title="Permanent link">&para;</a></h3>
+<p>A 100-day-old STANDARD block has recency ≈ 0.09. The <code>recency &gt; 0.70</code> gate prevents the floor from applying. Existing behaviour preserved. ✓</p>
+<h3 id="63-recently-archived-blocks-re-activated">6.3 Recently-archived blocks re-activated<a class="headerlink" href="#63-recently-archived-blocks-re-activated" title="Permanent link">&para;</a></h3>
+<p>If a block was archived and then re-learned (creating a new block, per current semantics), it's a new block — fresh + few edges → floor applies. This is the desired behaviour (we want re-learned content to compete).</p>
+<h3 id="64-empty-graph-no-edges-anywhere">6.4 Empty graph (no edges anywhere)<a class="headerlink" href="#64-empty-graph-no-edges-anywhere" title="Permanent link">&para;</a></h3>
+<p><code>compute_centrality()</code> returns 0.0 for all blocks when <code>max_weighted_degree == 0</code>. The <code>centrality &lt; 0.10</code> gate is satisfied for everyone. The floor applies to every fresh block. They compete on similarity + recency + the floor (all equal). This is fine — the floor doesn't break anything; it just gives all fresh blocks equal cold-start treatment.</p>
+<h3 id="65-single-edge-counts-as-established">6.5 Single edge counts as "established"?<a class="headerlink" href="#65-single-edge-counts-as-established" title="Permanent link">&para;</a></h3>
+<p>A block with one default-weight (0.65) edge in a small graph might have centrality 0.30, which is above the 0.10 threshold. The floor doesn't apply. Is this correct?</p>
+<p>Yes. Once a block has even one edge in a sparse graph (centrality &gt; 0.10), it's no longer "cold-start." The agent has connected it to something. The protection is for the truly unconnected case.</p>
+<h3 id="66-recency-exactly-at-070">6.6 Recency exactly at 0.70<a class="headerlink" href="#66-recency-exactly-at-070" title="Permanent link">&para;</a></h3>
+<p>The condition is <code>recency &gt; 0.70</code>, strict inequality. At exactly 0.70, no floor applies. This is intentional — at the boundary, we transition smoothly to no protection. (The floor itself at recency=0.70+ε is 0.50·0.70 = 0.35, well above the centrality_threshold=0.10, so there's no jump-up at the boundary either.)</p>
+<h3 id="67-centrality-exactly-at-010">6.7 Centrality exactly at 0.10<a class="headerlink" href="#67-centrality-exactly-at-010" title="Permanent link">&para;</a></h3>
+<p>The condition is <code>raw_centrality &lt; 0.10</code>, strict inequality. At exactly 0.10, no floor applies. Consistent with the recency case.</p>
+<h3 id="68-float-precision">6.8 Float precision<a class="headerlink" href="#68-float-precision" title="Permanent link">&para;</a></h3>
+<p>All comparisons use <code>&lt;</code> and <code>&gt;</code>, no <code>&lt;=</code> or <code>==</code>. No floating-point equality concerns. The thresholds are at 0.10 and 0.70, well-representable in float.</p>
+<h3 id="69-concurrent-retrieval-calls">6.9 Concurrent retrieval calls<a class="headerlink" href="#69-concurrent-retrieval-calls" title="Permanent link">&para;</a></h3>
+<p><code>effective_centrality()</code> is pure and stateless. Safe under concurrency. The <code>centralities</code> dict is computed per-query and not shared across calls.</p>
+<h3 id="610-frame-specific-behaviour">6.10 Frame-specific behaviour<a class="headerlink" href="#610-frame-specific-behaviour" title="Permanent link">&para;</a></h3>
+<p>Each frame has different centrality weight (SELF=0.25, ATTENTION=0.15, TASK=0.20, SIMULATE=0.20). The floor applies uniformly to centrality; its effect on score is then scaled by each frame's weight. SELF frame sees the largest absolute effect, but SELF retrieves identity content where fresh content (a just-learned principle about self) genuinely should surface.</p>
+<h3 id="611-block-aging-across-the-boundary">6.11 Block aging across the boundary<a class="headerlink" href="#611-block-aging-across-the-boundary" title="Permanent link">&para;</a></h3>
+<p>A block at recency=0.71 has the floor applied (recency above threshold). One hour later, recency=0.70 → no floor. The score component changes from <code>0.5·recency·weight</code> to <code>raw_centrality·weight</code>. If raw_centrality is 0, score drops by <code>0.5·0.70·weight = 0.0525</code> (in ATTENTION). This is a discrete step but small — comparable to the natural recency decay over the same period (a few % score change per hour at STANDARD tier).</p>
+<p>We could smooth this with a soft transition. We won't — the discontinuity is small and adds complexity. Documented and acceptable.</p>
+<h3 id="612-block-gaining-its-2nd-edge-across-the-boundary">6.12 Block gaining its 2nd edge across the boundary<a class="headerlink" href="#612-block-gaining-its-2nd-edge-across-the-boundary" title="Permanent link">&para;</a></h3>
+<p>A block at raw_centrality=0.09 (just below threshold) jumps to 0.30 when consolidation adds an edge. Floor was applied (max(0.09, 0.5)=0.5); now no floor (0.30). The block's score <em>decreases</em> from <code>0.5·weight</code> to <code>0.30·weight</code> — for ATTENTION, a drop of 0.030.</p>
+<p>This is acceptable because: (a) the block's score before the floor was 0.09·0.15=0.0135; the floor lifted it to 0.075; the post-floor real value is 0.045 — net result of acquiring an edge is the block went from 0.075 to 0.045 score. (b) But the block also gained the edge's effects elsewhere (it can be reached by spreading activation, by 1-hop expansion). Net retrieval probability likely <em>increased</em> even if this one score term dropped. (c) The block is no longer cold-start-protected because it's no longer cold-start — by design.</p>
+<p>If this proves to be an observed problem, we revisit in v0.16+.</p>
+<hr />
+<h2 id="7-tests">7. Tests<a class="headerlink" href="#7-tests" title="Permanent link">&para;</a></h2>
+<h3 id="71-unit-tests-for-effective_centrality-new-in-teststest_scoringpy">7.1 Unit tests for <code>effective_centrality()</code> (new in <code>tests/test_scoring.py</code>)<a class="headerlink" href="#71-unit-tests-for-effective_centrality-new-in-teststest_scoringpy" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestEffectiveCentrality</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Cold-start centrality floor for fresh blocks with few edges.&quot;&quot;&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_fresh_block_with_low_centrality_gets_floor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="c1"># Brand-new block: centrality=0.0, recency=1.0 → floor=0.5</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.5</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_floor_decays_with_recency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="c1"># Aging block: recency 0.85 → floor 0.425</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">0.85</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.425</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_floor_stops_at_recency_boundary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="c1"># At exactly the boundary, no floor</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">0.70</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_floor_stops_above_centrality_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="c1"># Block with established edges: not protected</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.5</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_block_at_centrality_boundary_unchanged</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="c1"># At exactly the centrality threshold, no floor</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.10</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.10</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_never_lowers_centrality</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>        <span class="c1"># Floor only raises; never lowers</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.05</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.95</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_idempotent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="c1"># Applying twice yields same result</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>        <span class="n">once</span> <span class="o">=</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>        <span class="n">twice</span> <span class="o">=</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="n">once</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>        <span class="k">assert</span> <span class="n">once</span> <span class="o">==</span> <span class="n">twice</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_old_block_unaffected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>        <span class="c1"># Low recency: floor doesn&#39;t apply regardless of centrality</span>
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">0.30</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span>
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="k">assert</span> <span class="n">effective_centrality</span><span class="p">(</span><span class="n">raw_centrality</span><span class="o">=</span><span class="mf">0.50</span><span class="p">,</span> <span class="n">recency</span><span class="o">=</span><span class="mf">0.30</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.50</span>
+</span></code></pre></div>
+<h3 id="72-integration-test-in-teststest_recallpy-or-similar">7.2 Integration test in <code>tests/test_recall.py</code> or similar<a class="headerlink" href="#72-integration-test-in-teststest_recallpy-or-similar" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_cold_start_block_surfaces_top_k_in_attention</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;v0.15.3: fresh block with good semantic match beats bedrock on retrieval.</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="sd">    Reproduces Dmitry&#39;s symptom: &#39;I just told it something important and it</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    ignored that next turn.&#39; Without the centrality floor, the fresh block</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="sd">    loses to bedrock on the centrality term. With the floor, it wins.</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="c1"># Set up bedrock — many edges, established centrality</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">bedrock_ids</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Constitutional principle </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">bedrock_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">block_id</span><span class="p">)</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">dream</span><span class="p">()</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="c1"># Make bedrock central by connecting them</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bedrock_ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">bedrock_ids</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">bedrock_ids</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="c1"># Add many positive outcomes to give bedrock high confidence + reinforcement</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="k">for</span> <span class="n">bid</span> <span class="ow">in</span> <span class="n">bedrock_ids</span><span class="p">:</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>            <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">outcome</span><span class="p">([</span><span class="n">bid</span><span class="p">],</span> <span class="n">signal</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>    <span class="c1"># Learn a fresh block with content the agent should care about</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="s2">&quot;This is an important new principle about Y&quot;</span><span class="p">)</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">dream</span><span class="p">()</span>  <span class="c1"># promote to active</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>    <span class="c1"># Query for the fresh content</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="s2">&quot;important new principle Y&quot;</span><span class="p">)</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>    <span class="c1"># Without floor: fresh block likely loses top-K to bedrock</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>    <span class="c1"># With floor: fresh block surfaces in top-K</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">fresh</span><span class="o">.</span><span class="n">block_id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[:</span><span class="mi">3</span><span class="p">]),</span> <span class="p">(</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>        <span class="s2">&quot;Fresh, semantically-relevant block should surface in top-3 &quot;</span>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>        <span class="s2">&quot;via cold-start centrality floor&quot;</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>    <span class="p">)</span>
+</span></code></pre></div>
+<h3 id="73-no-regression-tests">7.3 No-regression tests<a class="headerlink" href="#73-no-regression-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Existing <code>tests/test_scoring.py</code> (ScoringWeights validation, frame weights) — must pass unchanged</li>
+<li>Existing <code>tests/test_recall.py</code> retrieval tests — must pass unchanged (the floor only <em>raises</em> centrality, so ranking only shifts in favour of fresh blocks)</li>
+<li>Existing <code>tests/test_curate.py</code> (archival decisions) — must pass unchanged (curate uses different centrality computation)</li>
+</ul>
+<h3 id="74-test-count-and-runtime-impact">7.4 Test count and runtime impact<a class="headerlink" href="#74-test-count-and-runtime-impact" title="Permanent link">&para;</a></h3>
+<p>Estimated +8 unit tests, +1 integration test. Total runtime impact: ~50ms.</p>
+<hr />
+<h2 id="8-documentation-updates">8. Documentation updates<a class="headerlink" href="#8-documentation-updates" title="Permanent link">&para;</a></h2>
+<h3 id="81-changelog-entry">8.1 CHANGELOG entry<a class="headerlink" href="#81-changelog-entry" title="Permanent link">&para;</a></h3>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gu">## [0.15.3] — 2026-05-18</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Second milestone of the memory-scoring architecture work driven by
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>[<span class="nt">issue #50</span>](<span class="na">https://github.com/emson/elfmem/issues/50</span>). v0.15.2 removed the
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>confidence cliff (which contributed ±0.03 to the retrieval gap). This release
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>addresses the <span class="ge">*dominant*</span> term in Dmitry&#39;s symptom: centrality, which
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>contributed ±0.105.
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="gu">### Fixed</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">-</span><span class="w"> </span>Fresh blocks no longer lose top-K retrieval to bedrock on graph centrality
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  alone. A cold-start centrality floor lifts blocks with few edges and high
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>  recency to a recency-scaled floor value (peak 0.50 at recency=1.0).
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>  The floor self-extinguishes as the block either ages (recency drops below
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  0.70) or builds edges (centrality rises above 0.10). Affects retrieval
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>  scoring only; curation and archival decisions are unchanged. See
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>  <span class="sb">`docs/plans/plan_v0.15.3_centrality_floor.md`</span> for the full design.
+</span></code></pre></div>
+<h3 id="82-no-agentguide-update-needed">8.2 No AgentGuide update needed<a class="headerlink" href="#82-no-agentguide-update-needed" title="Permanent link">&para;</a></h3>
+<p><code>recall()</code> and <code>frame()</code> AgentGuide entries currently describe what they do, not the internal scoring formula. The floor is an implementation detail that improves their behaviour without changing the contract. No agent-visible API surface changes.</p>
+<h3 id="83-internal-documentation">8.3 Internal documentation<a class="headerlink" href="#83-internal-documentation" title="Permanent link">&para;</a></h3>
+<p>The <code>effective_centrality()</code> function's docstring (in §3.1 above) is the canonical reference. The plan document itself (this file) lives in <code>docs/plans/</code> for future maintainers.</p>
+<h3 id="84-no-claudemd-update-needed">8.4 No CLAUDE.md update needed<a class="headerlink" href="#84-no-claudemd-update-needed" title="Permanent link">&para;</a></h3>
+<p>CLAUDE.md describes the four rhythms and four frames at a conceptual level. The centrality floor doesn't change any of those concepts.</p>
+<hr />
+<h2 id="9-migration-and-backwards-compatibility">9. Migration and backwards compatibility<a class="headerlink" href="#9-migration-and-backwards-compatibility" title="Permanent link">&para;</a></h2>
+<h3 id="91-no-schema-migration">9.1 No schema migration<a class="headerlink" href="#91-no-schema-migration" title="Permanent link">&para;</a></h3>
+<p>The change is in-memory scoring only. No new columns, no new tables, no data migration.</p>
+<h3 id="92-no-data-migration">9.2 No data migration<a class="headerlink" href="#92-no-data-migration" title="Permanent link">&para;</a></h3>
+<p>Existing block data is unaffected. The floor is applied at retrieval-time from raw centrality values that are computed each call.</p>
+<h3 id="93-behaviour-change-is-monotonic-friendly">9.3 Behaviour change is monotonic-friendly<a class="headerlink" href="#93-behaviour-change-is-monotonic-friendly" title="Permanent link">&para;</a></h3>
+<p>The floor can only <em>raise</em> a block's centrality term. It can never lower it. Therefore:
+- Block rankings can only shift in favour of fresh blocks
+- No block that previously made top-K can fall out due to this change alone
+- The change can only <em>add</em> fresh blocks to top-K; it cannot remove other blocks</p>
+<p>This makes regression testing simpler and reduces upgrade risk.</p>
+<h3 id="94-rollback-path">9.4 Rollback path<a class="headerlink" href="#94-rollback-path" title="Permanent link">&para;</a></h3>
+<p>If the floor causes unexpected behaviour, rollback is trivial:
+- Revert the call-site change in <code>memory/retrieval.py</code> (1 line)
+- The new <code>effective_centrality()</code> function can be left in place (unused) or removed
+- No data to revert</p>
+<p>Estimated rollback effort: 5 minutes.</p>
+<hr />
+<h2 id="10-risks">10. Risks<a class="headerlink" href="#10-risks" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Probability</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Floor constants are wrong</td>
+<td>medium</td>
+<td>medium</td>
+<td>Constants chosen with simulation evidence; can be tuned in v0.16+</td>
+</tr>
+<tr>
+<td>Fresh-but-irrelevant blocks dominate top-K</td>
+<td>low</td>
+<td>medium</td>
+<td>Floor scales with recency only, not similarity-aware. But blocks already pass similarity-based candidate selection in stage 1, so irrelevant blocks aren't candidates.</td>
+</tr>
+<tr>
+<td>Breaks an existing scoring test</td>
+<td>low</td>
+<td>low</td>
+<td>The floor is monotonic-friendly; existing rankings only shift in favour of fresh blocks. Will discover any regressions in CI.</td>
+</tr>
+<tr>
+<td>Floor activates too widely (affects more than intended)</td>
+<td>low</td>
+<td>low</td>
+<td>Two gates (centrality AND recency) ensure narrow activation. Curation/viz paths explicitly untouched.</td>
+</tr>
+<tr>
+<td>Performance impact</td>
+<td>very low</td>
+<td>very low</td>
+<td>One <code>if</code> and one <code>max()</code> per scored block. ~50ns per block. Negligible.</td>
+</tr>
+<tr>
+<td>Confuses users debugging scoring</td>
+<td>low</td>
+<td>low</td>
+<td><code>ScoredBlock.centrality</code> reports the <em>effective</em> (post-floor) value. Users who want to understand the boost can check <code>recency</code> and infer. Could add an <code>effective_centrality_boosted: bool</code> field later if needed.</td>
+</tr>
+</tbody>
+</table>
+<p>Overall risk: <strong>very low</strong>. This is the smallest possible architectural change that addresses the largest empirical defect.</p>
+<hr />
+<h2 id="11-open-questions-deferred-to-v016">11. Open questions (deferred to v0.16+)<a class="headerlink" href="#11-open-questions-deferred-to-v016" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Should the constants be config knobs?</strong> Per <code>plan_memory_scoring.md</code> principle: not yet. Revisit if users request tuning.</p>
+</li>
+<li>
+<p><strong>Should the floor also apply to curation centrality?</strong> No — archival should see the graph as it is. But this could be revisited if cold-start blocks are observed to be aggressively archived.</p>
+</li>
+<li>
+<p><strong>Is <code>_COLD_START_CENTRALITY_THRESHOLD=0.10</code> the right boundary?</strong> Empirically tuned to "1 edge in a 10× graph." If observation shows blocks sit at 0.05-0.10 for extended periods, we might raise to 0.20 in v0.16+.</p>
+</li>
+<li>
+<p><strong>Should <code>effective_centrality()</code> accept the frame as a parameter?</strong> Currently frame-agnostic. SELF frame might want a higher floor (identity matters more). Defer until evidence justifies frame-specific behaviour.</p>
+</li>
+<li>
+<p><strong>Should we add an <code>effective_centrality_boosted</code> field to <code>ScoredBlock</code>?</strong> Useful for debugging but adds API surface. Defer until users ask.</p>
+</li>
+<li>
+<p><strong>Should the floor strength be a function of frame weight?</strong> E.g., higher floor when centrality weight is lower, to keep the effective centrality contribution roughly constant. Mathematically tempting but harder to reason about. Defer.</p>
+</li>
+</ol>
+<hr />
+<h2 id="12-implementation-checklist">12. Implementation checklist<a class="headerlink" href="#12-implementation-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] Branch from <code>main</code>: <code>fix-centrality-cold-start-v0.15.3</code></li>
+<li>[ ] Add <code>effective_centrality()</code> function to <code>src/elfmem/scoring.py</code> with docstring per §3.1</li>
+<li>[ ] Add module constants <code>_COLD_START_RECENCY_THRESHOLD</code>, <code>_COLD_START_CENTRALITY_THRESHOLD</code>, <code>_COLD_START_FLOOR_STRENGTH</code></li>
+<li>[ ] Modify <code>_stage_4_compute_scores</code> in <code>src/elfmem/memory/retrieval.py</code> to call <code>effective_centrality()</code></li>
+<li>[ ] Add unit tests to <code>tests/test_scoring.py</code> per §7.1 (8 tests)</li>
+<li>[ ] Add integration test to <code>tests/test_recall.py</code> per §7.2 (1 test)</li>
+<li>[ ] Run <code>uv run ruff check src tests</code></li>
+<li>[ ] Run <code>uv run mypy src</code></li>
+<li>[ ] Run <code>uv run pytest -q</code> — confirm all tests pass (existing + new)</li>
+<li>[ ] Bump <code>pyproject.toml</code> from <code>0.15.2</code> → <code>0.15.3</code></li>
+<li>[ ] Update <code>CHANGELOG.md</code> with the entry from §8.1</li>
+<li>[ ] Commit with descriptive message linking to <code>plan_memory_scoring.md</code> and this plan</li>
+<li>[ ] Push branch and open PR</li>
+<li>[ ] After PR merge: tag <code>v0.15.3</code> and push → triggers PyPI publish</li>
+</ul>
+<p>Estimated end-to-end implementation time: <strong>1 day</strong> (mostly tests and review).</p>
+<hr />
+<h2 id="13-decision-asks">13. Decision asks<a class="headerlink" href="#13-decision-asks" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Approve the design</strong> — three named constants, one pure helper function, one call-site change in retrieval. Yes or revisions?</li>
+<li><strong>Approve the constants</strong> — <code>0.10</code> centrality threshold, <code>0.70</code> recency threshold, <code>0.50</code> floor strength. Or different values?</li>
+<li><strong>Approve the testing strategy</strong> — 8 unit tests + 1 integration test. Sufficient or want more coverage?</li>
+<li><strong>Confirm scope discipline</strong> — no AgentGuide changes, no schema changes, no new config. This is purely an internal scoring refinement.</li>
+</ol>
+<p>If all four are yes, I implement immediately.</p>
+<hr />
+<h2 id="14-references">14. References<a class="headerlink" href="#14-references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>docs/research/memory_scoring_survey.md</code> — the parent research paper (untracked)</li>
+<li><code>docs/plans/plan_memory_scoring.md</code> — the parent three-version programme (untracked)</li>
+<li><code>/tmp/confidence_sim.py</code> — simulation that quantified the centrality vs confidence gap</li>
+<li><code>src/elfmem/scoring.py</code> — module being extended</li>
+<li><code>src/elfmem/memory/retrieval.py</code> — call-site for the new helper</li>
+<li><code>src/elfmem/memory/graph.py:compute_centrality()</code> — unchanged; provides raw centrality input</li>
+<li><code>src/elfmem/operations/curate.py:256</code> — separate centrality computation; explicitly unaffected</li>
+<li>v0.15.2 PR #60 — the cliff fix that preceded this work</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
