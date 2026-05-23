@@ -90,6 +90,6 @@ Any of the following would warrant reopening this decision:
 ## References
 
 - Closed-form derivations: [`scripts/longitudinal_sim/closed_form.py`](../../scripts/longitudinal_sim/closed_form.py)
-- Research compilation: [`docs/research/constitutional_evolution.md`](../research/constitutional_evolution.md)
+- Research compilation: [`docs/research/long_term_evolution/constitutional_evolution.md`](../research/long_term_evolution/constitutional_evolution.md)
 - Self-critique: [`docs/research/long_term_evolution/self_critique.md`](../research/long_term_evolution/self_critique.md)
 - Related: [ADR 0002](0002-v017-scope.md)
