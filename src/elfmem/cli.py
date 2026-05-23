@@ -2265,6 +2265,332 @@ def mind_outcome_cmd(
         typer.echo(str(result))
 
 
+# ── Constitutional review subcommands (v0.18) ────────────────────────────────
+
+review_app = typer.Typer(
+    name="review",
+    help=(
+        "Constitutional review: surface drifted self/constitutional blocks "
+        "as proposed amendments; accept, revert, or list."
+    ),
+    invoke_without_command=True,
+)
+app.add_typer(review_app, name="review")
+
+
+def _read_content_source(content_file: str | None) -> str:
+    """Return amendment content from --content-file or piped stdin.
+
+    Exits 2 with a clear message when neither source is provided.
+    """
+    import sys
+    if content_file:
+        return Path(content_file).expanduser().read_text(encoding="utf-8").strip()
+    if not sys.stdin.isatty():
+        return sys.stdin.read().strip()
+    typer.echo(
+        "Error: no proposed content provided.\n"
+        "Recovery: pass --content-file PATH, or pipe content via stdin "
+        "(e.g. `cat new.md | elfmem review accept <block_id>`).",
+        err=True,
+    )
+    raise typer.Exit(2)
+
+
+def _render_proposal(idx: int, total: int, proposal: Any) -> None:
+    """Render one proposal block to stdout in the interactive flow."""
+    short = proposal.block_id[:8]
+    typer.echo("")
+    typer.echo(f"[{idx}/{total}] block {short}…")
+    typer.echo(f"  Drift: {proposal.drift_score:.2f}")
+    typer.echo("")
+    typer.echo("  Original:")
+    for line in proposal.original_content.splitlines() or [""]:
+        typer.echo(f"    {line}")
+    typer.echo("")
+    typer.echo("  Proposed:")
+    for line in proposal.proposed_content.splitlines() or [""]:
+        typer.echo(f"    {line}")
+    typer.echo("")
+    typer.echo("  Rationale:")
+    for line in (proposal.rationale or "(none)").splitlines():
+        typer.echo(f"    {line}")
+
+
+def _ttys_attached() -> bool:
+    """True when both stdin and stdout are attached to a TTY."""
+    import sys
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+@review_app.callback(invoke_without_command=True)
+def review_default(
+    ctx: typer.Context,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG"),
+    ] = None,
+    drift_threshold: Annotated[
+        float | None,
+        typer.Option("--drift-threshold", help="Override review.drift_threshold."),
+    ] = None,
+    max_proposals: Annotated[
+        int | None,
+        typer.Option("--max", help="Cap proposals returned."),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes", "-y",
+            help="Auto-accept every proposal (skip interactive prompt).",
+        ),
+    ] = False,
+) -> None:
+    """Run a constitutional review cycle.
+
+    Default: interactive — walks through each proposal and prompts
+    accept/reject/skip/quit. With --json or when stdin/stdout is not a
+    TTY, the proposals are emitted as JSON and nothing is applied.
+    """
+    if ctx.invoked_subcommand is not None:
+        return
+
+    from elfmem.types import ConstitutionalReviewResult
+
+    db_path, config_path = _resolve_paths(db, config)
+    result: ConstitutionalReviewResult = _run(_review_async(
+        db_path, config_path,
+        drift_threshold=drift_threshold,
+        max_proposals=max_proposals,
+    ))
+
+    if json_output or not _ttys_attached():
+        _json(result.to_dict())
+        return
+
+    if result.insufficient_history:
+        typer.echo(
+            "Constitutional review: insufficient operational history yet — "
+            "no proposals. Build more recent activity before reviewing."
+        )
+        return
+
+    if not result.proposals:
+        typer.echo(
+            f"Constitutional review: {result.reviewed_count} reviewed, "
+            f"{result.skipped_count} skipped, no amendments proposed."
+        )
+        return
+
+    n = len(result.proposals)
+    typer.echo(
+        f"Reviewing {result.reviewed_count} constitutional block(s); "
+        f"{n} proposal(s) above drift threshold."
+    )
+
+    accepted = rejected = skipped = quit_count = 0
+    for i, prop in enumerate(result.proposals, start=1):
+        _render_proposal(i, n, prop)
+        if yes:
+            choice = "a"
+        else:
+            choice = typer.prompt(
+                "  Action [a]ccept / [r]eject / [s]kip / [q]uit",
+                default="s", show_default=False,
+            ).strip().lower()[:1]
+        if choice == "a":
+            outcome = _run(_accept_async(
+                db_path, config_path,
+                block_id=prop.block_id,
+                proposed_content=prop.proposed_content,
+                rationale=prop.rationale,
+                drift_score=prop.drift_score,
+                acceptor="user",
+            ))
+            accepted += 1
+            typer.echo(f"  Accepted. Audit ID: {outcome.amendment_id}.")
+        elif choice == "q":
+            quit_count = n - i + 1
+            break
+        elif choice == "r":
+            rejected += 1
+            typer.echo("  Rejected.")
+        else:
+            skipped += 1
+            typer.echo("  Skipped.")
+
+    typer.echo("")
+    typer.echo(
+        f"Done. Accepted: {accepted}, rejected: {rejected}, "
+        f"skipped: {skipped}, abandoned: {quit_count}."
+    )
+
+
+@review_app.command("accept")
+def review_accept(
+    block_id: str,
+    content_file: Annotated[
+        str | None,
+        typer.Option("--content-file", help="Path to file holding the new content."),
+    ] = None,
+    rationale: Annotated[
+        str | None,
+        typer.Option("--rationale", help="Optional audit-trail rationale."),
+    ] = None,
+    yes: Annotated[
+        bool, typer.Option("--yes", "-y", help="Skip the confirmation prompt."),
+    ] = False,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG"),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Apply a constitutional amendment from --content-file or stdin.
+
+    Examples:
+
+        elfmem review accept 7a3b4c5d --content-file new.md
+        cat new.md | elfmem review accept 7a3b4c5d --yes
+    """
+    from elfmem.types import AmendmentResult
+
+    proposed = _read_content_source(content_file)
+    db_path, config_path = _resolve_paths(db, config)
+
+    if not yes and _ttys_attached():
+        typer.echo(f"Accept amendment on block {block_id[:8]}…?")
+        typer.echo("")
+        typer.echo("Proposed content:")
+        for line in proposed.splitlines() or [""]:
+            typer.echo(f"  {line}")
+        if not typer.confirm("Proceed?", default=False):
+            typer.echo("Cancelled.")
+            raise typer.Exit(1)
+
+    result: AmendmentResult = _run(_accept_async(
+        db_path, config_path,
+        block_id=block_id,
+        proposed_content=proposed,
+        rationale=rationale,
+        drift_score=None,
+        acceptor="user",
+    ))
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@review_app.command("revert")
+def review_revert(
+    amendment_id: int,
+    yes: Annotated[
+        bool, typer.Option("--yes", "-y", help="Skip the confirmation prompt."),
+    ] = False,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG"),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Revert one amendment (one-step undo)."""
+    from elfmem.types import AmendmentRecord, AmendmentResult
+
+    db_path, config_path = _resolve_paths(db, config)
+
+    if not yes and _ttys_attached():
+        # Show what will be restored before confirming.
+        existing: list[AmendmentRecord] = _run(_list_async(
+            db_path, config_path, block_id=None, limit=1000,
+        ))
+        target = next((a for a in existing if a.id == amendment_id), None)
+        if target is None:
+            typer.echo(
+                f"Error: amendment {amendment_id} not found.\n"
+                "Recovery: run `elfmem review list` to see valid ids.",
+                err=True,
+            )
+            raise typer.Exit(1)
+        if target.reverted_at is not None:
+            typer.echo(
+                f"Error: amendment {amendment_id} has already been reverted.\n"
+                "Recovery: pick a different amendment id.",
+                err=True,
+            )
+            raise typer.Exit(1)
+        typer.echo(
+            f"Reverting amendment {amendment_id} on block "
+            f"{target.block_id[:8]}…"
+        )
+        typer.echo("")
+        typer.echo("Will restore content to:")
+        for line in target.pre_content.splitlines() or [""]:
+            typer.echo(f"  {line}")
+        if not typer.confirm("Proceed?", default=False):
+            typer.echo("Cancelled.")
+            raise typer.Exit(1)
+
+    result: AmendmentResult = _run(_revert_async(
+        db_path, config_path, amendment_id=amendment_id,
+    ))
+    if json_output:
+        _json(result.to_dict())
+    else:
+        typer.echo(str(result))
+
+
+@review_app.command("list")
+def review_list(
+    block: Annotated[
+        str | None,
+        typer.Option("--block", help="Filter by block id."),
+    ] = None,
+    limit: Annotated[
+        int, typer.Option("--limit", help="Maximum rows to return."),
+    ] = 20,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG"),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List amendment history (newest first)."""
+    from elfmem.types import AmendmentRecord
+
+    db_path, config_path = _resolve_paths(db, config)
+    rows: list[AmendmentRecord] = _run(_list_async(
+        db_path, config_path, block_id=block, limit=limit,
+    ))
+
+    if json_output:
+        _json([r.to_dict() for r in rows])
+        return
+
+    if not rows:
+        if block is not None:
+            typer.echo(f"No amendments for block {block[:8]}….")
+        else:
+            typer.echo("No amendments recorded.")
+        return
+
+    # Compact text table.
+    header = (
+        f"{'ID':>5}  {'TIMESTAMP':<25}  {'BLOCK':<10}  "
+        f"{'ACCEPTOR':<8}  {'DRIFT':>5}  STATUS"
+    )
+    typer.echo(header)
+    typer.echo("-" * len(header))
+    for r in rows:
+        status = "reverted" if r.reverted_at else "active"
+        ts = r.timestamp.isoformat()[:25]
+        typer.echo(
+            f"{r.id:>5}  {ts:<25}  {r.block_id[:8]:<10}  "
+            f"{r.acceptor:<8}  {r.drift_score:>5.2f}  {status}"
+        )
+
+
 def main() -> None:
     """Package entry point."""
     app()
@@ -2792,3 +3118,66 @@ async def _doctor_embedding_lock(db_path: str) -> dict[str, str] | None:
         return {"model": model, "dims": dims}
     except Exception:
         return None
+
+
+# ── Review (v0.18) async helpers ─────────────────────────────────────────────
+
+
+async def _review_async(
+    db_path: str,
+    config: str | None,
+    *,
+    drift_threshold: float | None,
+    max_proposals: int | None,
+) -> Any:
+    async with MemorySystem.managed(
+        db_path, config=config, auto_dream=False,
+    ) as mem:
+        return await mem.review_constitutional(
+            drift_threshold=drift_threshold,
+            max_proposals=max_proposals,
+        )
+
+
+async def _accept_async(
+    db_path: str,
+    config: str | None,
+    *,
+    block_id: str,
+    proposed_content: str,
+    rationale: str | None,
+    drift_score: float | None,
+    acceptor: str,
+) -> Any:
+    async with MemorySystem.managed(
+        db_path, config=config, auto_dream=False,
+    ) as mem:
+        return await mem.accept_amendment(
+            block_id, proposed_content, rationale,
+            drift_score=drift_score, acceptor=acceptor,
+        )
+
+
+async def _revert_async(
+    db_path: str,
+    config: str | None,
+    *,
+    amendment_id: int,
+) -> Any:
+    async with MemorySystem.managed(
+        db_path, config=config, auto_dream=False,
+    ) as mem:
+        return await mem.revert_amendment(amendment_id)
+
+
+async def _list_async(
+    db_path: str,
+    config: str | None,
+    *,
+    block_id: str | None,
+    limit: int,
+) -> Any:
+    async with MemorySystem.managed(
+        db_path, config=config, auto_dream=False,
+    ) as mem:
+        return await mem.list_amendments(block_id=block_id, limit=limit)

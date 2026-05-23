@@ -54,6 +54,19 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - Exceptions: ``BlockNotFound``, ``AmendmentNotFound``,
   ``AmendmentAlreadyReverted``. Each carries a ``.recovery`` field per
   the agent-first contract; exported from ``elfmem``.
+- CLI: new ``elfmem review`` subcommand group, mirroring the ``peer``
+  pattern. Four commands:
+  - ``elfmem review`` — interactive review when stdin/stdout is a TTY
+    (accept / reject / skip / quit per proposal); JSON-only when
+    piped, ``--json``, or ``--yes`` (auto-accept all).
+  - ``elfmem review accept <block_id>`` — apply an amendment from
+    ``--content-file PATH`` or piped stdin. Acceptor recorded as
+    ``"user"``. Confirms before writing unless ``--yes``.
+  - ``elfmem review revert <amendment_id>`` — one-step undo. Shows
+    the content that will be restored, confirms unless ``--yes``.
+  - ``elfmem review list [--block ID] [--limit N]`` — newest-first
+    table of amendment history; ``reverted`` rows are clearly marked.
+  All commands accept ``--json`` for machine-readable output.
 
 ---
 
