@@ -100,6 +100,16 @@ SIMULATE_WEIGHTS = ScoringWeights(
 )
 
 
+# Exploration bonus magnitude (v0.17). Hardcoded per ADR 0002 — the κ knob
+# is exactly the kind of hyperparameter that should be a defensible constant,
+# not a config dial. The bonus is `κ × sqrt(Var(Beta(α, β)))`, which self-
+# extinguishes as evidence accumulates: ~0.018 on a Jeffreys prior, ~0.0025
+# on a mature (α+β=100) block, and trends to zero as α+β grows. No frame
+# gating: constitutional SELF blocks have high α+β and naturally get a
+# minimal lift from the math alone.
+EXPLORATION_KAPPA: float = 0.05
+
+
 def compute_score(
     *,
     similarity: float,
@@ -108,19 +118,33 @@ def compute_score(
     centrality: float,
     reinforcement: float,
     weights: ScoringWeights,
+    success_count: float = 0.5,
+    failure_count: float = 0.5,
 ) -> float:
     """Compute the weighted composite score for a single block.
 
-    All input values should be in [0.0, 1.0].
-    Returns a float in [0.0, 1.0].
+    Inputs ``similarity, confidence, recency, centrality, reinforcement``
+    should be in [0.0, 1.0]. ``success_count`` and ``failure_count`` are the
+    Beta posterior's sufficient statistics — defaults are the Jeffreys prior
+    (α=β=0.5) so callers that don't supply them get a small, well-defined
+    exploration bonus rather than a runtime error.
+
+    Returns the weighted-sum base plus a Beta-variance exploration term
+    (``EXPLORATION_KAPPA × sqrt(Var(Beta(α, β)))``). The base is in [0.0, 1.0];
+    the exploration term is in [0.0, κ/2] ≤ 0.025 — uncertain blocks get a
+    small lift, mature blocks barely move.
     """
-    return (
+    base = (
         weights.similarity * similarity
         + weights.confidence * confidence
         + weights.recency * recency
         + weights.centrality * centrality
         + weights.reinforcement * reinforcement
     )
+    total = success_count + failure_count
+    variance = (success_count * failure_count) / (total * total * (total + 1.0))
+    exploration = EXPLORATION_KAPPA * math.sqrt(variance)
+    return base + exploration
 
 
 def compute_recency(tier: DecayTier, hours_since_reinforced: float) -> float:
