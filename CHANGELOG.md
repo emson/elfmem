@@ -20,6 +20,20 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   (``compute_drift``, ``recent_self_centroid``) plus pure-read DB
   helpers (``fetch_recent_reinforced_embeddings``,
   ``fetch_constitutional_blocks``). No public API surface yet.
+- ``MemorySystem.review_constitutional()`` — surfaces drifted
+  ``self/constitutional`` blocks as LLM-proposed amendments. MANUAL
+  cycle: nothing is applied without an explicit ``accept_amendment``
+  call (commit 4). Returns ``ConstitutionalReviewResult`` with the
+  proposals, reviewed/skipped/failed counts, and an
+  ``insufficient_history`` flag for fresh databases.
+- ``ReviewConfig`` (nested under ``ElfmemConfig`` as ``review``) with
+  9 tunables: ``drift_threshold`` (0.35), ``min_recent_reinforced_blocks``
+  (20), ``window_hours`` (30d), ``min_reinforcement`` (2), ``top_n`` (50),
+  ``cooldown_hours`` (90d), ``max_proposals`` (5), ``min_block_evidence``
+  (2.0 of α+β), ``min_age_days`` (30d).
+- ``LLMService.propose_amendment`` protocol method, implemented by
+  ``AnthropicLLMAdapter``, ``OpenAILLMAdapter``, and ``MockLLMService``.
+- ``AMENDMENT_PROPOSAL_PROMPT`` in ``elfmem.prompts``.
 
 ---
 

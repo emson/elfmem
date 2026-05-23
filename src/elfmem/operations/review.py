@@ -27,9 +27,21 @@ Defaults
 
 from __future__ import annotations
 
+import logging
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
 import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
+
+from elfmem.types import ConstitutionalReviewResult, ProposedAmendment
+
+if TYPE_CHECKING:
+    from elfmem.config import ReviewConfig
+    from elfmem.ports.services import LLMService
+
+logger = logging.getLogger(__name__)
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 
@@ -239,3 +251,261 @@ async def fetch_constitutional_blocks(
     """
     rows = await conn.execute(text(sql), params)
     return [dict(row) for row in rows.mappings()]
+
+
+async def fetch_recent_reinforced_evidence(
+    conn: AsyncConnection,
+    *,
+    window_hours: float,
+    min_reinforcement: int,
+    top_n: int,
+    current_active_hours: float,
+    exclude_tag: str = CONSTITUTIONAL_TAG,
+) -> list[dict[str, object]]:
+    """Load recently-reinforced, non-constitutional blocks for LLM evidence.
+
+    USE WHEN: Building the ``evidence_summaries`` payload for the LLM
+        amendment proposer — the LLM needs to know WHAT the agent has
+        been doing, not just the centroid vector.
+    DON'T USE WHEN: You need embeddings (use
+        ``fetch_recent_reinforced_embeddings`` instead — same filter,
+        different projection).
+    COST: One SELECT bounded by ``top_n``. No LLM.
+    RETURNS: list of dicts with ``id``, ``content``, ``summary``,
+        ``reinforcement_count``, ``last_reinforced_at`` — newest first.
+    NEXT: Project to summary strings for the LLM prompt.
+    """
+    if top_n <= 0:
+        return []
+    cutoff = current_active_hours - window_hours
+    sql = """
+        SELECT id, content, summary, reinforcement_count, last_reinforced_at
+        FROM blocks
+        WHERE status = 'active'
+          AND reinforcement_count > :min_r
+          AND last_reinforced_at > :cutoff
+          AND id NOT IN (
+              SELECT block_id FROM block_tags WHERE tag = :exclude_tag
+          )
+        ORDER BY last_reinforced_at DESC
+        LIMIT :top_n
+    """
+    rows = await conn.execute(
+        text(sql),
+        {
+            "min_r": min_reinforcement,
+            "cutoff": cutoff,
+            "exclude_tag": exclude_tag,
+            "top_n": top_n,
+        },
+    )
+    return [dict(row) for row in rows.mappings()]
+
+
+# ── Orchestration ────────────────────────────────────────────────────────────
+
+
+def _block_age_days(created_at: object, now: datetime) -> float:
+    """Return wall-clock age in days for a created_at column value.
+
+    ``created_at`` is stored ISO-8601; we tolerate naive timestamps by
+    assuming UTC, matching how ``_now_iso`` writes them.
+    """
+    if not isinstance(created_at, str) or not created_at:
+        return 0.0
+    try:
+        ts = datetime.fromisoformat(created_at)
+    except ValueError:
+        return 0.0
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    return (now - ts).total_seconds() / 86400.0
+
+
+def _evidence_summary_for(block: dict[str, object]) -> str:
+    """Project an evidence-block dict to a single human-readable line."""
+    summary = block.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        return summary.strip()
+    content = block.get("content")
+    if isinstance(content, str):
+        return content.strip()[:200]
+    return ""
+
+
+def _select_eligible(
+    constitutional_blocks: list[dict[str, object]],
+    self_centroid: np.ndarray,
+    *,
+    drift_threshold: float,
+    min_block_evidence: float,
+    min_age_days: float,
+    now: datetime,
+) -> tuple[list[tuple[dict[str, object], float]], int]:
+    """Filter constitutional blocks to those eligible for amendment proposal.
+
+    Returns ``(eligible, skipped_count)`` where ``eligible`` is a list of
+    ``(block_dict, drift_score)`` tuples sorted by drift_score DESC.
+    """
+    from elfmem.db.queries import bytes_to_embedding
+
+    eligible: list[tuple[dict[str, object], float]] = []
+    skipped = 0
+    for block in constitutional_blocks:
+        emb_bytes = block.get("embedding")
+        if not isinstance(emb_bytes, bytes) or not emb_bytes:
+            skipped += 1
+            continue
+        emb = bytes_to_embedding(emb_bytes)
+        drift = compute_drift(emb, self_centroid)
+        if drift <= drift_threshold:
+            skipped += 1
+            continue
+        alpha_raw = block.get("success_count")
+        beta_raw = block.get("failure_count")
+        alpha = float(alpha_raw) if isinstance(alpha_raw, (int, float)) else 0.0
+        beta = float(beta_raw) if isinstance(beta_raw, (int, float)) else 0.0
+        if (alpha + beta) < min_block_evidence:
+            skipped += 1
+            continue
+        if _block_age_days(block.get("created_at"), now) < min_age_days:
+            skipped += 1
+            continue
+        eligible.append((block, drift))
+    eligible.sort(key=lambda pair: pair[1], reverse=True)
+    return eligible, skipped
+
+
+async def review_constitutional(
+    conn: AsyncConnection,
+    llm: LLMService,
+    config: ReviewConfig,
+    *,
+    current_active_hours: float,
+) -> ConstitutionalReviewResult:
+    """Surface drifted constitutional blocks as LLM-proposed amendments.
+
+    USE WHEN: The agent wants to know whether its tagged
+        ``self/constitutional`` blocks still match its operational
+        identity (the empirical centroid of recently-reinforced blocks).
+        Pure surface — nothing is applied until ``accept_amendment``.
+    DON'T USE WHEN: A fresh DB with little evidence (handled internally:
+        result will carry ``insufficient_history=True`` and no LLM calls
+        are made).
+    COST: O(eligible constitutional blocks) LLM calls, bounded by
+        ``config.max_proposals``. Two read-only DB queries up front.
+    RETURNS: ``ConstitutionalReviewResult``. Idempotent under a
+        deterministic LLM (production LLMs may vary slightly between
+        runs; the orchestration itself does not).
+    NEXT: Iterate ``.proposals`` and call ``accept_amendment`` (commit 4)
+        on each that the agent or user wishes to apply.
+
+    Steps:
+      1. Fetch recent reinforced embeddings.
+      2. If count < ``min_recent_reinforced_blocks`` →
+         ``insufficient_history=True``, return immediately (no LLM calls).
+      3. Compute the operational-self centroid.
+      4. Fetch constitutional blocks (cooldown applied).
+      5. For each, compute drift; filter by drift_threshold, age,
+         and α+β evidence; sort by drift DESC; cap at ``max_proposals``.
+      6. Fetch evidence summaries for the LLM context.
+      7. Per-block LLM call — wrapped in the **only** try/except in this
+         module: external service failures are logged and counted, never
+         aborted, per the CLAUDE.md exception for N-call orchestrations
+         around an external service.
+    """
+    embeddings = await fetch_recent_reinforced_embeddings(
+        conn,
+        window_hours=config.window_hours,
+        min_reinforcement=config.min_reinforcement,
+        top_n=config.top_n,
+        current_active_hours=current_active_hours,
+    )
+    if len(embeddings) < config.min_recent_reinforced_blocks:
+        return ConstitutionalReviewResult(
+            proposals=[],
+            reviewed_count=0,
+            skipped_count=0,
+            insufficient_history=True,
+            failed_proposal_count=0,
+        )
+
+    centroid = recent_self_centroid(embeddings)
+    if centroid is None:
+        # Defensive — should be unreachable given the length check above.
+        return ConstitutionalReviewResult(
+            proposals=[], reviewed_count=0, skipped_count=0,
+            insufficient_history=True, failed_proposal_count=0,
+        )
+
+    constitutional = await fetch_constitutional_blocks(
+        conn,
+        include_status=("active",),
+        exclude_recent_amendments_within_hours=config.cooldown_hours,
+        current_active_hours=current_active_hours,
+    )
+    reviewed_count = len(constitutional)
+
+    now = datetime.now(UTC)
+    eligible, skipped = _select_eligible(
+        constitutional,
+        centroid,
+        drift_threshold=config.drift_threshold,
+        min_block_evidence=config.min_block_evidence,
+        min_age_days=config.min_age_days,
+        now=now,
+    )
+    capped = eligible[: config.max_proposals]
+    skipped += max(0, len(eligible) - len(capped))
+
+    evidence_blocks = await fetch_recent_reinforced_evidence(
+        conn,
+        window_hours=config.window_hours,
+        min_reinforcement=config.min_reinforcement,
+        top_n=5,
+        current_active_hours=current_active_hours,
+    )
+    evidence_summaries = [
+        s for s in (_evidence_summary_for(b) for b in evidence_blocks) if s
+    ]
+
+    proposals: list[ProposedAmendment] = []
+    failed_proposal_count = 0
+    for block, drift in capped:
+        block_id = str(block["id"])
+        block_content = str(block["content"])
+        block_summary = block.get("summary")
+        try:
+            raw = await llm.propose_amendment(
+                block_content=block_content,
+                block_summary=(
+                    block_summary if isinstance(block_summary, str) else None
+                ),
+                drift_score=drift,
+                evidence_summaries=evidence_summaries,
+            )
+        except Exception as exc:  # noqa: BLE001 — see docstring rationale.
+            # The ONE place defensive code is justified in business logic:
+            # an N-call orchestration around an external service. One
+            # provider failure must not abort the whole review cycle.
+            logger.warning(
+                "amendment proposal failed",
+                extra={"block_id": block_id, "error": str(exc)},
+            )
+            failed_proposal_count += 1
+            continue
+        proposals.append(ProposedAmendment(
+            block_id=block_id,
+            original_content=block_content,
+            proposed_content=str(raw.get("proposed_content", "")),
+            rationale=str(raw.get("rationale", "")),
+            drift_score=drift,
+        ))
+
+    return ConstitutionalReviewResult(
+        proposals=proposals,
+        reviewed_count=reviewed_count,
+        skipped_count=skipped,
+        insufficient_history=False,
+        failed_proposal_count=failed_proposal_count,
+    )

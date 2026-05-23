@@ -252,6 +252,42 @@ class RescoreConfig(BaseModel):
     exclude_tags: list[str] = Field(default_factory=lambda: ["system/no-rescore"])
 
 
+class ReviewConfig(BaseModel):
+    """Configuration for constitutional review (v0.18).
+
+    Constitutional review surfaces drift between the agent's tagged
+    ``self/constitutional`` blocks and the empirical operational identity
+    expressed by recently-reinforced ordinary blocks. The cycle is MANUAL
+    — review proposes amendments; nothing is applied without explicit
+    ``accept_amendment``. See ADR 0003.
+
+    Defaults are tuned for typical agent memory at 6+ months operation:
+    - ``drift_threshold=0.35`` — half-rescaled cosine; >0.35 ≈ ≤30° apart.
+    - ``min_recent_reinforced_blocks=20`` — below this, ``review_constitutional``
+      returns ``insufficient_history=True`` with no LLM calls.
+    - ``window_hours=720`` (~30 days) — recent activity window for the
+      operational centroid.
+    - ``cooldown_hours=2160`` (~90 days) — a block recently amended is
+      excluded from the next review cycle so we don't churn principles.
+    - ``max_proposals=5`` — per cycle ceiling; agents tend to over-edit
+      themselves without this brake.
+    - ``min_block_evidence=2.0`` — Beta posterior α+β floor; below this
+      the block has not earned enough lifetime evidence to be amended.
+    - ``min_age_days=30`` — a block must be at least this old before any
+      amendment can be proposed. Protects fresh constitutional seeding.
+    """
+
+    drift_threshold: float = Field(default=0.35, ge=0.0, le=1.0)
+    min_recent_reinforced_blocks: int = Field(default=20, ge=1)
+    window_hours: float = Field(default=30.0 * 24.0, gt=0.0)
+    min_reinforcement: int = Field(default=2, ge=0)
+    top_n: int = Field(default=50, ge=1)
+    cooldown_hours: float = Field(default=90.0 * 24.0, ge=0.0)
+    max_proposals: int = Field(default=5, ge=1)
+    min_block_evidence: float = Field(default=2.0, ge=0.0)
+    min_age_days: float = Field(default=30.0, ge=0.0)
+
+
 class PeerConfig(BaseModel):
     """Configuration for peer communication.
 
@@ -293,6 +329,7 @@ class ElfmemConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     peer: PeerConfig = Field(default_factory=PeerConfig)
     rescore: RescoreConfig = Field(default_factory=RescoreConfig)
+    review: ReviewConfig = Field(default_factory=ReviewConfig)
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:

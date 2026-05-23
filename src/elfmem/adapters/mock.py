@@ -38,6 +38,8 @@ class MockLLMService:
         summary_overrides: dict[str, str] | None = None,
         default_contradiction: float = 0.1,
         contradiction_overrides: dict[tuple[str, str], float] | None = None,
+        amendment_overrides: dict[str, dict[str, str]] | None = None,
+        amendment_raise_for: list[str] | None = None,
     ) -> None:
         self._default_alignment = default_alignment
         self._alignment_overrides = alignment_overrides or {}
@@ -47,8 +49,15 @@ class MockLLMService:
         self._summary_overrides = summary_overrides or {}
         self._default_contradiction = default_contradiction
         self._contradiction_overrides = contradiction_overrides or {}
+        # Amendment-proposal overrides: substring → {"proposed_content", "rationale"}.
+        # If amendment_raise_for is set, a propose_amendment call where the block
+        # content contains any of those substrings raises RuntimeError — exercises
+        # the orchestration's tight try/except path without needing a real LLM.
+        self._amendment_overrides = amendment_overrides or {}
+        self._amendment_raise_for = list(amendment_raise_for or [])
         self.process_block_calls: int = 0
         self.contradiction_calls: int = 0
+        self.propose_amendment_calls: int = 0
 
     # ── Public attribute aliases ──────────────────────────────────────────────
     # These allow tests to override behaviour after construction
@@ -106,6 +115,41 @@ class MockLLMService:
         summary = self._resolve_summary(block, block_lower)
 
         return BlockAnalysis(alignment_score=alignment, tags=tags, summary=summary)
+
+    async def propose_amendment(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        drift_score: float,
+        evidence_summaries: list[str],
+    ) -> dict[str, str]:
+        """Return a deterministic amendment proposal.
+
+        Substring matches in ``amendment_raise_for`` raise RuntimeError so the
+        orchestration's partial-failure path is testable without a real LLM.
+        Substring matches in ``amendment_overrides`` return that exact pair;
+        otherwise a deterministic default is generated from the block content.
+        """
+        self.propose_amendment_calls += 1
+        content_lower = block_content.lower()
+        for needle in self._amendment_raise_for:
+            if needle.lower() in content_lower:
+                raise RuntimeError(
+                    f"MockLLMService.propose_amendment configured to raise "
+                    f"for substring {needle!r}"
+                )
+        for substring, payload in self._amendment_overrides.items():
+            if substring.lower() in content_lower:
+                return dict(payload)
+        truncated = block_content[:50].rstrip()
+        return {
+            "proposed_content": f"Updated: {truncated}",
+            "rationale": (
+                f"Mock proposal; drift={drift_score:.2f}; "
+                f"{len(evidence_summaries)} evidence summaries considered."
+            ),
+        }
 
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Return contradiction score. Checks overrides first, then default."""

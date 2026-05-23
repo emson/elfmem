@@ -1210,21 +1210,32 @@ class ConstitutionalReviewResult:
     reviewed_count: int
     skipped_count: int
     insufficient_history: bool
+    # Count of constitutional blocks where the LLM proposal call raised.
+    # The orchestration logs and continues — defensive code is justified
+    # exactly once, around the N-call external-service loop. See
+    # ``operations/review.py::review_constitutional`` for the rationale.
+    failed_proposal_count: int = 0
 
     @property
     def summary(self) -> str:
         if self.insufficient_history:
             return "Constitutional review: insufficient history — nothing proposed."
         n = len(self.proposals)
+        failed_note = (
+            f", {self.failed_proposal_count} failed"
+            if self.failed_proposal_count else ""
+        )
         if n == 0:
             return (
                 f"Constitutional review: {self.reviewed_count} reviewed, "
-                f"{self.skipped_count} skipped, no amendments proposed."
+                f"{self.skipped_count} skipped{failed_note}, "
+                "no amendments proposed."
             )
         noun = "amendment" if n == 1 else "amendments"
         return (
             f"Constitutional review: {n} {noun} proposed "
-            f"({self.reviewed_count} reviewed, {self.skipped_count} skipped)."
+            f"({self.reviewed_count} reviewed, "
+            f"{self.skipped_count} skipped{failed_note})."
         )
 
     def __str__(self) -> str:
@@ -1236,6 +1247,7 @@ class ConstitutionalReviewResult:
             "reviewed_count": self.reviewed_count,
             "skipped_count": self.skipped_count,
             "insufficient_history": self.insufficient_history,
+            "failed_proposal_count": self.failed_proposal_count,
         }
 
 

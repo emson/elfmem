@@ -22,8 +22,17 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai.types.shared_params import ResponseFormatJSONObject
 from pydantic import ValidationError
 
-from elfmem.adapters.models import BlockAnalysisModel, ContradictionScore
-from elfmem.prompts import BLOCK_ANALYSIS_PROMPT, CONTRADICTION_PROMPT, VALID_SELF_TAGS
+from elfmem.adapters.models import (
+    AmendmentProposalModel,
+    BlockAnalysisModel,
+    ContradictionScore,
+)
+from elfmem.prompts import (
+    AMENDMENT_PROPOSAL_PROMPT,
+    BLOCK_ANALYSIS_PROMPT,
+    CONTRADICTION_PROMPT,
+    VALID_SELF_TAGS,
+)
 from elfmem.token_counter import TokenCounter
 from elfmem.types import BlockAnalysis
 
@@ -190,6 +199,47 @@ class OpenAILLMAdapter:
                     tags=filtered_tags,
                     summary=result.summary,
                 )
+            except (ValidationError, json.JSONDecodeError) as exc:
+                last_exc = exc
+        raise last_exc  # type: ignore[misc]
+
+    async def propose_amendment(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        drift_score: float,
+        evidence_summaries: list[str],
+    ) -> dict[str, str]:
+        """Propose a single amendment for a drifted constitutional block.
+
+        USE WHEN:   Called by review_constitutional() for each over-threshold block.
+        DON'T USE:  Testing — use MockLLMService.
+        COST:       1 OpenAI API call. Retries up to max_retries on schema violations.
+        RETURNS:    {"proposed_content": str, "rationale": str}.
+        NEXT:       The orchestration wraps this in a ProposedAmendment.
+        """
+        evidence_block = (
+            "\n".join(f"- {s}" for s in evidence_summaries)
+            if evidence_summaries
+            else "(no recent reinforced activity summaries available)"
+        )
+        prompt = AMENDMENT_PROPOSAL_PROMPT.format(
+            block_content=block_content,
+            block_summary=block_summary or "(no summary)",
+            drift_score=f"{drift_score:.3f}",
+            evidence_summaries=evidence_block,
+        )
+        model = self._effective_model(self._process_block_model)
+        last_exc: Exception | None = None
+        for _ in range(self._max_retries):
+            text = await self._complete(prompt, model)
+            try:
+                result = AmendmentProposalModel.model_validate_json(text)
+                return {
+                    "proposed_content": result.proposed_content,
+                    "rationale": result.rationale,
+                }
             except (ValidationError, json.JSONDecodeError) as exc:
                 last_exc = exc
         raise last_exc  # type: ignore[misc]

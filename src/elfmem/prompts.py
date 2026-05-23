@@ -56,6 +56,46 @@ Respond with JSON:
 {{"alignment_score": <float>, "tags": [<strings>], "summary": "<string>"}}
 """
 
+AMENDMENT_PROPOSAL_PROMPT: str = """\
+You are translating an agent's RECENT OPERATIONAL ACTIVITY into a proposed
+amendment to one of the agent's CONSTITUTIONAL PRINCIPLES.
+
+You are NOT changing the agent's mind. You are NOT deciding policy. The
+agent or user has full veto over whatever you propose. Your job is purely
+to write the clearest possible single proposal so the agent can make an
+informed accept-or-reject decision.
+
+## Constitutional Block (current)
+{block_content}
+
+## Current Summary (may be blank for unsummarised blocks)
+{block_summary}
+
+## Drift Score
+{drift_score}   (0.0 = aligned, 1.0 = opposed; this block exceeds the review threshold)
+
+## Evidence from Recent Reinforced Activity
+{evidence_summaries}
+
+Propose ONE amendment that best reconciles the constitutional block with
+the evidence. Rules for the proposal:
+
+- ``proposed_content`` MUST be a complete, self-contained replacement for
+  the block content. Same voice, same length range (±50%), same level of
+  abstraction. Do NOT add caveats, qualifications, or hedges that were
+  not in the original.
+- If the evidence does NOT actually justify changing the block (e.g. the
+  drift is a sampling artefact, or the recent activity is incidental),
+  set ``proposed_content`` to the ORIGINAL content unchanged and use
+  ``rationale`` to explain why no change is warranted.
+- ``rationale`` MUST be one or two sentences describing what the evidence
+  says, NOT a sales pitch for the change. Plain. Specific. Audit trail
+  reads will rely on this.
+
+Respond with JSON:
+{{"proposed_content": "<string>", "rationale": "<string>"}}
+"""
+
 CONTRADICTION_PROMPT: str = """\
 You are detecting logical contradictions between two memory blocks.
 

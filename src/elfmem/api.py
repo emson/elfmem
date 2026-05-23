@@ -55,6 +55,7 @@ from elfmem.types import (
     ConnectSpec,
     ConnectsResult,
     ConsolidateResult,
+    ConstitutionalReviewResult,
     CurateResult,
     DisconnectResult,
     ExportResult,
@@ -1747,6 +1748,96 @@ class MemorySystem:
                 await prune_stale_co_retrieval_staging(conn)
                 self._co_retrieval_staging = await load_co_retrieval_staging(conn)
         self._record_op("curate", result.summary)
+        return result
+
+    async def review_constitutional(
+        self,
+        *,
+        drift_threshold: float | None = None,
+        max_proposals: int | None = None,
+        min_recent_reinforced_blocks: int | None = None,
+        window_hours: float | None = None,
+        cooldown_hours: float | None = None,
+        min_block_evidence: float | None = None,
+        min_age_days: float | None = None,
+    ) -> ConstitutionalReviewResult:
+        """Surface drifted constitutional blocks as LLM-proposed amendments.
+
+        USE WHEN: Periodic (or on-demand) self-examination — check whether
+        the agent's tagged ``self/constitutional`` blocks still match its
+        empirical operational identity (the centroid of recently-reinforced
+        ordinary blocks). MANUAL surface: this only PROPOSES; nothing is
+        applied without an explicit ``accept_amendment`` call (commit 4).
+        See ADR 0003 for why the cycle is manual rather than automatic.
+
+        DON'T USE WHEN: On a fresh database with little operational history —
+        the call returns ``insufficient_history=True`` with no LLM calls,
+        which is fine but uninformative.
+
+        COST: O(eligible constitutional blocks) LLM calls, bounded by
+        ``max_proposals`` (default 5). Two read-only DB queries up front.
+        Returns immediately (no LLM calls) when history is insufficient.
+
+        RETURNS: ConstitutionalReviewResult with ``.proposals`` (sorted by
+        drift_score DESC), counts of reviewed/skipped/failed blocks, and
+        the ``insufficient_history`` flag. Idempotent under MockLLMService
+        for tests; production LLMs may produce slight variation between runs.
+
+        NEXT: For each proposal the agent or user wishes to apply, call
+        ``accept_amendment(block_id, proposed_content, ...)`` (commit 4).
+
+        Args:
+            drift_threshold: Per-call override of ``review.drift_threshold``.
+            max_proposals: Per-call cap on proposals returned.
+            min_recent_reinforced_blocks: Override the centroid evidence floor.
+            window_hours: Recent-activity window for centroid construction.
+            cooldown_hours: Blocks amended within this window are skipped.
+            min_block_evidence: Beta posterior α+β floor below which a
+                constitutional block is too cold to be amended.
+            min_age_days: Minimum wall-clock age before a block can be amended.
+        """
+        from elfmem.config import ReviewConfig
+        from elfmem.operations.review import (
+            review_constitutional as _review_constitutional,
+        )
+        base = self._config.review
+        cfg = ReviewConfig(
+            drift_threshold=(
+                drift_threshold if drift_threshold is not None
+                else base.drift_threshold
+            ),
+            min_recent_reinforced_blocks=(
+                min_recent_reinforced_blocks
+                if min_recent_reinforced_blocks is not None
+                else base.min_recent_reinforced_blocks
+            ),
+            window_hours=(
+                window_hours if window_hours is not None else base.window_hours
+            ),
+            min_reinforcement=base.min_reinforcement,
+            top_n=base.top_n,
+            cooldown_hours=(
+                cooldown_hours if cooldown_hours is not None
+                else base.cooldown_hours
+            ),
+            max_proposals=(
+                max_proposals if max_proposals is not None else base.max_proposals
+            ),
+            min_block_evidence=(
+                min_block_evidence if min_block_evidence is not None
+                else base.min_block_evidence
+            ),
+            min_age_days=(
+                min_age_days if min_age_days is not None else base.min_age_days
+            ),
+        )
+        current_hours = self._current_active_hours()
+        async with self._engine.begin() as conn:
+            result = await _review_constitutional(
+                conn, self._llm, cfg,
+                current_active_hours=current_hours,
+            )
+        self._record_op("review_constitutional", result.summary)
         return result
 
     # ── Peer communication operations ───────────────────────────────────────

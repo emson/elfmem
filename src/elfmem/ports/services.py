@@ -27,6 +27,23 @@ class LLMService(Protocol):
         """
         ...
 
+    async def propose_amendment(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        drift_score: float,
+        evidence_summaries: list[str],
+    ) -> dict[str, str]:
+        """Propose a single amendment for a drifted constitutional block (v0.18).
+
+        Returns ``{"proposed_content": str, "rationale": str}``. Adapters
+        MUST raise on parse / schema / API failure rather than return a
+        sentinel — the orchestration counts raises as failed_proposal and
+        continues. See ``operations/review.py::review_constitutional``.
+        """
+        ...
+
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Return a float in [0.0, 1.0] indicating the contradiction strength
         between two blocks. >= threshold means active contradiction."""
