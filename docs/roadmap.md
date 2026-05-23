@@ -12,7 +12,7 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-24. Reviewed quarterly. Open issues at
+> **Last reviewed**: 2026-05-23 (post-v0.17 release). Reviewed quarterly. Open issues at
 > [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
@@ -46,6 +46,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.17.0** | Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) ([#65](https://github.com/emson/elfmem/pull/65)) | 2026-05-23 |
 | ✅ **v0.15.3** | Cold-start centrality floor for fresh blocks ([#61](https://github.com/emson/elfmem/issues/61)) | 2026-05-17 |
 | ✅ **v0.15.2** | Removed confidence cliff at alignment_score=0.70 ([#60](https://github.com/emson/elfmem/issues/60)) | 2026-05-16 |
 | ✅ **v0.15.1** | Surface `connect()` relation conflicts; fix token under-counting ([#59](https://github.com/emson/elfmem/issues/59)) | 2026-05-14 |
@@ -58,20 +59,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## In Progress
 
-### 🚧 v0.16 / v0.17 — Sufficient statistics + adaptive scoring
-
-Single bundle. Scope ~330 LOC. Issues to be filed for each item.
-
-| Item | Description | Status |
-|---|---|---|
-| Sufficient statistics | Materialise `(success_count, failure_count)` as honest Beta-Binomial columns; `confidence` stays as denormalised view for backward compat | Designed |
-| Additive rescore | `dream(rescore=True)` folds new alignment as weighted evidence event instead of overwriting confidence. **22× reduction** in rescore damage on N>5 blocks (validated) | Designed |
-| Arithmetic peer merge | `(local_α + remote_α × trust, local_β + remote_β × trust)` — the principled merge that sufficient stats enable | Designed |
-| Exploration bonus | `kappa × sqrt(Beta_variance)` term in compute_score, κ=0.05 hardcoded. **+5.6pp quality at 730 days** in simulation; small short-term cost | Designed |
-
-**Plan**: [`docs/plans/plan_memory_scoring.md`](docs/plans/plan_memory_scoring.md)
-**Decisions**: [`docs/decisions/0001-power-law-decay-rejected.md`](docs/decisions/0001-power-law-decay-rejected.md), [`docs/decisions/0002-v017-scope.md`](docs/decisions/0002-v017-scope.md)
-**Validating research**: [`docs/research/scoring_proposed_evaluation.md`](docs/research/scoring_proposed_evaluation.md)
+_Nothing currently committed. v0.18 scope is observation-driven — see **Next**._
 
 ---
 
@@ -81,14 +69,14 @@ Driven by signal from v0.17 in production. Specific items not yet committed.
 
 ### 📋 v0.18 — Production signal response
 
-Concrete scope depends on:
-- Dmitry's v0.15.3 follow-up answer ([draft question](docs/plans/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
-- ≥3 months of v0.17 telemetry from real instances
+v0.17 shipped on 2026-05-23. Telemetry window now open. Concrete scope depends on:
+- Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in [archived plan](docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
+- ≥3 months of v0.17 telemetry from real instances (i.e., not before ~2026-08-23)
 - Any newly-observed systematic failure modes
 
 Likely candidates (each requires its own ADR before committing):
 - Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
-- Stronger rescore tuning if v0.16 defaults need adjustment
+- Stronger rescore tuning if v0.17 defaults need adjustment
 
 ---
 
