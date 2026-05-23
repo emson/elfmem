@@ -12,7 +12,7 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-23. Reviewed quarterly. Open issues at
+> **Last reviewed**: 2026-05-24. Reviewed quarterly. Open issues at
 > [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
@@ -49,7 +49,7 @@ These don't change between releases. They constrain what we ship.
 | ✅ **v0.15.3** | Cold-start centrality floor for fresh blocks ([#61](https://github.com/emson/elfmem/issues/61)) | 2026-05-17 |
 | ✅ **v0.15.2** | Removed confidence cliff at alignment_score=0.70 ([#60](https://github.com/emson/elfmem/issues/60)) | 2026-05-16 |
 | ✅ **v0.15.1** | Surface `connect()` relation conflicts; fix token under-counting ([#59](https://github.com/emson/elfmem/issues/59)) | 2026-05-14 |
-| ✅ **v0.15.0** | Release stabilisation; MCP gaps closed | 2026-05-12 |
+| ✅ **v0.15.0** | Embedding-model lock — closes silent-corruption risk from changing `embeddings.model` ([#56](https://github.com/emson/elfmem/pull/56), [#57](https://github.com/emson/elfmem/pull/57)) | 2026-05-17 |
 | ✅ **v0.14.x** | Theory of Mind tools in MCP; dream flags exposed | 2026-05-10 |
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.
@@ -89,7 +89,6 @@ Concrete scope depends on:
 Likely candidates (each requires its own ADR before committing):
 - Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
 - Stronger rescore tuning if v0.16 defaults need adjustment
-- Embedding model lock (Dmitry's silent-corruption report, [research notes](docs/research/embedding_lock.md) — *to be filed*)
 
 ---
 

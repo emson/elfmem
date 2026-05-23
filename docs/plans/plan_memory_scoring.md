@@ -1,9 +1,24 @@
 # Plan: Memory Scoring Architecture — v0.15.x through v0.18.x
 
-**Status**: plan — ready for review and approval
+**Status**: active for v0.16/v0.17 implementation (post-empirical-validation)
 **Driver**: [issue #50](https://github.com/emson/elfmem/issues/50) + the architectural inconsistencies surfaced during analysis
-**Synthesises**: `docs/research/memory_scoring_survey.md` (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic)
+**Synthesises**: `docs/research/memory_scoring_survey.md` (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic) + Monte Carlo validation from 2026-05-22/23 (see [`docs/research/scoring_proposed_evaluation.md`](../research/scoring_proposed_evaluation.md))
 **Author**: elf, after orchestrating the team
+**Decisions binding this plan**: [ADR 0001](../decisions/0001-power-law-decay-rejected.md) (power-law rejected), [ADR 0002](../decisions/0002-v017-scope.md) (v0.17 four-change bundle), [ADR 0003](../decisions/0003-defer-constitutional-evolution.md) (constitutional evolution deferred)
+
+---
+
+## ⚡ Post-validation update (2026-05-23)
+
+After the 3-agent review that produced the original plan, the proposals were empirically validated via Monte Carlo simulation (`scripts/longitudinal_sim/mc_scoring_proposed.py`):
+
+- **v0.16 additive rescore**: confirmed — 22× reduction in rescore damage; +12pp recent_reach under weekly rescore
+- **v0.17 exploration bonus**: confirmed — +5.6pp quality at 730 simulated days (compounds over time)
+- **v0.17 power-law decay**: **REJECTED** — see [ADR 0001](../decisions/0001-power-law-decay-rejected.md). Simulation showed −5 to −7.6pp quality and catastrophic recent_reach drops (−44 to −66pp) across all 4 scenarios. **Do not ship this mechanism — not even behind a flag.**
+
+The shippable v0.17 scope is the **four-change bundle in [ADR 0002](../decisions/0002-v017-scope.md)**: sufficient statistics + additive rescore + arithmetic peer merge + exploration bonus (κ=0.05). Total ~330 LOC.
+
+The original plan content below remains the canonical specification for the four shippable mechanisms. Sections describing power-law decay are retained for historical context but are marked REJECTED inline.
 
 ---
 
@@ -21,7 +36,7 @@ This plan therefore proposes:
 |---|---|---|---|
 | **v0.15.3** | Centrality cold-start floor — Dmitry's actual fix | 1 day, ~10 LOC | very low |
 | **v0.16.0** | Sufficient statistics `(α, β)` + additive rescore + peer merge | 1 week, ~250 LOC | low |
-| **v0.17.0** | Exploration bonus from variance; power-law decay as opt-in experiment | 3 days, ~80 LOC | medium (experimental flag) |
+| **v0.17.0** | Exploration bonus from variance (power-law decay REJECTED — [ADR 0001](../decisions/0001-power-law-decay-rejected.md)) | 3 days, ~30 LOC | low |
 | **v0.18+** | DEFERRED — event log, FSRS mechanics, hierarchical tiers, Zettelkasten auto-link | — | speculative until empirical case |
 
 Total committed scope: **~3 weeks across 3 minor versions, ~340 LOC** — versus the paper's 8 weeks and ~2000 LOC. Most of the saved scope is genuine work-not-done, not work-rushed.
@@ -63,7 +78,7 @@ The right answer is the Critic's pace with the Research agent's evidence-grading
 
 - **Ship the actual fix for Dmitry's symptom this week.** Centrality floor. 3 lines.
 - **Ship the load-bearing architectural change next.** Sufficient statistics + additive rescore. ~250 LOC.
-- **Ship the high-value low-risk follow-ups** once the substrate exists. Exploration bonus. Power-law as experiment.
+- **Ship the high-value low-risk follow-ups** once the substrate exists. Exploration bonus. ~~Power-law as experiment~~ (REJECTED per [ADR 0001](../decisions/0001-power-law-decay-rejected.md)).
 - **Defer everything speculative.** Event log, FSRS mechanics, Zettelkasten auto-linking, hierarchical abstract tier. Each waits for an empirical case.
 
 Crucially: **keep elfmem's existing vocabulary** (`confidence`, `alignment_score`, `outcome_evidence`, `decay_lambda`). The semantic clarification is in what these mean and how they update, not in renaming them. Park's "importance" terminology is not non-negotiable; ours works.
@@ -246,14 +261,16 @@ Low. Existing readers see equivalent values. New code path is pure-function and 
 
 ---
 
-## v0.17.0 — Exploration bonus + power-law experiment (3-5 days)
+## v0.17.0 — Exploration bonus (3-5 days)
+
+> **Power-law decay REJECTED** — see [ADR 0001](../decisions/0001-power-law-decay-rejected.md). Empirically refuted by `mc_scoring_proposed.py`: −5 to −7.6pp quality and −44 to −66pp recent_reach across all 4 scenarios. The power-law code samples in this section are retained as historical record only; do not implement.
 
 ### Scope
-Two small additions that the v0.16 substrate enables:
+**One** small addition that the v0.16 substrate enables:
 
-1. **Exploration bonus from variance**: blocks with high utility uncertainty get a small ranking lift. This is the principled answer to "fresh blocks need to be discoverable" once the cold-start centrality floor (v0.15.3) has stopped them being invisible.
+1. **Exploration bonus from variance**: blocks with high utility uncertainty get a small ranking lift. This is the principled answer to "fresh blocks need to be discoverable" once the cold-start centrality floor (v0.15.3) has stopped them being invisible. Validated: +5.6pp quality at 730 simulated days.
 
-2. **Power-law retrievability as opt-in**: A/B against the existing exponential `decay_lambda` model. Behind a feature flag. Allow real-world data to vote.
+~~2. Power-law retrievability as opt-in~~ — **REJECTED** ([ADR 0001](../decisions/0001-power-law-decay-rejected.md)). Do not implement.
 
 ### Code
 
@@ -272,29 +289,17 @@ score = weights.similarity * sim + weights.confidence * confidence \
 
 `kappa` is a hardcoded constant (Critic agent: "the κ hyperparameter is exactly the kind of knob we should hardcode at a defensible value"). Default `kappa = 0.05` — small enough not to dominate, large enough to surface high-uncertainty blocks above bedrock when similarity is comparable.
 
-**`src/elfmem/scoring.py`** — power-law retrievability as flag:
-```python
-if config.memory.use_power_law_decay:
-    retrievability = (1 + 0.5 * elapsed_hours / stability) ** -0.5
-else:
-    retrievability = exp(-decay_lambda * elapsed_hours)  # current default
-```
-
-Where `stability` is bootstrapped from `1 / decay_lambda` for backwards compat.
-
-### Why opt-in
-The Research agent grades power-law as A for flashcards, D for agent memory. The Critic agent calls it "fashion, not calibration." We adopt the *form* behind a flag so users can A/B; we don't make it the default until we have evidence on actual elfmem traces.
+~~Power-law retrievability~~ — **REJECTED**. See [ADR 0001](../decisions/0001-power-law-decay-rejected.md) for full empirical refutation. Continue using `exp(-decay_lambda * elapsed_hours)`.
 
 ### Config
 - `memory.kappa: float = 0.05` (hardcoded by default; configurable for tuning)
-- `memory.use_power_law_decay: bool = False` (experimental flag)
 
 ### Tests
 - `test_exploration_bonus_lifts_high_variance_blocks` — block with `(α=0.5, β=0.5)` (max variance) ranks higher than block with `(α=10, β=10)` (same mean, low variance) when other signals match.
-- `test_power_law_decay_flag_swaps_formula` — with flag on/off, retrievability uses different formula but is monotonic in elapsed time.
+- `test_exploration_bonus_long_horizon_regression` — pinning the +5.6pp quality at 730-day simulation per [`docs/research/scoring_proposed_evaluation.md`](../research/scoring_proposed_evaluation.md).
 
 ### Risk
-Medium. Exploration bonus is small (κ=0.05) but changes top-K composition. Power-law is opt-in so risk-isolated. Both changes are reversible.
+Low. Exploration bonus is small (κ=0.05) but changes top-K composition. Change is reversible via κ=0.0 config.
 
 ### Ships
 3–5 days after v0.16.0 approval. Minor release v0.17.0.
@@ -398,6 +403,9 @@ Recommend: yes to all five. Start with v0.15.3 today.
 ---
 
 ## Appendix — draft follow-up question for Dmitry (issue #50)
+
+> **Status (2026-05-24)**: posting deferred until after v0.17 ships. The intent is to give Dmitry a substantive release to react to (v0.17 fixes the rescore clobber that affected his weekly-rescore workflow) rather than asking him to investigate v0.15.3 in isolation. Draft preserved below for reuse.
+
 
 > Hi Dmitry — v0.15.3 shipped the cold-start centrality floor we discussed; the change is at `src/elfmem/scoring.py:effective_centrality()`. Before we lock in the next architectural step (v0.16, sufficient statistics + additive rescore), we did a numerical re-check against the real scoring path and found one regime where the floor alone may not be enough:
 >
