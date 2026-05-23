@@ -56,11 +56,13 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ["docs", "."]
 
 nav:
   - Home: index.md
   - Quick Start: quickstart.md
+  - Roadmap: roadmap.md
   - Getting Started:
     - Configuration: SETUP_AND_CONFIG.md
     - Claude Code: CLAUDE_CODE_INTEGRATION.md
@@ -82,12 +84,21 @@ nav:
     - Tool Documentation: MCP_DOCUMENTATION_INDEX.md
     - elfmem Tool Spec: elfmem_tool.md
   - Research:
+    - Long-term Evolution: research/long_term_evolution/README.md
+    - Scoring Evaluation: research/scoring_proposed_evaluation.md
+    - Memory Scoring Survey: research/memory_scoring_survey.md
+    - Methodology — Longitudinal: research/methodology/longitudinal_evaluation.md
     - Graph Improvements: graph_improvement_research.md
     - Agent Pattern Research: research_agent_patterns.md
     - Visualisation Research: visualisation_research.md
     - Simulation Behaviour: simulation_behaviour_research.md
     - Simulation Guide: design_simulation_guide.md
     - Simulation Quick Reference: design_simulation_quick_ref.md
+  - Decisions (ADRs):
+    - Index: decisions/README.md
+    - 0001 Power-law decay rejected: decisions/0001-power-law-decay-rejected.md
+    - 0002 v0.17 scope: decisions/0002-v017-scope.md
+    - 0003 Defer constitutional evolution: decisions/0003-defer-constitutional-evolution.md
   - Contributing:
     - Code Style: coding_principles.md
     - Testing: testing_principles.md
