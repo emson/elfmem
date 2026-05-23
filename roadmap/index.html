@@ -647,23 +647,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="In Progress">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#v016-v017-sufficient-statistics-adaptive-scoring" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚧 v0.16 / v0.17 — Sufficient statistics + adaptive scoring
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2321,23 +2304,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="In Progress">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#v016-v017-sufficient-statistics-adaptive-scoring" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚧 v0.16 / v0.17 — Sufficient statistics + adaptive scoring
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2560,7 +2526,7 @@
 What's shipped, what's next, what we've considered and explicitly rejected.</p>
 <p><strong>What this is not</strong>: a calendar. elfmem is solo OSS. Dates are illustrative;
 sequence is what matters.</p>
-<p><strong>Last reviewed</strong>: 2026-05-24. Reviewed quarterly. Open issues at
+<p><strong>Last reviewed</strong>: 2026-05-23 (post-v0.17 release). Reviewed quarterly. Open issues at
 <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
 </blockquote>
 <hr />
@@ -2618,6 +2584,11 @@ sequence is what matters.</p>
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.17.0</strong></td>
+<td>Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) (<a href="https://github.com/emson/elfmem/pull/65">#65</a>)</td>
+<td>2026-05-23</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.15.3</strong></td>
 <td>Cold-start centrality floor for fresh blocks (<a href="https://github.com/emson/elfmem/issues/61">#61</a>)</td>
 <td>2026-05-17</td>
@@ -2647,53 +2618,18 @@ sequence is what matters.</p>
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
 <h2 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h2>
-<h3 id="v016-v017-sufficient-statistics-adaptive-scoring">🚧 v0.16 / v0.17 — Sufficient statistics + adaptive scoring<a class="headerlink" href="#v016-v017-sufficient-statistics-adaptive-scoring" title="Permanent link">&para;</a></h3>
-<p>Single bundle. Scope ~330 LOC. Issues to be filed for each item.</p>
-<table>
-<thead>
-<tr>
-<th>Item</th>
-<th>Description</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Sufficient statistics</td>
-<td>Materialise <code>(success_count, failure_count)</code> as honest Beta-Binomial columns; <code>confidence</code> stays as denormalised view for backward compat</td>
-<td>Designed</td>
-</tr>
-<tr>
-<td>Additive rescore</td>
-<td><code>dream(rescore=True)</code> folds new alignment as weighted evidence event instead of overwriting confidence. <strong>22× reduction</strong> in rescore damage on N&gt;5 blocks (validated)</td>
-<td>Designed</td>
-</tr>
-<tr>
-<td>Arithmetic peer merge</td>
-<td><code>(local_α + remote_α × trust, local_β + remote_β × trust)</code> — the principled merge that sufficient stats enable</td>
-<td>Designed</td>
-</tr>
-<tr>
-<td>Exploration bonus</td>
-<td><code>kappa × sqrt(Beta_variance)</code> term in compute_score, κ=0.05 hardcoded. <strong>+5.6pp quality at 730 days</strong> in simulation; small short-term cost</td>
-<td>Designed</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Plan</strong>: <a href="docs/plans/plan_memory_scoring.md"><code>docs/plans/plan_memory_scoring.md</code></a>
-<strong>Decisions</strong>: <a href="docs/decisions/0001-power-law-decay-rejected.md"><code>docs/decisions/0001-power-law-decay-rejected.md</code></a>, <a href="docs/decisions/0002-v017-scope.md"><code>docs/decisions/0002-v017-scope.md</code></a>
-<strong>Validating research</strong>: <a href="docs/research/scoring_proposed_evaluation.md"><code>docs/research/scoring_proposed_evaluation.md</code></a></p>
+<p><em>Nothing currently committed. v0.18 scope is observation-driven — see <strong>Next</strong>.</em></p>
 <hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
 <p>Driven by signal from v0.17 in production. Specific items not yet committed.</p>
 <h3 id="v018-production-signal-response">📋 v0.18 — Production signal response<a class="headerlink" href="#v018-production-signal-response" title="Permanent link">&para;</a></h3>
-<p>Concrete scope depends on:
-- Dmitry's v0.15.3 follow-up answer (<a href="docs/plans/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">draft question</a>)
-- ≥3 months of v0.17 telemetry from real instances
+<p>v0.17 shipped on 2026-05-23. Telemetry window now open. Concrete scope depends on:
+- Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)
+- ≥3 months of v0.17 telemetry from real instances (i.e., not before ~2026-08-23)
 - Any newly-observed systematic failure modes</p>
 <p>Likely candidates (each requires its own ADR before committing):
 - Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
-- Stronger rescore tuning if v0.16 defaults need adjustment</p>
+- Stronger rescore tuning if v0.17 defaults need adjustment</p>
 <hr />
 <h2 id="exploring">Exploring<a class="headerlink" href="#exploring" title="Permanent link">&para;</a></h2>
 <p>These are research directions, not commitments. Each requires a Decision Record before becoming a roadmap item.</p>
