@@ -11,14 +11,24 @@ from __future__ import annotations
 
 import anthropic
 
-from elfmem.adapters.models import BlockAnalysisModel, ContradictionScore
-from elfmem.prompts import BLOCK_ANALYSIS_PROMPT, CONTRADICTION_PROMPT, VALID_SELF_TAGS
+from elfmem.adapters.models import (
+    AmendmentProposalModel,
+    BlockAnalysisModel,
+    ContradictionScore,
+)
+from elfmem.prompts import (
+    AMENDMENT_PROPOSAL_PROMPT,
+    BLOCK_ANALYSIS_PROMPT,
+    CONTRADICTION_PROMPT,
+    VALID_SELF_TAGS,
+)
 from elfmem.token_counter import TokenCounter
 from elfmem.types import BlockAnalysis
 
 # Tool names used for forced structured-output calls.
 _ANALYZE_BLOCK_TOOL = "analyze_block"
 _SCORE_CONTRADICTION_TOOL = "score_contradiction"
+_PROPOSE_AMENDMENT_TOOL = "propose_amendment"
 
 
 class AnthropicLLMAdapter:
@@ -149,6 +159,50 @@ class AnthropicLLMAdapter:
             tags=filtered_tags,
             summary=result.summary,
         )
+
+    async def propose_amendment(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        drift_score: float,
+        evidence_summaries: list[str],
+    ) -> dict[str, str]:
+        """Propose a single amendment for a drifted constitutional block.
+
+        USE WHEN:   Called by review_constitutional() for each over-threshold block.
+        DON'T USE:  Testing — use MockLLMService.
+        COST:       1 Anthropic API call via forced tool use.
+        RETURNS:    {"proposed_content": str, "rationale": str}.
+        NEXT:       The orchestration wraps this in a ProposedAmendment and
+                    surfaces it to the agent for explicit accept/reject.
+        """
+        evidence_block = (
+            "\n".join(f"- {s}" for s in evidence_summaries)
+            if evidence_summaries
+            else "(no recent reinforced activity summaries available)"
+        )
+        prompt = AMENDMENT_PROPOSAL_PROMPT.format(
+            block_content=block_content,
+            block_summary=block_summary or "(no summary)",
+            drift_score=f"{drift_score:.3f}",
+            evidence_summaries=evidence_block,
+        )
+        raw = await self._call_tool(
+            tool_name=_PROPOSE_AMENDMENT_TOOL,
+            description=(
+                "Propose an amendment to a constitutional memory block based "
+                "on the agent's recent operational activity."
+            ),
+            schema=AmendmentProposalModel.model_json_schema(),
+            prompt=prompt,
+            model=self._effective_model(self._process_block_model),
+        )
+        result = AmendmentProposalModel.model_validate(raw)
+        return {
+            "proposed_content": result.proposed_content,
+            "rationale": result.rationale,
+        }
 
     async def detect_contradiction(self, block_a: str, block_b: str) -> float:
         """Score the logical contradiction between two memory blocks.

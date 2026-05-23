@@ -30,6 +30,30 @@ class BlockAnalysisModel(BaseModel):
     )
 
 
+class AmendmentProposalModel(BaseModel):
+    """Structured response for constitutional amendment proposals (v0.18).
+
+    Used by AnthropicLLMAdapter (tool use input_schema) and
+    OpenAILLMAdapter (Pydantic JSON parse). Converted to a plain
+    dict[str, str] by ``LLMService.propose_amendment`` before returning,
+    so callers don't depend on Pydantic internals.
+    """
+
+    proposed_content: str = Field(
+        description=(
+            "Complete replacement content for the constitutional block. "
+            "Same voice and length range (±50%) as the original. May equal "
+            "the original verbatim if the evidence does not justify a change."
+        ),
+    )
+    rationale: str = Field(
+        description=(
+            "One or two sentences describing what the recent-activity evidence "
+            "says about the constitutional block. Plain, specific, audit-readable."
+        ),
+    )
+
+
 class ContradictionScore(BaseModel):
     """Structured response for contradiction detection."""
 

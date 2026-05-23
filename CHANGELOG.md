@@ -11,6 +11,108 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.18.0] — 2026-05-23
+
+First milestone of the constitutional review work. v0.18 ships the
+manual constitutional review mechanism deferred by
+[ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md): a
+read-only ``review_constitutional()`` call surfaces drifted
+``self/constitutional`` blocks as LLM-proposed amendments, and an
+explicit ``accept_amendment()`` applies them with a full pre/post audit
+trail. The design choice is recorded in
+[ADR 0004](docs/decisions/0004-manual-constitutional-review.md): every
+mechanism rejected by ADR 0003 was AUTOMATIC; this one is structurally
+different — manual surface, explicit consent, one-step undo, no
+scheduled trigger anywhere in the pipeline.
+
+The earlier longitudinal Monte-Carlo simulation
+(``scripts/longitudinal_sim/mc_constitutional_review.py`` in the
+research compilation) reported **+9-14pp retrieval quality across the
+drifting scenarios with zero stable-case tax** — the property all four
+automatic mechanisms in ADR 0003 failed to deliver. The headline
+regression test for the end-to-end loop is in
+``tests/test_amendment_apply.py::TestIntegration::test_review_accept_then_re_review_skips_cooled_block``:
+accept one of two drifted proposals, re-run review immediately, the
+amended block is in cooldown and only the un-accepted block is
+re-surfaced.
+
+This release is purely additive — every existing operation behaves
+exactly as in 0.17.
+
+### Added
+- Schema v5: ``block_amendments`` audit table — substrate for
+  constitutional review (MANUAL surfacing + explicit accept; see
+  [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)
+  and [ADR 0004](docs/decisions/0004-manual-constitutional-review.md)).
+- Result types: ``ProposedAmendment``, ``ConstitutionalReviewResult``,
+  ``AmendmentResult``, ``AmendmentRecord`` (exported from ``elfmem``).
+- Drift detection module ``elfmem.operations.review`` — pure math
+  (``compute_drift``, ``recent_self_centroid``) plus pure-read DB
+  helpers (``fetch_recent_reinforced_embeddings``,
+  ``fetch_constitutional_blocks``).
+- ``MemorySystem.review_constitutional()`` — READ-ONLY: surfaces drifted
+  ``self/constitutional`` blocks as LLM-proposed amendments. MANUAL
+  cycle: nothing is applied without an explicit ``accept_amendment``
+  call. Returns ``ConstitutionalReviewResult`` with the proposals,
+  reviewed/skipped/failed counts, and an ``insufficient_history`` flag
+  for fresh databases (cold-start safe — no LLM calls when history is
+  insufficient).
+- ``ReviewConfig`` (nested under ``ElfmemConfig`` as ``review``) with
+  9 tunables: ``drift_threshold`` (0.35), ``min_recent_reinforced_blocks``
+  (20), ``window_hours`` (30d), ``min_reinforcement`` (2), ``top_n`` (50),
+  ``cooldown_hours`` (90d), ``max_proposals`` (5), ``min_block_evidence``
+  (2.0 of α+β), ``min_age_days`` (30d).
+- ``LLMService.propose_amendment`` protocol method, implemented by
+  ``AnthropicLLMAdapter``, ``OpenAILLMAdapter``, and ``MockLLMService``.
+- ``AMENDMENT_PROPOSAL_PROMPT`` in ``elfmem.prompts``.
+- ``MemorySystem.accept_amendment(block_id, proposed_content, ...)`` —
+  MUTATING: applies a proposed amendment to a constitutional block.
+  Embedding runs OUTSIDE the DB transaction; the transaction inserts one
+  ``block_amendments`` audit row and updates the block (content,
+  embedding, ``summary = NULL``, ``last_scored_at = NULL``). The Beta
+  sufficient statistics (α, β), ``reinforcement_count``, and
+  ``last_reinforced_at`` are deliberately unchanged — content edits are
+  not knowledge-confirmation events. Invalidates the ``self`` frame cache.
+- ``MemorySystem.revert_amendment(amendment_id)`` — one-step undo:
+  restores ``block.content`` to the amendment's ``pre_content`` (not the
+  original-from-creation content). Stamps ``reverted_at`` on the audit
+  row rather than deleting it. Raises ``AmendmentAlreadyReverted`` on a
+  double revert.
+- ``MemorySystem.list_amendments(block_id=None, limit=100)`` — newest-first
+  audit history, optionally filtered by block. Returns
+  ``list[AmendmentRecord]`` (includes reverted amendments — absence
+  would corrupt the audit trail).
+- Exceptions: ``BlockNotFound``, ``AmendmentNotFound``,
+  ``AmendmentAlreadyReverted``. Each carries a ``.recovery`` field per
+  the agent-first contract; exported from ``elfmem``.
+- CLI: new ``elfmem review`` subcommand group, mirroring the ``peer``
+  pattern. Four commands:
+  - ``elfmem review`` — interactive review when stdin/stdout is a TTY
+    (accept / reject / skip / quit per proposal); JSON-only when
+    piped, ``--json``, or ``--yes`` (auto-accept all).
+  - ``elfmem review accept <block_id>`` — apply an amendment from
+    ``--content-file PATH`` or piped stdin. Acceptor recorded as
+    ``"user"``. Confirms before writing unless ``--yes``.
+  - ``elfmem review revert <amendment_id>`` — one-step undo. Shows
+    the content that will be restored, confirms unless ``--yes``.
+  - ``elfmem review list [--block ID] [--limit N]`` — newest-first
+    table of amendment history; ``reverted`` rows are clearly marked.
+  All commands accept ``--json`` for machine-readable output.
+- MCP: four new tools wrapping the v0.18 API. Acceptor is hard-coded
+  to ``"agent"`` on the MCP path; ``ElfmemError`` is caught at the tool
+  boundary and surfaced as ``{"error": ..., "recovery": ...}`` so
+  calling agents can branch on the recovery hint without parsing
+  free-form text.
+  - ``elfmem_review_constitutional`` — returns the
+    ``ConstitutionalReviewResult`` dict (cold-start safe).
+  - ``elfmem_accept_amendment`` — applies a proposal; returns
+    ``AmendmentResult`` dict.
+  - ``elfmem_revert_amendment`` — one-step undo by amendment_id.
+  - ``elfmem_list_amendments`` — returns ``{"amendments": [...]}``,
+    newest first.
+
+---
+
 ## [0.17.0] — 2026-05-23
 
 Third milestone of the memory-scoring architecture work driven by

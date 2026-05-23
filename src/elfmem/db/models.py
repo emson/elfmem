@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from sqlalchemy import (
+    CheckConstraint,
     Column,
+    DateTime,
     Float,
     ForeignKey,
     Index,
@@ -13,6 +15,7 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    func,
 )
 
 metadata = MetaData()
@@ -160,7 +163,38 @@ peer_roster = Table(
     Column("delivery_path", Text),  # filesystem path to peer's inbox dir
 )
 
+block_amendments = Table(
+    "block_amendments",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "block_id", Text,
+        ForeignKey("blocks.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "timestamp", DateTime,
+        nullable=False, server_default=func.current_timestamp(),
+    ),
+    Column("pre_content", Text, nullable=False),
+    Column("post_content", Text, nullable=False),
+    Column("pre_summary", Text),
+    Column("post_summary", Text),
+    Column("drift_score", Float, nullable=False),
+    Column("rationale", Text),
+    Column(
+        "acceptor", Text, nullable=False,
+    ),
+    Column("reverted_at", DateTime),
+    CheckConstraint(
+        "acceptor IN ('agent', 'user', 'system')",
+        name="ck_block_amendments_acceptor",
+    ),
+)
+
 Index("idx_blocks_status", blocks.c.status)
+Index("idx_block_amendments_block_id", block_amendments.c.block_id)
+Index("idx_block_amendments_timestamp", block_amendments.c.timestamp)
 Index("idx_blocks_last_reinforced", blocks.c.last_reinforced_at)
 Index("idx_block_tags_tag", block_tags.c.tag)
 Index("idx_block_tags_block_id", block_tags.c.block_id)

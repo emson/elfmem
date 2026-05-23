@@ -119,6 +119,56 @@ class DegreeLimitError(ConnectError):
         )
 
 
+class BlockNotFound(ElfmemError):
+    """Raised when a block id does not exist in the database (any status).
+
+    Distinct from ``BlockNotActiveError``, which is connect/disconnect-specific
+    and only fires for the *active* working set. ``BlockNotFound`` is used by
+    the amendment apply path where the caller passed a stale or fabricated id.
+    """
+
+    def __init__(self, block_id: str) -> None:
+        super().__init__(
+            f"Block '{block_id[:8]}…' not found.",
+            recovery=(
+                "Check the block_id is current. Use system.recall() or "
+                "review_constitutional() to obtain a fresh block_id."
+            ),
+        )
+
+
+class AmendmentNotFound(ElfmemError):
+    """Raised when an amendment id does not exist in ``block_amendments``."""
+
+    def __init__(self, amendment_id: int) -> None:
+        super().__init__(
+            f"Amendment {amendment_id} not found.",
+            recovery=(
+                "Call system.list_amendments() to obtain a valid amendment_id."
+            ),
+        )
+
+
+class AmendmentAlreadyReverted(ElfmemError):
+    """Raised when revert_amendment is called on an already-reverted amendment.
+
+    Revert is idempotent at the *content* level (the block was already restored
+    to ``pre_content`` when the amendment was first reverted), but the audit
+    trail must not show a double-revert. Calling revert again therefore raises
+    rather than silently no-oping.
+    """
+
+    def __init__(self, amendment_id: int) -> None:
+        super().__init__(
+            f"Amendment {amendment_id} has already been reverted.",
+            recovery=(
+                "The block content is already at the pre-amendment state. "
+                "If you want to revert a different amendment, call "
+                "list_amendments(block_id=...) to see the active history."
+            ),
+        )
+
+
 class EmbeddingLockError(ElfmemError):
     """Raised when the configured embedding model disagrees with the DB lock.
 

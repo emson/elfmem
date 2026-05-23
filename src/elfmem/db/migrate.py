@@ -33,7 +33,7 @@ from elfmem.db.queries import get_config, set_config
 logger = logging.getLogger(__name__)
 
 # Bump this when adding a new migration function.
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 
 
 async def ensure_schema_current(
@@ -80,6 +80,9 @@ async def ensure_schema_current(
 
     if version < 4:
         await _migrate_v4_sufficient_statistics(conn)
+
+    if version < 5:
+        await _migrate_v5_block_amendments(conn)
 
     final = await _get_version(conn)
     logger.info("Schema migrated from v%d to v%d", version, final)
@@ -196,6 +199,47 @@ async def _migrate_v4_sufficient_statistics(conn: AsyncConnection) -> None:
     ))
     await set_config(conn, "schema_version", "4")
     logger.info("Migration v4 complete: Bayesian sufficient statistics added")
+
+
+# ── Migration: v4 → v5 (constitutional review — block_amendments audit) ─────
+
+
+async def _migrate_v5_block_amendments(conn: AsyncConnection) -> None:
+    """Add the ``block_amendments`` audit table for constitutional review.
+
+    A block_amendments row records one edit to a block's content: the
+    pre/post content and summary, the LLM-supplied rationale for the change,
+    a drift score in [0, 1], and the acceptor (agent | user | system). When
+    an amendment is reverted, ``reverted_at`` is stamped non-null so history
+    is preserved rather than deleted.
+
+    No existing data needs backfill — the table starts empty. Re-running the
+    migration is safe because ``CREATE TABLE IF NOT EXISTS`` and
+    ``CREATE INDEX IF NOT EXISTS`` are idempotent.
+    """
+    await conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS block_amendments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            block_id TEXT NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
+            timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            pre_content TEXT NOT NULL,
+            post_content TEXT NOT NULL,
+            pre_summary TEXT,
+            post_summary TEXT,
+            drift_score REAL NOT NULL,
+            rationale TEXT,
+            acceptor TEXT NOT NULL CHECK (acceptor IN ('agent', 'user', 'system')),
+            reverted_at TIMESTAMP
+        )
+    """))
+    await _add_index(
+        conn, "idx_block_amendments_block_id", "block_amendments", "block_id",
+    )
+    await _add_index(
+        conn, "idx_block_amendments_timestamp", "block_amendments", "timestamp",
+    )
+    await set_config(conn, "schema_version", "5")
+    logger.info("Migration v5 complete: block_amendments audit table added")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

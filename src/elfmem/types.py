@@ -14,6 +14,7 @@ Every result type implements three methods:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -1147,6 +1148,201 @@ class PeerInboxStatus:
         if self.warning:
             result["warning"] = self.warning
         return result
+
+
+# ── Constitutional review types (v0.18) ──────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class ProposedAmendment:
+    """An LLM-proposed edit to a constitutional block, awaiting accept/reject.
+
+    USE WHEN: Surfacing constitutional drift to the agent for explicit review.
+    DON'T USE WHEN: Recording an applied amendment — use ``AmendmentResult``.
+    COST: Zero by itself (it is a value object).
+    RETURNS: The original/proposed content pair plus drift_score + rationale.
+    NEXT: ``accept_amendment(block_id, proposed_content)`` to apply, or discard.
+    """
+
+    block_id: str
+    original_content: str
+    proposed_content: str
+    rationale: str
+    drift_score: float
+
+    @property
+    def summary(self) -> str:
+        short_id = self.block_id[:8]
+        original_preview = self.original_content[:60] + (
+            "…" if len(self.original_content) > 60 else ""
+        )
+        return (
+            f"Proposed amendment for {short_id}… "
+            f"(drift={self.drift_score:.2f}): '{original_preview}'"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "original_content": self.original_content,
+            "proposed_content": self.proposed_content,
+            "rationale": self.rationale,
+            "drift_score": self.drift_score,
+        }
+
+
+@dataclass(frozen=True)
+class ConstitutionalReviewResult:
+    """Result of ``review_constitutional()`` — proposed amendments + counts.
+
+    USE WHEN: The agent has called a constitutional review cycle.
+    DON'T USE WHEN: You only need the raw proposals — read ``.proposals``.
+    COST: O(constitutional blocks) LLM calls during the review itself.
+    RETURNS: Proposals plus counts of reviewed/skipped blocks and a flag
+        indicating whether evidence was sufficient to perform any review.
+    NEXT: Iterate ``.proposals`` and call ``accept_amendment`` per choice.
+    """
+
+    proposals: list[ProposedAmendment]
+    reviewed_count: int
+    skipped_count: int
+    insufficient_history: bool
+    # Count of constitutional blocks where the LLM proposal call raised.
+    # The orchestration logs and continues — defensive code is justified
+    # exactly once, around the N-call external-service loop. See
+    # ``operations/review.py::review_constitutional`` for the rationale.
+    failed_proposal_count: int = 0
+
+    @property
+    def summary(self) -> str:
+        if self.insufficient_history:
+            return "Constitutional review: insufficient history — nothing proposed."
+        n = len(self.proposals)
+        failed_note = (
+            f", {self.failed_proposal_count} failed"
+            if self.failed_proposal_count else ""
+        )
+        if n == 0:
+            return (
+                f"Constitutional review: {self.reviewed_count} reviewed, "
+                f"{self.skipped_count} skipped{failed_note}, "
+                "no amendments proposed."
+            )
+        noun = "amendment" if n == 1 else "amendments"
+        return (
+            f"Constitutional review: {n} {noun} proposed "
+            f"({self.reviewed_count} reviewed, "
+            f"{self.skipped_count} skipped{failed_note})."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "proposals": [p.to_dict() for p in self.proposals],
+            "reviewed_count": self.reviewed_count,
+            "skipped_count": self.skipped_count,
+            "insufficient_history": self.insufficient_history,
+            "failed_proposal_count": self.failed_proposal_count,
+        }
+
+
+@dataclass(frozen=True)
+class AmendmentResult:
+    """Result of ``accept_amendment()`` — a constitutional edit was applied.
+
+    USE WHEN: Confirming an amendment was persisted and audited.
+    DON'T USE WHEN: Reading a historical amendment — use ``AmendmentRecord``.
+    COST: One UPDATE + one INSERT + one re-embed.
+    RETURNS: New audit row id, the block edited, pre/post content snapshot.
+    NEXT: ``list_amendments(block_id)`` to confirm history, or ``revert_amendment``.
+    """
+
+    amendment_id: int
+    block_id: str
+    pre_content: str
+    post_content: str
+    timestamp: datetime
+    acceptor: str
+
+    @property
+    def summary(self) -> str:
+        short_id = self.block_id[:8]
+        return (
+            f"Amendment {self.amendment_id} applied to {short_id}… "
+            f"by {self.acceptor} at {self.timestamp.isoformat()}."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "amendment_id": self.amendment_id,
+            "block_id": self.block_id,
+            "pre_content": self.pre_content,
+            "post_content": self.post_content,
+            "timestamp": self.timestamp.isoformat(),
+            "acceptor": self.acceptor,
+        }
+
+
+@dataclass(frozen=True)
+class AmendmentRecord:
+    """A row in ``block_amendments`` — one historical edit to a block.
+
+    USE WHEN: Inspecting amendment history via ``list_amendments``.
+    DON'T USE WHEN: You only want the latest applied amendment summary.
+    COST: Zero by itself (value object).
+    RETURNS: All audit columns; ``reverted_at`` is None unless reverted.
+    NEXT: ``revert_amendment(id)`` to roll back, or accept again.
+    """
+
+    id: int
+    block_id: str
+    timestamp: datetime
+    pre_content: str
+    post_content: str
+    pre_summary: str | None
+    post_summary: str | None
+    drift_score: float
+    rationale: str | None
+    acceptor: str
+    reverted_at: datetime | None
+
+    @property
+    def summary(self) -> str:
+        short_id = self.block_id[:8]
+        status = "reverted" if self.reverted_at else "active"
+        return (
+            f"Amendment {self.id} on {short_id}… "
+            f"[{status}] drift={self.drift_score:.2f} by {self.acceptor} "
+            f"at {self.timestamp.isoformat()}."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "block_id": self.block_id,
+            "timestamp": self.timestamp.isoformat(),
+            "pre_content": self.pre_content,
+            "post_content": self.post_content,
+            "pre_summary": self.pre_summary,
+            "post_summary": self.post_summary,
+            "drift_score": self.drift_score,
+            "rationale": self.rationale,
+            "acceptor": self.acceptor,
+            "reverted_at": (
+                self.reverted_at.isoformat() if self.reverted_at else None
+            ),
+        }
 
 
 @dataclass

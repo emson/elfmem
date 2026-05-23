@@ -1421,6 +1421,136 @@ async def get_edges_for_export(
     return [dict(row) for row in result.mappings()]
 
 
+# ── Amendment queries (v0.18) ────────────────────────────────────────────────
+
+
+async def insert_amendment(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    pre_content: str,
+    post_content: str,
+    pre_summary: str | None,
+    post_summary: str | None,
+    drift_score: float,
+    rationale: str | None,
+    acceptor: str,
+) -> int:
+    """Insert one block_amendments row and return its auto-assigned id.
+
+    USE WHEN: ``accept_amendment`` orchestration writes the audit row.
+    COST: One INSERT.
+    RETURNS: integer primary key of the new row.
+    """
+    sql = text("""
+        INSERT INTO block_amendments
+            (block_id, pre_content, post_content, pre_summary, post_summary,
+             drift_score, rationale, acceptor)
+        VALUES
+            (:block_id, :pre_content, :post_content, :pre_summary, :post_summary,
+             :drift_score, :rationale, :acceptor)
+        RETURNING id
+    """)
+    result = await conn.execute(sql, {
+        "block_id": block_id,
+        "pre_content": pre_content,
+        "post_content": post_content,
+        "pre_summary": pre_summary,
+        "post_summary": post_summary,
+        "drift_score": drift_score,
+        "rationale": rationale,
+        "acceptor": acceptor,
+    })
+    row = result.first()
+    assert row is not None
+    return int(row[0])
+
+
+async def get_amendment(
+    conn: AsyncConnection, amendment_id: int,
+) -> dict[str, Any] | None:
+    """Fetch one amendment row by id. Returns None if not found."""
+    result = await conn.execute(
+        text("SELECT * FROM block_amendments WHERE id = :id"),
+        {"id": amendment_id},
+    )
+    row = result.mappings().first()
+    return dict(row) if row is not None else None
+
+
+async def mark_amendment_reverted(
+    conn: AsyncConnection, amendment_id: int,
+) -> None:
+    """Stamp ``reverted_at = CURRENT_TIMESTAMP`` on an amendment.
+
+    Idempotent at the SQL level (UPDATE will succeed even if already stamped),
+    but the calling orchestration must check beforehand and raise
+    ``AmendmentAlreadyReverted`` rather than silently overwrite the timestamp.
+    """
+    await conn.execute(
+        text(
+            "UPDATE block_amendments SET reverted_at = CURRENT_TIMESTAMP "
+            "WHERE id = :id"
+        ),
+        {"id": amendment_id},
+    )
+
+
+async def list_amendments(
+    conn: AsyncConnection,
+    *,
+    block_id: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """List amendments, newest first. Filter by block_id when provided.
+
+    USE WHEN: Inspecting amendment history via ``MemorySystem.list_amendments``.
+    COST: One indexed SELECT.
+    RETURNS: list of row dicts (newest timestamp first).
+    """
+    if block_id is None:
+        sql = text(
+            "SELECT * FROM block_amendments "
+            "ORDER BY timestamp DESC, id DESC LIMIT :limit"
+        )
+        result = await conn.execute(sql, {"limit": limit})
+    else:
+        sql = text(
+            "SELECT * FROM block_amendments WHERE block_id = :bid "
+            "ORDER BY timestamp DESC, id DESC LIMIT :limit"
+        )
+        result = await conn.execute(sql, {"bid": block_id, "limit": limit})
+    return [dict(row) for row in result.mappings()]
+
+
+async def update_block_content(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    content: str,
+    embedding: np.ndarray,
+    embedding_model: str,
+) -> None:
+    """Replace a block's content + embedding, clear stale scoring metadata.
+
+    Sets ``summary = NULL`` and ``last_scored_at = NULL`` so the rescore
+    queue picks the block up promptly. Does NOT touch (α, β),
+    reinforcement_count, or last_reinforced_at — content edits are not
+    knowledge confirmation events.
+    """
+    await conn.execute(
+        update(blocks)
+        .where(blocks.c.id == block_id)
+        .values(
+            content=content,
+            embedding=embedding_to_bytes(embedding),
+            embedding_model=embedding_model,
+            summary=None,
+            last_scored_at=None,
+        )
+    )
+
+
 async def seed_builtin_data(conn: AsyncConnection) -> None:
     """Insert built-in frames and default system_config values.
 

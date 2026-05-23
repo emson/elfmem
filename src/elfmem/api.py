@@ -50,11 +50,14 @@ from elfmem.session import begin_session as _begin_session
 from elfmem.session import end_session as _end_session
 from elfmem.token_counter import TokenCounter
 from elfmem.types import (
+    AmendmentRecord,
+    AmendmentResult,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
     ConnectsResult,
     ConsolidateResult,
+    ConstitutionalReviewResult,
     CurateResult,
     DisconnectResult,
     ExportResult,
@@ -1748,6 +1751,231 @@ class MemorySystem:
                 self._co_retrieval_staging = await load_co_retrieval_staging(conn)
         self._record_op("curate", result.summary)
         return result
+
+    async def review_constitutional(
+        self,
+        *,
+        drift_threshold: float | None = None,
+        max_proposals: int | None = None,
+        min_recent_reinforced_blocks: int | None = None,
+        window_hours: float | None = None,
+        cooldown_hours: float | None = None,
+        min_block_evidence: float | None = None,
+        min_age_days: float | None = None,
+    ) -> ConstitutionalReviewResult:
+        """Surface drifted constitutional blocks as LLM-proposed amendments.
+
+        USE WHEN: Periodic (or on-demand) self-examination — check whether
+        the agent's tagged ``self/constitutional`` blocks still match its
+        empirical operational identity (the centroid of recently-reinforced
+        ordinary blocks). MANUAL surface: this only PROPOSES; nothing is
+        applied without an explicit ``accept_amendment`` call (commit 4).
+        See ADR 0003 for why the cycle is manual rather than automatic.
+
+        DON'T USE WHEN: On a fresh database with little operational history —
+        the call returns ``insufficient_history=True`` with no LLM calls,
+        which is fine but uninformative.
+
+        COST: O(eligible constitutional blocks) LLM calls, bounded by
+        ``max_proposals`` (default 5). Two read-only DB queries up front.
+        Returns immediately (no LLM calls) when history is insufficient.
+
+        RETURNS: ConstitutionalReviewResult with ``.proposals`` (sorted by
+        drift_score DESC), counts of reviewed/skipped/failed blocks, and
+        the ``insufficient_history`` flag. Idempotent under MockLLMService
+        for tests; production LLMs may produce slight variation between runs.
+
+        NEXT: For each proposal the agent or user wishes to apply, call
+        ``accept_amendment(block_id, proposed_content, ...)`` (commit 4).
+
+        Args:
+            drift_threshold: Per-call override of ``review.drift_threshold``.
+            max_proposals: Per-call cap on proposals returned.
+            min_recent_reinforced_blocks: Override the centroid evidence floor.
+            window_hours: Recent-activity window for centroid construction.
+            cooldown_hours: Blocks amended within this window are skipped.
+            min_block_evidence: Beta posterior α+β floor below which a
+                constitutional block is too cold to be amended.
+            min_age_days: Minimum wall-clock age before a block can be amended.
+        """
+        from elfmem.config import ReviewConfig
+        from elfmem.operations.review import (
+            review_constitutional as _review_constitutional,
+        )
+        base = self._config.review
+        cfg = ReviewConfig(
+            drift_threshold=(
+                drift_threshold if drift_threshold is not None
+                else base.drift_threshold
+            ),
+            min_recent_reinforced_blocks=(
+                min_recent_reinforced_blocks
+                if min_recent_reinforced_blocks is not None
+                else base.min_recent_reinforced_blocks
+            ),
+            window_hours=(
+                window_hours if window_hours is not None else base.window_hours
+            ),
+            min_reinforcement=base.min_reinforcement,
+            top_n=base.top_n,
+            cooldown_hours=(
+                cooldown_hours if cooldown_hours is not None
+                else base.cooldown_hours
+            ),
+            max_proposals=(
+                max_proposals if max_proposals is not None else base.max_proposals
+            ),
+            min_block_evidence=(
+                min_block_evidence if min_block_evidence is not None
+                else base.min_block_evidence
+            ),
+            min_age_days=(
+                min_age_days if min_age_days is not None else base.min_age_days
+            ),
+        )
+        current_hours = self._current_active_hours()
+        async with self._engine.begin() as conn:
+            result = await _review_constitutional(
+                conn, self._llm, cfg,
+                current_active_hours=current_hours,
+            )
+        self._record_op("review_constitutional", result.summary)
+        return result
+
+    async def accept_amendment(
+        self,
+        block_id: str,
+        proposed_content: str,
+        rationale: str | None = None,
+        *,
+        drift_score: float | None = None,
+        acceptor: str = "agent",
+    ) -> AmendmentResult:
+        """Apply a proposed amendment to a constitutional block.
+
+        USE WHEN: A ``ProposedAmendment`` from ``review_constitutional()`` has
+        been reviewed and the agent or user wants to commit it. Writes the
+        new content, captures a pre/post audit row in ``block_amendments``,
+        and clears stale ``summary`` / ``last_scored_at`` so the next rescore
+        regenerates them against the new content.
+
+        DON'T USE WHEN: You only want to inspect history (``list_amendments``)
+        or undo a previous edit (``revert_amendment``).
+
+        COST: One embedding call + one short DB transaction (INSERT amendment
+        + UPDATE block). The embedding runs BEFORE the transaction so a slow
+        network round-trip never holds a write lock.
+
+        RETURNS: ``AmendmentResult`` with the new ``amendment_id`` and a
+        snapshot of pre/post content.
+
+        NEXT: The block is queued for rescore (``last_scored_at = NULL``).
+        Optionally call ``dream(rescore=True)`` to refresh alignment/tags
+        immediately; otherwise the periodic rescore pass picks it up.
+
+        Args:
+            block_id: The constitutional block being amended.
+            proposed_content: Replacement content (typically from
+                ``ProposedAmendment.proposed_content``).
+            rationale: Optional audit rationale (typically from
+                ``ProposedAmendment.rationale``).
+            drift_score: If supplied, stored in the audit row verbatim.
+                When ``None`` the operation recomputes drift against the
+                current operational centroid — accurate but adds one
+                read query.
+            acceptor: ``"agent"`` (default), ``"user"``, or ``"system"``.
+
+        Raises:
+            BlockNotFound: ``block_id`` does not exist.
+        """
+        from elfmem.operations.review import (
+            _compute_current_drift,
+        )
+        from elfmem.operations.review import (
+            accept_amendment as _accept,
+        )
+        if drift_score is None:
+            current_hours = self._current_active_hours()
+            async with self._engine.connect() as conn:
+                drift_score = await _compute_current_drift(
+                    conn,
+                    block_id=block_id,
+                    review_cfg=self._config.review,
+                    current_active_hours=current_hours,
+                )
+        result = await _accept(
+            self._engine,
+            self._embedding,
+            self._frame_cache,
+            block_id=block_id,
+            proposed_content=proposed_content,
+            rationale=rationale,
+            drift_score=drift_score,
+            acceptor=acceptor,
+        )
+        self._record_op("accept_amendment", result.summary)
+        return result
+
+    async def revert_amendment(self, amendment_id: int) -> AmendmentResult:
+        """Undo one amendment: restore the block to its immediate prior state.
+
+        USE WHEN: An amendment was a mistake. Revert is one-step: the block
+        returns to whatever ``pre_content`` was when this amendment was
+        applied — NOT to the original-from-creation content. To walk
+        further back, call ``revert_amendment`` again on the next-older
+        amendment.
+
+        DON'T USE WHEN: You want to inspect history first — use
+        ``list_amendments``.
+
+        COST: One embedding call (BEFORE the transaction) + a short
+        transaction with two UPDATEs.
+
+        RETURNS: ``AmendmentResult`` describing the restoration. The audit
+        row gains a non-null ``reverted_at`` rather than being deleted —
+        history is preserved.
+
+        NEXT: The block is queued for rescore (``last_scored_at = NULL``).
+
+        Raises:
+            AmendmentNotFound: invalid ``amendment_id``.
+            AmendmentAlreadyReverted: the row already carries
+                ``reverted_at``; the block is already at its pre-amendment
+                state.
+        """
+        from elfmem.operations.review import revert_amendment as _revert
+        result = await _revert(
+            self._engine,
+            self._embedding,
+            self._frame_cache,
+            amendment_id=amendment_id,
+        )
+        self._record_op("revert_amendment", result.summary)
+        return result
+
+    async def list_amendments(
+        self,
+        *,
+        block_id: str | None = None,
+        limit: int = 100,
+    ) -> list[AmendmentRecord]:
+        """List amendments, newest first; optionally filter by block_id.
+
+        USE WHEN: Inspecting audit history before deciding to revert, or
+        surfacing the constitutional change log to the agent.
+        DON'T USE WHEN: You only need the most recent ``AmendmentResult`` —
+        ``accept_amendment`` already returned it.
+        COST: One indexed SELECT bounded by ``limit``.
+        RETURNS: list of ``AmendmentRecord`` in ``timestamp DESC`` order;
+            empty list when there is no history.
+        NEXT: Pick an ``id`` and call ``revert_amendment`` if needed.
+        """
+        from elfmem.operations.review import (
+            list_amendments as _list_amendments,
+        )
+        return await _list_amendments(
+            self._engine, block_id=block_id, limit=limit,
+        )
 
     # ── Peer communication operations ───────────────────────────────────────
 
