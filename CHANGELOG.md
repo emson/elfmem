@@ -67,6 +67,18 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   - ``elfmem review list [--block ID] [--limit N]`` — newest-first
     table of amendment history; ``reverted`` rows are clearly marked.
   All commands accept ``--json`` for machine-readable output.
+- MCP: four new tools wrapping the v0.18 API. Acceptor is hard-coded
+  to ``"agent"`` on the MCP path; ``ElfmemError`` is caught at the tool
+  boundary and surfaced as ``{"error": ..., "recovery": ...}`` so
+  calling agents can branch on the recovery hint without parsing
+  free-form text.
+  - ``elfmem_review_constitutional`` — returns the
+    ``ConstitutionalReviewResult`` dict (cold-start safe).
+  - ``elfmem_accept_amendment`` — applies a proposal; returns
+    ``AmendmentResult`` dict.
+  - ``elfmem_revert_amendment`` — one-step undo by amendment_id.
+  - ``elfmem_list_amendments`` — returns ``{"amendments": [...]}``,
+    newest first.
 
 ---
 

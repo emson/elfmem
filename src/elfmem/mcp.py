@@ -302,6 +302,82 @@ async def _tool_import(
     return result.to_dict()
 
 
+# ── Constitutional review tools (v0.18) ──────────────────────────────────────
+
+
+def _error_envelope(exc: Exception) -> dict[str, Any]:
+    """Project the agent-first ElfmemError contract into an MCP response.
+
+    Every ElfmemError carries a ``.recovery`` — that's the actionable
+    instruction the calling agent needs. Surfacing it in the response body
+    (rather than letting the exception cross the FastMCP boundary as an
+    unstructured string) means the agent can branch on the recovery hint
+    without parsing free-form text.
+    """
+    return {
+        "error": str(exc.args[0]) if exc.args else exc.__class__.__name__,
+        "recovery": getattr(exc, "recovery", None),
+    }
+
+
+async def _tool_review_constitutional(
+    drift_threshold: float | None = None,
+    max_proposals: int | None = None,
+    min_block_evidence: float | None = None,
+    min_age_days: float | None = None,
+) -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        result = await _mem().review_constitutional(
+            drift_threshold=drift_threshold,
+            max_proposals=max_proposals,
+            min_block_evidence=min_block_evidence,
+            min_age_days=min_age_days,
+        )
+        return result.to_dict()
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
+async def _tool_accept_amendment(
+    block_id: str,
+    proposed_content: str,
+    rationale: str | None = None,
+    drift_score: float | None = None,
+) -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        result = await _mem().accept_amendment(
+            block_id, proposed_content, rationale,
+            drift_score=drift_score,
+            acceptor="agent",
+        )
+        return result.to_dict()
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
+async def _tool_revert_amendment(amendment_id: int) -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        result = await _mem().revert_amendment(amendment_id)
+        return result.to_dict()
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
+async def _tool_list_amendments(
+    block_id: str | None = None,
+    limit: int = 100,
+) -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        records = await _mem().list_amendments(block_id=block_id, limit=limit)
+        return {"amendments": [r.to_dict() for r in records]}
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
 # ── MCP tool registrations (thin wrappers, one line each) ─────────────────────
 
 
@@ -659,6 +735,133 @@ async def elfmem_guide(method: str | None = None) -> str:
     method: e.g. "remember", "recall", "outcome". None returns overview table.
     """
     return await _tool_guide(method)
+
+
+@mcp.tool()
+async def elfmem_review_constitutional(
+    drift_threshold: float | None = None,
+    max_proposals: int | None = None,
+    min_block_evidence: float | None = None,
+    min_age_days: float | None = None,
+) -> dict[str, Any]:
+    """Surface drifted self/constitutional blocks as proposed amendments.
+
+    USE WHEN: Periodic self-examination — check whether the agent's tagged
+    self/constitutional blocks still match its empirical operational
+    identity (the centroid of recently-reinforced ordinary blocks). MANUAL
+    cycle: this only PROPOSES; nothing is applied until elfmem_accept_amendment
+    is called for a specific proposal. Safe to run any time.
+
+    Cold-start safe: with insufficient operational history the response
+    carries insufficient_history=True and no LLM calls are made.
+
+    drift_threshold: Override the configured threshold (default 0.35; half-
+        rescaled cosine, so 0.35 ≈ ~52 degrees off the operational centroid).
+    max_proposals: Cap on returned proposals; defaults to ReviewConfig.max_proposals.
+    min_block_evidence: Beta posterior α+β floor below which a block is too
+        cold to be amended (default 2.0).
+    min_age_days: Minimum wall-clock age before a block can be amended
+        (default 30; protects fresh constitutional seeding).
+
+    RETURNS: dict with keys ``proposals``, ``reviewed_count``,
+        ``skipped_count``, ``insufficient_history``, ``failed_proposal_count``.
+    NEXT: For each proposal worth applying, call elfmem_accept_amendment with
+        block_id + proposed_content (+ optional rationale + drift_score).
+    """
+    return await _tool_review_constitutional(
+        drift_threshold=drift_threshold,
+        max_proposals=max_proposals,
+        min_block_evidence=min_block_evidence,
+        min_age_days=min_age_days,
+    )
+
+
+@mcp.tool()
+async def elfmem_accept_amendment(
+    block_id: str,
+    proposed_content: str,
+    rationale: str | None = None,
+    drift_score: float | None = None,
+) -> dict[str, Any]:
+    """Apply a proposed amendment to a constitutional block.
+
+    USE WHEN: A ProposedAmendment from elfmem_review_constitutional has
+    been reviewed and the agent has decided to commit it. Writes the
+    new content, captures a pre/post audit row, queues the block for
+    rescore (summary and last_scored_at are cleared so the next dream
+    pass regenerates them). The Beta sufficient statistics (α, β),
+    reinforcement_count, and last_reinforced_at are intentionally
+    preserved — content edits are not knowledge-confirmation events.
+
+    Acceptor is recorded as "agent" (MCP path). For human-in-the-loop
+    accepts use the elfmem CLI instead (acceptor="user").
+
+    drift_score: If supplied (usually from a recent review proposal) it
+        is stored verbatim. Pass None to recompute against the current
+        operational centroid — one extra read query, no extra LLM.
+
+    RETURNS: dict with ``amendment_id``, ``block_id``, ``pre_content``,
+        ``post_content``, ``timestamp``, ``acceptor``. On error: an
+        envelope ``{"error": ..., "recovery": ...}`` derived from the
+        underlying ElfmemError.
+    NEXT: Optionally call elfmem_dream(rescore=True) to refresh
+        alignment/tags against the new content immediately.
+    """
+    return await _tool_accept_amendment(
+        block_id=block_id,
+        proposed_content=proposed_content,
+        rationale=rationale,
+        drift_score=drift_score,
+    )
+
+
+@mcp.tool()
+async def elfmem_revert_amendment(amendment_id: int) -> dict[str, Any]:
+    """Undo one amendment: restore block to its immediate prior content.
+
+    USE WHEN: An amendment was a mistake and the agent wants the block
+    back at its immediately-prior content. Revert is one-step: walks
+    back exactly one amendment. To revert further, call repeatedly on
+    older amendment ids.
+
+    The audit row gains a non-null reverted_at rather than being deleted —
+    history is preserved.
+
+    RETURNS: dict with ``amendment_id``, ``block_id``, ``pre_content``,
+        ``post_content`` (the restored content), ``timestamp``,
+        ``acceptor`` ("system" for revert events). On error: an envelope
+        ``{"error": ..., "recovery": ...}`` — most commonly when the
+        amendment was already reverted (recovery: pick a different id).
+    NEXT: The block is queued for rescore (last_scored_at cleared);
+        dream(rescore=True) refreshes it.
+    """
+    return await _tool_revert_amendment(amendment_id)
+
+
+@mcp.tool()
+async def elfmem_list_amendments(
+    block_id: str | None = None,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """List amendment history, newest first. Optionally filter by block.
+
+    USE WHEN: Inspecting the audit trail before deciding to revert, or
+    surfacing the constitutional change log to the agent's working
+    context. Always available — does not raise for an unknown block_id
+    (absence is information: returns an empty list).
+
+    block_id: If given, only that block's history is returned.
+    limit: Maximum rows (default 100).
+
+    RETURNS: dict ``{"amendments": [record_dict, ...]}`` in timestamp
+        DESC order. Each record carries ``id``, ``block_id``,
+        ``timestamp``, ``pre_content``, ``post_content``,
+        ``pre_summary``, ``post_summary``, ``drift_score``,
+        ``rationale``, ``acceptor``, and ``reverted_at`` (null when the
+        amendment is still active).
+    NEXT: Pick an id and call elfmem_revert_amendment if needed.
+    """
+    return await _tool_list_amendments(block_id=block_id, limit=limit)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
