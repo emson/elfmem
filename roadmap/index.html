@@ -662,10 +662,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v018-production-signal-response" class="md-nav__link">
+  <a href="#v019-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.18 — Production signal response
+        📋 v0.19 — Production signal response
       
     </span>
   </a>
@@ -690,10 +690,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#constitutional-identity-evolution" class="md-nav__link">
+  <a href="#constitutional-identity-evolution-automatic-mechanisms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔍 Constitutional / identity evolution
+        🔍 Constitutional / identity evolution — automatic mechanisms
       
     </span>
   </a>
@@ -2319,10 +2319,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v018-production-signal-response" class="md-nav__link">
+  <a href="#v019-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.18 — Production signal response
+        📋 v0.19 — Production signal response
       
     </span>
   </a>
@@ -2347,10 +2347,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#constitutional-identity-evolution" class="md-nav__link">
+  <a href="#constitutional-identity-evolution-automatic-mechanisms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔍 Constitutional / identity evolution
+        🔍 Constitutional / identity evolution — automatic mechanisms
       
     </span>
   </a>
@@ -2526,7 +2526,7 @@
 What's shipped, what's next, what we've considered and explicitly rejected.</p>
 <p><strong>What this is not</strong>: a calendar. elfmem is solo OSS. Dates are illustrative;
 sequence is what matters.</p>
-<p><strong>Last reviewed</strong>: 2026-05-23 (post-v0.17 release). Reviewed quarterly. Open issues at
+<p><strong>Last reviewed</strong>: 2026-05-23 (post-v0.18 release). Reviewed quarterly. Open issues at
 <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
 </blockquote>
 <hr />
@@ -2584,6 +2584,11 @@ sequence is what matters.</p>
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.18.0</strong></td>
+<td>Manual constitutional review — <code>review_constitutional()</code> surfaces drifted constitutional blocks; <code>accept_amendment()</code> applies with audit + (α, β) preservation; <code>revert_amendment()</code> one-step undo; CLI + MCP surfaces (<a href="https://github.com/emson/elfmem/pull/67">#67</a>)</td>
+<td>2026-05-23</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.17.0</strong></td>
 <td>Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) (<a href="https://github.com/emson/elfmem/pull/65">#65</a>)</td>
 <td>2026-05-23</td>
@@ -2618,31 +2623,33 @@ sequence is what matters.</p>
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
 <h2 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h2>
-<p><em>Nothing currently committed. v0.18 scope is observation-driven — see <strong>Next</strong>.</em></p>
+<p><em>Nothing currently committed. v0.19 scope is observation-driven — see <strong>Next</strong>.</em></p>
 <hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
-<p>Driven by signal from v0.17 in production. Specific items not yet committed.</p>
-<h3 id="v018-production-signal-response">📋 v0.18 — Production signal response<a class="headerlink" href="#v018-production-signal-response" title="Permanent link">&para;</a></h3>
-<p>v0.17 shipped on 2026-05-23. Telemetry window now open. Concrete scope depends on:
+<p>Driven by production signal from v0.17 and v0.18. Specific items not yet committed.</p>
+<h3 id="v019-production-signal-response">📋 v0.19 — Production signal response<a class="headerlink" href="#v019-production-signal-response" title="Permanent link">&para;</a></h3>
+<p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.19 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)
-- ≥3 months of v0.17 telemetry from real instances (i.e., not before ~2026-08-23)
-- Any newly-observed systematic failure modes</p>
-<p>Likely candidates (each requires its own ADR before committing):
-- Constitutional review cycle (Dmitry's proposal — quarterly LLM-driven amendment surfacing)
-- Stronger rescore tuning if v0.17 defaults need adjustment</p>
+- ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
+- Any newly-observed systematic failure modes — especially around the new amendment loop</p>
+<p>Possible v0.19 candidates (each requires its own ADR before committing):
+- <strong>Amendment loop tuning</strong> if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
+- <strong>Stronger rescore tuning</strong> if v0.17 defaults need adjustment
+- <strong>Scheduled review triggers</strong> — <code>dream(review=True)</code> integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)</p>
 <hr />
 <h2 id="exploring">Exploring<a class="headerlink" href="#exploring" title="Permanent link">&para;</a></h2>
 <p>These are research directions, not commitments. Each requires a Decision Record before becoming a roadmap item.</p>
-<h3 id="constitutional-identity-evolution">🔍 Constitutional / identity evolution<a class="headerlink" href="#constitutional-identity-evolution" title="Permanent link">&para;</a></h3>
-<p>The structural problem: PERMANENT-tier blocks (<code>λ=0.00001</code>, half-life 47.5y) cannot evolve. As the agent's identity drifts over years, constitutional blocks ossify.</p>
-<p>Research has explored four mechanism families:
-- <strong>Architecture M</strong>: exclude constitutional from ATTENTION candidate pool; inject as preamble at frame render. Big help under drift (+33pp), real cost under stability (−7pp).
-- <strong>Model C (ego_strength)</strong>: Darwinian — constitutional earn persistence via positive outcomes. Adds 4 magic numbers + 1 table.
-- <strong>Model D</strong>: distributed feedback across top-N constitutional (fixes Model C hoarding, adds cost).
-- <strong>Self-architecting agent</strong>: hill-climb in parameter space; agent picks its own configuration. Simulation showed it underperforms fixed strategies.</p>
-<p><strong>Status</strong>: deferred until production signal demands a mechanism. The simulations explored the design space but did not produce a decisively-better-than-baseline result for any user class. See <a href="docs/research/constitutional_evolution.md"><code>docs/research/constitutional_evolution.md</code></a>.</p>
+<h3 id="constitutional-identity-evolution-automatic-mechanisms">🔍 Constitutional / identity evolution — automatic mechanisms<a class="headerlink" href="#constitutional-identity-evolution-automatic-mechanisms" title="Permanent link">&para;</a></h3>
+<p>The manual review cycle (shipped in v0.18) addresses the MANUAL side of constitutional evolution. The <strong>automatic</strong> mechanisms remain deferred per <a href="docs/decisions/0003-defer-constitutional-evolution.md">ADR 0003</a>:</p>
+<ul>
+<li><strong>Architecture M</strong>: exclude constitutional from ATTENTION candidate pool; inject as preamble at frame render. Big help under drift (+33pp), real cost under stability (−7pp).</li>
+<li><strong>Model C (ego_strength)</strong>: Darwinian — constitutional earn persistence via positive outcomes. Adds 4 magic numbers + 1 table.</li>
+<li><strong>Model D</strong>: distributed feedback across top-N constitutional (fixes Model C hoarding, adds cost).</li>
+<li><strong>Self-architecting agent</strong>: hill-climb in parameter space; agent picks its own configuration. Simulation showed it underperforms fixed strategies.</li>
+</ul>
+<p><strong>Status</strong>: deferred until production signal from v0.18 manual review demands an automatic complement. The simulations explored the design space but did not produce a decisively-better-than-baseline result for any user class.</p>
 <h3 id="memoryagentbench-locomo-participation">🔍 MemoryAgentBench / LoCoMo participation<a class="headerlink" href="#memoryagentbench-locomo-participation" title="Permanent link">&para;</a></h3>
-<p>Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the v0.17 critical path.</p>
+<p>Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the current critical path.</p>
 <h3 id="multi-context-work-self-vs-personal-self">🔍 Multi-context (work-self vs personal-self)<a class="headerlink" href="#multi-context-work-self-vs-personal-self" title="Permanent link">&para;</a></h3>
 <p>Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.</p>
 <hr />
