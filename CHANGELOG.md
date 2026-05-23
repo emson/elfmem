@@ -11,6 +11,137 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.17.0] — 2026-05-23
+
+Third milestone of the memory-scoring architecture work driven by
+[issue #50](https://github.com/emson/elfmem/issues/50). Where v0.15.2
+removed the confidence cliff and v0.15.3 surfaced cold-start blocks
+through a centrality floor, v0.17 rebuilds the substrate underneath
+confidence itself: blocks now store the Beta posterior's sufficient
+statistics ``(α, β)`` directly, and every mechanism that updates
+confidence does so as additive Bayesian evidence. ``confidence`` is the
+denormalised view ``α/(α+β)`` — always consistent within a single
+transaction, never overwritten in isolation.
+
+The bundle scope and the empirical case for it are documented in
+[ADR 0002](docs/decisions/0002-v017-scope.md); the original planning
+exercise (now archived) is in
+[`docs/plans/archive/plan_memory_scoring.md`](docs/plans/archive/plan_memory_scoring.md).
+Related decisions: power-law decay rejected
+([ADR 0001](docs/decisions/0001-power-law-decay-rejected.md));
+constitutional evolution deferred to v0.18+
+([ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)).
+
+Headline numbers (validated by the regression fixtures, not estimates):
+
+- Rescore damage at α=15, β=2 (mature block, alignment drop 0.882 → 0.55):
+  old clobber Δconfidence ≈ 0.332 → new additive Δ ≈ 0.009 — **22×
+  smaller** (and up to ~36× at higher α+β).
+- Long-horizon simulation: **+5.6pp retrieval quality at 730 simulated
+  days** over the v0.15 substrate.
+- Peer bundles cross-compatible: **BUNDLE_VERSION 1 ↔ 2** — v0.17
+  instances read v1 (confidence-only) bundles from v0.15/0.16 peers and
+  v0.15/0.16 instances ignore the new (α, β) fields gracefully.
+
+### Added
+
+- `success_count` and `failure_count` columns on the ``blocks`` table —
+  Beta sufficient statistics, defaulted to the Jeffreys prior
+  (α=β=0.5). Schema migrated automatically from v3 to v4 on first open;
+  existing rows bootstrapped from ``confidence × (1 + outcome_evidence)``
+  so the migration preserves both current confidence and cumulative
+  event count exactly. ``confidence`` and ``outcome_evidence`` become
+  denormalised views maintained on every write.
+- `compute_bayesian_update_ab(success_count, failure_count, signal,
+  weight) -> (α, β, confidence)` — pure-function sufficient-statistics
+  form of the Beta-Binomial update; the canonical entry point from
+  v0.17 forward.
+- `merge_peer_evidence(local_α, local_β, remote_α, remote_β, trust)
+  -> (α, β)` — trust-weighted arithmetic merge of two Beta-Binomial
+  observations. Internal helper, surfaced because it is the contract
+  between this release's peer code and any future custom importer.
+- `memory.rescore_evidence_weight` config (default 0.5) — weight of the
+  rescore alignment as a Beta-Binomial evidence event. Validated
+  ``ge=0.0``; zero is a meaningful "refresh metadata only, no
+  confidence update" mode.
+- Exploration bonus in ``compute_score``: ``κ × √(α·β / ((α+β)² ·
+  (α+β+1)))`` with **κ = 0.05** hardcoded ([ADR 0002](docs/decisions/0002-v017-scope.md)).
+  Self-extinguishes — ~0.018 on a Jeffreys prior, ~0.0025 on a
+  100-event mature block — so no frame gating is needed. Applies
+  uniformly to recall and curate scoring.
+- Bundle format **BUNDLE_VERSION = 2** — exports ship
+  ``success_count`` and ``failure_count`` alongside ``confidence``.
+  v0.17 importers still accept v1 bundles (older senders); v0.15/0.16
+  importers silently ignore the extra v2 fields.
+
+### Changed
+
+- ``rescore()`` is **additive**: the new alignment is folded into the
+  block's Beta posterior as one weighted evidence event (weight =
+  ``memory.rescore_evidence_weight``), no longer clobbers
+  ``confidence``. Mature blocks barely move; cold blocks track the new
+  alignment. This is the headline behaviour change of the release —
+  the regression test at α=15, β=2 is pinned in
+  ``tests/test_additive_rescore.py``.
+- ``import_blocks()`` (peer merge) on **re-import of known content** is
+  now an arithmetic merge: ``α' = local_α + remote_α × trust``, ``β' =
+  local_β + remote_β × trust``. Fresh imports seed at ``α = 0.5 +
+  remote_α × trust``, ``β = 0.5 + remote_β × trust`` (Jeffreys prior +
+  trust-scaled remote evidence). Replaces the v0.16 early-return that
+  silently dropped peer corroboration. ``trust=0.0`` ignores the peer
+  entirely; ``trust=1.0`` accepts the full remote evidence.
+- ``consolidate()`` promotion now seeds (α=confidence, β=1−confidence)
+  — total prior mass 1.0 — so a fresh block satisfies the invariant
+  ``confidence == α/(α+β)`` from birth. Earlier behaviour left α=β=0.5
+  on newly promoted blocks, which meant the first outcome update had
+  to "earn back" the alignment-derived confidence.
+- ``update_block_scoring()`` and ``update_block_outcome()`` accept (α,
+  β) and derive ``confidence`` and ``outcome_evidence`` in the same
+  UPDATE statement. The invariant ``confidence == α/(α+β)`` is
+  unbreakable: explicit ``confidence`` arguments are silently
+  overridden by the derived value when sufficient statistics are
+  supplied.
+
+### Deprecated
+
+- ``compute_bayesian_update(confidence, outcome_evidence, signal,
+  weight, prior_strength) -> float`` — retained as a thin wrapper over
+  the new sufficient-statistics form. Scheduled for removal in v0.18+.
+  Migrate to ``compute_bayesian_update_ab`` (see docstring for the
+  one-line conversion).
+- ``memory.outcome_prior_strength`` and ``peer.confidence_floor``
+  config fields — no longer consulted; retained for one release so
+  existing YAML configs keep loading. Removal in v0.18+.
+- ``ImportResult.confidence_floor`` — populated but informational only;
+  v0.17 peer imports do not gate on a floor (the trust-scaled
+  arithmetic merge subsumes the heuristic).
+
+### Removed
+
+- ``prior_strength`` keyword from ``record_outcome`` and
+  ``mind_outcome`` — unused after the substrate landed; α and β are
+  read directly off the block. Callers passing the old kwarg get a
+  ``TypeError`` (correct fail-fast behaviour for an internal API).
+- ``_peer_confidence(floor, trust)`` heuristic — the
+  ``floor × 1.5 if trust >= 0.7 else floor`` ramp is fully subsumed
+  by ``merge_peer_evidence``.
+
+### Migration notes
+
+- **Library callers** of ``record_outcome`` / ``mind_outcome``: drop
+  the ``prior_strength=`` kwarg. No other change required.
+- **Library callers** of ``compute_bayesian_update``: still works; one
+  release of grace before removal. New code should import
+  ``compute_bayesian_update_ab`` from ``elfmem.operations.outcome``.
+- **Peer operators** running mixed v0.15/0.17 fleets: nothing to do.
+  Bundles cross-version cleanly.
+- **Config files**: ``outcome_prior_strength`` and
+  ``peer.confidence_floor`` keys keep loading; they have no effect
+  in v0.17 and will produce a ``ValidationError`` when removed in
+  v0.18+.
+
+---
+
 ## [0.15.3] — 2026-05-18
 
 Second milestone of the memory-scoring architecture work driven by

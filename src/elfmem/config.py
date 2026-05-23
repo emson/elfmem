@@ -75,8 +75,11 @@ class MemoryConfig(BaseModel):
 
     # Outcome scoring
     outcome_prior_strength: float = 2.0
-    # Weight of LLM alignment prior in Bayesian update.
-    # 2.0 = alignment has the weight of 2 observations; evidence dominates after ~10 outcomes.
+    # DEPRECATED (v0.17, removal v0.18+): no longer read by ``record_outcome``.
+    # Sufficient statistics (α, β) are now stored directly on each block, so
+    # the alignment "prior strength" is encoded once at promotion (α + β = 1.0)
+    # rather than reconstituted on every outcome. Retained for one release so
+    # existing YAML configs keep loading without errors.
 
     outcome_reinforce_threshold: float = 0.5
     # Minimum signal to trigger block reinforcement and Hebbian edge learning.
@@ -100,6 +103,15 @@ class MemoryConfig(BaseModel):
     co_retrieval_edge_weight: float = 0.55
     # Weight for Hebbian-promoted co_retrieval edges.
     # Above similarity floor (0.40), below outcome-confirmed (0.80).
+
+    # Deep-sleep rescore — additive Bayesian update (v0.17)
+    rescore_evidence_weight: float = Field(default=0.5, ge=0.0)
+    # Weight of the rescore alignment as a Beta-Binomial evidence event.
+    # 0.0 disables the confidence update (alignment refresh only).
+    # 0.5 is the calibrated default: blocks with mature evidence (α+β ≫ 1)
+    # barely move on rescore; cold blocks track the new alignment.
+    # See ADR 0002 and docs/plans/plan_memory_scoring.md for the empirical
+    # validation (22× reduction in rescore damage at α=15, β=2).
 
     co_retrieval_staging_max: int = 1000
     # Maximum staging dict entries. Evicts lowest-count pairs when exceeded.
@@ -254,6 +266,9 @@ class PeerConfig(BaseModel):
     outbox_dir: str | None = None
     inbox_dir: str | None = None
     confidence_floor: float = 0.3
+    # DEPRECATED (v0.17, removal v0.18+): peer imports now use the trust-scaled
+    # arithmetic merge in ``merge_peer_evidence``; there is no per-import floor
+    # to clamp against. Retained for one release for config-file compatibility.
     auto_ingest_trust_threshold: float = 0.7
     trust_decay_days: int = 90
     trust_decay_factor: float = 0.95

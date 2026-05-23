@@ -64,8 +64,20 @@ async def insert_block(
     confidence: float = 0.50,
     decay_lambda: float = 0.01,
     last_reinforced_at: float = 0.0,
+    success_count: float | None = None,
+    failure_count: float | None = None,
 ) -> None:
-    """Insert a new block. Raises IntegrityError if id already exists."""
+    """Insert a new block. Raises IntegrityError if id already exists.
+
+    When ``success_count``/``failure_count`` are omitted the (α, β) priors
+    are seeded from ``confidence`` with total mass 1.0 — i.e. α=confidence,
+    β=1-confidence. This keeps the invariant ``confidence == α / (α + β)``
+    from birth, so the first outcome update doesn't have to "earn back" the
+    confidence the caller just set.
+    """
+    if success_count is None or failure_count is None:
+        success_count = confidence
+        failure_count = 1.0 - confidence
     await conn.execute(
         insert(blocks).values(
             id=block_id,
@@ -78,6 +90,8 @@ async def insert_block(
             decay_lambda=decay_lambda,
             last_reinforced_at=last_reinforced_at,
             created_at=_now_iso(),
+            success_count=success_count,
+            failure_count=failure_count,
         )
     )
 
@@ -204,6 +218,8 @@ async def update_block_scoring(
     summary: str | None = None,
     last_scored_at: str | None = None,
     clear_last_scored_at: bool = False,
+    success_count: float | None = None,
+    failure_count: float | None = None,
 ) -> None:
     """Update scoring-related fields after consolidation (partial update).
 
@@ -211,9 +227,21 @@ async def update_block_scoring(
     three-state convention: ``None`` (default) leaves the column alone;
     a value sets it; ``clear_last_scored_at=True`` writes SQL NULL — the
     "this block needs LLM scoring" signal used by ``dream --rescore``.
+
+    When ``success_count``/``failure_count`` are provided (v0.17), the
+    denormalised ``confidence`` and ``outcome_evidence`` are derived from
+    α and β in the same UPDATE so the row stays internally consistent.
+    Any explicit ``confidence`` argument is overridden by the derived value
+    to make the invariant ``confidence == α / (α + β)`` unbreakable.
     """
     values: dict[str, object | None] = {}
-    if confidence is not None:
+    if success_count is not None and failure_count is not None:
+        total = success_count + failure_count
+        values["success_count"] = success_count
+        values["failure_count"] = failure_count
+        values["confidence"] = success_count / total
+        values["outcome_evidence"] = total - 1.0
+    elif confidence is not None:
         values["confidence"] = confidence
     if self_alignment is not None:
         values["self_alignment"] = self_alignment
@@ -241,14 +269,34 @@ async def update_block_outcome(
     conn: AsyncConnection,
     *,
     block_id: str,
-    new_confidence: float,
-    new_outcome_evidence: float,
+    new_success_count: float,
+    new_failure_count: float,
 ) -> None:
-    """Update a block's confidence and outcome_evidence after a Bayesian update."""
+    """Write Beta sufficient statistics + denormalised views in one transaction.
+
+    USE WHEN: applying a Bayesian outcome update to a block.
+    COST: one UPDATE statement; O(1).
+    RETURNS: None. Writes (success_count, failure_count, confidence, outcome_evidence).
+
+    The sufficient statistics (α=success_count, β=failure_count) are the
+    canonical store. ``confidence`` and ``outcome_evidence`` are denormalised
+    views maintained in the same UPDATE so every reader sees a consistent row:
+
+        confidence       = α / (α + β)
+        outcome_evidence = (α + β) - 1.0
+    """
+    total = new_success_count + new_failure_count
+    new_confidence = new_success_count / total
+    new_outcome_evidence = total - 1.0
     await conn.execute(
         update(blocks)
         .where(blocks.c.id == block_id)
-        .values(confidence=new_confidence, outcome_evidence=new_outcome_evidence)
+        .values(
+            success_count=new_success_count,
+            failure_count=new_failure_count,
+            confidence=new_confidence,
+            outcome_evidence=new_outcome_evidence,
+        )
     )
 
 

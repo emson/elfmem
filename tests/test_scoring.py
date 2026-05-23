@@ -21,12 +21,17 @@ from elfmem.types import DecayTier
 
 TOL = 0.001  # tolerance for float assertions
 
+# v0.17: exploration bonus on the Jeffreys prior (α=β=0.5) — the default
+# applied when a caller doesn't pass success_count/failure_count.
+# 0.05 × sqrt(0.5×0.5 / (1×1×2)) = 0.05 × sqrt(0.125) ≈ 0.017677669529.
+JEFFREYS_BONUS = 0.05 * math.sqrt(0.125)
+
 
 # ---------------------------------------------------------------------------
 # TC-S-001: Basic ATTENTION score
 # ---------------------------------------------------------------------------
 def test_attention_frame_basic_score() -> None:
-    """TC-S-001: Weighted sum with ATTENTION weights = 0.625"""
+    """TC-S-001: Weighted sum with ATTENTION weights = 0.625 (base) + Jeffreys bonus."""
     score = compute_score(
         similarity=0.80,
         confidence=0.70,
@@ -35,16 +40,16 @@ def test_attention_frame_basic_score() -> None:
         reinforcement=0.30,
         weights=ATTENTION_WEIGHTS,
     )
-    # 0.35×0.80 + 0.15×0.70 + 0.25×0.60 + 0.15×0.40 + 0.10×0.30
-    # = 0.280 + 0.105 + 0.150 + 0.060 + 0.030 = 0.625
-    assert abs(score - 0.625) < TOL
+    # base: 0.35×0.80 + 0.15×0.70 + 0.25×0.60 + 0.15×0.40 + 0.10×0.30 = 0.625
+    # v0.17 exploration bonus on default α=β=0.5: 0.05 × sqrt(0.125) ≈ 0.01768
+    assert abs(score - (0.625 + JEFFREYS_BONUS)) < TOL
 
 
 # ---------------------------------------------------------------------------
 # TC-S-002: All-zero components → score = 0.0
 # ---------------------------------------------------------------------------
 def test_all_zeros_score_zero() -> None:
-    """TC-S-002: All input signals 0.0 → composite score 0.0"""
+    """TC-S-002: All input signals 0.0 → composite = exploration bonus only."""
     score = compute_score(
         similarity=0.0,
         confidence=0.0,
@@ -53,7 +58,8 @@ def test_all_zeros_score_zero() -> None:
         reinforcement=0.0,
         weights=ATTENTION_WEIGHTS,
     )
-    assert abs(score - 0.0) < TOL
+    # Base = 0.0; v0.17 exploration bonus on the Jeffreys default lifts to ~0.018.
+    assert abs(score - JEFFREYS_BONUS) < TOL
 
 
 # ---------------------------------------------------------------------------
@@ -354,13 +360,19 @@ class TestColdStartGapRegression:
         assert abs((post - pre) - 0.075) < TOL
 
     def test_wide_similarity_gap_floor_surfaces_new_block(self) -> None:
-        """S1: similarity 0.92 vs 0.55 — floor flips ranking from −0.0605 to +0.0145."""
+        """S1: similarity 0.92 vs 0.55 — floor flips ranking from −0.0605 to +0.0145.
+
+        Both blocks carry the Jeffreys exploration bonus (~0.018) since no
+        explicit (α, β) is passed; it cancels out of the *gap*, so the
+        ranking remains flipped, but both pinned scores shift by the same
+        constant.
+        """
         new = dict(self.NEW_BLOCK, similarity=0.92)
         bedrock = dict(self.BEDROCK_REINFORCED, similarity=0.55)
         new_score = compute_score(**self._floored(new), weights=ATTENTION_WEIGHTS)
         bedrock_score = compute_score(**bedrock, weights=ATTENTION_WEIGHTS)
-        assert abs(new_score - 0.7445) < TOL
-        assert abs(bedrock_score - 0.7300) < TOL
+        assert abs(new_score - (0.7445 + JEFFREYS_BONUS)) < TOL
+        assert abs(bedrock_score - (0.7300 + JEFFREYS_BONUS)) < TOL
         assert new_score > bedrock_score
 
     def test_tight_gap_reinforced_bedrock_floor_INSUFFICIENT(self) -> None:
@@ -373,8 +385,9 @@ class TestColdStartGapRegression:
         """
         new_score = compute_score(**self._floored(self.NEW_BLOCK), weights=ATTENTION_WEIGHTS)
         bedrock_score = compute_score(**self.BEDROCK_REINFORCED, weights=ATTENTION_WEIGHTS)
-        assert abs(new_score - 0.6815) < TOL
-        assert abs(bedrock_score - 0.7545) < TOL
+        # Both carry the Jeffreys bonus (~0.018); it cancels out of the gap.
+        assert abs(new_score - (0.6815 + JEFFREYS_BONUS)) < TOL
+        assert abs(bedrock_score - (0.7545 + JEFFREYS_BONUS)) < TOL
         assert new_score < bedrock_score
         assert abs((new_score - bedrock_score) - (-0.0730)) < TOL
 
@@ -383,8 +396,9 @@ class TestColdStartGapRegression:
         (e.g. integration-test setup). Floor surfaces new block by +0.027."""
         new_score = compute_score(**self._floored(self.NEW_BLOCK), weights=ATTENTION_WEIGHTS)
         bedrock_score = compute_score(**self.BEDROCK_NO_REINF, weights=ATTENTION_WEIGHTS)
-        assert abs(new_score - 0.6815) < TOL
-        assert abs(bedrock_score - 0.6545) < TOL
+        # Both carry the Jeffreys bonus (~0.018); it cancels out of the gap.
+        assert abs(new_score - (0.6815 + JEFFREYS_BONUS)) < TOL
+        assert abs(bedrock_score - (0.6545 + JEFFREYS_BONUS)) < TOL
         assert new_score > bedrock_score
 
     def test_floor_decays_with_recency_in_full_score(self) -> None:

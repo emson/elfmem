@@ -953,6 +953,13 @@ class MemorySystem:
 
         RETURNS: ``{"rescored": N, "failed": M, "attempted": N+M}``.
 
+        Update math (v0.17): additive. The new alignment is folded into the
+        block's Beta posterior as one weighted evidence event (weight =
+        ``memory.rescore_evidence_weight``, default 0.5); ``confidence`` is
+        the derived view ``α/(α+β)``. Mature blocks (α+β ≫ 1) barely move;
+        cold blocks track the new alignment. Eliminates the v0.15.2 cliff
+        where rescore could undo months of outcome evidence in one pass.
+
         Selection priority:
         - First, all blocks with ``last_scored_at IS NULL`` (debt — drained first).
         - Then, oldest by ``last_scored_at`` (progressive rotation — every
@@ -986,6 +993,7 @@ class MemorySystem:
             return await rescore_blocks(
                 conn, block_ids=candidates,
                 llm=self._llm, embedding_svc=self._embedding,
+                evidence_weight=self._config.memory.rescore_evidence_weight,
             )
 
     async def dream(
@@ -1389,7 +1397,15 @@ class MemorySystem:
         NEXT: Positive signal → confidence grows + blocks resist decay.
         Negative signal → confidence falls. Below penalize_threshold (default
         0.20), blocks also have decay_lambda accelerated automatically.
-        After ~10 outcomes, evidence dominates the LLM alignment prior.
+
+        Update math (v0.17): sufficient statistics ``α = success_count`` and
+        ``β = failure_count`` are stored on every block. One outcome with
+        ``weight=w`` adds ``w·signal`` to α and ``w·(1-signal)`` to β. The
+        confidence column is the denormalised view ``α/(α+β)``, always
+        consistent within a single transaction. Mature blocks (α+β ≫ 1)
+        move slowly; the cold-block prior (α+β = 1.0) tracks the signal
+        closely. No "prior strength" knob — the prior mass is implicit in
+        the seed at promotion.
 
         Signal spectrum::
 
@@ -1433,7 +1449,6 @@ class MemorySystem:
                 weight=weight,
                 source=source,
                 current_active_hours=current_hours,
-                prior_strength=mem.outcome_prior_strength,
                 reinforce_threshold=mem.outcome_reinforce_threshold,
                 edge_reinforce_delta=mem.edge_reinforce_delta,
                 penalize_threshold=mem.penalize_threshold,
@@ -2177,7 +2192,6 @@ class MemorySystem:
                 hit=hit,
                 reason=reason,
                 current_active_hours=self._current_active_hours(),
-                prior_strength=self._config.memory.outcome_prior_strength,
                 reinforce_threshold=self._config.memory.outcome_reinforce_threshold,
                 edge_reinforce_delta=self._config.memory.edge_reinforce_delta,
                 edge_degree_cap=self._config.memory.edge_degree_cap,

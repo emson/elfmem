@@ -176,7 +176,7 @@ class TestExport:
         await system.export_blocks(share_level="public", output_path=output)
 
         bundle = json.loads(Path(output).read_text())
-        assert bundle["version"] == 1
+        assert bundle["version"] == 2  # v0.17 — see ADR 0002
         assert "exported_at" in bundle
         assert "from_did" in bundle
         assert isinstance(bundle["blocks"], list)
@@ -215,7 +215,12 @@ class TestImport:
         assert result.blocks_imported == 1
         assert result.from_peer == "elf:sender"
 
-    async def test_import_dedup_skips_existing(self, system: MemorySystem, tmp_path: Path):
+    async def test_import_merges_into_existing_block(self, system: MemorySystem, tmp_path: Path):
+        """v0.17: re-import of known content folds peer evidence in (was: skipped).
+
+        Behaviour change in ADR 0002 — see also ``test_peer_merge.py`` for
+        the arithmetic merge expectations on (α, β).
+        """
         await system.peer_add("elf:sender", "Sender")
         async with system.session():
             await system.learn("Already known")
@@ -228,8 +233,9 @@ class TestImport:
         path.write_text(json.dumps(bundle))
 
         result = await system.import_blocks(str(path), from_peer="elf:sender")
-        assert result.blocks_skipped == 1
-        assert result.blocks_imported == 0
+        # Imported (merged), not skipped.
+        assert result.blocks_imported == 1
+        assert result.blocks_skipped == 0
 
     async def test_import_self_merge_preserves_confidence(self, system: MemorySystem, tmp_path: Path):
         bundle = self._make_bundle([

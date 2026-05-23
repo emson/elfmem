@@ -33,7 +33,7 @@ from elfmem.db.queries import get_config, set_config
 logger = logging.getLogger(__name__)
 
 # Bump this when adding a new migration function.
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 
 async def ensure_schema_current(
@@ -77,6 +77,9 @@ async def ensure_schema_current(
 
     if version < 3:
         await _migrate_v3_rescore_tracking(conn)
+
+    if version < 4:
+        await _migrate_v4_sufficient_statistics(conn)
 
     final = await _get_version(conn)
     logger.info("Schema migrated from v%d to v%d", version, final)
@@ -152,6 +155,47 @@ async def _migrate_v3_rescore_tracking(conn: AsyncConnection) -> None:
     await _add_index(conn, "idx_blocks_last_scored_at", "blocks", "last_scored_at")
     await set_config(conn, "schema_version", "3")
     logger.info("Migration v3 complete: rescore tracking columns added")
+
+
+# ── Migration: v3 → v4 (Bayesian sufficient statistics) ─────────────────────
+
+
+async def _migrate_v4_sufficient_statistics(conn: AsyncConnection) -> None:
+    """Add (success_count, failure_count) — the Beta posterior sufficient stats.
+
+    From v0.17 onwards every outcome update writes (α, β) directly; confidence
+    is the denormalised view ``α / (α + β)`` and ``outcome_evidence`` is the
+    denormalised view ``(α + β) - 1.0``. Storing the sufficient statistics
+    makes peer merge mathematically sound (you can sum α-priors and β-priors;
+    you cannot sum confidences) and lets rescoring update the prior without
+    discarding accumulated evidence.
+
+    Bootstrap formula for existing rows:
+        α = confidence × (1 + outcome_evidence)
+        β = (1 - confidence) × (1 + outcome_evidence)
+
+    This preserves both the current confidence (α / (α + β) = confidence) and
+    the cumulative event count (α + β - 1 = outcome_evidence). New blocks
+    receive Jeffreys priors α=β=0.5, set by the column DEFAULT. We only
+    bootstrap rows still sitting at the default sentinel — never overwrite
+    sufficient statistics that have already been computed.
+    """
+    await _add_column(
+        conn, "blocks", "success_count", "REAL NOT NULL DEFAULT 0.5",
+    )
+    await _add_column(
+        conn, "blocks", "failure_count", "REAL NOT NULL DEFAULT 0.5",
+    )
+    # Bootstrap only rows still at the default sentinel (0.5, 0.5).
+    # Anything else is already trusted state and must not be overwritten.
+    await conn.execute(text(
+        "UPDATE blocks "
+        "SET success_count = confidence * (1.0 + outcome_evidence), "
+        "    failure_count = (1.0 - confidence) * (1.0 + outcome_evidence) "
+        "WHERE success_count = 0.5 AND failure_count = 0.5"
+    ))
+    await set_config(conn, "schema_version", "4")
+    logger.info("Migration v4 complete: Bayesian sufficient statistics added")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

@@ -346,6 +346,8 @@ def _stage_4_composite_score(
             max_reinforcement_count,
         )
         confidence = float(block.get("confidence", 0.5))
+        success_count = float(block.get("success_count") or 0.5)
+        failure_count = float(block.get("failure_count") or 0.5)
 
         score = compute_score(
             similarity=similarity,
@@ -354,6 +356,8 @@ def _stage_4_composite_score(
             centrality=centrality,
             reinforcement=reinforcement,
             weights=weights,
+            success_count=success_count,
+            failure_count=failure_count,
         )
 
         block_tags = tags_map.get(block_id, []) if tags_map else []

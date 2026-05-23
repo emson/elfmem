@@ -33,6 +33,29 @@ def _validate_weight(weight: float) -> None:
         raise ValueError(f"weight must be > 0.0, got {weight!r}")
 
 
+def compute_bayesian_update_ab(
+    success_count: float,
+    failure_count: float,
+    signal: float,
+    weight: float = 1.0,
+) -> tuple[float, float, float]:
+    """Pure Beta-Binomial update on sufficient statistics.
+
+    USE WHEN: an outcome has been observed for a block; you need new (α, β).
+    DON'T USE WHEN: you only have ``confidence`` — call ``compute_bayesian_update``
+        (legacy wrapper) which converts to (α, β) and then delegates here.
+    COST: pure arithmetic, no I/O.
+    RETURNS: ``(new_success, new_failure, new_confidence)`` — α and β are the
+        canonical Beta sufficient statistics, ``new_confidence`` is the
+        denormalised view ``α / (α + β)``.
+    NEXT: persist all three with ``update_block_outcome``.
+    """
+    new_success = success_count + signal * weight
+    new_failure = failure_count + (1.0 - signal) * weight
+    new_confidence = new_success / (new_success + new_failure)
+    return new_success, new_failure, new_confidence
+
+
 def compute_bayesian_update(
     *,
     confidence: float,
@@ -41,18 +64,28 @@ def compute_bayesian_update(
     weight: float,
     prior_strength: float,
 ) -> float:
-    """Pure Bayesian Beta-Binomial confidence update.
+    """DEPRECATED (v0.17): use ``compute_bayesian_update_ab`` instead.
 
-    The LLM alignment score acts as a Beta prior with weight `prior_strength`.
-    Each outcome signal adds weighted evidence. Prior dominates early; evidence
-    dominates later (crossover around prior_strength / weight outcomes).
+    Legacy Beta-Binomial confidence update kept as a thin wrapper over the
+    sufficient-statistics form. v0.17 stores (α, β) directly on every block,
+    so reconstituting them from ``(confidence, outcome_evidence,
+    prior_strength)`` is wasteful at best and inconsistent at worst — once a
+    block has had outcomes applied via ``compute_bayesian_update_ab``, this
+    wrapper's ``prior_strength`` argument has no canonical meaning.
 
-    Returns the new confidence in [0.0, 1.0].
+    Scheduled for removal in v0.18+. Migrate by replacing
+    ``compute_bayesian_update(confidence=c, outcome_evidence=e, signal=s,
+    weight=w, prior_strength=k)`` with
+    ``compute_bayesian_update_ab(c*(k+e), (1-c)*(k+e), s, w)`` and taking
+    the third element of the returned tuple.
+
+    Returns a value in [0.0, 1.0].
     """
     total = prior_strength + outcome_evidence
-    alpha = confidence * total + signal * weight
-    beta = (1.0 - confidence) * total + (1.0 - signal) * weight
-    return alpha / (alpha + beta)
+    alpha = confidence * total
+    beta = (1.0 - confidence) * total
+    _, _, new_confidence = compute_bayesian_update_ab(alpha, beta, signal, weight)
+    return new_confidence
 
 
 async def record_outcome(
@@ -63,7 +96,6 @@ async def record_outcome(
     weight: float,
     source: str,
     current_active_hours: float,
-    prior_strength: float,
     reinforce_threshold: float,
     edge_reinforce_delta: float = 0.10,
     penalize_threshold: float = 0.20,
@@ -73,7 +105,7 @@ async def record_outcome(
     """Apply a normalised outcome signal to a set of blocks via Bayesian update.
 
     Validates signal and weight, fetches each block, skips non-active ones,
-    computes the Beta-Binomial update, persists confidence + outcome_evidence,
+    folds the outcome into the Beta posterior's sufficient statistics (α, β),
     writes an audit record, and reinforces blocks + edges for positive signals.
     For low signals (< penalize_threshold), also accelerates block decay.
 
@@ -83,7 +115,6 @@ async def record_outcome(
         weight: Observation weight (> 0.0). Higher = faster convergence.
         source: Label for audit trail (e.g. "brier", "test_pass", "csat").
         current_active_hours: Current system clock for reinforcement timestamps.
-        prior_strength: Weight of the LLM alignment prior (from config).
         reinforce_threshold: Minimum signal to trigger reinforcement (from config).
         penalize_threshold: Signal below which decay is accelerated (from config).
         penalty_factor: decay_lambda multiplier per penalization (from config).
@@ -104,22 +135,21 @@ async def record_outcome(
             continue
 
         confidence_before = float(block["confidence"])
-        outcome_evidence = float(block.get("outcome_evidence") or 0.0)
+        success_count = float(block.get("success_count") or 0.0)
+        failure_count = float(block.get("failure_count") or 0.0)
 
-        confidence_after = compute_bayesian_update(
-            confidence=confidence_before,
-            outcome_evidence=outcome_evidence,
+        new_success, new_failure, confidence_after = compute_bayesian_update_ab(
+            success_count=success_count,
+            failure_count=failure_count,
             signal=signal,
             weight=weight,
-            prior_strength=prior_strength,
         )
-        new_evidence = outcome_evidence + weight
 
         await update_block_outcome(
             conn,
             block_id=block_id,
-            new_confidence=confidence_after,
-            new_outcome_evidence=new_evidence,
+            new_success_count=new_success,
+            new_failure_count=new_failure,
         )
         await insert_block_outcome(
             conn,

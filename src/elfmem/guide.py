@@ -283,7 +283,13 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "rescore": AgentGuide(
         name="rescore",
-        what="Deep-sleep: re-evaluate aged active blocks against the current SELF.",
+        what=(
+            "Deep-sleep: re-evaluate aged active blocks against the current SELF. "
+            "v0.17: additive — the new alignment is folded into the Beta posterior "
+            "as one weighted evidence event (default weight 0.5), no longer "
+            "overwrites confidence. Mature blocks barely move; cold blocks track "
+            "the new alignment. ~22× damage reduction at α=15, β=2 vs old clobber."
+        ),
         when=(
             "Periodic deep maintenance (e.g. weekly) — as the agent's identity drifts "
             "through new learning, existing blocks need their alignment/summary/tags "
@@ -374,7 +380,11 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "outcome": AgentGuide(
         name="outcome",
-        what="Update block confidence using a normalised domain signal via Bayesian update.",
+        what=(
+            "Fold a normalised domain signal into each block's Beta posterior. "
+            "v0.17: sufficient statistics (α, β) are stored directly; one "
+            "outcome(weight=1.0) is one observation."
+        ),
         when=(
             "After an observable result can be scored: a forecast resolves, tests pass/fail, "
             "content engagement is measured, or a CSAT score arrives. "
@@ -399,7 +409,9 @@ GUIDES: dict[str, AgentGuide] = {
             "0.2–0.8 → confidence adjusted only (neutral dead-band). "
             "0.0–0.2 → confidence DOWN + decay accelerated automatically"
             " (no separate call needed). "
-            "Over ~10 outcomes, evidence dominates the LLM alignment prior. "
+            "Mature blocks (α+β ≫ 1) move slowly; cold blocks (still at the "
+            "promotion prior, α+β=1) track the signal closely — this is the "
+            "natural Bayesian behaviour, not a configured knob. "
             "DURABLE and PERMANENT blocks are never penalized."
         ),
         example=(
@@ -842,7 +854,12 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "export_blocks": AgentGuide(
         name="export_blocks",
-        what="Export shareable knowledge blocks to a JSON bundle file.",
+        what=(
+            "Export shareable knowledge blocks to a JSON bundle file. "
+            "v0.17: ships Beta sufficient statistics (success_count, "
+            "failure_count) alongside confidence — BUNDLE_VERSION=2, "
+            "backward-readable by v0.15/0.16 importers."
+        ),
         when=(
             "Sharing knowledge with another elfmem instance. "
             "Only exports blocks tagged share='public' or share='shared'."
@@ -869,10 +886,17 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "import_blocks": AgentGuide(
         name="import_blocks",
-        what="Import a knowledge bundle from another elfmem instance into your inbox.",
+        what=(
+            "Import a knowledge bundle from another elfmem instance. v0.17: "
+            "re-importing known content folds the peer's evidence (α, β) into "
+            "the existing block arithmetically — no more skip-on-duplicate. "
+            "Reads both v1 (confidence only) and v2 (sufficient statistics) "
+            "bundle formats."
+        ),
         when=(
-            "Receiving a bundle exported by a peer. Blocks enter inbox and go through "
-            "your normal consolidation pipeline. Trust modulates confidence on import."
+            "Receiving a bundle exported by a peer. Fresh blocks enter inbox; "
+            "known blocks have their evidence merged in place. Trust scales "
+            "how much of the peer's evidence is accepted."
         ),
         when_not=(
             "You want to receive messages — use peer_inbox() instead. "
@@ -880,8 +904,8 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         cost="Fast. File read + database writes. No LLM calls at import time.",
         returns=(
-            "ImportResult with blocks_imported, blocks_skipped (below confidence floor), "
-            "edges_imported, from_peer."
+            "ImportResult with blocks_imported (incl. arithmetic merges into "
+            "existing blocks), blocks_skipped, edges_imported, from_peer."
         ),
         next=(
             "Imported blocks sit in inbox. Call dream() to consolidate them — "

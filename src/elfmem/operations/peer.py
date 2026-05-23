@@ -43,8 +43,62 @@ from elfmem.types import (
     PeerSendResult,
 )
 
-BUNDLE_VERSION = 1
+BUNDLE_VERSION = 2
+# v1 bundles (from v0.15 / v0.16 peers) are still readable — they ship only
+# `confidence`, and the importer bootstraps (α, β) from it via the trust-scaled
+# Jeffreys seed in ``merge_peer_evidence`` (same code path as v2).
+_MIN_READABLE_BUNDLE_VERSION = 1
+
 _SELF_TAG_PREFIX = "self/"
+
+# Jeffreys prior on a freshly seeded peer block — uniform-on-log-odds; matches
+# the default in db.models.blocks. See ADR 0002 / plan_memory_scoring.
+_PEER_PRIOR_ALPHA = 0.5
+_PEER_PRIOR_BETA = 0.5
+
+
+def merge_peer_evidence(
+    local_alpha: float,
+    local_beta: float,
+    remote_alpha: float,
+    remote_beta: float,
+    trust: float,
+) -> tuple[float, float]:
+    """Trust-weighted arithmetic merge of two Beta-Binomial observations.
+
+    USE WHEN: A peer has sent us evidence (α, β) about a block, and we
+        either don't have a local copy yet (start from the Jeffreys prior
+        passed as ``local_alpha``/``local_beta``) or already do (pass the
+        current local sufficient statistics).
+    DON'T USE WHEN: You only have ``confidence`` — bootstrap (α, β) from
+        it first via ``α = confidence``, ``β = 1 - confidence`` (the v1
+        bundle path does this in ``_import_single_block``).
+    COST: Pure arithmetic, O(1), no I/O.
+    RETURNS: ``(new_alpha, new_beta)``. Confidence is the denormalised view
+        ``α / (α + β)`` — let the writer derive it inside the same UPDATE.
+    NEXT: Persist with ``update_block_outcome`` (existing block) or
+        ``insert_block`` with explicit success/failure counts (fresh).
+    """
+    return (
+        local_alpha + remote_alpha * trust,
+        local_beta + remote_beta * trust,
+    )
+
+
+def _peer_remote_priors(block_data: dict[str, Any]) -> tuple[float, float]:
+    """Resolve (remote_alpha, remote_beta) from a v1 OR v2 block payload.
+
+    v2 sends both ``success_count`` and ``failure_count`` directly.
+    v1 sends only ``confidence``; we bootstrap with total mass 1.0
+    (α=confidence, β=1-confidence) — the same convention ``insert_block``
+    uses for raw-inserted blocks since v0.17.
+    """
+    alpha = block_data.get("success_count")
+    beta = block_data.get("failure_count")
+    if alpha is not None and beta is not None:
+        return float(alpha), float(beta)
+    confidence = float(block_data.get("confidence", 0.5))
+    return confidence, 1.0 - confidence
 
 
 # ── Identity ─────────────────────────────────────────────────────────────────
@@ -117,13 +171,22 @@ async def export_blocks(
 
 
 def _block_to_export(block: dict[str, Any], tags: list[str]) -> dict[str, Any]:
-    """Convert a block row to export format (strips internal metadata)."""
+    """Convert a block row to export format (strips internal metadata).
+
+    v0.17 bundles (BUNDLE_VERSION=2) ship the Beta sufficient statistics
+    ``success_count`` and ``failure_count`` alongside ``confidence``. Older
+    importers (v0.15/v0.16, BUNDLE_VERSION=1) ignore the extra fields and
+    bootstrap (α, β) from ``confidence`` — so v2 bundles remain readable
+    by older peers.
+    """
     return {
         "id": block["id"],
         "content": block["content"],
         "category": block["category"],
         "tags": tags,
         "confidence": block["confidence"],
+        "success_count": block.get("success_count"),
+        "failure_count": block.get("failure_count"),
         "created_at": block["created_at"],
         "share": block.get("share") or "public",
     }
@@ -163,18 +226,31 @@ async def import_bundle(
     bundle_data: dict[str, Any],
     from_peer: str,
     is_self_merge: bool = False,
-    confidence_floor: float = 0.3,
+    confidence_floor: float = 0.3,  # DEPRECATED in v0.17 — see ImportResult
 ) -> ImportResult:
     """Import a block bundle with provenance tracking.
 
     USE WHEN: Receiving knowledge from another elfmem instance.
     COST: Fast. Database writes only. Imported blocks enter inbox.
     RETURNS: ImportResult with counts.
+
+    Note (v0.17): ``confidence_floor`` is retained on the signature and on
+    ``ImportResult`` for one release of backward compatibility but is no
+    longer consulted — peer evidence is folded in arithmetically via
+    ``merge_peer_evidence`` (trust-scaled). See ADR 0002.
     """
-    if bundle_data.get("version") != BUNDLE_VERSION:
+    version = bundle_data.get("version")
+    if (
+        not isinstance(version, int)
+        or version < _MIN_READABLE_BUNDLE_VERSION
+        or version > BUNDLE_VERSION
+    ):
         raise PeerError(
-            f"Unsupported bundle version: {bundle_data.get('version')}",
-            recovery=f"Expected version {BUNDLE_VERSION}.",
+            f"Unsupported bundle version: {version}",
+            recovery=(
+                f"Expected version in [{_MIN_READABLE_BUNDLE_VERSION}, "
+                f"{BUNDLE_VERSION}]."
+            ),
         )
 
     peer = await get_peer(conn, from_peer)
@@ -194,7 +270,6 @@ async def import_bundle(
             block_data=block_data,
             from_peer=from_peer,
             is_self_merge=is_self_merge,
-            confidence_floor=confidence_floor,
             trust=trust,
         )
         if ok:
@@ -227,57 +302,143 @@ async def _import_single_block(
     block_data: dict[str, Any],
     from_peer: str,
     is_self_merge: bool,
-    confidence_floor: float,
     trust: float,
 ) -> bool:
-    """Import one block. Returns True if imported, False if skipped."""
+    """Import or merge one peer block. Returns True on import, False on skip.
+
+    Two paths (v0.17, ADR 0002):
+
+    1. **Fresh import** — no local copy of this content. Seed (α, β) on top
+       of the Jeffreys prior, weighted by trust:
+           α = 0.5 + remote_α * trust
+           β = 0.5 + remote_β * trust
+       trust=0.0 ⇒ pure Jeffreys prior (peer entirely discarded).
+       trust=1.0 ⇒ full remote evidence accepted.
+
+    2. **Merge into existing** — content already known locally. Fold the
+       remote evidence in arithmetically (no second Jeffreys prior — that
+       is paid once at first import):
+           α' = local_α + remote_α * trust
+           β' = local_β + remote_β * trust
+       The local block_id and status are preserved; tags are appended.
+
+    Self-merge (``is_self_merge=True``) bypasses trust-scaling and folds
+    the remote evidence directly — the peer is a previous instance of this
+    same agent.
+    """
     content = block_data["content"]
     content_id = compute_content_hash(content)
+    remote_alpha, remote_beta = _peer_remote_priors(block_data)
+    weight = 1.0 if is_self_merge else trust
 
     existing = await get_block(conn, content_id)
-    if existing is not None and existing["status"] == "inbox":
-        return False  # Exact duplicate in inbox
-    if existing is not None and existing["status"] == "active":
-        return False  # Already known
+    if existing is None:
+        await _seed_fresh_peer_block(
+            conn,
+            block_id=content_id,
+            content=content,
+            category=block_data.get("category", "knowledge"),
+            tags=list(block_data.get("tags", [])),
+            from_peer=from_peer,
+            is_self_merge=is_self_merge,
+            remote_alpha=remote_alpha,
+            remote_beta=remote_beta,
+            weight=weight,
+        )
+        return True
 
-    import uuid
-    block_id = content_id if existing is None else uuid.uuid4().hex[:16]
-
-    confidence = (
-        block_data.get("confidence", 0.5) if is_self_merge
-        else _peer_confidence(confidence_floor, trust)
+    await _merge_into_existing_block(
+        conn,
+        block=existing,
+        remote_alpha=remote_alpha,
+        remote_beta=remote_beta,
+        weight=weight,
+        from_peer=from_peer,
+        extra_tags=list(block_data.get("tags", [])),
+        is_self_merge=is_self_merge,
     )
+    return True
+
+
+async def _seed_fresh_peer_block(
+    conn: AsyncConnection,
+    *,
+    block_id: str,
+    content: str,
+    category: str,
+    tags: list[str],
+    from_peer: str,
+    is_self_merge: bool,
+    remote_alpha: float,
+    remote_beta: float,
+    weight: float,
+) -> None:
+    """Insert a brand-new peer-sourced block at Jeffreys + trust × remote."""
+    new_alpha, new_beta = merge_peer_evidence(
+        _PEER_PRIOR_ALPHA, _PEER_PRIOR_BETA,
+        remote_alpha, remote_beta, weight,
+    )
+    confidence = new_alpha / (new_alpha + new_beta)
 
     await insert_block(
         conn,
         block_id=block_id,
         content=content,
-        category=block_data.get("category", "knowledge"),
+        category=category,
         source="peer_import",
         status="inbox",
         confidence=confidence,
+        success_count=new_alpha,
+        failure_count=new_beta,
     )
 
-    # Add tags with provenance
-    tags = list(block_data.get("tags", []))
     if not is_self_merge:
-        tags.append(f"peer/{from_peer}")
+        tags = [*tags, f"peer/{from_peer}"]
     if tags:
         await add_tags(conn, block_id, tags)
 
-    # Set source_peer via raw SQL (column not in insert_block signature)
     from sqlalchemy import text
     await conn.execute(
-        text("UPDATE blocks SET source_peer = :peer, share = 'private' WHERE id = :id"),
+        text(
+            "UPDATE blocks SET source_peer = :peer, share = 'private' "
+            "WHERE id = :id"
+        ),
         {"peer": from_peer if not is_self_merge else None, "id": block_id},
     )
 
-    return True
 
+async def _merge_into_existing_block(
+    conn: AsyncConnection,
+    *,
+    block: dict[str, Any],
+    remote_alpha: float,
+    remote_beta: float,
+    weight: float,
+    from_peer: str,
+    extra_tags: list[str],
+    is_self_merge: bool,
+) -> None:
+    """Fold remote evidence into an already-known local block (additive)."""
+    from elfmem.db.queries import update_block_outcome
 
-def _peer_confidence(floor: float, trust: float, threshold: float = 0.7) -> float:
-    """Compute starting confidence for an imported peer block."""
-    return floor * 1.5 if trust >= threshold else floor
+    local_alpha = float(block.get("success_count") or _PEER_PRIOR_ALPHA)
+    local_beta = float(block.get("failure_count") or _PEER_PRIOR_BETA)
+    new_alpha, new_beta = merge_peer_evidence(
+        local_alpha, local_beta, remote_alpha, remote_beta, weight,
+    )
+    await update_block_outcome(
+        conn,
+        block_id=block["id"],
+        new_success_count=new_alpha,
+        new_failure_count=new_beta,
+    )
+
+    # Provenance: every peer that contributes evidence gets a tag (idempotent
+    # via UNIQUE constraint in block_tags).
+    if not is_self_merge:
+        extra_tags = [*extra_tags, f"peer/{from_peer}"]
+    if extra_tags:
+        await add_tags(conn, block["id"], extra_tags)
 
 
 async def _import_edges(

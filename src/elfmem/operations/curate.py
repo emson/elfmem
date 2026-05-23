@@ -264,6 +264,8 @@ async def _reinforce_top_blocks(
             centrality=centrality,
             reinforcement=reinforcement,
             weights=weights,
+            success_count=float(block.get("success_count") or 0.5),
+            failure_count=float(block.get("failure_count") or 0.5),
         )
         scored.append((block["id"], score))
 
