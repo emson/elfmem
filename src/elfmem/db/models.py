@@ -38,6 +38,14 @@ blocks = Table(
     Column("summary", Text),
     Column("last_session_id", Text),
     Column("outcome_evidence", Float, nullable=False, default=0.0),
+    # Bayesian sufficient statistics (v0.17) — α, β of the Beta posterior.
+    # confidence and outcome_evidence are denormalised views maintained on every write:
+    #   confidence       = α / (α + β)
+    #   outcome_evidence = (α + β) - 1.0     (post-prior event count)
+    # Defaults α=β=0.5 encode the Jeffreys prior (uniform-on-log-odds), so a
+    # brand-new block with no outcomes reads confidence=0.5 and evidence≈0.
+    Column("success_count", Float, nullable=False, default=0.5, server_default="0.5"),
+    Column("failure_count", Float, nullable=False, default=0.5, server_default="0.5"),
     # Peer communication (v0.9.0)
     Column("source_peer", Text),           # DID of originating peer (None = local)
     Column("share", Text, default="private"),  # private | public | peer

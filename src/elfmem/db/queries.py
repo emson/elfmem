@@ -241,14 +241,34 @@ async def update_block_outcome(
     conn: AsyncConnection,
     *,
     block_id: str,
-    new_confidence: float,
-    new_outcome_evidence: float,
+    new_success_count: float,
+    new_failure_count: float,
 ) -> None:
-    """Update a block's confidence and outcome_evidence after a Bayesian update."""
+    """Write Beta sufficient statistics + denormalised views in one transaction.
+
+    USE WHEN: applying a Bayesian outcome update to a block.
+    COST: one UPDATE statement; O(1).
+    RETURNS: None. Writes (success_count, failure_count, confidence, outcome_evidence).
+
+    The sufficient statistics (α=success_count, β=failure_count) are the
+    canonical store. ``confidence`` and ``outcome_evidence`` are denormalised
+    views maintained in the same UPDATE so every reader sees a consistent row:
+
+        confidence       = α / (α + β)
+        outcome_evidence = (α + β) - 1.0
+    """
+    total = new_success_count + new_failure_count
+    new_confidence = new_success_count / total
+    new_outcome_evidence = total - 1.0
     await conn.execute(
         update(blocks)
         .where(blocks.c.id == block_id)
-        .values(confidence=new_confidence, outcome_evidence=new_outcome_evidence)
+        .values(
+            success_count=new_success_count,
+            failure_count=new_failure_count,
+            confidence=new_confidence,
+            outcome_evidence=new_outcome_evidence,
+        )
     )
 
 

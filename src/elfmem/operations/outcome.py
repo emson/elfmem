@@ -33,6 +33,29 @@ def _validate_weight(weight: float) -> None:
         raise ValueError(f"weight must be > 0.0, got {weight!r}")
 
 
+def compute_bayesian_update_ab(
+    success_count: float,
+    failure_count: float,
+    signal: float,
+    weight: float = 1.0,
+) -> tuple[float, float, float]:
+    """Pure Beta-Binomial update on sufficient statistics.
+
+    USE WHEN: an outcome has been observed for a block; you need new (α, β).
+    DON'T USE WHEN: you only have ``confidence`` — call ``compute_bayesian_update``
+        (legacy wrapper) which converts to (α, β) and then delegates here.
+    COST: pure arithmetic, no I/O.
+    RETURNS: ``(new_success, new_failure, new_confidence)`` — α and β are the
+        canonical Beta sufficient statistics, ``new_confidence`` is the
+        denormalised view ``α / (α + β)``.
+    NEXT: persist all three with ``update_block_outcome``.
+    """
+    new_success = success_count + signal * weight
+    new_failure = failure_count + (1.0 - signal) * weight
+    new_confidence = new_success / (new_success + new_failure)
+    return new_success, new_failure, new_confidence
+
+
 def compute_bayesian_update(
     *,
     confidence: float,
@@ -41,18 +64,18 @@ def compute_bayesian_update(
     weight: float,
     prior_strength: float,
 ) -> float:
-    """Pure Bayesian Beta-Binomial confidence update.
+    """Legacy Beta-Binomial confidence update — wrapper over sufficient stats.
 
-    The LLM alignment score acts as a Beta prior with weight `prior_strength`.
-    Each outcome signal adds weighted evidence. Prior dominates early; evidence
-    dominates later (crossover around prior_strength / weight outcomes).
-
-    Returns the new confidence in [0.0, 1.0].
+    Retained for the test suite and any external callers that still think in
+    ``(confidence, outcome_evidence, prior_strength)``. Internally converts to
+    (α, β), delegates to ``compute_bayesian_update_ab``, and returns just the
+    new confidence. Returns a value in [0.0, 1.0].
     """
     total = prior_strength + outcome_evidence
-    alpha = confidence * total + signal * weight
-    beta = (1.0 - confidence) * total + (1.0 - signal) * weight
-    return alpha / (alpha + beta)
+    alpha = confidence * total
+    beta = (1.0 - confidence) * total
+    _, _, new_confidence = compute_bayesian_update_ab(alpha, beta, signal, weight)
+    return new_confidence
 
 
 async def record_outcome(
@@ -104,22 +127,21 @@ async def record_outcome(
             continue
 
         confidence_before = float(block["confidence"])
-        outcome_evidence = float(block.get("outcome_evidence") or 0.0)
+        success_count = float(block.get("success_count") or 0.0)
+        failure_count = float(block.get("failure_count") or 0.0)
 
-        confidence_after = compute_bayesian_update(
-            confidence=confidence_before,
-            outcome_evidence=outcome_evidence,
+        new_success, new_failure, confidence_after = compute_bayesian_update_ab(
+            success_count=success_count,
+            failure_count=failure_count,
             signal=signal,
             weight=weight,
-            prior_strength=prior_strength,
         )
-        new_evidence = outcome_evidence + weight
 
         await update_block_outcome(
             conn,
             block_id=block_id,
-            new_confidence=confidence_after,
-            new_outcome_evidence=new_evidence,
+            new_success_count=new_success,
+            new_failure_count=new_failure,
         )
         await insert_block_outcome(
             conn,
