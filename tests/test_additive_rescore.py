@@ -90,11 +90,11 @@ class TestAdditiveRescoreRegression:
 
         # Damage reduction headline (ADR 0002):
         #   old clobber: 0.882 → 0.550 (Δ = 0.332)
-        #   new additive: 0.882 → ≈ 0.873 (Δ ≈ 0.009)
-        # We assert the new behaviour with a generous tolerance — the
-        # mathematical value is (15 + 0.55*0.5) / (15 + 0.55*0.5 + 2 + 0.45*0.5)
-        # = 15.275 / 17.5 ≈ 0.873.
-        assert abs(new_confidence - 0.873) < 0.005
+        #   new additive: 0.882 → 15.275/17.5 = 0.8728571… (Δ ≈ 0.009)
+        # The arithmetic is fully deterministic, so we pin tight: any
+        # future formula drift moves this assertion well outside 1e-9.
+        expected = (15.0 + 0.55 * 0.5) / (15.0 + 0.55 * 0.5 + 2.0 + 0.45 * 0.5)
+        assert abs(new_confidence - expected) < 1e-9
         # And: the new value is far closer to the old confidence than to
         # the new alignment — the inverse of the old clobber behaviour.
         assert abs(new_confidence - 0.882) < 0.05

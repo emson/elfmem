@@ -131,8 +131,13 @@ def compute_score(
 
     Returns the weighted-sum base plus a Beta-variance exploration term
     (``EXPLORATION_KAPPA × sqrt(Var(Beta(α, β)))``). The base is in [0.0, 1.0];
-    the exploration term is in [0.0, κ/2] ≤ 0.025 — uncertain blocks get a
-    small lift, mature blocks barely move.
+    the exploration term is in [0.0, κ·√0.125] ≈ [0.0, 0.01768] in practice.
+    Derivation: Var(Beta(α, β)) = αβ / ((α+β)²·(α+β+1)). For α=β=p, this is
+    1/(4(2p+1)), maximised as p shrinks. At the Jeffreys prior (α=β=0.5,
+    the smallest values blocks ever hold in practice) variance = 0.125 and
+    the bonus = κ·√0.125 ≈ 0.01768. The theoretical sup κ/2 = 0.025 is the
+    α, β → 0 limit, never reachable. Uncertain blocks get a small lift,
+    mature blocks barely move.
     """
     base = (
         weights.similarity * similarity

@@ -95,6 +95,48 @@ class TestBundleVersion:
             # And the canonical denormalised view ships too:
             assert "confidence" in block
 
+    async def test_v2_bundle_is_v1_readable_structurally(
+        self, system: MemorySystem, tmp_path: Path,
+    ):
+        """A v2 bundle must remain readable by older (v1) importers.
+
+        v0.15 / v0.16 instances bootstrap (α, β) from ``confidence`` and
+        ignore unknown fields — but only if the v1-required keys are still
+        present in the envelope and on each block. This test pins the
+        structural contract: removing any v1 key from ``_block_to_export``
+        or ``_build_bundle`` breaks cross-version compatibility and trips
+        this assertion before the next release.
+        """
+        async with system.session():
+            await system.learn("Cross-version content")
+            await system.learn("filler a")
+            await system.learn("filler b")
+            await system.consolidate()
+        async with system._engine.begin() as conn:
+            await conn.execute(text(
+                "UPDATE blocks SET share = 'public' WHERE status = 'active'"
+            ))
+
+        out = tmp_path / "v2_for_v1.json"
+        await system.export_blocks(share_level="public", output_path=str(out))
+        bundle = json.loads(out.read_text())
+
+        # Envelope keys a v1 importer reads:
+        for key in ("version", "exported_at", "from_did", "blocks", "edges"):
+            assert key in bundle, f"v1 envelope key '{key}' missing from v2 bundle"
+
+        # Per-block keys a v1 importer reads — drawn from the v0.15/0.16
+        # _import_single_block path (content, category, confidence, tags,
+        # created_at; ``id`` is read though the importer recomputes it).
+        assert bundle["blocks"], "bundle should contain at least one block"
+        for block in bundle["blocks"]:
+            for key in ("id", "content", "category", "tags",
+                        "confidence", "created_at"):
+                assert key in block, (
+                    f"v1 block key '{key}' missing from v2 export — "
+                    f"v0.15/0.16 importers cannot read this bundle"
+                )
+
 
 # ── Import: v1 bootstrap vs v2 trust-scaled ───────────────────────────────────
 
