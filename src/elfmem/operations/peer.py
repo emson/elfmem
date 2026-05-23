@@ -226,13 +226,18 @@ async def import_bundle(
     bundle_data: dict[str, Any],
     from_peer: str,
     is_self_merge: bool = False,
-    confidence_floor: float = 0.3,
+    confidence_floor: float = 0.3,  # DEPRECATED in v0.17 — see ImportResult
 ) -> ImportResult:
     """Import a block bundle with provenance tracking.
 
     USE WHEN: Receiving knowledge from another elfmem instance.
     COST: Fast. Database writes only. Imported blocks enter inbox.
     RETURNS: ImportResult with counts.
+
+    Note (v0.17): ``confidence_floor`` is retained on the signature and on
+    ``ImportResult`` for one release of backward compatibility but is no
+    longer consulted — peer evidence is folded in arithmetically via
+    ``merge_peer_evidence`` (trust-scaled). See ADR 0002.
     """
     version = bundle_data.get("version")
     if (
@@ -265,7 +270,6 @@ async def import_bundle(
             block_data=block_data,
             from_peer=from_peer,
             is_self_merge=is_self_merge,
-            confidence_floor=confidence_floor,
             trust=trust,
         )
         if ok:
@@ -298,7 +302,6 @@ async def _import_single_block(
     block_data: dict[str, Any],
     from_peer: str,
     is_self_merge: bool,
-    confidence_floor: float,  # noqa: ARG001 — kept for API stability; v0.17 uses (α, β)
     trust: float,
 ) -> bool:
     """Import or merge one peer block. Returns True on import, False on skip.

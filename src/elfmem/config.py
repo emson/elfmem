@@ -75,8 +75,11 @@ class MemoryConfig(BaseModel):
 
     # Outcome scoring
     outcome_prior_strength: float = 2.0
-    # Weight of LLM alignment prior in Bayesian update.
-    # 2.0 = alignment has the weight of 2 observations; evidence dominates after ~10 outcomes.
+    # DEPRECATED (v0.17, removal v0.18+): no longer read by ``record_outcome``.
+    # Sufficient statistics (α, β) are now stored directly on each block, so
+    # the alignment "prior strength" is encoded once at promotion (α + β = 1.0)
+    # rather than reconstituted on every outcome. Retained for one release so
+    # existing YAML configs keep loading without errors.
 
     outcome_reinforce_threshold: float = 0.5
     # Minimum signal to trigger block reinforcement and Hebbian edge learning.
@@ -263,6 +266,9 @@ class PeerConfig(BaseModel):
     outbox_dir: str | None = None
     inbox_dir: str | None = None
     confidence_floor: float = 0.3
+    # DEPRECATED (v0.17, removal v0.18+): peer imports now use the trust-scaled
+    # arithmetic merge in ``merge_peer_evidence``; there is no per-import floor
+    # to clamp against. Retained for one release for config-file compatibility.
     auto_ingest_trust_threshold: float = 0.7
     trust_decay_days: int = 90
     trust_decay_factor: float = 0.95

@@ -74,7 +74,7 @@ class TestBayesianUpdate:
             block_id = await _make_active_block(conn, mock_llm, mock_embedding)
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.8, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
             block = await get_block(conn, block_id)
         alpha = float(block["success_count"])
@@ -99,7 +99,7 @@ class TestBayesianUpdate:
             ))
             await record_outcome(
                 conn, block_ids=["fresh"], signal=1.0, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
             block = await get_block(conn, "fresh")
         assert abs(float(block["success_count"]) - 1.5) < 1e-9

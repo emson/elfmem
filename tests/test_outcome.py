@@ -105,7 +105,7 @@ class TestRecordOutcome:
         async with engine.begin() as conn:
             result = await record_outcome(
                 conn, block_ids=[], signal=0.8, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
             )
         assert result.blocks_updated == 0
         assert result.mean_confidence_delta == 0.0
@@ -117,7 +117,7 @@ class TestRecordOutcome:
             conf_before = (await get_block(conn, block_id))["confidence"]
             result = await record_outcome(
                 conn, block_ids=[block_id], signal=1.0, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
             conf_after = (await get_block(conn, block_id))["confidence"]
         assert result.blocks_updated == 1
@@ -131,7 +131,7 @@ class TestRecordOutcome:
             await update_block_status(conn, block_id, "archived", archive_reason="decayed")
             result = await record_outcome(
                 conn, block_ids=[block_id], signal=0.9, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
         assert result.blocks_updated == 0
 
@@ -142,7 +142,7 @@ class TestRecordOutcome:
             for h in (2.0, 3.0):
                 await record_outcome(
                     conn, block_ids=[block_id], signal=0.8, weight=1.0, source="test",
-                    current_active_hours=h, prior_strength=2.0, reinforce_threshold=0.5,
+                    current_active_hours=h, reinforce_threshold=0.5,
                 )
             block = await get_block(conn, block_id)
         assert abs(block["outcome_evidence"] - 2.0) < 0.001
@@ -154,7 +154,7 @@ class TestRecordOutcome:
             rc_before = (await get_block(conn, block_id))["reinforcement_count"]
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.9, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
             rc_after = (await get_block(conn, block_id))["reinforcement_count"]
         assert rc_after == rc_before + 1
@@ -166,7 +166,7 @@ class TestRecordOutcome:
             rc_before = (await get_block(conn, block_id))["reinforcement_count"]
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.1, weight=1.0, source="test",
-                current_active_hours=2.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=2.0, reinforce_threshold=0.5,
             )
             rc_after = (await get_block(conn, block_id))["reinforcement_count"]
         assert rc_after == rc_before
@@ -177,7 +177,7 @@ class TestRecordOutcome:
             with pytest.raises(ValueError, match="signal"):
                 await record_outcome(
                     conn, block_ids=[], signal=-0.1, weight=1.0, source="test",
-                    current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                    current_active_hours=1.0, reinforce_threshold=0.5,
                 )
 
     async def test_valueerror_for_signal_above_one(self, setup):
@@ -186,7 +186,7 @@ class TestRecordOutcome:
             with pytest.raises(ValueError, match="signal"):
                 await record_outcome(
                     conn, block_ids=[], signal=1.1, weight=1.0, source="test",
-                    current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                    current_active_hours=1.0, reinforce_threshold=0.5,
                 )
 
     async def test_valueerror_for_weight_zero_or_negative(self, setup):
@@ -195,7 +195,7 @@ class TestRecordOutcome:
             with pytest.raises(ValueError, match="weight"):
                 await record_outcome(
                     conn, block_ids=[], signal=0.5, weight=0.0, source="test",
-                    current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                    current_active_hours=1.0, reinforce_threshold=0.5,
                 )
 
 
@@ -279,7 +279,7 @@ class TestOutcomePenalize:
             lambda_before = (await get_block(conn, block_id))["decay_lambda"]
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.05, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
                 penalize_threshold=0.20, penalty_factor=2.0, lambda_ceiling=0.050,
             )
             lambda_after = (await get_block(conn, block_id))["decay_lambda"]
@@ -292,7 +292,7 @@ class TestOutcomePenalize:
             lambda_before = (await get_block(conn, block_id))["decay_lambda"]
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.80, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
                 penalize_threshold=0.20, penalty_factor=2.0, lambda_ceiling=0.050,
             )
             lambda_after = (await get_block(conn, block_id))["decay_lambda"]
@@ -305,7 +305,7 @@ class TestOutcomePenalize:
             await update_block_scoring(conn, block_id, decay_lambda=0.040)
             await record_outcome(
                 conn, block_ids=[block_id], signal=0.05, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
                 penalize_threshold=0.20, penalty_factor=2.0, lambda_ceiling=0.050,
             )
             lambda_after = (await get_block(conn, block_id))["decay_lambda"]
@@ -318,7 +318,7 @@ class TestOutcomePenalize:
             await update_block_scoring(conn, block_id, decay_lambda=0.001)  # DURABLE tier
             result = await record_outcome(
                 conn, block_ids=[block_id], signal=0.05, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
                 penalize_threshold=0.20, penalty_factor=2.0, lambda_ceiling=0.050,
             )
         assert result.blocks_penalized == 0
@@ -331,7 +331,7 @@ class TestOutcomePenalize:
             lambda_before = (await get_block(conn, block_id))["decay_lambda"]
             result = await record_outcome(
                 conn, block_ids=[block_id], signal=0.20, weight=1.0, source="test",
-                current_active_hours=1.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=1.0, reinforce_threshold=0.5,
                 penalize_threshold=0.20, penalty_factor=2.0, lambda_ceiling=0.050,
             )
             lambda_after = (await get_block(conn, block_id))["decay_lambda"]
@@ -352,7 +352,7 @@ class TestOutcomeDrivenEdges:
             b2 = await _make_active_block(conn, mock_llm, mock_embedding, "sourdough bread recipe")
             result = await record_outcome(
                 conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
             edges_b1 = await get_edges_for_block(conn, b1)
         assert result.outcome_edges_created + result.edges_reinforced == 1
@@ -374,7 +374,7 @@ class TestOutcomeDrivenEdges:
             rc_before = (await get_edges_for_block(conn, b1))[0]["reinforcement_count"]
             result = await record_outcome(
                 conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
             all_edges = await get_edges_for_block(conn, b1)
         assert len(all_edges) == 1, "No duplicate edge should be created"
@@ -388,7 +388,7 @@ class TestOutcomeDrivenEdges:
             b2 = await _make_active_block(conn, mock_llm, mock_embedding, "medieval tapestry")
             result = await record_outcome(
                 conn, block_ids=[b1, b2], signal=0.3, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
         assert result.outcome_edges_created == 0
         assert result.edges_reinforced == 0
@@ -399,7 +399,7 @@ class TestOutcomeDrivenEdges:
             b1 = await _make_active_block(conn, mock_llm, mock_embedding, "lonely block")
             result = await record_outcome(
                 conn, block_ids=[b1], signal=1.0, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
         assert result.outcome_edges_created == 0
         assert result.edges_reinforced == 0
@@ -412,7 +412,7 @@ class TestOutcomeDrivenEdges:
             b3 = await _make_active_block(conn, mock_llm, mock_embedding, "morse code history")
             result = await record_outcome(
                 conn, block_ids=[b1, b2, b3], signal=0.9, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
         assert result.outcome_edges_created + result.edges_reinforced == 3
 
@@ -423,11 +423,11 @@ class TestOutcomeDrivenEdges:
             b2 = await _make_active_block(conn, mock_llm, mock_embedding, "origami cranes")
             await record_outcome(
                 conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
-                current_active_hours=5.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=5.0, reinforce_threshold=0.5,
             )
             result2 = await record_outcome(
                 conn, block_ids=[b1, b2], signal=0.9, weight=1.0, source="test",
-                current_active_hours=6.0, prior_strength=2.0, reinforce_threshold=0.5,
+                current_active_hours=6.0, reinforce_threshold=0.5,
             )
             all_edges = await get_edges_for_block(conn, b1)
         assert len(all_edges) == 1, "Must not duplicate the outcome edge"

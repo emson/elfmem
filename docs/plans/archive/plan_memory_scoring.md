@@ -1,6 +1,8 @@
 # Plan: Memory Scoring Architecture — v0.15.x through v0.18.x
 
-**Status**: active for v0.16/v0.17 implementation (post-empirical-validation)
+> **Implemented as v0.17.0** — see [CHANGELOG.md](../../../CHANGELOG.md) and [ADR 0002](../../decisions/0002-v017-scope.md).
+
+**Status**: archived 2026-05-23 (post-implementation). Originally: active for v0.16/v0.17 implementation (post-empirical-validation)
 **Driver**: [issue #50](https://github.com/emson/elfmem/issues/50) + the architectural inconsistencies surfaced during analysis
 **Synthesises**: `docs/research/memory_scoring_survey.md` (research paper, 7500 words) + reports from a 3-agent review team (Consistency · Research · Critic) + Monte Carlo validation from 2026-05-22/23 (see [`docs/research/scoring_proposed_evaluation.md`](../research/scoring_proposed_evaluation.md))
 **Author**: elf, after orchestrating the team

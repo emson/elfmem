@@ -64,12 +64,22 @@ def compute_bayesian_update(
     weight: float,
     prior_strength: float,
 ) -> float:
-    """Legacy Beta-Binomial confidence update — wrapper over sufficient stats.
+    """DEPRECATED (v0.17): use ``compute_bayesian_update_ab`` instead.
 
-    Retained for the test suite and any external callers that still think in
-    ``(confidence, outcome_evidence, prior_strength)``. Internally converts to
-    (α, β), delegates to ``compute_bayesian_update_ab``, and returns just the
-    new confidence. Returns a value in [0.0, 1.0].
+    Legacy Beta-Binomial confidence update kept as a thin wrapper over the
+    sufficient-statistics form. v0.17 stores (α, β) directly on every block,
+    so reconstituting them from ``(confidence, outcome_evidence,
+    prior_strength)`` is wasteful at best and inconsistent at worst — once a
+    block has had outcomes applied via ``compute_bayesian_update_ab``, this
+    wrapper's ``prior_strength`` argument has no canonical meaning.
+
+    Scheduled for removal in v0.18+. Migrate by replacing
+    ``compute_bayesian_update(confidence=c, outcome_evidence=e, signal=s,
+    weight=w, prior_strength=k)`` with
+    ``compute_bayesian_update_ab(c*(k+e), (1-c)*(k+e), s, w)`` and taking
+    the third element of the returned tuple.
+
+    Returns a value in [0.0, 1.0].
     """
     total = prior_strength + outcome_evidence
     alpha = confidence * total
@@ -86,7 +96,6 @@ async def record_outcome(
     weight: float,
     source: str,
     current_active_hours: float,
-    prior_strength: float,
     reinforce_threshold: float,
     edge_reinforce_delta: float = 0.10,
     penalize_threshold: float = 0.20,
@@ -96,7 +105,7 @@ async def record_outcome(
     """Apply a normalised outcome signal to a set of blocks via Bayesian update.
 
     Validates signal and weight, fetches each block, skips non-active ones,
-    computes the Beta-Binomial update, persists confidence + outcome_evidence,
+    folds the outcome into the Beta posterior's sufficient statistics (α, β),
     writes an audit record, and reinforces blocks + edges for positive signals.
     For low signals (< penalize_threshold), also accelerates block decay.
 
@@ -106,7 +115,6 @@ async def record_outcome(
         weight: Observation weight (> 0.0). Higher = faster convergence.
         source: Label for audit trail (e.g. "brier", "test_pass", "csat").
         current_active_hours: Current system clock for reinforcement timestamps.
-        prior_strength: Weight of the LLM alignment prior (from config).
         reinforce_threshold: Minimum signal to trigger reinforcement (from config).
         penalize_threshold: Signal below which decay is accelerated (from config).
         penalty_factor: decay_lambda multiplier per penalization (from config).

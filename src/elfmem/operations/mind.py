@@ -315,7 +315,6 @@ async def mind_outcome(
     hit: bool,
     reason: str,
     current_active_hours: float,
-    prior_strength: float = 2.0,
     reinforce_threshold: float = 0.5,
     edge_reinforce_delta: float = 0.10,
     edge_degree_cap: int = 5,
@@ -374,7 +373,6 @@ async def mind_outcome(
         weight=1.0,
         source=f"mind_outcome:{'hit' if hit else 'miss'}:{reason[:50]}",
         current_active_hours=current_active_hours,
-        prior_strength=prior_strength,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
     )
@@ -388,7 +386,6 @@ async def mind_outcome(
         weight=0.5,  # Lower weight — one prediction doesn't define the whole model
         source=f"mind_calibration:{'hit' if hit else 'miss'}:{reason[:50]}",
         current_active_hours=current_active_hours,
-        prior_strength=prior_strength,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
     )
