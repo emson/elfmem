@@ -16,6 +16,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   No behaviour change yet; later commits add the review/accept/revert API.
 - Result types: ``ProposedAmendment``, ``ConstitutionalReviewResult``,
   ``AmendmentResult``, ``AmendmentRecord`` (exported from ``elfmem``).
+- Drift detection module ``elfmem.operations.review`` — pure math
+  (``compute_drift``, ``recent_self_centroid``) plus pure-read DB
+  helpers (``fetch_recent_reinforced_embeddings``,
+  ``fetch_constitutional_blocks``). No public API surface yet.
 
 ---
 
