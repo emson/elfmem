@@ -9,6 +9,23 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.18.1] — 2026-05-24
+
+Small additive surface release: each contradiction detected by
+``consolidate()`` is now returned as a typed ``ContradictionFinding``
+on ``ConsolidateResult.contradictions`` (alongside the existing count),
+carrying detection-time signals — ``cosine``, ``tag_jaccard``,
+``category_match``, ``hours_apart`` — that agents can use to gate
+per-deployment suppression rules. Closes the agent-side gap raised in
+[issue #50](https://github.com/emson/elfmem/issues/50).
+
+No schema change, no migration, no suppression-semantics change. Pure
+additive API surface — every existing reader of ``ConsolidateResult``
+or its ``to_dict()`` continues to work unchanged; the new field is an
+empty list when no pairs are detected.
+
 ### Added
 
 - ``ContradictionFinding`` result type and ``ConsolidateResult.contradictions``
