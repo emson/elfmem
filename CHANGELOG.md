@@ -9,6 +9,21 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- ``ContradictionFinding`` result type and ``ConsolidateResult.contradictions``
+  list — each detected pair is surfaced with its detection-time signals
+  (``cosine``, ``tag_jaccard``, ``category_match``, ``hours_apart``)
+  alongside the existing ``contradictions_detected`` count. Closes the
+  agent-side gap from [issue #50](https://github.com/emson/elfmem/issues/50):
+  agents can now apply per-deployment suppression rules (e.g. "high cosine
+  with high tag overlap likely indicates same topic, not contradiction")
+  directly on ``dream()`` output, without an extra query to recompute
+  features from current block state. Signals are not persisted — they
+  reflect the moment of detection, by design — and not used for core
+  suppression. Exported from ``elfmem``; appears in
+  ``ConsolidateResult.to_dict()`` for MCP/CLI consumers.
+
 ---
 
 ## [0.18.0] — 2026-05-23

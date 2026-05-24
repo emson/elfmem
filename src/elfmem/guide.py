@@ -100,7 +100,10 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
-            "deduplicated, edges_created, contradictions_detected counts. "
+            "deduplicated, edges_created, contradictions_detected counts, plus a "
+            "contradictions list of ContradictionFinding records carrying per-pair "
+            "detection-time signals (cosine, tag_jaccard, category_match, hours_apart) "
+            "agents can use to gate suppression rules. "
             "None if inbox was empty. None is not an error."
         ),
         next=(
