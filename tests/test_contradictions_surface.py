@@ -236,3 +236,207 @@ async def test_multiple_contradicting_pairs_sum_correctly(setup) -> None:
         f"expected 2 pairs (4pm vs 2pm, 5pm vs 2pm) but got "
         f"{result.contradictions_detected}"
     )
+
+
+# ── Detection-time features (issue #50 Dmitry follow-up) ────────────────────
+
+
+async def test_contradiction_findings_carry_features(setup) -> None:
+    """Each finding must expose cosine, tag_jaccard, category_match, hours_apart.
+
+    These are the agent-side signals Dmitry asked for so per-deployment rules
+    (e.g. "high cosine + high tag overlap → likely false positive") can run
+    on dream output without recomputing from current block state.
+    """
+    engine, mock_llm, mock_embedding = setup
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=5.0,
+        )
+
+    assert len(result.contradictions) == result.contradictions_detected
+    finding = result.contradictions[0]
+    # Cosine matches the override (0.75), clamped non-negative.
+    assert abs(finding.cosine - 0.75) < 0.001
+    # Categories match — both blocks were promoted as "knowledge".
+    assert finding.category_match is True
+    # Tag jaccard is in [0, 1]; we don't pin a specific value (no tag
+    # overrides configured), but the contract is the field is populated.
+    assert 0.0 <= finding.tag_jaccard <= 1.0
+    # Hours apart: detected at current=5.0 against an active block last
+    # reinforced at hour 1.0 → exactly 4.0 hours.
+    assert abs(finding.hours_apart - 4.0) < 0.001
+    # LLM score from the override (0.92).
+    assert abs(finding.score - 0.92) < 0.001
+
+
+async def test_contradiction_findings_in_to_dict(setup) -> None:
+    """``to_dict()`` must serialise findings as JSON-friendly dicts so MCP
+    and CLI consumers can read them without touching the dataclass."""
+    engine, mock_llm, mock_embedding = setup
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    payload = result.to_dict()
+    assert "contradictions" in payload
+    assert len(payload["contradictions"]) == 1
+    pair = payload["contradictions"][0]
+    expected_keys = {
+        "block_a_id", "block_b_id", "score",
+        "cosine", "tag_jaccard", "category_match", "hours_apart",
+    }
+    assert set(pair.keys()) == expected_keys
+    # Every primitive is JSON-serialisable.
+    assert isinstance(pair["category_match"], bool)
+    for k in ("score", "cosine", "tag_jaccard", "hours_apart"):
+        assert isinstance(pair[k], float)
+
+
+async def test_findings_tag_jaccard_zero_for_disjoint_tags(setup) -> None:
+    """No tag overlap → tag_jaccard == 0.0. This is the case Dmitry's rule
+    weights *toward* contradiction belief (disjoint framings disagreeing
+    on similar wording)."""
+    engine, mock_llm, mock_embedding = setup
+    # Override LLM tag inference so each block ends up with a disjoint set.
+    mock_llm._tag_overrides = {
+        "january": ["winter", "q1"],
+        "july":    ["summer", "q3"],
+    }
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    assert result.contradictions, "expected at least one contradiction finding"
+    assert result.contradictions[0].tag_jaccard == 0.0
+
+
+async def test_findings_tag_jaccard_high_for_overlapping_tags(setup) -> None:
+    """Identical tag sets → tag_jaccard == 1.0. This is the case Dmitry's
+    rule down-weights — same framing, same vocabulary, almost certainly
+    discussing the same topic rather than disagreeing about it."""
+    engine, mock_llm, mock_embedding = setup
+    mock_llm._tag_overrides = {
+        "january": ["birthday", "dima"],
+        "july":    ["birthday", "dima"],
+    }
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    assert result.contradictions, "expected at least one contradiction finding"
+    assert result.contradictions[0].tag_jaccard == 1.0
+
+
+async def test_findings_empty_when_no_contradictions(setup) -> None:
+    """No detected pairs → ``contradictions`` is an empty list, not None or absent."""
+    engine, mock_llm, mock_embedding = setup
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Unrelated fact about the weather",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    assert result.contradictions == []
+    assert result.to_dict()["contradictions"] == []
+
+
+async def test_findings_empty_with_skip_contradictions(setup) -> None:
+    """``skip_contradictions=True`` short-circuits detection — list must be empty
+    even when a contradicting pair sits in the inbox."""
+    engine, mock_llm, mock_embedding = setup
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is January 15th",
+            category="knowledge", source="test",
+        )
+        await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+        )
+
+    async with engine.begin() as conn:
+        await learn(
+            conn, content="Dima's birthday is July 20th",
+            category="knowledge", source="test",
+        )
+        result = await consolidate(
+            conn, llm=mock_llm, embedding_svc=mock_embedding,
+            current_active_hours=1.0,
+            skip_contradictions=True,
+        )
+
+    assert result.contradictions == []

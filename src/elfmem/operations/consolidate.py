@@ -43,7 +43,7 @@ from elfmem.scoring import (
     jaccard_similarity,
     temporal_proximity,
 )
-from elfmem.types import BlockAnalysis, ConsolidateResult, Edge
+from elfmem.types import BlockAnalysis, ConsolidateResult, ContradictionFinding, Edge
 
 SELF_ALIGNMENT_THRESHOLD = 0.70
 EDGE_SCORE_THRESHOLD = 0.45
@@ -92,10 +92,20 @@ class _EdgeDecision:
 
 @dataclass
 class _ContradictionDecision:
-    """A contradiction to record between two active blocks."""
+    """A contradiction to record between two active blocks.
+
+    ``score`` is the LLM contradiction confidence (persisted to the
+    contradictions table). The four feature fields are detection-time
+    auxiliary signals surfaced on ``ContradictionFinding`` so agents can
+    apply per-deployment rules — not persisted, not used for suppression.
+    """
     block_a_id: str
     block_b_id: str
     score: float
+    cosine: float
+    tag_jaccard: float
+    category_match: bool
+    hours_apart: float
 
 
 # ── Pure scoring helpers ──────────────────────────────────────────────────────
@@ -130,6 +140,33 @@ def _composite_edge_score(
     cat  = 1.0 if category_a == category_b else CROSS_CATEGORY_SCORE
     temp = temporal_proximity(hours_a, hours_b)
     return w_cos * cos + w_tag * tag + w_cat * cat + w_temp * temp
+
+
+def _contradiction_features(
+    *,
+    cosine: float,
+    tags_a: list[str],
+    tags_b: list[str],
+    category_a: str,
+    category_b: str,
+    hours_a: float,
+    hours_b: float,
+) -> tuple[float, float, bool, float]:
+    """Detection-time signals surfaced on each contradiction finding.
+
+    Pure — every input is already in scope at the detection site, so no
+    extra I/O. Returns (cosine_clamped, tag_jaccard, category_match,
+    hours_apart). Used by agents that want to gate suppression decisions
+    on richer signal than the LLM score alone (e.g. ignore "contradictions"
+    between pairs with very high tag overlap, which usually indicate the
+    blocks discuss the same topic rather than disagree about it).
+    """
+    return (
+        max(0.0, cosine),
+        jaccard_similarity(tags_a, tags_b),
+        category_a == category_b,
+        max(0.0, abs(hours_a - hours_b)),
+    )
 
 
 def _fallback_analysis() -> BlockAnalysis:
@@ -388,8 +425,25 @@ async def _collect_decisions(
             if c_score >= contradiction_threshold:
                 a_id = min(block_id, a_block["id"])
                 b_id = max(block_id, a_block["id"])
+                cos_clamped, tag_jacc, cat_match, hours_apart = _contradiction_features(
+                    cosine=sim,
+                    tags_a=tags_map.get(block_id, []),
+                    tags_b=tags_map.get(a_block["id"], []),
+                    category_a=category,
+                    category_b=a_block["category"],
+                    hours_a=current_active_hours,
+                    hours_b=float(a_block.get("last_reinforced_at") or 0.0),
+                )
                 contradiction_decisions.append(
-                    _ContradictionDecision(block_a_id=a_id, block_b_id=b_id, score=c_score)
+                    _ContradictionDecision(
+                        block_a_id=a_id,
+                        block_b_id=b_id,
+                        score=c_score,
+                        cosine=cos_clamped,
+                        tag_jaccard=tag_jacc,
+                        category_match=cat_match,
+                        hours_apart=hours_apart,
+                    )
                 )
 
         # Add to evolving set so subsequent inbox blocks can form edges with this one.
@@ -579,4 +633,16 @@ async def consolidate(
         deduplicated=deduplicated,
         edges_created=edges_created,
         contradictions_detected=len(contradiction_decisions),
+        contradictions=[
+            ContradictionFinding(
+                block_a_id=cd.block_a_id,
+                block_b_id=cd.block_b_id,
+                score=cd.score,
+                cosine=cd.cosine,
+                tag_jaccard=cd.tag_jaccard,
+                category_match=cd.category_match,
+                hours_apart=cd.hours_apart,
+            )
+            for cd in contradiction_decisions
+        ],
     )

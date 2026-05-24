@@ -174,6 +174,38 @@ class LearnDocumentResult:
 
 
 @dataclass
+class ContradictionFinding:
+    """One contradiction detected during consolidate(), with detection-time signals.
+
+    Surfaced on ``ConsolidateResult.contradictions`` so agents can apply
+    per-deployment suppression rules (e.g., "high cosine with high tag
+    overlap likely means same topic, not contradiction") on dream output
+    without recomputing from current block state. The features capture
+    signal at the moment of detection — block content / tags / categories
+    may have changed by the time the row is read at recall.
+    """
+
+    block_a_id: str
+    block_b_id: str
+    score: float          # LLM contradiction confidence in [0, 1]
+    cosine: float         # embedding similarity at detection (clamped ≥ 0)
+    tag_jaccard: float    # |A∩B| / |A∪B| over the two blocks' tag sets
+    category_match: bool  # block-level proxy for shared framing
+    hours_apart: float    # |hours_a − hours_b| at detection time
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_a_id": self.block_a_id,
+            "block_b_id": self.block_b_id,
+            "score": self.score,
+            "cosine": self.cosine,
+            "tag_jaccard": self.tag_jaccard,
+            "category_match": self.category_match,
+            "hours_apart": self.hours_apart,
+        }
+
+
+@dataclass
 class ConsolidateResult:
     processed: int
     promoted: int
@@ -185,6 +217,10 @@ class ConsolidateResult:
     # ``ConsolidateResult`` even though detection ran and rows were written.
     # Surfaced in v0.14.0 (issue #50 item 1).
     contradictions_detected: int = 0
+    # Per-pair findings with detection-time features (cosine, tag_jaccard,
+    # category_match, hours_apart). Enables agent-side rules without an
+    # extra DB query. Empty when no pairs detected.
+    contradictions: list[ContradictionFinding] = field(default_factory=list)
     # Deep-sleep rescoring counts (v0.13.3). Populated when dream() is
     # called with rescore=True; otherwise zeros. Tracks the second phase
     # of dream — refreshing existing active blocks, separate from the
@@ -219,13 +255,14 @@ class ConsolidateResult:
     def __str__(self) -> str:
         return self.summary
 
-    def to_dict(self) -> dict[str, int]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "processed": self.processed,
             "promoted": self.promoted,
             "deduplicated": self.deduplicated,
             "edges_created": self.edges_created,
             "contradictions_detected": self.contradictions_detected,
+            "contradictions": [c.to_dict() for c in self.contradictions],
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
         }
