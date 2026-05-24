@@ -40,6 +40,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.18.1** | `ContradictionFinding` surfaces per-pair detection-time signals (`cosine`, `tag_jaccard`, `category_match`, `hours_apart`) on `ConsolidateResult.contradictions` — agents can gate suppression rules without recomputing from current block state ([#69](https://github.com/emson/elfmem/pull/69)) | 2026-05-24 |
 | ✅ **v0.18.0** | Manual constitutional review — `review_constitutional()` surfaces drifted constitutional blocks; `accept_amendment()` applies with audit + (α, β) preservation; `revert_amendment()` one-step undo; CLI + MCP surfaces ([#67](https://github.com/emson/elfmem/pull/67)) | 2026-05-23 |
 | ✅ **v0.17.0** | Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) ([#65](https://github.com/emson/elfmem/pull/65)) | 2026-05-23 |
 | ✅ **v0.15.3** | Cold-start centrality floor for fresh blocks ([#61](https://github.com/emson/elfmem/issues/61)) | 2026-05-17 |
