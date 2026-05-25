@@ -9,6 +9,56 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Peer-protocol hardening: the four bugs that surfaced while elf tried to reply
+to Alv (peer registry empty despite YAML declaration, `outbox/alv/` vs
+`inbox/elf-alv/` slug drift, non-atomic envelope writes, silent black-hole
+sends to uninitialised recipients) are all fixed. The fixes are surgical —
+no envelope-schema break, no message-id change — so v0.18 peers remain wire
+compatible.
+
+### Added
+
+- `peers:` top-level list in `config.yaml` is now load-bearing. Each entry is
+  a `PeerSpec` with fields `name` (required), `did` (derived from `name` as
+  `elf:<slug(name)>` when omitted), `description`, `project_root`, `db_path`,
+  `delivery_path` (derived from `project_root` when omitted), and `trust`
+  (default 1.0). `MemorySystem.from_config()` syncs declared peers into
+  `peer_roster` on engine startup — insert-only, so existing operational
+  state (trust adjustments, message counters) is preserved across restarts.
+  Resolves the historical bug where `peers:` was silently ignored by the
+  pydantic loader.
+- `operations.peer.canonical_did(conn, to_peer)` — resolves a recipient
+  argument (DID or display name) to its canonical DID. Used by `peer_send`
+  so callers passing a display name produce the same outbox folder as
+  callers passing the DID. Look-up is name-first against `peer_roster`,
+  falling back to `elf:<slug(name)>` for unknown names.
+- `operations.peer.sync_peers_from_config(conn, peers)` — idempotent
+  upsert of declarative peer state into the roster.
+- `operations.peer.migrate_legacy_outbox_slugs(conn, outbox_dir)` —
+  one-shot rename of pre-canonical `outbox/<name-slug>/` folders to the
+  canonical `outbox/<did-slug>/` form. Refuses to rename when both folders
+  exist; preserves audit history.
+- Recipient-readiness precondition: `peer_send` to a peer with
+  `delivery_path` now verifies `<delivery_path>/../config.yaml` exists
+  before writing. Missing marker raises `PeerError` with the exact
+  `'elfmem init'` invocation in `.recovery`.
+- `config.PeerSpec` accepts the legacy `identity:` field as `description:`
+  (one-release deprecation) so v0.18 configs upgrade without edits.
+
+### Changed
+
+- `_write_message_file` writes envelopes atomically via a dotfile-staged
+  temp + `os.rename`. Duplicate sends of identical content are now true
+  no-ops (idempotent skip when destination exists), aligning the on-disk
+  behaviour with the content-addressable `msg_id` design.
+- `_resolve_delivery` derives the outbox subdirectory from the canonical
+  recipient DID (not the raw `to_peer` argument), so `peer_send("Alv", ...)`
+  and `peer_send("elf:alv", ...)` land in the same folder.
+- `ElfmemConfig` rejects malformed `peers:` at load: duplicate DIDs,
+  self-referential entries (DID equal to `peer.identity`), and shared
+  `project_root` values fail fast with a recovery hint identifying the
+  offending names.
+
 ---
 
 ## [0.18.1] — 2026-05-24

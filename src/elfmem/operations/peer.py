@@ -13,6 +13,7 @@ Transport (moving files between outbox and inbox) is not elfmem's concern.
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,7 @@ from elfmem.db.queries import (
     get_peer,
     get_tags_batch,
     insert_block,
+    insert_peer,
     set_config,
     update_peer_stats,
 )
@@ -475,6 +477,111 @@ async def _import_edges(
     return imported
 
 
+# ── Config → roster sync ─────────────────────────────────────────────────────
+
+
+async def sync_peers_from_config(
+    conn: AsyncConnection, peers: list[Any],
+) -> int:
+    """Insert any config-declared peers that are not yet in ``peer_roster``.
+
+    USE WHEN: Engine startup, after schema migrations. Idempotent.
+    DON'T USE WHEN: You want to overwrite trust/delivery_path on an existing
+        peer — this function is insert-only by design so operational state
+        (trust adjustments, counters) is preserved across restarts.
+    COST: One ``get_peer`` + at most one ``insert_peer`` per config entry.
+    RETURNS: Number of peers newly inserted.
+    NEXT: ``peer_list()`` will now surface every declared peer.
+    """
+    inserted = 0
+    for spec in peers:
+        # PeerSpec.did is filled by config-time validator; never None here.
+        existing = await get_peer(conn, spec.did)
+        if existing is not None:
+            continue
+        await insert_peer(
+            conn,
+            did=spec.did,
+            name=spec.name,
+            is_self=False,
+            delivery_path=spec.delivery_path,
+        )
+        # Apply config-declared trust on first insert. After that, the value
+        # belongs to operational state and is mutated only via peer_trust.
+        if spec.trust != 0.0:
+            from elfmem.db.queries import update_peer_trust
+            await update_peer_trust(conn, spec.did, spec.trust)
+        inserted += 1
+    return inserted
+
+
+# ── Legacy slug migration ────────────────────────────────────────────────────
+
+
+async def migrate_legacy_outbox_slugs(
+    conn: AsyncConnection, outbox_dir: Path,
+) -> dict[str, str]:
+    """One-shot rename of pre-canonical outbox folders to the DID-slug form.
+
+    Before the slug-canonicalisation fix, ``_resolve_delivery`` derived the
+    outbox subdirectory from whatever string the caller passed to
+    ``peer_send`` — so a message addressed to display-name ``"Alv"`` landed
+    in ``outbox/alv/`` while a message to ``"elf:alv"`` landed in
+    ``outbox/elf-alv/``. The canonical form (DID slug) is now the only path
+    written; this function cleans up any legacy folders left behind.
+
+    USE WHEN: Engine startup, after ``sync_peers_from_config``.
+    COST: One ``iterdir`` over ``outbox_dir`` (skipped if absent).
+    RETURNS: Mapping ``{legacy_slug: canonical_slug}`` of renames performed.
+        Empty when no drift is detected.
+
+    Safety: refuses to rename when the canonical destination already exists.
+    The caller (operator) must reconcile manually — silent merge would risk
+    losing audit history.
+    """
+    if not outbox_dir.exists():
+        return {}
+    renamed: dict[str, str] = {}
+    for peer in await get_all_peers(conn):
+        did = peer.get("did")
+        name = peer.get("name")
+        if not did or not name:
+            continue
+        did_slug = _slugify(did)
+        name_slug = _slugify(name)
+        if not name_slug or name_slug == did_slug:
+            continue
+        legacy = outbox_dir / name_slug
+        canonical = outbox_dir / did_slug
+        if legacy.exists() and legacy.is_dir() and not canonical.exists():
+            legacy.rename(canonical)
+            renamed[name_slug] = did_slug
+    return renamed
+
+
+# ── Canonical recipient resolution ───────────────────────────────────────────
+
+
+async def canonical_did(conn: AsyncConnection, to_peer: str) -> str:
+    """Resolve a ``to_peer`` argument (DID or display name) to a canonical DID.
+
+    Rules:
+    - Contains ``:`` → treated as DID, returned verbatim (lowercased).
+    - No ``:`` → matched against ``peer_roster.name`` (case-insensitive).
+      First match wins. No match → derive ``elf:<slug>`` from the name.
+
+    Pure resolution; does not mutate state.
+    """
+    if ":" in to_peer:
+        return to_peer.lower()
+    rows = await get_all_peers(conn)
+    target = to_peer.lower()
+    for row in rows:
+        if (row.get("name") or "").lower() == target:
+            return str(row["did"])
+    return f"elf:{_slugify(to_peer)}"
+
+
 # ── Send message ──────────────────────────────────────────────────────────────
 
 
@@ -499,14 +606,21 @@ async def send_message(
     """
     from elfmem.operations.learn import learn
 
+    # Canonicalise the recipient identifier up-front so every downstream step
+    # (envelope, tag, outbox slug, stats update) uses the same DID. Resolves
+    # the historical 'outbox/alv/' vs 'inbox/elf-alv/' inconsistency: callers
+    # that pass a display name are normalised to the registered DID before
+    # slug derivation. See ADR/peer-protocol refactor.
+    to_did = await canonical_did(conn, to_peer)
+
     msg_id = f"m_{compute_content_hash(content)[:8]}"
-    envelope = _build_envelope(msg_id, identity, to_peer, in_reply_to)
+    envelope = _build_envelope(msg_id, identity, to_did, in_reply_to)
 
     # 1. Store in local memory (heartbeat)
     result = await learn(
         conn,
         content=content,
-        tags=["peer/outbound", f"peer/to:{to_peer}"],
+        tags=["peer/outbound", f"peer/to:{to_did}"],
         category="message",
         source="peer_send",
     )
@@ -519,14 +633,14 @@ async def send_message(
     )
 
     # 2. Resolve delivery target: direct delivery or local outbox
-    peer = await get_peer(conn, to_peer)
+    peer = await get_peer(conn, to_did)
     write_dir, subdir_name = _resolve_delivery(
-        peer, identity, to_peer, outbox_dir,
+        peer, identity, to_did, outbox_dir,
     )
 
     # 3. Write message file (filesystem, milliseconds)
     file_path = _write_message_file(
-        write_dir, subdir_name, msg_id, content, envelope, to_peer,
+        write_dir, subdir_name, msg_id, content, envelope, to_did,
     )
 
     # 4. Create reply edge if this is a response
@@ -535,12 +649,12 @@ async def send_message(
 
     # 5. Update peer stats
     if peer:
-        await update_peer_stats(conn, to_peer, messages_out_delta=1)
+        await update_peer_stats(conn, to_did, messages_out_delta=1)
 
     return PeerSendResult(
         block_id=result.block_id,
         msg_id=msg_id,
-        to_peer=to_peer,
+        to_peer=to_did,
         outbox_path=str(file_path),
         in_reply_to=in_reply_to,
     )
@@ -559,13 +673,41 @@ def _build_envelope(
     }
 
 
+def _verify_recipient_initialized(delivery_path: Path) -> None:
+    """Refuse to drop a message into a directory that is not an elfmem project.
+
+    An elfmem project is identified by ``<project_root>/.elfmem/config.yaml``.
+    ``delivery_path`` is the recipient's inbox dir
+    (``<project_root>/.elfmem/inbox``), so the config sits one level up.
+
+    Raises ``PeerError`` with an actionable ``.recovery`` when the marker is
+    missing — silent black-hole sends are worse than a clear failure.
+    """
+    config_path = delivery_path.parent / "config.yaml"
+    if config_path.exists():
+        return
+    project_root = delivery_path.parent.parent
+    raise PeerError(
+        f"Recipient is not an initialised elfmem instance: "
+        f"missing {config_path}.",
+        recovery=(
+            f"Verify {project_root} is mounted and reachable, then run "
+            f"'elfmem init' there before retrying."
+        ),
+    )
+
+
 def _resolve_delivery(
     peer: dict[str, Any] | None,
     identity: str,
-    to_peer: str,
+    to_did: str,
     outbox_dir: Path,
 ) -> tuple[Path, str]:
     """Choose delivery directory and subdirectory name.
+
+    ``to_did`` is the canonical recipient DID (see ``canonical_did``).
+    Slug derivation uses this DID directly so the same recipient always
+    lands in the same folder regardless of the caller's input form.
 
     Direct delivery (peer has delivery_path):
         dir  = peer's inbox path
@@ -577,15 +719,24 @@ def _resolve_delivery(
     """
     if peer and peer.get("delivery_path"):
         delivery = Path(peer["delivery_path"]).expanduser()
+        _verify_recipient_initialized(delivery)
         return delivery, _slugify(identity)
-    return outbox_dir, _slugify(to_peer)
+    return outbox_dir, _slugify(to_did)
 
 
 def _write_message_file(
     base_dir: Path, subdir_name: str, msg_id: str,
     content: str, envelope: dict[str, Any], to_peer: str,
 ) -> Path:
-    """Write a message JSON file to a subdirectory."""
+    """Write a message JSON file to a subdirectory atomically.
+
+    Atomicity: writes are staged through a dotfile (``.foo.json.tmp``) and
+    promoted via ``os.rename`` — readers globbing ``msg_*.json`` never see
+    a partial file. Idempotent: if the destination already exists (same
+    msg_id ⇒ same content), the write is skipped and the existing path
+    returned. This makes retried sends safe under the existing
+    content-hash-based msg_id scheme.
+    """
     peer_dir = base_dir / subdir_name
     peer_dir.mkdir(parents=True, exist_ok=True)
     path = peer_dir / f"msg_{msg_id}.json"
@@ -596,8 +747,24 @@ def _write_message_file(
         "tags": ["peer/outbound", f"peer/to:{to_peer}"],
         "category": "message",
     }
-    _write_json(path, message)
+    _write_envelope_atomic(path, message)
     return path
+
+
+def _write_envelope_atomic(path: Path, data: dict[str, Any]) -> bool:
+    """Write ``data`` to ``path`` via temp-file + os.rename. Idempotent.
+
+    Returns True on write, False when ``path`` already exists. The temp
+    file is a dotfile (excluded by ``msg_*.json`` glob) so concurrent
+    scanners never observe a half-written envelope.
+    """
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.parent / f".{path.name}.tmp"
+    tmp.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+    os.rename(tmp, path)
+    return True
 
 
 async def _link_reply(
@@ -888,6 +1055,11 @@ def _now_iso() -> str:
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
-    """Write a JSON file atomically."""
+    """Write a JSON file (overwrite semantics).
+
+    Used for export bundles where the caller expects a fresh-on-each-call
+    artefact. Peer messages go through ``_write_envelope_atomic`` instead,
+    which adds dotfile-staging and idempotent skip.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
