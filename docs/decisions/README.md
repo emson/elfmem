@@ -37,3 +37,4 @@ Links to plans, research, issues, simulation results.
 | [0002](0002-v017-scope.md) | v0.17 scope: bundle four scoring fixes | Accepted |
 | [0003](0003-defer-constitutional-evolution.md) | Defer constitutional evolution mechanisms | Accepted |
 | [0004](0004-manual-constitutional-review.md) | Manual constitutional review (v0.18) | Accepted |
+| [0005](0005-peer-protocol-hardening.md) | Peer-protocol hardening (v0.19) | Accepted |

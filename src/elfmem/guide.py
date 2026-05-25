@@ -739,7 +739,10 @@ GUIDES: dict[str, AgentGuide] = {
         when=(
             "Adding a known peer before sending messages or importing their bundles. "
             "With delivery_path: the peer's inbox directory is on a shared/local filesystem "
-            "(Dropbox, NFS, same machine) — messages are written directly without transport."
+            "(Dropbox, NFS, same machine) — messages are written directly without transport. "
+            "Alternative: declare peers in .elfmem/config.yaml under `peers:` "
+            "and they are synced into the roster automatically at startup "
+            "(insert-only, preserves trust/stats on existing peers)."
         ),
         when_not=(
             "You don't know the peer's DID yet — get it from them first. "
@@ -770,16 +773,21 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         when=(
             "Sending a question, observation, or reply to another elfmem instance. "
-            "The peer must exist in the roster (peer_add first)."
+            "The peer must exist in the roster (peer_add first, or via config.yaml peers:). "
+            "Accepts either the DID ('elf:alv') or the display name ('Alv') — both "
+            "resolve to the same canonical folder."
         ),
         when_not=(
             "Sharing bulk knowledge — use export_blocks() instead. "
             "Broadcasting to many peers — send individually; each peer has its own trust."
         ),
-        cost="Instant. No LLM calls. Pure file write.",
+        cost="Instant. No LLM calls. Pure file write (atomic + idempotent).",
         returns=(
             "PeerSendResult with msg_id, to_peer, delivery_path. "
-            "delivery_path shows where the message file was written."
+            "delivery_path shows where the message file was written. "
+            "Identical content sent twice resolves to the same path (no duplicate file). "
+            "Raises PeerError if delivery_path points at a directory that is not an "
+            "initialised elfmem project (missing .elfmem/config.yaml)."
         ),
         next=(
             "The peer picks it up with peer_inbox(). "

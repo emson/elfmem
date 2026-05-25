@@ -19,6 +19,18 @@ from elfmem.types import (
 )
 
 
+def _mark_as_elfmem_project(inbox_dir: Path) -> None:
+    """Create the `config.yaml` marker next to an inbox dir so the recipient
+    initialization precondition (Phase 7) treats it as a valid elfmem peer.
+
+    Real layout: <project_root>/.elfmem/{inbox, config.yaml}. Tests use a
+    flat `tmp_path / "vault_inbox"` layout, so this helper writes the
+    sibling config.yaml that the precondition looks for.
+    """
+    inbox_dir.parent.mkdir(parents=True, exist_ok=True)
+    (inbox_dir.parent / "config.yaml").touch()
+
+
 @pytest.fixture
 async def system(test_engine, mock_llm, mock_embedding) -> MemorySystem:
     cfg = ElfmemConfig(
@@ -310,6 +322,50 @@ class TestMessaging:
         with pytest.raises(PeerError, match="No peer identity"):
             await system.peer_send("elf:trader", "Hello")
 
+    async def test_send_by_display_name_uses_canonical_did_slug(
+        self, system_with_identity: MemorySystem, tmp_path: Path,
+    ):
+        """Regression: outbox folder must derive from canonical DID, not the
+        raw to_peer argument. Passing the display name 'Trader' must land in
+        the same folder as passing 'elf:trader' would have.
+        """
+        system = system_with_identity
+        system._config = system._config.model_copy(update={
+            "peer": PeerConfig(
+                outbox_dir=str(tmp_path / "outbox"),
+                inbox_dir=str(tmp_path / "inbox"),
+            ),
+        })
+        await system.peer_add("elf:trader", "Trader")
+
+        result = await system.peer_send("Trader", "Hello by name")
+        outbox_path = Path(result.outbox_path)
+        # Canonical: elf-trader (slug of elf:trader), not 'trader'.
+        assert outbox_path.parent.name == "elf-trader"
+        assert result.to_peer == "elf:trader"
+
+    async def test_send_is_idempotent_for_identical_content(
+        self, system_with_identity: MemorySystem, tmp_path: Path,
+    ):
+        """Phase 2: duplicate sends of the same content should not produce
+        two files. msg_id is content-addressable; the atomic writer skips
+        when the destination exists.
+        """
+        system = system_with_identity
+        system._config = system._config.model_copy(update={
+            "peer": PeerConfig(
+                outbox_dir=str(tmp_path / "outbox"),
+                inbox_dir=str(tmp_path / "inbox"),
+            ),
+        })
+        await system.peer_add("elf:trader", "Trader")
+        first = await system.peer_send("elf:trader", "exact same content")
+        second = await system.peer_send("elf:trader", "exact same content")
+        assert first.outbox_path == second.outbox_path
+        folder = Path(first.outbox_path).parent
+        files = list(folder.glob("msg_*.json"))
+        assert len(files) == 1
+
     async def test_inbox_empty_returns_zero(self, system_with_identity: MemorySystem, tmp_path: Path):
         system = system_with_identity
         system._config = system._config.model_copy(update={
@@ -584,6 +640,7 @@ class TestDeliveryPath:
         """With delivery_path, message goes to peer's inbox using sender slug."""
         system = system_with_identity
         peer_inbox = tmp_path / "vault_inbox"
+        _mark_as_elfmem_project(peer_inbox)
         system._config = system._config.model_copy(update={
             "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
@@ -625,6 +682,7 @@ class TestDeliveryPath:
         """Send with delivery_path → receiver's inbox scan finds it."""
         system = system_with_identity
         peer_inbox = tmp_path / "vault_inbox"
+        _mark_as_elfmem_project(peer_inbox)
         system._config = system._config.model_copy(update={
             "peer": PeerConfig(
                 outbox_dir=str(tmp_path / "outbox"),
@@ -648,6 +706,7 @@ class TestDeliveryPath:
         """delivery_path directory and sender subdirectory are created automatically."""
         system = system_with_identity
         peer_inbox = tmp_path / "new" / "nested" / "inbox"
+        _mark_as_elfmem_project(peer_inbox)
         system._config = system._config.model_copy(update={
             "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })
@@ -666,6 +725,7 @@ class TestDeliveryPath:
         """Message file has correct envelope regardless of delivery mode."""
         system = system_with_identity
         peer_inbox = tmp_path / "vault_inbox"
+        _mark_as_elfmem_project(peer_inbox)
         system._config = system._config.model_copy(update={
             "peer": PeerConfig(outbox_dir=str(tmp_path / "outbox"), inbox_dir=str(tmp_path / "inbox")),
         })

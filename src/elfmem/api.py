@@ -249,6 +249,25 @@ class MemorySystem:
             # on fresh DBs (the wrapper will set the lock on first embed).
             from elfmem.db.queries import backfill_embedding_lock_if_needed
             await backfill_embedding_lock_if_needed(conn)
+            # Sync config-declared peers into peer_roster (insert-only).
+            # Idempotent: existing peers' trust/stats are preserved; only
+            # missing entries are added. Resolves the historical bug where
+            # peers: in YAML was silently ignored by the config loader.
+            if cfg.peers:
+                from elfmem.operations.peer import sync_peers_from_config
+                await sync_peers_from_config(conn, cfg.peers)
+            # Migrate legacy outbox/<name-slug>/ to the canonical
+            # outbox/<did-slug>/ form. Safe to run unconditionally — does
+            # nothing on instances that never had the pre-canonical layout.
+            project_root_for_migration = _discover_project_root(config)
+            if project_root_for_migration:
+                from elfmem.operations.peer import (
+                    migrate_legacy_outbox_slugs,
+                )
+                outbox_for_migration = (
+                    project_root_for_migration / ".elfmem" / "outbox"
+                )
+                await migrate_legacy_outbox_slugs(conn, outbox_for_migration)
             # Seed _pending from DB so the advisory is accurate on restart.
             # Blocks that survived a crash or process restart are counted.
             initial_pending = await get_inbox_count(conn)

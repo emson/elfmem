@@ -220,8 +220,22 @@ Mind blocks use `DURABLE` decay (~6 month half-life), so mental models persist a
 
 elfmem instances can exchange knowledge and messages. Pull-based, file-mediated, zero infrastructure. Each instance remains sovereign — it owns its blocks, shares selectively, and learns from exchanges through outcome closure.
 
+Peers can be registered either programmatically (`peer_add`) or
+declaratively in `.elfmem/config.yaml` under `peers:` — declared entries
+are synced into the roster on engine startup (insert-only, so manually
+adjusted trust and message counters are preserved).
+
+```yaml
+# .elfmem/config.yaml
+peers:
+  - name: Vault Elf                          # required; did defaults to elf:vault-elf
+    description: Shared knowledge vault       # optional prose
+    project_root: /shared/vaults/elf_vault_proj
+    trust: 1.0                                # applied on first insert only
+```
+
 ```python
-# 1. Set your identity and register a peer
+# 1. Set your identity and register a peer programmatically
 await system.peer_init("research-elf")
 await system.peer_add("elf:trader", "Trading Elf")
 
@@ -231,7 +245,8 @@ await system.peer_add(
     delivery_path="/shared/vaults/elf_vault_proj/.elfmem/inbox",
 )
 
-# 3. Send a message (heartbeat speed, no LLM)
+# 3. Send a message (heartbeat speed, no LLM). DID or display name both work —
+#    both resolve to the same canonical folder via canonical_did().
 result = await system.peer_send("elf:vault", "What's your gilt view this week?")
 print(result)  # "Sent m_a1b2c3d4 to elf:vault → /shared/vaults/.../inbox/research-elf/"
 
@@ -252,6 +267,10 @@ await system.outcome([imported_block_id], signal=0.9, source="gilt prediction co
 ```
 
 **Routing:** If a peer has a `delivery_path`, messages go directly to that directory using your identity slug as the subdirectory. Without it, messages go to your local outbox for manual transport. Self-federation (same identity across machines) uses `--self-merge` with trust 1.0.
+
+**Atomicity & idempotence:** envelopes are staged through a dotfile temp and promoted via `os.rename`, so scanners never see a partial file. Identical content sent twice resolves to the same on-disk path (no duplicate file written) — retries are safe.
+
+**Recipient-readiness:** when `delivery_path` is set, `peer_send` verifies `<delivery_path>/../config.yaml` exists before writing. A missing marker raises `PeerError` with the exact `elfmem init` recovery — replacing silent black-hole sends to unmounted or uninitialised recipients.
 
 **Inbox/outbox location:** Peer messaging is project-scoped. Your inbox is always `<project>/.elfmem/inbox` (and outbox `<project>/.elfmem/outbox`), derived from the project root (the directory containing `.elfmem/config.yaml`). Run `elfmem setup` once per project to initialise it; peer operations outside any project raise `ProjectNotFound` with a recovery hint.
 

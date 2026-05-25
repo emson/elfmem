@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class LLMConfig(BaseModel):
@@ -288,6 +289,80 @@ class ReviewConfig(BaseModel):
     min_age_days: float = Field(default=30.0, ge=0.0)
 
 
+def _slug(text: str) -> str:
+    """Filesystem-safe slug. Lowercase, non-alphanumerics → dashes, trimmed.
+
+    Mirrors ``elfmem.operations.peer._slugify`` — kept here to avoid an import
+    cycle (config.py is leaf-level). The two must stay in lock-step; covered
+    by ``tests/test_peer_config_sync.py::test_slug_matches_operations``.
+    """
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def _derive_did(name: str) -> str:
+    """Derive a canonical ``elf:`` DID from a display name."""
+    return f"elf:{_slug(name)}"
+
+
+_DID_RE = re.compile(r"^[a-z][a-z0-9]*:[a-z0-9][a-z0-9-]*$")
+
+
+class PeerSpec(BaseModel):
+    """Declarative peer registration (read from ``config.yaml peers:``).
+
+    Loaded into the SQLite ``peer_roster`` at engine startup via
+    ``sync_peers_from_config`` — insert-only, so operational state (trust
+    adjustments, message counters) on existing peers is preserved.
+
+    Required: ``name``. Everything else is derived or optional:
+    - ``did`` defaults to ``f"elf:{slug(name)}"`` (canonical identifier).
+    - ``delivery_path`` defaults to ``<project_root>/.elfmem/inbox`` when
+      ``project_root`` is set; otherwise None (sender writes to its own
+      outbox and transport happens externally).
+    - Legacy ``identity:`` (prose) is accepted and remapped to
+      ``description`` with a one-release deprecation.
+    """
+
+    model_config = {"populate_by_name": True, "extra": "allow"}
+
+    name: str
+    did: str | None = None
+    description: str | None = None
+    project_root: str | None = None
+    db_path: str | None = None
+    delivery_path: str | None = None
+    trust: float = 1.0
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_identity(cls, data: object) -> object:
+        # v0.18 and earlier configs used ``identity:`` for what is now
+        # ``description:``. Remap silently when no description is set.
+        if not isinstance(data, dict):
+            return data
+        if "identity" in data and "description" not in data:
+            data = {**data, "description": data.pop("identity")}
+        return data
+
+    @model_validator(mode="after")
+    def _fill_derived(self) -> PeerSpec:
+        # DID: provided value must be canonical; else derive from name.
+        if self.did is None:
+            object.__setattr__(self, "did", _derive_did(self.name))
+        elif not _DID_RE.match(self.did):
+            raise ValueError(
+                f"Peer '{self.name}' has malformed did='{self.did}'. "
+                f"Expected '<scheme>:<name>' (lowercase, [a-z0-9-]). "
+                f"Suggested: '{_derive_did(self.name)}'."
+            )
+        # delivery_path: derive from project_root when not explicit.
+        if self.delivery_path is None and self.project_root:
+            self.delivery_path = str(
+                Path(self.project_root).expanduser() / ".elfmem" / "inbox"
+            )
+        return self
+
+
 class PeerConfig(BaseModel):
     """Configuration for peer communication.
 
@@ -328,8 +403,42 @@ class ElfmemConfig(BaseModel):
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     peer: PeerConfig = Field(default_factory=PeerConfig)
+    peers: list[PeerSpec] = Field(default_factory=list)
     rescore: RescoreConfig = Field(default_factory=RescoreConfig)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
+
+    @model_validator(mode="after")
+    def _validate_peers(self) -> ElfmemConfig:
+        # Duplicate DIDs in config are a load-time error — fail fast with the
+        # offending value so the operator can resolve in one edit.
+        seen_dids: dict[str, str] = {}
+        seen_roots: dict[str, str] = {}
+        self_did = self.peer.identity
+        for peer in self.peers:
+            did = peer.did or ""
+            if did in seen_dids:
+                raise ValueError(
+                    f"Duplicate peer did='{did}' "
+                    f"(names: '{seen_dids[did]}', '{peer.name}'). "
+                    f"Remove one entry from peers: in .elfmem/config.yaml."
+                )
+            seen_dids[did] = peer.name
+            if self_did and did == self_did:
+                raise ValueError(
+                    f"Peer '{peer.name}' has did='{did}' equal to "
+                    f"peer.identity. A peer cannot be self-referential — "
+                    f"change peer.identity or remove this peer entry."
+                )
+            if peer.project_root:
+                resolved = str(Path(peer.project_root).expanduser().resolve())
+                if resolved in seen_roots:
+                    raise ValueError(
+                        f"Peers '{seen_roots[resolved]}' and '{peer.name}' "
+                        f"share project_root='{resolved}'. project_root must "
+                        f"be unique across peers."
+                    )
+                seen_roots[resolved] = peer.name
+        return self
 
     @classmethod
     def from_yaml(cls, path: str) -> ElfmemConfig:
