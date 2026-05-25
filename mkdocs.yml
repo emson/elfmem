@@ -98,6 +98,8 @@ nav:
     - 0001 Power-law decay rejected: decisions/0001-power-law-decay-rejected.md
     - 0002 v0.17 scope: decisions/0002-v017-scope.md
     - 0003 Defer constitutional evolution: decisions/0003-defer-constitutional-evolution.md
+    - 0004 Manual constitutional review: decisions/0004-manual-constitutional-review.md
+    - 0005 Peer-protocol hardening: decisions/0005-peer-protocol-hardening.md
   - Contributing:
     - Code Style: coding_principles.md
     - Testing: testing_principles.md

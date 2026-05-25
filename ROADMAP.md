@@ -55,7 +55,31 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## In Progress
 
-_Nothing currently committed. v0.19 scope is observation-driven — see **Next**._
+### 🚧 v0.19.0 — Peer-protocol hardening
+
+Branch `peer-protocol-refactor`. Surgical fixes for the four bugs that
+surfaced trying to reply to a configured-but-unregistered peer (Alv):
+
+- `peers:` in `config.yaml` is now load-bearing (`PeerSpec` with `did` /
+  `description` / `project_root` / `delivery_path` / `trust`). Engine
+  startup syncs declared peers into `peer_roster` insert-only —
+  operational state (trust, message counters) is preserved across restarts.
+- `peer_send` resolves the recipient arg (DID or display name) to its
+  canonical DID before slug derivation, so `peer_send("Alv", …)` and
+  `peer_send("elf:alv", …)` land in the same outbox folder.
+- Envelopes write atomically (dotfile temp + `os.rename`) with idempotent
+  skip on duplicate content — true no-op on retry.
+- Recipient-readiness precondition: `peer_send` to a `delivery_path`
+  whose sibling `.elfmem/config.yaml` is missing raises `PeerError` with
+  an `elfmem init` recovery hint, replacing silent black-hole sends.
+- One-shot legacy folder migration: pre-canonical `outbox/<name-slug>/`
+  is renamed to `outbox/<did-slug>/` on startup; refuses on collision.
+
+Wire-compatible with v0.18 peers (no envelope or `msg_id` change, no DB
+schema migration). Deferred to a follow-up PR: envelope `schema_version`
+with time-bucketed `msg_id`, and quarantine routing for unknown senders
+and corrupt envelopes — no current bug, no urgency. See
+[ADR 0005](docs/decisions/0005-peer-protocol-hardening.md).
 
 ---
 
