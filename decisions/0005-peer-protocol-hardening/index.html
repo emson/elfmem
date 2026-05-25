@@ -10,27 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://emson.github.io/elfmem/research/long_term_evolution/closed_form_analysis/">
+        <link rel="canonical" href="https://emson.github.io/elfmem/decisions/0005-peer-protocol-hardening/">
       
       
+        <link rel="prev" href="../0004-manual-constitutional-review/">
+      
+      
+        <link rel="next" href="../../coding_principles/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Closed-form analysis of elfmem's long-term dynamics - elfmem</title>
+        <title>0005 Peer-protocol hardening - elfmem</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -49,7 +53,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#closed-form-analysis-of-elfmems-long-term-dynamics" class="md-skip">
+        <a href="#0005-peer-protocol-hardening-surgical-fixes-over-architectural-rewrite" class="md-skip">
           Skip to content
         </a>
       
@@ -90,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -110,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Closed-form analysis of elfmem's long-term dynamics
+              0005 Peer-protocol hardening
             
           </span>
         </div>
@@ -217,7 +221,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -236,7 +240,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../quickstart/" class="md-tabs__link">
+      <a href="../../quickstart/" class="md-tabs__link">
         
   
   
@@ -255,7 +259,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../roadmap/" class="md-tabs__link">
+      <a href="../../roadmap/" class="md-tabs__link">
         
   
   
@@ -276,7 +280,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../SETUP_AND_CONFIG/" class="md-tabs__link">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
           
   
   
@@ -296,7 +300,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../agent_usage_patterns_guide/" class="md-tabs__link">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
           
   
   
@@ -316,7 +320,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../amgs_architecture/" class="md-tabs__link">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
           
   
   
@@ -336,7 +340,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
           
   
   
@@ -356,7 +360,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../" class="md-tabs__link">
+        <a href="../../research/long_term_evolution/" class="md-tabs__link">
           
   
   
@@ -372,11 +376,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../decisions/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -396,7 +402,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../coding_principles/" class="md-tabs__link">
+        <a href="../../coding_principles/" class="md-tabs__link">
           
   
   
@@ -416,7 +422,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../plans/" class="md-tabs__link">
+        <a href="../../plans/" class="md-tabs__link">
           
   
   
@@ -456,7 +462,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -486,7 +492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -513,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -540,7 +546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../roadmap/" class="md-nav__link">
+      <a href="../../roadmap/" class="md-nav__link">
         
   
   
@@ -619,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SETUP_AND_CONFIG/" class="md-nav__link">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
         
   
   
@@ -647,7 +653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
         
   
   
@@ -675,7 +681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MCP_SERVER_SETUP/" class="md-nav__link">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
         
   
   
@@ -703,7 +709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
         
   
   
@@ -731,7 +737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../multiple_mcp_steps/" class="md-nav__link">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
         
   
   
@@ -759,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dev_setup/" class="md-nav__link">
+      <a href="../../dev_setup/" class="md-nav__link">
         
   
   
@@ -846,7 +852,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../agent_usage_patterns_guide/" class="md-nav__link">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
         
   
   
@@ -874,7 +880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../cognitive_loop_operations_guide/" class="md-nav__link">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
         
   
   
@@ -902,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operationalize_cognitive_loop/" class="md-nav__link">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
         
   
   
@@ -989,7 +995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../amgs_architecture/" class="md-nav__link">
+      <a href="../../amgs_architecture/" class="md-nav__link">
         
   
   
@@ -1017,7 +1023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../simulation_overview/" class="md-nav__link">
+      <a href="../../simulation_overview/" class="md-nav__link">
         
   
   
@@ -1045,7 +1051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dreaming_architecture/" class="md-nav__link">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
         
   
   
@@ -1073,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../graph_connect_design/" class="md-nav__link">
+      <a href="../../graph_connect_design/" class="md-nav__link">
         
   
   
@@ -1101,7 +1107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../agent_friendly_principles/" class="md-nav__link">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
         
   
   
@@ -1188,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
         
   
   
@@ -1216,7 +1222,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../elfmem_tool/" class="md-nav__link">
+      <a href="../../elfmem_tool/" class="md-nav__link">
         
   
   
@@ -1303,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../research/long_term_evolution/" class="md-nav__link">
         
   
   
@@ -1331,7 +1337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../scoring_proposed_evaluation/" class="md-nav__link">
+      <a href="../../research/scoring_proposed_evaluation/" class="md-nav__link">
         
   
   
@@ -1359,7 +1365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../memory_scoring_survey/" class="md-nav__link">
+      <a href="../../research/memory_scoring_survey/" class="md-nav__link">
         
   
   
@@ -1387,7 +1393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../methodology/longitudinal_evaluation/" class="md-nav__link">
+      <a href="../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
         
   
   
@@ -1415,7 +1421,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../graph_improvement_research/" class="md-nav__link">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
         
   
   
@@ -1443,7 +1449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../research_agent_patterns/" class="md-nav__link">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
         
   
   
@@ -1471,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../visualisation_research/" class="md-nav__link">
+      <a href="../../visualisation_research/" class="md-nav__link">
         
   
   
@@ -1499,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../simulation_behaviour_research/" class="md-nav__link">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
         
   
   
@@ -1527,7 +1533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../design_simulation_guide/" class="md-nav__link">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
         
   
   
@@ -1555,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../design_simulation_quick_ref/" class="md-nav__link">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
         
   
   
@@ -1587,26 +1593,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -1624,7 +1635,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1642,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../decisions/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -1670,7 +1681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+      <a href="../0001-power-law-decay-rejected/" class="md-nav__link">
         
   
   
@@ -1698,7 +1709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../decisions/0002-v017-scope/" class="md-nav__link">
+      <a href="../0002-v017-scope/" class="md-nav__link">
         
   
   
@@ -1726,7 +1737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+      <a href="../0003-defer-constitutional-evolution/" class="md-nav__link">
         
   
   
@@ -1754,7 +1765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+      <a href="../0004-manual-constitutional-review/" class="md-nav__link">
         
   
   
@@ -1779,10 +1790,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1798,6 +1836,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-defers-and-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this defers (and why)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-surgical-wins-under-our-axioms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why surgical wins under our axioms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trigger-conditions-to-revisit-deferred-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trigger conditions to revisit deferred phases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1869,7 +2015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../coding_principles/" class="md-nav__link">
+      <a href="../../coding_principles/" class="md-nav__link">
         
   
   
@@ -1897,7 +2043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../testing_principles/" class="md-nav__link">
+      <a href="../../testing_principles/" class="md-nav__link">
         
   
   
@@ -1984,7 +2130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../plans/" class="md-nav__link">
+      <a href="../../plans/" class="md-nav__link">
         
   
   
@@ -2039,10 +2185,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#d1-beta-binomial-inertness-signal-saturation" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D1 — Beta-Binomial inertness (signal saturation)
+        Context
       
     </span>
   </a>
@@ -2050,10 +2196,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#d2-decay-half-life-by-tier" class="md-nav__link">
+  <a href="#alternatives-considered" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D2 — Decay half-life by tier
+        Alternatives considered
       
     </span>
   </a>
@@ -2061,10 +2207,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#d3-cold-start-floor-active-window" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D3 — Cold-start floor active window
+        Decision
       
     </span>
   </a>
@@ -2072,10 +2218,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#d4-structural-constitutional-dominance-in-attention" class="md-nav__link">
+  <a href="#what-this-defers-and-why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D4 — Structural constitutional dominance in ATTENTION
+        What this defers (and why)
       
     </span>
   </a>
@@ -2083,10 +2229,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#d5-constitutional-permanence-horizon" class="md-nav__link">
+  <a href="#why-surgical-wins-under-our-axioms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D5 — Constitutional permanence horizon
+        Why surgical wins under our axioms
       
     </span>
   </a>
@@ -2094,10 +2240,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#d6-rescore-power-against-ossified-blocks" class="md-nav__link">
+  <a href="#trigger-conditions-to-revisit-deferred-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D6 — Rescore power against ossified blocks
+        Trigger conditions to revisit deferred phases
       
     </span>
   </a>
@@ -2105,10 +2251,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#summary-what-the-math-constrains" class="md-nav__link">
+  <a href="#test-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary — what the math constrains
+        Test surface
       
     </span>
   </a>
@@ -2116,10 +2262,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reproducing" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reproducing
+        References
       
     </span>
   </a>
@@ -2143,7 +2289,7 @@
 
 
   
-    <a href="https://github.com/emson/elfmem/edit/main/docs/research/long_term_evolution/closed_form_analysis.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/emson/elfmem/edit/main/docs/decisions/0005-peer-protocol-hardening.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2151,270 +2297,88 @@
   
 
 
-<h1 id="closed-form-analysis-of-elfmems-long-term-dynamics">Closed-form analysis of elfmem's long-term dynamics<a class="headerlink" href="#closed-form-analysis-of-elfmems-long-term-dynamics" title="Permanent link">&para;</a></h1>
-<p><strong>Source</strong>: <code>scripts/longitudinal_sim/closed_form.py</code> — runnable derivations
-<strong>Purpose</strong>: identify structural constraints that any architectural proposal must respect
-<strong>Reproduces in</strong>: ~1 second, no DB, no LLM</p>
-<p>Six analytical derivations of elfmem's dynamics. Each derives a constraint from
-the actual production formulas in <code>src/elfmem/scoring.py</code> and
-<code>src/elfmem/operations/outcome.py</code>. The numerical values use Dmitry's reported
-4h/day usage rate.</p>
-<hr />
-<h2 id="d1-beta-binomial-inertness-signal-saturation">D1 — Beta-Binomial inertness (signal saturation)<a class="headerlink" href="#d1-beta-binomial-inertness-signal-saturation" title="Permanent link">&para;</a></h2>
-<p>Marginal effect of one new outcome with signal <code>s</code> and weight <code>w</code>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Δc ≈ w × (s - c_N) / (1 + N + w)
-</span></code></pre></div>
-<p>where <code>N</code> is the count of prior outcomes. At N=100, weight=1, discrepancy=0.4:
-<strong>Δc ≈ 0.004</strong>. The block is asymptotically frozen.</p>
+<h1 id="0005-peer-protocol-hardening-surgical-fixes-over-architectural-rewrite">0005 — Peer-protocol hardening: surgical fixes over architectural rewrite<a class="headerlink" href="#0005-peer-protocol-hardening-surgical-fixes-over-architectural-rewrite" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted — implemented on branch <code>peer-protocol-refactor</code>
+<strong>Date</strong>: 2026-05-25
+<strong>Deciders</strong>: elf (curator), Ben</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Four bugs surfaced when elf attempted to reply to a configured-but-unregistered peer (Alv):</p>
+<ol>
+<li><code>peers:</code> declared in <code>.elfmem/config.yaml</code> was silently dropped — <code>ElfmemConfig</code> had no <code>peers</code> field, so pydantic ignored the section. <code>peer_list()</code> returned empty despite the YAML declaration.</li>
+<li>Outbox slug derivation drifted from inbox slug derivation. <code>peer_send("Alv", …)</code> produced <code>outbox/alv/</code>; <code>peer_send("elf:alv", …)</code> produced <code>outbox/elf-alv/</code>. Same recipient, two folders.</li>
+<li><code>_write_message_file</code> claimed atomicity but used direct <code>path.write_text</code>. Concurrent scanners could observe half-written envelopes; duplicate sends silently overwrote.</li>
+<li><code>peer_send</code> to a peer whose <code>delivery_path</code> pointed at an unmounted or uninitialised directory wrote to a black hole — no error, no audit, just lost messages.</li>
+</ol>
+<p>Twenty stress-test scenarios on the proposed design (see prior conversation) exposed a much larger refactor surface: a <code>PeerDID</code> value object, an envelope-schema rewrite with <code>schema_version</code> and time-bucketed <code>msg_id</code>, quarantine routing for unknown senders and corrupt envelopes, full filesystem migration. ~500+ LOC across every peer code path.</p>
+<p>A choice was needed: ship the four-bug surgical fix, or the full architectural cleanup.</p>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Surgical fix (~150 LOC)</strong>: config sync + slug canonicalisation + atomic write + recipient precondition + legacy folder migration. Bugs fixed, no envelope-schema break, no DB schema migration.</li>
+<li><strong>Surgical + envelope hardening (~300 LOC)</strong>: surgical + <code>schema_version</code> field + time-bucketed <code>msg_id</code> + quarantine paths. Forward-compatible envelope, but breaks wire format with v0.18 peers and requires receiver migration.</li>
+<li><strong>Full iterated design (~500+ LOC)</strong>: option 2 + <code>PeerDID</code> dataclass threaded through every signature + complete inbox-scanner rewrite + multiple quarantine reasons. High blast radius, multi-PR safety required.</li>
+</ol>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p><strong>Ship option 1.</strong> Phases 1, 2, 3, 4, 7, 8 from the iterated design. Defer phases 5 (envelope <code>schema_version</code> + time-bucketed <code>msg_id</code>) and 6 (quarantine routing) to a follow-up PR.</p>
+<p>Load-bearing choices inside option 1:</p>
+<ul>
+<li><strong><code>peer_roster</code> remains the canonical registry; config syncs into it.</strong> Not the other way around. Insert-only: declared trust applies at first sync; subsequent runtime adjustments via <code>peer_trust</code> are never overwritten. The operator declares peers in <code>config.yaml</code>; operational state belongs to the database.</li>
+<li><strong>DIDs are strings, not a value object.</strong> A <code>PeerDID</code> dataclass would have to be threaded through every public and private signature touching a recipient — large churn for marginal type-safety. Instead, one <code>canonical_did(conn, to_peer)</code> helper resolves any caller input (DID, display name, mixed case) to the canonical form before slug derivation. Strings everywhere, one canonicalisation function.</li>
+<li><strong>Atomic write via dotfile temp + <code>os.rename</code>.</strong> Idempotent: if the destination already exists (same content-hashed <code>msg_id</code>), <code>_write_envelope_atomic</code> returns <code>False</code> and the existing path is reused. Aligns the on-disk behaviour with the content-addressable <code>msg_id</code> design.</li>
+<li><strong>Recipient-readiness is a hard fail.</strong> Soft-degrading to local-outbox would mask configuration drift. <code>PeerError</code> with the exact <code>elfmem init</code> invocation in <code>.recovery</code> lets the agent fix and retry.</li>
+<li><strong>Legacy folder migration is auto-apply, refuse-on-conflict.</strong> Single-folder drift (<code>outbox/alv/</code> only) is renamed silently with INFO log; both-folder drift (<code>outbox/alv/</code> <em>and</em> <code>outbox/elf-alv/</code>) is refused with a <code>.recovery</code> instructing manual merge. Silent merge could lose audit history.</li>
+</ul>
+<h2 id="what-this-defers-and-why">What this defers (and why)<a class="headerlink" href="#what-this-defers-and-why" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Phase 5 — <code>Envelope.schema_version</code> + time-bucketed <code>msg_id</code>.</strong> The current <code>msg_id = f"m_{hash(content)[:8]}"</code> collapses two legitimate "ping" sends from the same sender on the same day into one. Real bug <em>only</em> under high-frequency repeat-content scenarios; peer messaging today is conversational, not telemetric. No production complaint. Defer.</li>
+<li><strong>Phase 6 — Quarantine routing.</strong> Unknown senders currently land in their named subdirectory like any other; malformed envelopes fail silently in <code>_parse_message</code>. Refactor would route both to <code>inbox/.unknown/&lt;did&gt;/</code> and <code>inbox/.quarantine/&lt;reason&gt;/</code> for operator review. Useful for hardening federation at 10k+ users (per the cloud-architecture sketch); not load-bearing for the elf↔Alv use case today. Defer.</li>
+</ul>
+<h2 id="why-surgical-wins-under-our-axioms">Why surgical wins under our axioms<a class="headerlink" href="#why-surgical-wins-under-our-axioms" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>N</th>
-<th>Δc at s−c=0.4, w=1.0</th>
-<th>Δc at rescore w=0.5</th>
+<th>Axiom</th>
+<th>How option 1 honours it</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>0</td>
-<td>0.2000</td>
-<td>0.1333</td>
+<td>Minimum earned change</td>
+<td>Every line of code closes a specific named bug. No speculative refactor.</td>
 </tr>
 <tr>
-<td>10</td>
-<td>0.0333</td>
-<td>0.0190</td>
+<td>Single source of truth</td>
+<td>One slugifier (<code>_slugify</code>), one canonicaliser (<code>canonical_did</code>), one atomic writer (<code>_write_envelope_atomic</code>).</td>
 </tr>
 <tr>
-<td>100</td>
-<td>0.0040</td>
-<td>0.0020</td>
+<td>Fail fast</td>
+<td><code>PeerError</code> at every boundary that can fail: malformed DID, unknown peer, uninitialised recipient.</td>
 </tr>
 <tr>
-<td>500</td>
-<td>0.0008</td>
-<td>0.0004</td>
+<td>No defensive code</td>
+<td>Recipient-readiness raises rather than silently falling back.</td>
+</tr>
+<tr>
+<td>Agent-first contract</td>
+<td>Every new exception carries <code>.recovery</code>; the <code>peer_send</code> guide entry now documents the new failure mode.</td>
+</tr>
+<tr>
+<td>SIMPLE · ELEGANT</td>
+<td>No new dataclass. No new envelope schema. No new quarantine machinery. Six small functions added; one bug-fix per.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Implication</strong>: any mechanism that relies on accumulated outcomes to drive
-long-term identity change fails by year 1 of heavy usage. Additive rescore
-(v0.16, weight=0.5) protects evidence but cannot rescue ossified blocks.</p>
-<h2 id="d2-decay-half-life-by-tier">D2 — Decay half-life by tier<a class="headerlink" href="#d2-decay-half-life-by-tier" title="Permanent link">&para;</a></h2>
-<p>At 4 active hours/day:</p>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>λ</th>
-<th>Half-life (hrs)</th>
-<th>Half-life (days)</th>
-<th>10%-life (days)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>PERMANENT</td>
-<td>0.00001</td>
-<td>69,315</td>
-<td>17,329</td>
-<td>57,564</td>
-</tr>
-<tr>
-<td>DURABLE</td>
-<td>0.001</td>
-<td>693</td>
-<td>173</td>
-<td>576</td>
-</tr>
-<tr>
-<td>STANDARD</td>
-<td>0.010</td>
-<td>69</td>
-<td>17</td>
-<td>58</td>
-</tr>
-<tr>
-<td>EPHEMERAL</td>
-<td>0.050</td>
-<td>14</td>
-<td>3.5</td>
-<td>12</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Implication</strong>: a STANDARD block must be reinforced within ~17 days or its
-recency falls below 50%. The v0.15.3 cold-start floor extends only the first
-~9 active days (D3 below). After that, blocks must accumulate edges or
-outcomes — or sink.</p>
-<h2 id="d3-cold-start-floor-active-window">D3 — Cold-start floor active window<a class="headerlink" href="#d3-cold-start-floor-active-window" title="Permanent link">&para;</a></h2>
-<p>The v0.15.3 floor is active while <code>recency &gt; 0.70</code>. For STANDARD tier:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>hours = -ln(0.70) / λ = 35.67 hours = 8.9 days at 4h/day
-</span></code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>Floor active for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>PERMANENT</td>
-<td>35,667 hours</td>
-</tr>
-<tr>
-<td>DURABLE</td>
-<td>357 hours</td>
-</tr>
-<tr>
-<td>STANDARD</td>
-<td><strong>35.7 hours (8.9 days)</strong></td>
-</tr>
-<tr>
-<td>EPHEMERAL</td>
-<td>7.1 hours</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Implication</strong>: cold-start protection is real but brief. After ~9 days a
-STANDARD block must have earned edges or outcomes to survive.</p>
-<h2 id="d4-structural-constitutional-dominance-in-attention">D4 — Structural constitutional dominance in ATTENTION<a class="headerlink" href="#d4-structural-constitutional-dominance-in-attention" title="Permanent link">&para;</a></h2>
-<p>ATTENTION_WEIGHTS: <code>sim=0.35, conf=0.15, rec=0.25, cent=0.15, reinf=0.10</code>.</p>
-<p>Decomposing the bedrock-vs-new baseline (similarity excluded):</p>
-<table>
-<thead>
-<tr>
-<th>Channel</th>
-<th>Bedrock contrib</th>
-<th>New-block contrib (with floor)</th>
-<th>Δ</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>confidence</td>
-<td>0.15 × 1.0 = 0.150</td>
-<td>0.15 × 1.0 = 0.150</td>
-<td>0</td>
-</tr>
-<tr>
-<td>recency</td>
-<td>0.25 × 0.95 = 0.238</td>
-<td>0.25 × 1.00 = 0.250</td>
-<td>+0.013</td>
-</tr>
-<tr>
-<td>centrality</td>
-<td>0.15 × 0.80 = 0.120</td>
-<td>0.15 × 0.50 = 0.075</td>
-<td>-0.045</td>
-</tr>
-<tr>
-<td>reinforcement</td>
-<td>0.10 × 1.0 = 0.100</td>
-<td>0.10 × 0.0 = 0.000</td>
-<td>-0.100</td>
-</tr>
-<tr>
-<td><strong>non-similarity total</strong></td>
-<td><strong>0.608</strong></td>
-<td><strong>0.475</strong></td>
-<td><strong>−0.133</strong></td>
-</tr>
-</tbody>
-</table>
-<p>A new block needs to beat the bedrock by 0.133 / 0.35 = <strong>0.38 similarity</strong> to
-win on similarity alone. Realistic similarity gaps don't reach that.</p>
-<p><strong>Implication</strong>: in ATTENTION, constitutional bedrock with thematic overlap
-≥ ~0.75 cannot be beaten by any new block under current weights. This is the
-"shadow hierarchy" Dmitry projected — and it's mathematically inevitable, not
-a tuning bug.</p>
-<h2 id="d5-constitutional-permanence-horizon">D5 — Constitutional permanence horizon<a class="headerlink" href="#d5-constitutional-permanence-horizon" title="Permanent link">&para;</a></h2>
-<p>PERMANENT tier <code>λ = 0.00001</code>. At 4h/day:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>recency=0.50 reached at 69,315 active hours = 47.5 years
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>recency=0.10 reached at 230,259 active hours = 158 years
-</span></code></pre></div>
-<p><strong>Implication</strong>: PERMANENT blocks are immortal on any human timescale.
-Constitutional evolution cannot be driven by decay. It requires either
-(a) explicit user amendment, (b) a tier-demotion mechanism, or (c) excluding
-constitutional from ranking competition entirely.</p>
-<h2 id="d6-rescore-power-against-ossified-blocks">D6 — Rescore power against ossified blocks<a class="headerlink" href="#d6-rescore-power-against-ossified-blocks" title="Permanent link">&para;</a></h2>
-<p>Block earned to <code>c=0.85</code> over N outcomes. Rescore with <code>α=0.55</code>, weight=0.5:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>new_c = (α_N + 0.55 × 0.5) / (α_N + β_N + 0.5)
-</span></code></pre></div>
-<table>
-<thead>
-<tr>
-<th>N</th>
-<th>new c</th>
-<th>Δc</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>0.7900</td>
-<td>−0.060</td>
-</tr>
-<tr>
-<td>10</td>
-<td>0.8370</td>
-<td>−0.013</td>
-</tr>
-<tr>
-<td>100</td>
-<td><strong>0.8485</strong></td>
-<td><strong>−0.0015</strong></td>
-</tr>
-<tr>
-<td>500</td>
-<td>0.8497</td>
-<td>−0.0003</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Implication</strong>: additive rescore protects evidence (~30× less destructive
-than overwriting) but cannot rescue ossified blocks. Once N&gt;&gt;100, rescore is
-bookkeeping. For an agent to evolve, a different mechanism is required:
-constitutional review cycles, tier demotion, or candidate-pool changes.</p>
-<hr />
-<h2 id="summary-what-the-math-constrains">Summary — what the math constrains<a class="headerlink" href="#summary-what-the-math-constrains" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Finding</th>
-<th>Constrains</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>D1 + D6</td>
-<td>No "more aggressive rescore" can fix ossification</td>
-</tr>
-<tr>
-<td>D2 + D3</td>
-<td>Cold-start window is ~9 days at typical usage</td>
-</tr>
-<tr>
-<td>D4</td>
-<td>Constitutional dominance is structural, not parametric</td>
-</tr>
-<tr>
-<td>D5</td>
-<td>PERMANENT tier blocks need an evolution mechanism beyond decay</td>
-</tr>
-</tbody>
-</table>
-<p>These constraints informed every architectural proposal explored in this
-research directory. Any future proposal should be tested against the same
-formulas before being committed to.</p>
-<hr />
-<h2 id="reproducing">Reproducing<a class="headerlink" href="#reproducing" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.longitudinal_sim.closed_form
-</span></code></pre></div>
-<p>Output is deterministic. The numerical values in this document are pinned by
-that script.</p>
+<h2 id="trigger-conditions-to-revisit-deferred-phases">Trigger conditions to revisit deferred phases<a class="headerlink" href="#trigger-conditions-to-revisit-deferred-phases" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Reopen phase 5</strong> if production traffic includes legitimate repeat-content sends (e.g., periodic ping or heartbeat envelopes) and msg_id collisions are observed.</li>
+<li><strong>Reopen phase 6</strong> if the peer roster grows beyond ~10 entries, <em>or</em> if we federate to a product-elf at scale where unknown-sender volume justifies systematic quarantine handling. The cloud-architecture sketch (note pending peer-send to Alv) is the natural forcing function.</li>
+</ul>
+<h2 id="test-surface">Test surface<a class="headerlink" href="#test-surface" title="Permanent link">&para;</a></h2>
+<p>115 peer-area tests pass (81 baseline + 34 new). Full suite green at 1123. No DB schema migration; <code>CURRENT_SCHEMA_VERSION</code> unchanged at 5.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Branch: <code>peer-protocol-refactor</code>, commit <code>502f90c</code></li>
+<li>Stored note to Alv (block <code>b49b58048714154a</code>): cloud-architecture reasoning that motivated the federation primitives this refactor now makes robust.</li>
+</ul>
 
 
 
@@ -2491,10 +2455,10 @@ that script.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
