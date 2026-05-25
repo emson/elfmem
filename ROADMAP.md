@@ -6,8 +6,9 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-23 (post-v0.18 release). Reviewed quarterly. Open issues at
-> [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
+> **Last reviewed**: 2026-05-25 (during v0.19 peer-protocol hardening; original
+> v0.19 production-signal slot shifted to v0.20). Reviewed quarterly. Open
+> issues at [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
 
@@ -87,14 +88,19 @@ and corrupt envelopes — no current bug, no urgency. See
 
 Driven by production signal from v0.17 and v0.18. Specific items not yet committed.
 
-### 📋 v0.19 — Production signal response
+### 📋 v0.20 — Production signal response
 
-v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.19 scope depends on:
+> Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
+> (an unplanned signal from elf's own peer-messaging usage; see "In Progress"
+> above and [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)). The
+> telemetry gate is unchanged — date-bound, not version-bound.
+
+v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in [archived plan](docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
 - ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
 - Any newly-observed systematic failure modes — especially around the new amendment loop
 
-Possible v0.19 candidates (each requires its own ADR before committing):
+Possible v0.20 candidates (each requires its own ADR before committing):
 - **Amendment loop tuning** if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
 - **Stronger rescore tuning** if v0.17 defaults need adjustment
 - **Scheduled review triggers** — `dream(review=True)` integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)
@@ -123,6 +129,22 @@ Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simula
 ### 🔍 Multi-context (work-self vs personal-self)
 
 Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.
+
+### 🔍 Peer-protocol architectural cleanup (phases 5 & 6 of v0.19)
+
+[ADR 0005](docs/decisions/0005-peer-protocol-hardening.md) deferred two phases from v0.19 because no current bug justified the blast radius. They unblock on trigger, not on a date:
+
+- **Phase 5 — Envelope `schema_version` + time-bucketed `msg_id`**. Current
+  `msg_id = m_<hash(content)[:8]>` collapses two legitimate repeat-content sends
+  from the same sender into one message. **Trigger to reopen**: production logs
+  show `msg_id` collisions in real traffic, or wire-format evolution forces a
+  versioned envelope. (Requires observability — see "Issues" in the change
+  notes; no collision counter exists today.)
+- **Phase 6 — Quarantine routing for unknown senders and corrupt envelopes**.
+  Unknown senders currently land in their named subdirectory; malformed JSON
+  fails silently in `_parse_message`. **Trigger to reopen**: peer roster grows
+  beyond ~10 entries (federation noise becomes material), or federation to a
+  product-elf at scale (per the cloud-architecture sketch in `note-to-alv`).
 
 ---
 
@@ -173,9 +195,10 @@ Things we considered and decided **not** to do. Documented so they aren't reliti
 
 Not committed, but where this is heading.
 
-- **v0.18+**: production signal response (above)
-- **v0.19**: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed
-- **v0.20+**: earned architectural features (only the deferred items that empirical evidence supports)
+- **v0.19**: peer-protocol hardening (shipped/shipping — unplanned, signal-driven)
+- **v0.20+**: production signal response (originally v0.19; gated on ≥3 months of v0.17/v0.18 telemetry)
+- **v0.21+**: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed
+- **v0.22+**: earned architectural features (only the deferred items that empirical evidence supports)
 - **v1.0**: public API freeze. Stable for years. Backwards-compatible changes only.
 
 **Discipline**: every subsequent layer must be earned with evidence — not designed in advance.
