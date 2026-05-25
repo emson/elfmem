@@ -13,8 +13,10 @@ Transport (moving files between outbox and inbox) is not elfmem's concern.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -44,6 +46,8 @@ from elfmem.types import (
     PeerInboxStatus,
     PeerSendResult,
 )
+
+logger = logging.getLogger(__name__)
 
 BUNDLE_VERSION = 2
 # v1 bundles (from v0.15 / v0.16 peers) are still readable — they ship only
@@ -757,8 +761,20 @@ def _write_envelope_atomic(path: Path, data: dict[str, Any]) -> bool:
     Returns True on write, False when ``path`` already exists. The temp
     file is a dotfile (excluded by ``msg_*.json`` glob) so concurrent
     scanners never observe a half-written envelope.
+
+    Duplicate-skip path logs ``peer.envelope.duplicate_skipped`` with the
+    existing file's age. Short age (seconds) ⇒ retry-class dedup (correct
+    behaviour). Long age (hours) ⇒ legitimate repeat-content collision —
+    the signal that would trigger reopening phase 5 of ADR 0005
+    (time-bucketed ``msg_id``). No counter is persisted; ``grep`` on age
+    distribution is the analysis path.
     """
     if path.exists():
+        age_seconds = time.time() - path.stat().st_mtime
+        logger.info(
+            "peer.envelope.duplicate_skipped path=%s age=%.1fs",
+            path, age_seconds,
+        )
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.parent / f".{path.name}.tmp"
