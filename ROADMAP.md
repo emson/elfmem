@@ -6,8 +6,8 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-25 (during v0.19 peer-protocol hardening; original
-> v0.19 production-signal slot shifted to v0.20). Reviewed quarterly. Open
+> **Last reviewed**: 2026-05-25 (post-v0.19.0 release; original v0.19
+> production-signal slot shifted to v0.20). Reviewed quarterly. Open
 > issues at [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
@@ -41,6 +41,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.19.0** | Peer-protocol hardening — `peers:` in `config.yaml` now load-bearing; canonical-DID routing eliminates `outbox/alv/` vs `inbox/elf-alv/` slug drift; atomic + idempotent envelope writes (dotfile temp + `os.rename`); recipient-readiness precondition replaces silent black-hole sends; one-shot legacy folder migration. Wire-compatible with v0.18 peers ([#71](https://github.com/emson/elfmem/pull/71), [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)) | 2026-05-25 |
 | ✅ **v0.18.1** | `ContradictionFinding` surfaces per-pair detection-time signals (`cosine`, `tag_jaccard`, `category_match`, `hours_apart`) on `ConsolidateResult.contradictions` — agents can gate suppression rules without recomputing from current block state ([#69](https://github.com/emson/elfmem/pull/69)) | 2026-05-24 |
 | ✅ **v0.18.0** | Manual constitutional review — `review_constitutional()` surfaces drifted constitutional blocks; `accept_amendment()` applies with audit + (α, β) preservation; `revert_amendment()` one-step undo; CLI + MCP surfaces ([#67](https://github.com/emson/elfmem/pull/67)) | 2026-05-23 |
 | ✅ **v0.17.0** | Bayesian sufficient statistics (α, β); additive rescore (22× damage reduction); arithmetic peer merge (BUNDLE_VERSION 2); exploration bonus (κ=0.05) ([#65](https://github.com/emson/elfmem/pull/65)) | 2026-05-23 |
@@ -56,31 +57,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## In Progress
 
-### 🚧 v0.19.0 — Peer-protocol hardening
-
-Branch `peer-protocol-refactor`. Surgical fixes for the four bugs that
-surfaced trying to reply to a configured-but-unregistered peer (Alv):
-
-- `peers:` in `config.yaml` is now load-bearing (`PeerSpec` with `did` /
-  `description` / `project_root` / `delivery_path` / `trust`). Engine
-  startup syncs declared peers into `peer_roster` insert-only —
-  operational state (trust, message counters) is preserved across restarts.
-- `peer_send` resolves the recipient arg (DID or display name) to its
-  canonical DID before slug derivation, so `peer_send("Alv", …)` and
-  `peer_send("elf:alv", …)` land in the same outbox folder.
-- Envelopes write atomically (dotfile temp + `os.rename`) with idempotent
-  skip on duplicate content — true no-op on retry.
-- Recipient-readiness precondition: `peer_send` to a `delivery_path`
-  whose sibling `.elfmem/config.yaml` is missing raises `PeerError` with
-  an `elfmem init` recovery hint, replacing silent black-hole sends.
-- One-shot legacy folder migration: pre-canonical `outbox/<name-slug>/`
-  is renamed to `outbox/<did-slug>/` on startup; refuses on collision.
-
-Wire-compatible with v0.18 peers (no envelope or `msg_id` change, no DB
-schema migration). Deferred to a follow-up PR: envelope `schema_version`
-with time-bucketed `msg_id`, and quarantine routing for unknown senders
-and corrupt envelopes — no current bug, no urgency. See
-[ADR 0005](docs/decisions/0005-peer-protocol-hardening.md).
+_Nothing currently committed. v0.20 scope is observation-driven — see **Next**._
 
 ---
 

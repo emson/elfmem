@@ -9,6 +9,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.19.0] — 2026-05-25
+
 Peer-protocol hardening: the four bugs that surfaced while elf tried to reply
 to Alv (peer registry empty despite YAML declaration, `outbox/alv/` vs
 `inbox/elf-alv/` slug drift, non-atomic envelope writes, silent black-hole
