@@ -104,6 +104,11 @@ GUIDES: dict[str, AgentGuide] = {
             "contradictions list of ContradictionFinding records carrying per-pair "
             "detection-time signals (cosine, tag_jaccard, category_match, hours_apart) "
             "agents can use to gate suppression rules. "
+            "Also includes .health (ConsolidationHealthMetrics): five diagnostic "
+            "ratios per cycle (edge_creation_rate, contradiction_detection_rate, "
+            "prefilter_pass_rate, promotion_rate, deduplication_rate) for monitoring "
+            "the static thresholds in operations/consolidate.py — see ADR 0006. "
+            ".health is None when called on an empty inbox. "
             "None if inbox was empty. None is not an error."
         ),
         next=(

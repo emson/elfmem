@@ -107,6 +107,12 @@ Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simula
 
 Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.
 
+### 🔍 Multi-parameter self-tuning ([issue #73](https://github.com/emson/elfmem/issues/73))
+
+`ConsolidationPolicy` adapts only `effective_threshold`; the four other consolidation knobs (edge score, contradiction, prefilter, decay-λ) remain static constants. The full design space (5 architectures, 4 scenarios) was explored in [`docs/plans/issue_self_tune_research.md`](docs/plans/issue_self_tune_research.md); every adaptive variant fails on axioms 1 ("no magic numbers") or 3 ("ship minimum, earn each layer"), consistent with [ADR 0003](docs/decisions/0003-defer-constitutional-evolution.md)'s prior deferral of self-architecting parameter search. Decision recorded in [ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md).
+
+Observability-only delta shipped: `ConsolidationHealthMetrics` on `ConsolidateResult.health` (five diagnostic ratios). **Triggers to reopen**: ≥30 consecutive cycles of any health-metric field outside a sane band on a real deployment, OR concrete underperformance on MemoryAgentBench / LoCoMo traceable to a specific static threshold. The likely fix when triggered is making one constant a config-yaml override — not adaptive tuning.
+
 ### 🔍 Peer-protocol architectural cleanup (phases 5 & 6 of v0.19)
 
 [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md) deferred two phases from v0.19 because no current bug justified the blast radius. They unblock on trigger, not on a date:
