@@ -15,6 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Pure-bash drift check — runs before uv install so it fails fast and
+      # doesn't burn CI minutes on Python setup when the only problem is
+      # someone forgot to run scripts/sync_roadmap.sh after editing ROADMAP.md.
+      - name: Check ROADMAP.md / docs/roadmap.md sync
+        run: scripts/sync_roadmap.sh --check
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
