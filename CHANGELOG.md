@@ -9,6 +9,25 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [0.19.1] — 2026-06-06
+
+Consolidation observability: `ConsolidationHealthMetrics` on
+`ConsolidateResult.health` surfaces five diagnostic ratios per cycle
+(edge_creation_rate, contradiction_detection_rate, prefilter_pass_rate,
+promotion_rate, deduplication_rate) without any behavioural change.
+Closes [#73](https://github.com/emson/elfmem/issues/73) and defers
+multi-parameter self-tuning in [ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md)
+with documented reopen triggers. Same shape as v0.18.1 (per-pair
+contradiction signals): additive observability on an existing return
+type.
+
+Two supporting changes ride along: CI now enforces ROADMAP↔docs/roadmap.md
+sync (closing an 8-day drift window), and `AGENTS.md` was added with a
+vendor-neutral memory-routing rule earned from a peer message from Mira
+(routing facts to identity memory vs. session memory).
+
 ### Added
 
 - `ConsolidationHealthMetrics` on `ConsolidateResult.health` — five
@@ -22,6 +41,18 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   [ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md).
 - `ConsolidationHealthMetrics` exported from the package root for the
   same agent-friendly import surface as other public types.
+- `AGENTS.md` — vendor-neutral guidance file readable by any AI coding
+  agent. Currently contains the memory-routing rule (identity memory vs.
+  session memory; verb-level shibboleth / survival test / audience test).
+  `CLAUDE.md` defers to `AGENTS.md` for the rule and contributes only
+  Claude-specific particulars.
+
+### Changed
+
+- CI `lint` job now runs `scripts/sync_roadmap.sh --check` as its first
+  step, enforcing the previously-documented-but-unchecked contract that
+  `docs/roadmap.md` mirrors `ROADMAP.md`. Caught 8 days of pre-existing
+  v0.19.0 header drift.
 
 ---
 
