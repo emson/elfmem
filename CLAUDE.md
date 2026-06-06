@@ -161,6 +161,27 @@ Run `elfmem doctor --modules` for the live module map (always current — mainta
 - `task` — active priorities, current goals, next steps
 - For complete docs: `elfmem guide` or read `.elfmem/AGENT.md`
 
+### Memory routing — elfmem vs. Claude harness memory
+
+The vendor-neutral routing rule (verb-level shibboleth, survival test,
+audience test, cross-cutting cases, when-in-doubt) lives in
+[`AGENTS.md`](AGENTS.md). Read it once; it's the single source of truth
+for which memory system receives which fact. Applies to every agent tool
+working in this repo.
+
+Claude-specific particulars (the bits that aren't generalisable):
+
+- **Session memory path**: `~/.claude/projects/<encoded-project-path>/memory/MEMORY.md`.
+  Auto-loaded by Claude Code at session start; entries are visible at
+  the top of the conversation context. Edit this file when you want a
+  rule to be hot-loaded next session.
+- **Identity memory access**: prefer the `mcp__elfmem__elfmem_remember`
+  MCP tool over shelling out to `elfmem learn` — the MCP path round-trips
+  through the live server and updates `should_dream` correctly.
+- **The auto-loaded `MEMORY.md` section called "Tooling"** is session
+  scope by definition (it's about how to invoke `uv` / `elfmem` *here*).
+  Don't mirror it into elfmem.
+
 
 <!-- elfmem:start v0.13.2 -->
 ## elfmem — Project Memory
