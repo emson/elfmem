@@ -45,6 +45,7 @@ are **not** maintained — for current behaviour read the source code and
 | `plan_graph_connect.md` | Manual edge operations |
 | `plan_graph_hebbian.md` | Hebbian co-retrieval edge learning |
 | `plan_graph_temporal_decay.md` | Edge temporal decay |
+| `issue_self_tune_research.md` | Multi-parameter self-tuning research (issue #73 → ADR 0006); shipped `ConsolidationHealthMetrics` |
 | `plan_logging_strategy.md` | Logging conventions |
 | `plan_mind_block_improvements.md` | Theory-of-Mind block improvements |
 | `plan_opensource_refactor.md` | Open-source launch preparation |

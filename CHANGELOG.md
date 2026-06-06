@@ -9,6 +9,20 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `ConsolidationHealthMetrics` on `ConsolidateResult.health` — five
+  diagnostic ratios per consolidation cycle (`edge_creation_rate`,
+  `contradiction_detection_rate`, `prefilter_pass_rate`,
+  `promotion_rate`, `deduplication_rate`). Observability only — no
+  policy or runtime behaviour reads them. Enables future detection of
+  systematically-misbehaving static thresholds without committing to
+  adaptive tuning. Default `None` on the empty-inbox path and on
+  externally-constructed `ConsolidateResult` instances. Issue #73,
+  [ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md).
+- `ConsolidationHealthMetrics` exported from the package root for the
+  same agent-friendly import surface as other public types.
+
 ---
 
 ## [0.19.0] — 2026-05-25

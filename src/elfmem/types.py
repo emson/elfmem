@@ -206,6 +206,54 @@ class ContradictionFinding:
 
 
 @dataclass
+class ConsolidationHealthMetrics:
+    """Diagnostic ratios from one consolidation cycle.
+
+    Observability-only — no policy or runtime behaviour reads these. They
+    exist so operators (and future plans) can detect whether any of the
+    four static thresholds in ``operations/consolidate.py``
+    (``EDGE_SCORE_THRESHOLD``, ``CONTRADICTION_THRESHOLD``,
+    ``CONTRADICTION_SIMILARITY_PREFILTER``, per-tier ``decay_lambda``) is
+    systematically misbehaving on a real deployment.
+
+    Trigger conditions for revisiting multi-parameter self-tuning are in
+    ADR 0006. Field semantics:
+
+    - ``edge_creation_rate``: edges created per promoted block. Falling
+      to near-zero suggests EDGE_SCORE_THRESHOLD is too strict;
+      ballooning suggests it's too loose.
+    - ``contradiction_detection_rate``: contradictions flagged per pair
+      check. Persistently zero means contradictions aren't being found;
+      persistently high means the threshold may be too loose.
+    - ``prefilter_pass_rate``: pairs above the cosine prefilter per pair
+      check. Answers "is the prefilter spending LLM calls on noise?"
+    - ``promotion_rate``: same signal ``ConsolidationPolicy`` uses, but
+      surfaced for operator corroboration.
+    - ``deduplication_rate``: sanity check that dedup is doing useful
+      work, not just rejecting most of the inbox.
+
+    All fields are in [0.0, 1.0] except ``edge_creation_rate`` which is
+    an unbounded non-negative ratio (a single promoted block can form up
+    to ``EDGE_DEGREE_CAP`` = 5 edges).
+    """
+
+    edge_creation_rate: float
+    contradiction_detection_rate: float
+    prefilter_pass_rate: float
+    promotion_rate: float
+    deduplication_rate: float
+
+    def to_dict(self) -> dict[str, float]:
+        return {
+            "edge_creation_rate": round(self.edge_creation_rate, 3),
+            "contradiction_detection_rate": round(self.contradiction_detection_rate, 3),
+            "prefilter_pass_rate": round(self.prefilter_pass_rate, 3),
+            "promotion_rate": round(self.promotion_rate, 3),
+            "deduplication_rate": round(self.deduplication_rate, 3),
+        }
+
+
+@dataclass
 class ConsolidateResult:
     processed: int
     promoted: int
@@ -227,6 +275,12 @@ class ConsolidateResult:
     # inbox-promotion phase counted by `promoted`/`deduplicated`.
     rescored: int = 0
     rescore_failed: int = 0
+    # Diagnostic health metrics (issue #73, ADR 0006). Populated by
+    # ``operations.consolidate.consolidate()`` for every real call.
+    # Defaults to ``None`` so the 20+ existing call sites that construct
+    # ``ConsolidateResult`` directly (tests, MCP mocks) continue to work
+    # unchanged. Consumers reading ``.health`` must None-check.
+    health: ConsolidationHealthMetrics | None = None
 
     @property
     def summary(self) -> str:
@@ -265,6 +319,7 @@ class ConsolidateResult:
             "contradictions": [c.to_dict() for c in self.contradictions],
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
+            "health": self.health.to_dict() if self.health is not None else None,
         }
 
 

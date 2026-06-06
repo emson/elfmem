@@ -43,7 +43,13 @@ from elfmem.scoring import (
     jaccard_similarity,
     temporal_proximity,
 )
-from elfmem.types import BlockAnalysis, ConsolidateResult, ContradictionFinding, Edge
+from elfmem.types import (
+    BlockAnalysis,
+    ConsolidateResult,
+    ConsolidationHealthMetrics,
+    ContradictionFinding,
+    Edge,
+)
 
 SELF_ALIGNMENT_THRESHOLD = 0.70
 EDGE_SCORE_THRESHOLD = 0.45
@@ -254,18 +260,30 @@ async def _collect_decisions(
     edge_degree_cap: int,
     skip_llm: bool = False,
     skip_contradictions: bool = False,
-) -> tuple[list[_BlockDecision], list[_EdgeDecision], list[_ContradictionDecision], int]:
+) -> tuple[
+    list[_BlockDecision],
+    list[_EdgeDecision],
+    list[_ContradictionDecision],
+    int,
+    int,
+    int,
+]:
     """Read inbox, embed, score with LLM, and compute all decisions.
 
     No database writes. Under WAL DEFERRED: only holds a shared read lock.
     The write lock is not acquired until _apply_decisions() issues its first UPDATE.
 
-    Returns (block_decisions, edge_decisions, contradiction_decisions, processed_count).
-    processed_count is 0 if the inbox was empty.
+    Returns (block_decisions, edge_decisions, contradiction_decisions,
+    processed_count, pair_checks_done, pairs_above_prefilter).
+    All counts are 0 if the inbox was empty. ``pair_checks_done`` counts every
+    (inbox_block, active_block) pair the contradiction loop considered;
+    ``pairs_above_prefilter`` counts the subset that survived the cosine
+    prefilter and reached the LLM contradiction check. Both fuel
+    ``ConsolidationHealthMetrics`` in the caller (issue #73, ADR 0006).
     """
     inbox = await get_inbox_blocks(conn)
     if not inbox:
-        return [], [], [], 0
+        return [], [], [], 0, 0, 0
 
     # Load active blocks and build their embedding vectors.
     #
@@ -301,6 +319,13 @@ async def _collect_decisions(
     inbox_texts_rev = [b["content"].strip().lower() for b in reversed(inbox)]
     if inbox_texts_rev:
         await embedding_svc.embed_batch(inbox_texts_rev)
+
+    # Health-metric counters (issue #73, ADR 0006). Both stay at 0 when the
+    # contradiction loop is fully skipped (skip_llm / skip_contradictions /
+    # all-message batches), making ``contradiction_detection_rate`` and
+    # ``prefilter_pass_rate`` honestly 0.0 in those modes rather than NaN.
+    pair_checks_done = 0
+    pairs_above_prefilter = 0
 
     # Mutable snapshot: tracks the evolving active set within this batch.
     # Superseded blocks are removed; promoted blocks are added.
@@ -413,8 +438,10 @@ async def _collect_decisions(
             continue
         for _, (a_block, a_vec) in evolving_vecs.items():
             sim = sim_cache.get(a_block["id"]) or cosine_similarity(vec, a_vec)
+            pair_checks_done += 1
             if sim < contradiction_similarity_prefilter:
                 continue
+            pairs_above_prefilter += 1
             try:
                 c_score = await asyncio.wait_for(
                     llm.detect_contradiction(content, a_block["content"]),
@@ -459,7 +486,14 @@ async def _collect_decisions(
         edge_degree_cap=edge_degree_cap,
     )
 
-    return block_decisions, edge_decisions, contradiction_decisions, len(inbox)
+    return (
+        block_decisions,
+        edge_decisions,
+        contradiction_decisions,
+        len(inbox),
+        pair_checks_done,
+        pairs_above_prefilter,
+    )
 
 
 # ── Phase 2: apply decisions (writes only, brief write-lock window) ───────────
@@ -598,25 +632,32 @@ async def consolidate(
     LLM timeouts (30s per block, 15s per contradiction check) prevent a hung
     provider from stalling the write lock indefinitely.
     """
-    block_decisions, edge_decisions, contradiction_decisions, processed = (
-        await _collect_decisions(
-            conn,
-            llm=llm,
-            embedding_svc=embedding_svc,
-            current_active_hours=current_active_hours,
-            self_alignment_threshold=self_alignment_threshold,
-            near_dup_exact_threshold=near_dup_exact_threshold,
-            near_dup_near_threshold=near_dup_near_threshold,
-            contradiction_threshold=contradiction_threshold,
-            contradiction_similarity_prefilter=contradiction_similarity_prefilter,
-            edge_score_threshold=edge_score_threshold,
-            edge_degree_cap=edge_degree_cap,
-            skip_llm=skip_llm,
-            skip_contradictions=skip_contradictions,
-        )
+    (
+        block_decisions,
+        edge_decisions,
+        contradiction_decisions,
+        processed,
+        pair_checks_done,
+        pairs_above_prefilter,
+    ) = await _collect_decisions(
+        conn,
+        llm=llm,
+        embedding_svc=embedding_svc,
+        current_active_hours=current_active_hours,
+        self_alignment_threshold=self_alignment_threshold,
+        near_dup_exact_threshold=near_dup_exact_threshold,
+        near_dup_near_threshold=near_dup_near_threshold,
+        contradiction_threshold=contradiction_threshold,
+        contradiction_similarity_prefilter=contradiction_similarity_prefilter,
+        edge_score_threshold=edge_score_threshold,
+        edge_degree_cap=edge_degree_cap,
+        skip_llm=skip_llm,
+        skip_contradictions=skip_contradictions,
     )
 
     if processed == 0:
+        # ``health`` left at its dataclass default (None). Empty consolidation
+        # measured no cycle; populating zeros would falsely imply otherwise.
         return ConsolidateResult(processed=0, promoted=0, deduplicated=0, edges_created=0)
 
     promoted, deduplicated, edges_created = await _apply_decisions(
@@ -625,6 +666,17 @@ async def consolidate(
         edge_decisions,
         contradiction_decisions,
         current_active_hours=current_active_hours,
+    )
+
+    # Health metrics (issue #73, ADR 0006). ``max(1, ...)`` guards ÷0 in the
+    # honest cases: ``pair_checks_done == 0`` when the contradiction loop was
+    # skipped (skip_llm / skip_contradictions / all-message batch).
+    health = ConsolidationHealthMetrics(
+        edge_creation_rate=edges_created / max(1, promoted),
+        contradiction_detection_rate=len(contradiction_decisions) / max(1, pair_checks_done),
+        prefilter_pass_rate=pairs_above_prefilter / max(1, pair_checks_done),
+        promotion_rate=promoted / max(1, processed),
+        deduplication_rate=deduplicated / max(1, processed),
     )
 
     return ConsolidateResult(
@@ -645,4 +697,5 @@ async def consolidate(
             )
             for cd in contradiction_decisions
         ],
+        health=health,
     )
