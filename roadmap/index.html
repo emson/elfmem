@@ -2685,6 +2685,11 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.19.1</strong></td>
+<td><code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult.health</code> — five diagnostic ratios per cycle (<code>edge_creation_rate</code>, <code>contradiction_detection_rate</code>, <code>prefilter_pass_rate</code>, <code>promotion_rate</code>, <code>deduplication_rate</code>). Observability only; same additive shape as v0.18.1. Defers multi-parameter self-tuning (<a href="docs/decisions/0006-defer-multi-parameter-self-tuning.md">ADR 0006</a>) with explicit reopen triggers. Also: CI now enforces ROADMAP↔docs/roadmap.md sync; <code>AGENTS.md</code> added with the memory-routing rule earned from Mira's peer message (<a href="https://github.com/emson/elfmem/pull/74">#74</a>, closes <a href="https://github.com/emson/elfmem/issues/73">#73</a>)</td>
+<td>2026-06-06</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.19.0</strong></td>
 <td>Peer-protocol hardening — <code>peers:</code> in <code>config.yaml</code> now load-bearing; canonical-DID routing eliminates <code>outbox/alv/</code> vs <code>inbox/elf-alv/</code> slug drift; atomic + idempotent envelope writes (dotfile temp + <code>os.rename</code>); recipient-readiness precondition replaces silent black-hole sends; one-shot legacy folder migration. Wire-compatible with v0.18 peers (<a href="https://github.com/emson/elfmem/pull/71">#71</a>, <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>)</td>
 <td>2026-05-25</td>
