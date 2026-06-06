@@ -1,0 +1,3185 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/issue_self_tune_research/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Plan: Issue #73 — Extending Self-Tuning Beyond consolidation_threshold - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-issue-73-extending-self-tuning-beyond-consolidation_threshold" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan: Issue #73 — Extending Self-Tuning Beyond consolidation_threshold
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Problem Statement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-what-the-issue-actually-says" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 What the issue actually says
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-what-the-issue-implies-but-doesnt-quite-say" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 What the issue implies but doesn't quite say
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-why-this-matters-more-than-just-a-config-knob-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Why this matters more than "just a config knob question"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-full-design-space-exploration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The Full Design Space (Exploration)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The Full Design Space (Exploration)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-design-a-outcome-driven-reinforcement-bottom-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Design A — Outcome-driven reinforcement (bottom-up)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-design-b-metric-driven-thresholding-sideways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Design B — Metric-driven thresholding (sideways)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-design-c-hierarchical-semantic-profiles-top-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Design C — Hierarchical semantic profiles (top-down)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-design-d-contextual-banking-per-frame-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Design D — Contextual banking (per-frame parameters)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-design-e-hybrid-layered-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Design E — Hybrid (Layered 1+2+3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-simulation-benchmarking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Simulation &amp; Benchmarking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Simulation &amp; Benchmarking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-scenario-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Scenario summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-the-signal-vs-drift-problem-simulated-critique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 The signal-vs-drift problem (simulated critique)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-what-this-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 What this means
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-evaluation-against-project-axioms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Evaluation Against Project Axioms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Recommendation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Recommendation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-principled-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The principled answer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5.1 The principled answer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#511-phase-0-adr-immediate-no-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1.1 Phase 0 — ADR (immediate, no code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#512-phase-1-observability-delta-120-loc-no-behavioural-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1.2 Phase 1 — Observability delta (~120 LOC, no behavioural change)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#513-phase-2-conditional-gated-by-phase-1-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1.3 Phase 2 — Conditional, gated by Phase 1 evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-why-this-is-the-robust-flexible-elegant-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Why this is the robust, flexible, elegant answer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-implementation-steps-phase-1-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Implementation Steps (Phase 1 only)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Implementation Steps (Phase 1 only)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-threading-through-_collect_decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Threading through _collect_decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-compute-metrics-in-consolidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Compute metrics in consolidate()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-surface-in-__str__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Surface in __str__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — Test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 — Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7 — ADR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-roadmap-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8 — ROADMAP entry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-appendix-scenario-walkthroughs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Appendix — Scenario Walkthroughs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Appendix — Scenario Walkthroughs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-research-agent-12-months-feedback-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Research agent, 12 months, feedback available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-chat-bot-6-months-100-thumbsday" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Chat bot, 6 months, 100 thumbs/day
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-sparse-usage-12-months-no-explicit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Sparse usage, 12 months, no explicit feedback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-domain-shift-legal-chat-midway" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Domain shift (legal → chat midway)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#75-the-critique" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.5 The critique
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-decision-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Decision Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/issue_self_tune_research.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="plan-issue-73-extending-self-tuning-beyond-consolidation_threshold">Plan: Issue #73 — Extending Self-Tuning Beyond <code>consolidation_threshold</code><a class="headerlink" href="#plan-issue-73-extending-self-tuning-beyond-consolidation_threshold" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Research complete — recommendation is <strong>defer with ADR + observability-only delta</strong>
+<strong>Reference</strong>: <a href="https://github.com/emson/elfmem/issues/73">Issue #73</a>, <a href="../../decisions/0003-defer-constitutional-evolution/">ADR 0003</a> (self-architecting agent deferred), <code>ROADMAP.md</code> (project axioms)
+<strong>Date</strong>: 2026-06-01
+<strong>Author</strong>: elf</p>
+<hr />
+<h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
+<p>Issue #73 asks a fair question: <code>ConsolidationPolicy</code> tunes one knob (<code>effective_threshold</code>) and leaves four others (<code>edge_score_threshold</code>, <code>contradiction_threshold</code>, <code>contradiction_similarity_prefilter</code>, <code>decay_lambda</code> per tier) static. Why not generalise?</p>
+<p>This plan walks the full design space — four architectures, four scenarios, simulated critique — and lands on a deliberately small answer:</p>
+<ol>
+<li><strong>Do not extend adaptive tuning.</strong> The roadmap already records (ADR 0003) that self-architecting parameter hill-climbing underperforms fixed strategies in simulation. The four "missing" knobs have weaker feedback signals than <code>effective_threshold</code> and would compound that result.</li>
+<li><strong>Do add observability</strong> (<code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult</code>) so we'd actually <em>know</em> if any of these knobs were drifting wrong on a real deployment. This is the smallest delta that closes the issue with evidence rather than features.</li>
+<li><strong>Write an ADR</strong> capturing the rejection + the trigger conditions that would justify revisiting (≥3 months of production health-metric data showing a specific knob systematically misbehaving).</li>
+</ol>
+<p>Net code change: ~120 lines (new dataclass + threading through <code>_apply_decisions</code>). Net new public API surface: zero — metrics ride on existing <code>ConsolidateResult</code>. No new magic numbers. No new commands.</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<h3 id="11-what-the-issue-actually-says">1.1 What the issue actually says<a class="headerlink" href="#11-what-the-issue-actually-says" title="Permanent link">&para;</a></h3>
+<p>stellanoxUN, reading <code>consolidate.py</code> and <code>policy.py</code>:</p>
+<blockquote>
+<p>"the policy only adjusts that one threshold (how many blocks pile up before you consolidate). but there are other parameters in the pipeline that also affect consolidation quality — edge score threshold, contradiction threshold, even the decay lambda per tier. […] if contradiction detection is consistently producing low-confidence flags (ones that never get acted on), maybe the contradiction threshold should drift upward. or if edges are being created but never traversed, edge score threshold could tighten."</p>
+</blockquote>
+<p>The observation is correct. <code>ConsolidationPolicy</code> has exactly one adaptive parameter:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Current behaviour</th>
+<th>Feedback source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>effective_threshold</code></td>
+<td>Drifts in <code>[min, max]</code> by <code>step</code> based on promotion rate</td>
+<td><code>ConsolidateResult.promoted / processed</code> (direct)</td>
+</tr>
+<tr>
+<td><code>EDGE_SCORE_THRESHOLD = 0.45</code></td>
+<td>Constant in <code>consolidate.py:49</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CONTRADICTION_THRESHOLD = 0.80</code></td>
+<td>Constant in <code>consolidate.py:51</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CONTRADICTION_SIMILARITY_PREFILTER = 0.40</code></td>
+<td>Constant in <code>consolidate.py:54</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>decay_lambda_for_tier(tier)</code></td>
+<td>Deterministic mapping per tag set</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-what-the-issue-implies-but-doesnt-quite-say">1.2 What the issue <em>implies</em> but doesn't quite say<a class="headerlink" href="#12-what-the-issue-implies-but-doesnt-quite-say" title="Permanent link">&para;</a></h3>
+<p>The framing — "edges being created but never traversed" — assumes we have a way to measure edge utilisation. We don't, today. <code>reinforce_co_retrieved_edges()</code> updates <code>last_active_hours</code> on edges that get co-retrieved, but nothing aggregates this into a usable signal. Same for contradictions: we record them, suppress retrieval results against them, but never close the loop on "was the suppression correct?"</p>
+<p>So the issue is really two questions wearing one trench coat:</p>
+<ul>
+<li><strong>Q1 (observability)</strong>: Do we have evidence any of these four knobs is misbehaving?</li>
+<li><strong>Q2 (architecture)</strong>: If we did, should the policy generalise to tune them?</li>
+</ul>
+<p>Q1 has a clear answer: <strong>no, we don't have the evidence</strong>, because we don't emit the metrics that would tell us. Q2 is the deep design question this plan exists to settle.</p>
+<h3 id="13-why-this-matters-more-than-just-a-config-knob-question">1.3 Why this matters more than "just a config knob question"<a class="headerlink" href="#13-why-this-matters-more-than-just-a-config-knob-question" title="Permanent link">&para;</a></h3>
+<p>Five of elfmem's project axioms (from <code>ROADMAP.md</code>) intersect this issue:</p>
+<ol>
+<li><strong>No magic numbers</strong> — hardcoded constants must be defensible from first principles</li>
+<li><strong>SIMPLE · ELEGANT · FLEXIBLE · ROBUST</strong> (<code>docs/coding_principles.md</code>)</li>
+<li><strong>Ship minimum, measure, then earn each layer</strong> — solo OSS cannot sustain unbounded complexity growth</li>
+<li><strong>Agent-first</strong> — every API serves the read → call → interpret → next loop</li>
+<li><strong>Biological grounding</strong> — four rhythms, four frames</li>
+</ol>
+<p>The static constants are <em>already</em> a partial violation of axiom 1: 0.45, 0.80, 0.40 are empirically tuned, not derived. Adding adaptive machinery is one path to "defending them from first principles" (let the system find its own optimum). But axiom 3 says we don't add machinery until we've measured. Axioms 1 and 3 are in tension. This plan resolves that tension.</p>
+<hr />
+<h2 id="2-the-full-design-space-exploration">2. The Full Design Space (Exploration)<a class="headerlink" href="#2-the-full-design-space-exploration" title="Permanent link">&para;</a></h2>
+<p>Four fundamentally different architectures were considered. Each is summarised here with its core mechanism, its strengths, and the failure mode that ultimately disqualifies it (or doesn't).</p>
+<h3 id="21-design-a-outcome-driven-reinforcement-bottom-up">2.1 Design A — Outcome-driven reinforcement (bottom-up)<a class="headerlink" href="#21-design-a-outcome-driven-reinforcement-bottom-up" title="Permanent link">&para;</a></h3>
+<p><strong>Mechanism</strong>: Agent reports per-block feedback (<code>useful</code> / <code>noise</code> / <code>suppressed_unnecessarily</code>). System attributes outcome back to the consolidation cycle that created the block. Parameters drift based on Bayesian belief about which parameter setting produced good outcomes.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>agent feedback ──► attribution ──► confidence per (param, direction) ──► drift
+</span></code></pre></div>
+<p><strong>Strengths</strong>: Directly optimises the thing that matters (retrieval outcomes). Domain-adapts automatically.</p>
+<p><strong>Disqualifying problems</strong>:
+- <strong>Attribution is structurally hard.</strong> A retrieval result is the product of <em>all</em> parameters interacting. Telling whether "this block was useful" was due to a good edge threshold, a good contradiction threshold, or just the cosine score is the same multi-armed-bandit problem that ML research has not solved generally.
+- <strong><code>outcome()</code> already exists</strong> (v0.17, <code>block_outcomes</code> table, Bayesian Beta-Binomial updates) but reports per-<em>block</em> confidence, not per-<em>parameter</em> attribution. Repurposing it for parameter feedback would conflate two signals — block quality and policy quality — that need to stay independent.
+- <strong>Latency</strong>: weeks between consolidation and outcome resolution (a trading forecast resolving 30 days later) means the parameter has likely already drifted by the time we get the signal.</p>
+<p><strong>Verdict</strong>: Theoretically correct, practically intractable without infrastructure we don't have.</p>
+<h3 id="22-design-b-metric-driven-thresholding-sideways">2.2 Design B — Metric-driven thresholding (sideways)<a class="headerlink" href="#22-design-b-metric-driven-thresholding-sideways" title="Permanent link">&para;</a></h3>
+<p><strong>Mechanism</strong>: Replace each hard threshold with a learned weighted sum of multi-signal features.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Instead of:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span> <span class="n">composite_edge_score</span> <span class="o">&gt;=</span> <span class="mf">0.45</span><span class="p">:</span> <span class="n">create_edge</span><span class="p">()</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Do:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">if</span> <span class="n">w_cos</span><span class="o">*</span><span class="n">cosine</span> <span class="o">+</span> <span class="n">w_tag</span><span class="o">*</span><span class="n">jaccard</span> <span class="o">+</span> <span class="n">w_temp</span><span class="o">*</span><span class="n">recency</span> <span class="o">+</span> <span class="o">...</span> <span class="o">&gt;</span> <span class="n">learned_boundary</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">create_edge</span><span class="p">()</span>
+</span></code></pre></div>
+<p><strong>Strengths</strong>: More expressive than a single threshold. Captures interactions (cosine matters less when tag overlap is high).</p>
+<p><strong>Disqualifying problems</strong>:
+- <strong>Trades 1 parameter for 5 weights.</strong> Same feedback signal problem as Design A, but now with five times more parameters to attribute outcomes to.
+- <strong>Loses interpretability.</strong> <code>edge_score_threshold = 0.45</code> is grep-able and reviewable. <code>w_cos=0.55, w_tag=0.20, …</code> after 3 months of drift is not.
+- <strong>Already partly built.</strong> <code>_composite_edge_score()</code> in <code>consolidate.py:113-142</code> is already a weighted sum (<code>0.55 * cos + 0.20 * tag + 0.15 * cat + 0.10 * temp</code>). The weights are static constants. Making them adaptive would compound the issue, not solve it.</p>
+<p><strong>Verdict</strong>: Strictly worse than Design A on the same axis Design A fails on.</p>
+<h3 id="23-design-c-hierarchical-semantic-profiles-top-down">2.3 Design C — Hierarchical semantic profiles (top-down)<a class="headerlink" href="#23-design-c-hierarchical-semantic-profiles-top-down" title="Permanent link">&para;</a></h3>
+<p><strong>Mechanism</strong>: User declares one of <code>research | conversation | factual | creative</code>. Profile maps to a 5D vector <code>(edge_density, precision, retention, exploration, efficiency)</code>. Vector deterministically derives all five parameters via a hand-written formula.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">edge_score_threshold</span> <span class="o">=</span> <span class="mf">0.30</span> <span class="o">+</span> <span class="mf">0.40</span> <span class="o">*</span> <span class="n">profile</span><span class="o">.</span><span class="n">edge_density</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">contradiction_threshold</span> <span class="o">=</span> <span class="mf">0.60</span> <span class="o">+</span> <span class="mf">0.35</span> <span class="o">*</span> <span class="n">profile</span><span class="o">.</span><span class="n">precision</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">contradiction_prefilter</span> <span class="o">=</span> <span class="mf">0.20</span> <span class="o">+</span> <span class="mf">0.50</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">profile</span><span class="o">.</span><span class="n">efficiency</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">decay_lambda</span> <span class="o">=</span> <span class="mf">0.005</span> <span class="o">+</span> <span class="mf">0.025</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">profile</span><span class="o">.</span><span class="n">retention</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">consolidation_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">45</span> <span class="o">*</span> <span class="n">profile</span><span class="o">.</span><span class="n">efficiency</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Strengths</strong>: One semantic choice replaces five numeric guesses. Works without feedback (the profile is the prior). Easy to explain in <code>guide()</code>.</p>
+<p><strong>Disqualifying problems</strong>:
+- <strong>Multiplies magic numbers.</strong> Each formula introduces two new constants (<code>0.30 + 0.40 * x</code> is two). Five formulas → ten new magic numbers, none defensible from first principles. This is the <em>opposite</em> of axiom 1.
+- <strong>The 5 dimensions are not independently testable.</strong> No evidence they're orthogonal. No evidence they predict outcomes. The simulated stellanoxUN critique (see §3.2) lands exactly here: profiles <em>feel</em> coherent but reduce a 5D outcome space to a 5D input space using untested linear maps. Hidden complexity is worse than visible complexity.
+- <strong>One-size-fits-all on a domain spectrum.</strong> A researcher working on three subdomains (theory, practice, ethics) has one profile slot. Profile mismatch is undetectable without exactly the feedback infrastructure Designs A/B require.</p>
+<p><strong>Verdict</strong>: Adds magic numbers and untested assumptions in the name of ergonomics. Net negative against axioms 1 and 3.</p>
+<h3 id="24-design-d-contextual-banking-per-frame-parameters">2.4 Design D — Contextual banking (per-frame parameters)<a class="headerlink" href="#24-design-d-contextual-banking-per-frame-parameters" title="Permanent link">&para;</a></h3>
+<p><strong>Mechanism</strong>: Different retrieval frames (<code>self / attention / task / simulate</code>) get different consolidation parameters. Learned via the same feedback Design A needs, but partitioned by frame so each partition gets a cleaner signal.</p>
+<p><strong>Strengths</strong>: Aligns with biological grounding axiom (frames are first-class). Frame-specific learning naturally regularises against domain noise.</p>
+<p><strong>Disqualifying problems</strong>:
+- <strong>Frame is a <em>retrieval</em> concept, not a <em>consolidation</em> concept.</strong> Consolidation runs once per inbox flush and produces blocks consumed by all frames. There is no "consolidation in the self frame" — frames apply at recall time. Partitioning consolidation parameters by frame is a category error.
+- <strong>You'd need to consolidate the same block multiple times with different parameters and store each version</strong>, which contradicts the deduplication invariant and the SQLite-single-store axiom.</p>
+<p><strong>Verdict</strong>: Confuses architectural layers. Disqualified before even reaching the feedback-signal problem.</p>
+<h3 id="25-design-e-hybrid-layered-123">2.5 Design E — Hybrid (Layered 1+2+3)<a class="headerlink" href="#25-design-e-hybrid-layered-123" title="Permanent link">&para;</a></h3>
+<p>The earlier exploration synthesised A/B/C/D into a three-layer stack:</p>
+<ul>
+<li><strong>Layer 1</strong>: Profiles (Design C)</li>
+<li><strong>Layer 2</strong>: Per-frame learning (Design D, applied at recall-time tuning)</li>
+<li><strong>Layer 3</strong>: Outcome-driven global tuning (Design A)</li>
+</ul>
+<p><strong>Disqualifying problem</strong>: It inherits the magic-number multiplication from C, the frame category error from D, and the attribution intractability from A. The fact that each layer is small doesn't make the stack small. This is exactly the "unbounded complexity growth" axiom 3 warns against.</p>
+<hr />
+<h2 id="3-simulation-benchmarking">3. Simulation &amp; Benchmarking<a class="headerlink" href="#3-simulation-benchmarking" title="Permanent link">&para;</a></h2>
+<p>Four scenarios were mentally simulated against each design, plus a held-out critic pass. Detailed scenario walkthroughs preserved in §7 (Appendix). Summary:</p>
+<h3 id="31-scenario-summary">3.1 Scenario summary<a class="headerlink" href="#31-scenario-summary" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>A (outcome)</th>
+<th>B (metric)</th>
+<th>C (profiles)</th>
+<th>D (frame)</th>
+<th>E (hybrid)</th>
+<th><strong>Static (today)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Research, 12 mo, feedback available</strong></td>
+<td>+12% but chaotic month 1</td>
+<td>+5% slow</td>
+<td>+8% then -3% drift</td>
+<td>+10%</td>
+<td>+12%</td>
+<td><strong>Baseline</strong></td>
+</tr>
+<tr>
+<td><strong>Chat, 6 mo, high feedback volume</strong></td>
+<td>+8%</td>
+<td>+8%</td>
+<td>+8% (preset wins)</td>
+<td>+6%</td>
+<td>+8%</td>
+<td><strong>Baseline</strong></td>
+</tr>
+<tr>
+<td><strong>Sparse usage, 12 mo, no feedback</strong></td>
+<td><strong>0% (stalled)</strong></td>
+<td><strong>0% (stalled)</strong></td>
+<td>+7%</td>
+<td>+4%</td>
+<td>+7%</td>
+<td><strong>Baseline</strong></td>
+</tr>
+<tr>
+<td><strong>Domain shift mid-run</strong></td>
+<td>auto-detect</td>
+<td>auto-detect (slow)</td>
+<td><strong>fails (manual switch)</strong></td>
+<td>partial</td>
+<td>auto-detect</td>
+<td><strong>Baseline</strong> (manual config)</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the table honestly:</p>
+<ul>
+<li><strong>A and B are dead weight in the sparse scenario</strong> — the most common one for solo deployments of elfmem, including elf's own.</li>
+<li><strong>C wins three scenarios but for reasons that have nothing to do with adaptive tuning</strong> — the "research" preset is just a better default config than the current constants. That's a config ergonomics question, not a self-tuning question.</li>
+<li><strong>The "+12%" in the research scenario is a simulated number with no held-out validation.</strong> §3.2 explains why this is the part that actually disqualifies the whole tree.</li>
+</ul>
+<h3 id="32-the-signal-vs-drift-problem-simulated-critique">3.2 The signal-vs-drift problem (simulated critique)<a class="headerlink" href="#32-the-signal-vs-drift-problem-simulated-critique" title="Permanent link">&para;</a></h3>
+<p>A simulated review from the author of <em>C-state-self</em> (stellanoxUN's other repo, which rigorously studies AI transformation-function drift) lands a clean punch:</p>
+<blockquote>
+<p>"Without falsifiable predictions, you can't distinguish convergence from overfitting to noise. Your Layer 2 in Design E might learn what <em>looks</em> like good parameters in days 1–30 and then perform worse on days 31–60 because the noise pattern changed. You'd see 'convergence' on a metric you defined post-hoc and call it success."</p>
+</blockquote>
+<p>To rule this out rigorously, each adaptive design would need:</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Required N</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Convergence (variance decreases monotonically)</td>
+<td>~100 cycles/frame</td>
+<td>Distinguishes learning from drift</td>
+</tr>
+<tr>
+<td>Frame orthogonality (Kolmogorov–Smirnov)</td>
+<td>~50 cycles × 2 frames</td>
+<td>Justifies per-frame partitioning</td>
+</tr>
+<tr>
+<td>Perturbation (learned param &gt; ±0.02, ±0.04)</td>
+<td>~20 cycles × 5 perturbations</td>
+<td>Verifies local optimum, not plateau</td>
+</tr>
+<tr>
+<td>Out-of-sample (train days 1-30, test 31-60)</td>
+<td>60 days continuous</td>
+<td>Rules out overfitting</td>
+</tr>
+<tr>
+<td>Layer 3 effect size (Cohen's d &gt; 0.5)</td>
+<td>≥1000 outcome records</td>
+<td>Beyond statistical significance</td>
+</tr>
+</tbody>
+</table>
+<p>This is <em>the cost of doing adaptive tuning rigorously</em>. Approximately <strong>3 months of dedicated agent runtime + the validation harness itself</strong> before we'd know whether the system is learning signal or fitting noise. For a solo OSS project with no telemetry from the field, that's not a tractable investment.</p>
+<h3 id="33-what-this-means">3.3 What this means<a class="headerlink" href="#33-what-this-means" title="Permanent link">&para;</a></h3>
+<p>The simulations don't say "adaptive tuning doesn't work." They say:</p>
+<ul>
+<li><strong>Without feedback infrastructure</strong>, A/B/E are dead.</li>
+<li><strong>With profile infrastructure</strong> (C), the wins come from better <em>defaults</em>, not from adaptation.</li>
+<li><strong>With rigorous validation</strong> (which we'd need to claim any improvement), the project takes on 3 months of validation infrastructure work to justify changing five constants.</li>
+</ul>
+<p>The honest reading: we don't have evidence the constants are wrong, and the smallest path to getting that evidence is observability, not adaptive machinery.</p>
+<hr />
+<h2 id="4-evaluation-against-project-axioms">4. Evaluation Against Project Axioms<a class="headerlink" href="#4-evaluation-against-project-axioms" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Axiom</th>
+<th>A</th>
+<th>B</th>
+<th>C</th>
+<th>D</th>
+<th>E (hybrid)</th>
+<th><strong>Observability-only</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Agent-first</strong></td>
+<td>✗ parameters drift opaquely</td>
+<td>✗ same</td>
+<td>~ profile adds a knob</td>
+<td>✗ frame/consolidation confusion</td>
+<td>✗ three knobs</td>
+<td>✓ metrics surface in existing <code>ConsolidateResult</code></td>
+</tr>
+<tr>
+<td><strong>No magic numbers</strong></td>
+<td>✗ adds confidence thresholds, step sizes</td>
+<td>✗ adds 5 weights</td>
+<td>✗✗ adds 10 formula constants</td>
+<td>✗ adds per-frame deltas</td>
+<td>✗✗✗ adds all of the above</td>
+<td>✓ adds zero</td>
+</tr>
+<tr>
+<td><strong>SIMPLE/ELEGANT</strong></td>
+<td>✗ attribution machinery</td>
+<td>✗ same</td>
+<td>~ surface simple, internals not</td>
+<td>✗ category error</td>
+<td>✗ stack of three</td>
+<td>✓ pure dataclass + arithmetic</td>
+</tr>
+<tr>
+<td><strong>Ship minimum, earn each layer</strong></td>
+<td>✗ ships full machinery</td>
+<td>✗ same</td>
+<td>✗ ships profiles uniformly</td>
+<td>✗ ships frame plumbing</td>
+<td>✗✗ ships three layers</td>
+<td>✓ earns nothing yet — just measures</td>
+</tr>
+<tr>
+<td><strong>Biological grounding</strong></td>
+<td>neutral</td>
+<td>neutral</td>
+<td>neutral</td>
+<td>✗ misuses frames</td>
+<td>✗ misuses frames</td>
+<td>neutral</td>
+</tr>
+<tr>
+<td><strong>SQLite + zero services</strong></td>
+<td>neutral</td>
+<td>neutral</td>
+<td>neutral</td>
+<td>~ may need per-frame columns</td>
+<td>~ same</td>
+<td>✓ neutral</td>
+</tr>
+<tr>
+<td><strong>Existing precedent</strong>: ADR 0003 already deferred "self-architecting agent (hill-climbs parameter space)"</td>
+<td>✗ violates</td>
+<td>✗ violates</td>
+<td>~ different mechanism but same risk</td>
+<td>✗ violates</td>
+<td>✗✗ violates</td>
+<td>✓ consistent with deferral</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result</strong>: every adaptive design loses on multiple axioms. The observability-only delta wins on every axiom, costs ~120 lines, and gives us the evidence we'd need to revisit any of A–E later from a position of strength rather than speculation.</p>
+<hr />
+<h2 id="5-recommendation">5. Recommendation<a class="headerlink" href="#5-recommendation" title="Permanent link">&para;</a></h2>
+<h3 id="51-the-principled-answer">5.1 The principled answer<a class="headerlink" href="#51-the-principled-answer" title="Permanent link">&para;</a></h3>
+<p><strong>Do nothing adaptive. Ship one small observability delta. Write an ADR explaining why.</strong></p>
+<p>Concretely:</p>
+<h4 id="511-phase-0-adr-immediate-no-code">5.1.1 Phase 0 — ADR (immediate, no code)<a class="headerlink" href="#511-phase-0-adr-immediate-no-code" title="Permanent link">&para;</a></h4>
+<p>Write <code>docs/decisions/0006-defer-multi-parameter-self-tuning.md</code> with:</p>
+<ul>
+<li><strong>Status</strong>: Accepted</li>
+<li><strong>Context</strong>: Issue #73, this plan</li>
+<li><strong>Alternatives considered</strong>: A, B, C, D, E (with brief notes from §2)</li>
+<li><strong>Decision</strong>: Defer until production health metrics from §5.1.2 show a specific knob systematically misbehaving for ≥3 months</li>
+<li><strong>Consequences</strong>: <code>EDGE_SCORE_THRESHOLD</code>, <code>CONTRADICTION_THRESHOLD</code>, <code>CONTRADICTION_SIMILARITY_PREFILTER</code> remain static. <code>ConsolidationPolicy</code> continues tuning only <code>effective_threshold</code>. Future re-opens require quoting health-metric data.</li>
+<li><strong>References</strong>: this plan, ADR 0003, issue #73</li>
+</ul>
+<p>This closes the issue with a <em>reasoned</em> "not now," not a hand-wave.</p>
+<h4 id="512-phase-1-observability-delta-120-loc-no-behavioural-change">5.1.2 Phase 1 — Observability delta (~120 LOC, no behavioural change)<a class="headerlink" href="#512-phase-1-observability-delta-120-loc-no-behavioural-change" title="Permanent link">&para;</a></h4>
+<p>Add <code>ConsolidationHealthMetrics</code> to <code>ConsolidateResult</code>. Five fields, all computed from data already in the function:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@dataclass</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConsolidationHealthMetrics</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Observable signals from one consolidation cycle.</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">    These are diagnostic-only — no policy reads them. They exist so an</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">    operator (or future plan) can detect whether any of the static</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="sd">    thresholds (edge_score, contradiction, prefilter) are systematically</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="sd">    misbehaving on a real deployment.</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    All fields are ratios in [0.0, 1.0] or counts. None require an LLM call.</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">edge_creation_rate</span><span class="p">:</span> <span class="nb">float</span>            <span class="c1"># edges_created / max(1, promoted)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">contradiction_detection_rate</span><span class="p">:</span> <span class="nb">float</span>   <span class="c1"># contradictions_found / max(1, pair_checks_done)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">prefilter_pass_rate</span><span class="p">:</span> <span class="nb">float</span>            <span class="c1"># pairs_above_prefilter / max(1, total_pairs)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="n">promotion_rate</span><span class="p">:</span> <span class="nb">float</span>                 <span class="c1"># promoted / max(1, processed)   ← same one policy uses</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">deduplication_rate</span><span class="p">:</span> <span class="nb">float</span>             <span class="c1"># deduplicated / max(1, processed)</span>
+</span></code></pre></div>
+<p>These ride on <code>ConsolidateResult</code>. Surfaced via existing <code>__str__</code> in compact form, full detail via <code>.health</code> attribute. No new public methods, no new CLI commands, no new MCP tools.</p>
+<p>Why these five specifically:</p>
+<ul>
+<li><code>edge_creation_rate</code> — answers stellanoxUN's "edges being created but never traversed" question, paired with existing edge <code>last_active_hours</code> (already in the schema) for a future longitudinal check.</li>
+<li><code>contradiction_detection_rate</code> — answers "contradiction detection producing low-confidence flags that never get acted on."</li>
+<li><code>prefilter_pass_rate</code> — answers "is the 0.40 prefilter spending LLM calls on noise?"</li>
+<li><code>promotion_rate</code> — exposes what the policy already uses, so operators can corroborate policy decisions.</li>
+<li><code>deduplication_rate</code> — sanity check that the system is doing useful dedup work, not just rejecting everything.</li>
+</ul>
+<p>No new constants. No magic numbers. Pure ratios over existing counters.</p>
+<h4 id="513-phase-2-conditional-gated-by-phase-1-evidence">5.1.3 Phase 2 — Conditional, gated by Phase 1 evidence<a class="headerlink" href="#513-phase-2-conditional-gated-by-phase-1-evidence" title="Permanent link">&para;</a></h4>
+<p><strong>Trigger conditions</strong> (any one suffices to reopen):</p>
+<ul>
+<li>A specific health metric exits a "sane band" for ≥30 consecutive cycles on ≥1 production instance. (Sane bands established empirically from Phase 1 data — we don't pre-declare them.)</li>
+<li>A real user reports a workload where the static threshold demonstrably fails (with consolidation logs).</li>
+<li>MemoryAgentBench / LoCoMo (already on the roadmap) shows elfmem underperforming on a specific configuration where the threshold change would help.</li>
+</ul>
+<p><strong>If triggered</strong>: revisit this plan. The right intervention will almost certainly be making the specific misbehaving constant a config-yaml override, not adaptive tuning. We earn one knob change with one piece of evidence.</p>
+<p><strong>If never triggered</strong>: the ADR stays accepted, the constants stay static, and we've spent ~120 LOC + one ADR to settle the question with evidence rather than speculation.</p>
+<h3 id="52-why-this-is-the-robust-flexible-elegant-answer">5.2 Why this is the <em>robust, flexible, elegant</em> answer<a class="headerlink" href="#52-why-this-is-the-robust-flexible-elegant-answer" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Robust</strong>: nothing breaks if Phase 1 reveals nothing. The metrics just sit there, costing zero behavioural change.</li>
+<li><strong>Flexible</strong>: any of A–E remains available later, but now with data to choose from. The ADR's trigger conditions point the way.</li>
+<li><strong>Elegant</strong>: the entire intervention is one dataclass added to one existing result type. It is the smallest change that closes the issue with evidence.</li>
+</ul>
+<p>The temptation in §2 was to design something architecturally satisfying (E). The discipline this plan models is recognising that architectural satisfaction is taste, not evidence. Memory feedback from this project says exactly that: <em>"Smallest variant that closes the ask wins; architectural coherence is taste, not evidence."</em></p>
+<hr />
+<h2 id="6-implementation-steps-phase-1-only">6. Implementation Steps (Phase 1 only)<a class="headerlink" href="#6-implementation-steps-phase-1-only" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-types">Step 1 — Types<a class="headerlink" href="#step-1-types" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/elfmem/types.py</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@dataclass</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConsolidationHealthMetrics</span><span class="p">:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">edge_creation_rate</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">contradiction_detection_rate</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">prefilter_pass_rate</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">promotion_rate</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">deduplication_rate</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>            <span class="s2">&quot;edge_creation_rate&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_creation_rate</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>            <span class="s2">&quot;contradiction_detection_rate&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contradiction_detection_rate</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>            <span class="s2">&quot;prefilter_pass_rate&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefilter_pass_rate</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>            <span class="s2">&quot;promotion_rate&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">promotion_rate</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>            <span class="s2">&quot;deduplication_rate&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deduplication_rate</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="p">}</span>
+</span></code></pre></div>
+<p>Extend <code>ConsolidateResult</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@dataclass</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConsolidateResult</span><span class="p">:</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="c1"># ... existing fields ...</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">health</span><span class="p">:</span> <span class="n">ConsolidationHealthMetrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span></code></pre></div>
+<p><code>None</code> for backwards compatibility with any tests that construct <code>ConsolidateResult</code> directly. Real consolidation always populates it.</p>
+<h3 id="step-2-threading-through-_collect_decisions">Step 2 — Threading through <code>_collect_decisions</code><a class="headerlink" href="#step-2-threading-through-_collect_decisions" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/elfmem/operations/consolidate.py</code></p>
+<p>Two counters added in <code>_collect_decisions</code>, both incremented inside loops that already exist:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">pair_checks_done</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">pairs_above_prefilter</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># inside the existing contradiction loop:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">a_block</span><span class="p">,</span> <span class="n">a_vec</span><span class="p">)</span> <span class="ow">in</span> <span class="n">evolving_vecs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">sim</span> <span class="o">=</span> <span class="n">sim_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a_block</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span> <span class="ow">or</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">a_vec</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">pair_checks_done</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="k">if</span> <span class="n">sim</span> <span class="o">&lt;</span> <span class="n">contradiction_similarity_prefilter</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="k">continue</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">pairs_above_prefilter</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="c1"># ... existing LLM call ...</span>
+</span></code></pre></div>
+<p>Return tuple extended:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">return</span> <span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">block_decisions</span><span class="p">,</span> <span class="n">edge_decisions</span><span class="p">,</span> <span class="n">contradiction_decisions</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="nb">len</span><span class="p">(</span><span class="n">inbox</span><span class="p">),</span> <span class="n">pair_checks_done</span><span class="p">,</span> <span class="n">pairs_above_prefilter</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<h3 id="step-3-compute-metrics-in-consolidate">Step 3 — Compute metrics in <code>consolidate()</code><a class="headerlink" href="#step-3-compute-metrics-in-consolidate" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/elfmem/operations/consolidate.py</code></p>
+<p>After <code>_apply_decisions</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">health</span> <span class="o">=</span> <span class="n">ConsolidationHealthMetrics</span><span class="p">(</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">edge_creation_rate</span><span class="o">=</span><span class="n">edges_created</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">promoted</span><span class="p">),</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">contradiction_detection_rate</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">contradiction_decisions</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">pair_checks_done</span><span class="p">),</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">prefilter_pass_rate</span><span class="o">=</span><span class="n">pairs_above_prefilter</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">pair_checks_done</span><span class="p">),</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">promotion_rate</span><span class="o">=</span><span class="n">promoted</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">processed</span><span class="p">),</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">deduplication_rate</span><span class="o">=</span><span class="n">deduplicated</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">processed</span><span class="p">),</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">)</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="k">return</span> <span class="n">ConsolidateResult</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">health</span><span class="o">=</span><span class="n">health</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="step-4-surface-in-__str__">Step 4 — Surface in <code>__str__</code><a class="headerlink" href="#step-4-surface-in-__str__" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/elfmem/types.py</code></p>
+<p>Existing <code>ConsolidateResult.__str__</code> is one line. Health is added only in <code>.detail</code> / <code>.to_dict()</code> to preserve the agent-first compact summary. Operators who want it call <code>result.health</code> explicitly. This respects principle 1 (string-first returns) and principle 10 (context window budget).</p>
+<h3 id="step-5-test">Step 5 — Test<a class="headerlink" href="#step-5-test" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>tests/test_consolidate_health.py</code> (new)</p>
+<p>Single integration test using <code>MockLLMService</code> + <code>MockEmbeddingService</code> (no real API per CLAUDE.md):</p>
+<ul>
+<li>Learn 5 blocks with known content (3 unique, 2 near-dups of #1).</li>
+<li><code>consolidate()</code>.</li>
+<li>Assert <code>result.health.deduplication_rate ≈ 0.4</code> (2 of 5).</li>
+<li>Assert <code>result.health.promotion_rate ≈ 0.6</code> (3 of 5).</li>
+<li>Assert all five fields are in <code>[0.0, 1.0]</code>.</li>
+</ul>
+<p>No threshold assertions — we're testing <em>that we measure</em>, not <em>what the values are</em>.</p>
+<h3 id="step-6-docs">Step 6 — Docs<a class="headerlink" href="#step-6-docs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>CHANGELOG.md</code> under <code>[Unreleased]</code> → <code>### Added</code> → "<code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult.health</code>: diagnostic signals (edge_creation_rate, contradiction_detection_rate, prefilter_pass_rate, promotion_rate, deduplication_rate) per cycle."</li>
+<li><code>src/elfmem/guide.py</code> <code>GUIDES["dream"]</code> updated <code>RETURNS:</code> line to mention <code>.health</code>.</li>
+<li>ADR 0006 written and merged in the same PR.</li>
+</ul>
+<h3 id="step-7-adr">Step 7 — ADR<a class="headerlink" href="#step-7-adr" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>docs/decisions/0006-defer-multi-parameter-self-tuning.md</code></p>
+<p>Follows the template from <code>docs/decisions/README.md</code>. Body:</p>
+<ul>
+<li>Status / Date / Deciders</li>
+<li>Context (issue #73, the four static thresholds)</li>
+<li>Alternatives considered (one paragraph each: A, B, C, D, E)</li>
+<li>Decision (ship metrics, defer adaptation, trigger conditions)</li>
+<li>Consequences (constants stay, metrics added, re-open requires evidence)</li>
+<li>References (this plan, issue #73, ADR 0003, simulation results in §3)</li>
+</ul>
+<h3 id="step-8-roadmap-entry">Step 8 — ROADMAP entry<a class="headerlink" href="#step-8-roadmap-entry" title="Permanent link">&para;</a></h3>
+<p>Add to <code>ROADMAP.md</code> under <code>🔍 Exploring</code> (not <code>📋 Next</code>):</p>
+<blockquote>
+<p><strong>Multi-parameter self-tuning</strong> (Issue #73). Deferred per ADR 0006. Trigger: ≥30 consecutive cycles of any <code>ConsolidationHealthMetrics</code> field outside a sane band on a real deployment, OR concrete underperformance on MemoryAgentBench traceable to a specific static threshold. Phase-1 observability metrics shipped in v0.20.</p>
+</blockquote>
+<hr />
+<h2 id="7-appendix-scenario-walkthroughs">7. Appendix — Scenario Walkthroughs<a class="headerlink" href="#7-appendix-scenario-walkthroughs" title="Permanent link">&para;</a></h2>
+<p>Detailed reasoning behind the §3.1 summary table. Preserved for future re-evaluation.</p>
+<h3 id="71-research-agent-12-months-feedback-available">7.1 Research agent, 12 months, feedback available<a class="headerlink" href="#71-research-agent-12-months-feedback-available" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Days 1–30</strong>: Design A drifts wildly because attribution from 5 retrievals/day is noise-dominated. Design C uses the "research" preset and is immediately better than the static defaults (because the static defaults are tuned closer to "factual" than "research"). Design E inherits both.</li>
+<li><strong>Months 2–6</strong>: A stabilises if feedback is consistent. C and E look identical because Layer 2 hasn't activated yet.</li>
+<li><strong>Months 7–12</strong>: A continues marginal gains. C degrades (~-3pp) because the researcher works across three subdomains and the single profile slot can't track. E follows C's degradation if Layer 2 doesn't get enough cycles.</li>
+<li><strong>Net</strong>: A wins +12%, E +12%, C +8%→+5%. <em>But:</em> all three numbers are simulated, none held out. The honest read is "directionally plausible but unvalidated."</li>
+</ul>
+<h3 id="72-chat-bot-6-months-100-thumbsday">7.2 Chat bot, 6 months, 100 thumbs/day<a class="headerlink" href="#72-chat-bot-6-months-100-thumbsday" title="Permanent link">&para;</a></h3>
+<ul>
+<li>High feedback volume rescues A and B from the attribution problem. Designs converge within a week.</li>
+<li>C's "conversation" preset is already good for chat, so the lift from adaptation is small.</li>
+<li>E doesn't beat A or C — the layers don't compose multiplicatively.</li>
+</ul>
+<h3 id="73-sparse-usage-12-months-no-explicit-feedback">7.3 Sparse usage, 12 months, no explicit feedback<a class="headerlink" href="#73-sparse-usage-12-months-no-explicit-feedback" title="Permanent link">&para;</a></h3>
+<ul>
+<li>A, B, E <strong>stall</strong> — no signal, no learning. Static config performs identically to "adaptive" config that isn't getting any signal.</li>
+<li>C works fine because it's just a config preset, not actually adapting.</li>
+<li>This is the <strong>modal scenario for elfmem deployments today</strong> — solo developers using it for their own knowledge bases. Optimising for A/B/E in this scenario is optimising for capabilities the system can't exercise.</li>
+</ul>
+<h3 id="74-domain-shift-legal-chat-midway">7.4 Domain shift (legal → chat midway)<a class="headerlink" href="#74-domain-shift-legal-chat-midway" title="Permanent link">&para;</a></h3>
+<ul>
+<li>A and B auto-detect (eventually). C requires manual <code>elfmem config --profile</code> invocation; users forget.</li>
+<li>The detection in A/B is <em>slow</em> in absolute terms — typically 3–4 weeks of degraded performance before drift stabilises at the new optimum.</li>
+<li><strong>The most honest mitigation is "let the user reconfigure"</strong> — not "add adaptive machinery to recover from a configuration mistake the user made."</li>
+</ul>
+<h3 id="75-the-critique">7.5 The critique<a class="headerlink" href="#75-the-critique" title="Permanent link">&para;</a></h3>
+<p>Reproduced from the simulated stellanoxUN review:</p>
+<blockquote>
+<p><em>"In C-state-self I describe how transformation drift can be beneficial (converging), neutral (fitting noise), or harmful (overfitting to local optima). Your three-layer design has no defence against the second and third. Without convergence / orthogonality / perturbation / out-of-sample tests, you can't tell which of the three is happening. You'd ship a feature that looks like learning and pray."</em></p>
+</blockquote>
+<p>The plan's response: don't ship the feature. Ship the metrics. If the metrics later show the static thresholds are wrong, re-open with a falsifiable hypothesis and the data to test it.</p>
+<hr />
+<h2 id="8-references">8. References<a class="headerlink" href="#8-references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Issue <a href="https://github.com/emson/elfmem/issues/73">#73</a> — original observation</li>
+<li><a href="../../decisions/0003-defer-constitutional-evolution/">ADR 0003</a> — self-architecting agent already deferred on simulation evidence</li>
+<li><a href="../../ROADMAP.md"><code>ROADMAP.md</code></a> — project axioms (agent-first, no magic numbers, ship minimum)</li>
+<li><a href="../../coding_principles/"><code>docs/coding_principles.md</code></a> — SIMPLE · ELEGANT · FLEXIBLE · ROBUST</li>
+<li><a href="../../agent_friendly_principles/"><code>docs/agent_friendly_principles.md</code></a> — string-first returns, structured docstrings</li>
+<li><a href="../../src/elfmem/policy.py"><code>src/elfmem/policy.py</code></a> — current <code>ConsolidationPolicy</code> (one-knob baseline)</li>
+<li><a href="../../src/elfmem/operations/consolidate.py"><code>src/elfmem/operations/consolidate.py</code></a> — static thresholds at lines 49/51/54</li>
+<li><a href="../../decisions/"><code>docs/decisions/README.md</code></a> — ADR template (used for forthcoming 0006)</li>
+<li><a href="https://github.com/stellanoxUN/C-state-self">stellanoxUN/C-state-self</a> — referenced framing for transformation drift vs. learning</li>
+</ul>
+<hr />
+<h2 id="9-decision-summary">9. Decision Summary<a class="headerlink" href="#9-decision-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Is issue #73 a real observation?</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Should we extend adaptive tuning?</td>
+<td><strong>No</strong> — fails on axioms 1, 2, 3, and on existing ADR 0003</td>
+</tr>
+<tr>
+<td>Should we ship something?</td>
+<td><strong>Yes</strong> — <code>ConsolidationHealthMetrics</code> (~120 LOC, zero behavioural change)</td>
+</tr>
+<tr>
+<td>When do we revisit?</td>
+<td>When health metrics show a specific knob misbehaving for ≥30 cycles, or production benchmarks demand it</td>
+</tr>
+<tr>
+<td>What guards against re-litigation?</td>
+<td>ADR 0006 with explicit trigger conditions</td>
+</tr>
+</tbody>
+</table>
+<p>The shape of the answer matches the shape of the question: small, observable, reversible, principled.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

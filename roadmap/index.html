@@ -662,10 +662,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v019-production-signal-response" class="md-nav__link">
+  <a href="#v020-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.19 — Production signal response
+        📋 v0.20 — Production signal response
       
     </span>
   </a>
@@ -716,6 +716,28 @@
     <span class="md-ellipsis">
       
         🔍 Multi-context (work-self vs personal-self)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-parameter-self-tuning-issue-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Multi-parameter self-tuning (issue #73)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#peer-protocol-architectural-cleanup-phases-5-6-of-v019" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)
       
     </span>
   </a>
@@ -2375,10 +2397,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v019-production-signal-response" class="md-nav__link">
+  <a href="#v020-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.19 — Production signal response
+        📋 v0.20 — Production signal response
       
     </span>
   </a>
@@ -2429,6 +2451,28 @@
     <span class="md-ellipsis">
       
         🔍 Multi-context (work-self vs personal-self)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-parameter-self-tuning-issue-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Multi-parameter self-tuning (issue #73)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#peer-protocol-architectural-cleanup-phases-5-6-of-v019" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)
       
     </span>
   </a>
@@ -2582,8 +2626,9 @@
 What's shipped, what's next, what we've considered and explicitly rejected.</p>
 <p><strong>What this is not</strong>: a calendar. elfmem is solo OSS. Dates are illustrative;
 sequence is what matters.</p>
-<p><strong>Last reviewed</strong>: 2026-05-23 (post-v0.18 release). Reviewed quarterly. Open issues at
-<a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
+<p><strong>Last reviewed</strong>: 2026-05-25 (post-v0.19.0 release; original v0.19
+production-signal slot shifted to v0.20). Reviewed quarterly. Open
+issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
 </blockquote>
 <hr />
 <h2 id="project-axioms">Project axioms<a class="headerlink" href="#project-axioms" title="Permanent link">&para;</a></h2>
@@ -2640,6 +2685,16 @@ sequence is what matters.</p>
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.19.0</strong></td>
+<td>Peer-protocol hardening — <code>peers:</code> in <code>config.yaml</code> now load-bearing; canonical-DID routing eliminates <code>outbox/alv/</code> vs <code>inbox/elf-alv/</code> slug drift; atomic + idempotent envelope writes (dotfile temp + <code>os.rename</code>); recipient-readiness precondition replaces silent black-hole sends; one-shot legacy folder migration. Wire-compatible with v0.18 peers (<a href="https://github.com/emson/elfmem/pull/71">#71</a>, <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>)</td>
+<td>2026-05-25</td>
+</tr>
+<tr>
+<td>✅ <strong>v0.18.1</strong></td>
+<td><code>ContradictionFinding</code> surfaces per-pair detection-time signals (<code>cosine</code>, <code>tag_jaccard</code>, <code>category_match</code>, <code>hours_apart</code>) on <code>ConsolidateResult.contradictions</code> — agents can gate suppression rules without recomputing from current block state (<a href="https://github.com/emson/elfmem/pull/69">#69</a>)</td>
+<td>2026-05-24</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.18.0</strong></td>
 <td>Manual constitutional review — <code>review_constitutional()</code> surfaces drifted constitutional blocks; <code>accept_amendment()</code> applies with audit + (α, β) preservation; <code>revert_amendment()</code> one-step undo; CLI + MCP surfaces (<a href="https://github.com/emson/elfmem/pull/67">#67</a>)</td>
 <td>2026-05-23</td>
@@ -2679,16 +2734,22 @@ sequence is what matters.</p>
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
 <h2 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h2>
-<p><em>Nothing currently committed. v0.19 scope is observation-driven — see <strong>Next</strong>.</em></p>
+<p><em>Nothing currently committed. v0.20 scope is observation-driven — see <strong>Next</strong>.</em></p>
 <hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
 <p>Driven by production signal from v0.17 and v0.18. Specific items not yet committed.</p>
-<h3 id="v019-production-signal-response">📋 v0.19 — Production signal response<a class="headerlink" href="#v019-production-signal-response" title="Permanent link">&para;</a></h3>
-<p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.19 scope depends on:
+<h3 id="v020-production-signal-response">📋 v0.20 — Production signal response<a class="headerlink" href="#v020-production-signal-response" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
+(an unplanned signal from elf's own peer-messaging usage; see "In Progress"
+above and <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>). The
+telemetry gate is unchanged — date-bound, not version-bound.</p>
+</blockquote>
+<p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)
 - ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
 - Any newly-observed systematic failure modes — especially around the new amendment loop</p>
-<p>Possible v0.19 candidates (each requires its own ADR before committing):
+<p>Possible v0.20 candidates (each requires its own ADR before committing):
 - <strong>Amendment loop tuning</strong> if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
 - <strong>Stronger rescore tuning</strong> if v0.17 defaults need adjustment
 - <strong>Scheduled review triggers</strong> — <code>dream(review=True)</code> integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)</p>
@@ -2708,6 +2769,24 @@ sequence is what matters.</p>
 <p>Empirical comparison against MemMachine, A-MEM, Mem0. Would calibrate the simulation harness and validate weight choices against real workloads. Requires effort to integrate; not on the current critical path.</p>
 <h3 id="multi-context-work-self-vs-personal-self">🔍 Multi-context (work-self vs personal-self)<a class="headerlink" href="#multi-context-work-self-vs-personal-self" title="Permanent link">&para;</a></h3>
 <p>Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.</p>
+<h3 id="multi-parameter-self-tuning-issue-73">🔍 Multi-parameter self-tuning (<a href="https://github.com/emson/elfmem/issues/73">issue #73</a>)<a class="headerlink" href="#multi-parameter-self-tuning-issue-73" title="Permanent link">&para;</a></h3>
+<p><code>ConsolidationPolicy</code> adapts only <code>effective_threshold</code>; the four other consolidation knobs (edge score, contradiction, prefilter, decay-λ) remain static constants. The full design space (5 architectures, 4 scenarios) was explored in <a href="docs/plans/issue_self_tune_research.md"><code>docs/plans/issue_self_tune_research.md</code></a>; every adaptive variant fails on axioms 1 ("no magic numbers") or 3 ("ship minimum, earn each layer"), consistent with <a href="docs/decisions/0003-defer-constitutional-evolution.md">ADR 0003</a>'s prior deferral of self-architecting parameter search. Decision recorded in <a href="docs/decisions/0006-defer-multi-parameter-self-tuning.md">ADR 0006</a>.</p>
+<p>Observability-only delta shipped: <code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult.health</code> (five diagnostic ratios). <strong>Triggers to reopen</strong>: ≥30 consecutive cycles of any health-metric field outside a sane band on a real deployment, OR concrete underperformance on MemoryAgentBench / LoCoMo traceable to a specific static threshold. The likely fix when triggered is making one constant a config-yaml override — not adaptive tuning.</p>
+<h3 id="peer-protocol-architectural-cleanup-phases-5-6-of-v019">🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)<a class="headerlink" href="#peer-protocol-architectural-cleanup-phases-5-6-of-v019" title="Permanent link">&para;</a></h3>
+<p><a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a> deferred two phases from v0.19 because no current bug justified the blast radius. They unblock on trigger, not on a date:</p>
+<ul>
+<li><strong>Phase 5 — Envelope <code>schema_version</code> + time-bucketed <code>msg_id</code></strong>. Current
+  <code>msg_id = m_&lt;hash(content)[:8]&gt;</code> collapses two legitimate repeat-content sends
+  from the same sender into one message. <strong>Trigger to reopen</strong>: production logs
+  show <code>msg_id</code> collisions in real traffic, or wire-format evolution forces a
+  versioned envelope. (Requires observability — see "Issues" in the change
+  notes; no collision counter exists today.)</li>
+<li><strong>Phase 6 — Quarantine routing for unknown senders and corrupt envelopes</strong>.
+  Unknown senders currently land in their named subdirectory; malformed JSON
+  fails silently in <code>_parse_message</code>. <strong>Trigger to reopen</strong>: peer roster grows
+  beyond ~10 entries (federation noise becomes material), or federation to a
+  product-elf at scale (per the cloud-architecture sketch in <code>note-to-alv</code>).</li>
+</ul>
 <hr />
 <h2 id="rejected">Rejected<a class="headerlink" href="#rejected" title="Permanent link">&para;</a></h2>
 <p>Things we considered and decided <strong>not</strong> to do. Documented so they aren't relitigated.</p>
@@ -2740,9 +2819,10 @@ sequence is what matters.</p>
 <h2 id="long-term-north-star">Long-term north star<a class="headerlink" href="#long-term-north-star" title="Permanent link">&para;</a></h2>
 <p>Not committed, but where this is heading.</p>
 <ul>
-<li><strong>v0.18+</strong>: production signal response (above)</li>
-<li><strong>v0.19</strong>: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed</li>
-<li><strong>v0.20+</strong>: earned architectural features (only the deferred items that empirical evidence supports)</li>
+<li><strong>v0.19</strong>: peer-protocol hardening (shipped/shipping — unplanned, signal-driven)</li>
+<li><strong>v0.20+</strong>: production signal response (originally v0.19; gated on ≥3 months of v0.17/v0.18 telemetry)</li>
+<li><strong>v0.21+</strong>: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed</li>
+<li><strong>v0.22+</strong>: earned architectural features (only the deferred items that empirical evidence supports)</li>
 <li><strong>v1.0</strong>: public API freeze. Stable for years. Backwards-compatible changes only.</li>
 </ul>
 <p><strong>Discipline</strong>: every subsequent layer must be earned with evidence — not designed in advance.</p>
