@@ -16,7 +16,7 @@ jobs:
       contents: write  # gh-deploy pushes to gh-pages branch
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # full history for git-dates plugin
 
