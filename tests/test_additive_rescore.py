@@ -76,12 +76,11 @@ class TestAdditiveRescoreRegression:
         # Run rescore at the production-default evidence_weight=0.5 with the
         # new alignment at 0.55 (significant drop from 0.882).
         llm.default_alignment = 0.55
-        async with engine.begin() as conn:
-            result = await rescore_blocks(
-                conn, block_ids=["mature1"],
-                llm=system._llm, embedding_svc=system._embedding,
-                evidence_weight=0.5,
-            )
+        result = await rescore_blocks(
+            engine, block_ids=["mature1"],
+            llm=system._llm, embedding_svc=system._embedding,
+            evidence_weight=0.5,
+        )
         assert result["rescored"] == 1
 
         async with engine.connect() as conn:
@@ -110,12 +109,11 @@ class TestAdditiveRescoreWeights:
         await _seed_mature_block(engine, block_id="w0", alpha=15.0, beta=2.0)
 
         llm.default_alignment = 0.20  # would massively pull confidence down
-        async with engine.begin() as conn:
-            await rescore_blocks(
-                conn, block_ids=["w0"],
-                llm=system._llm, embedding_svc=system._embedding,
-                evidence_weight=0.0,
-            )
+        await rescore_blocks(
+            engine, block_ids=["w0"],
+            llm=system._llm, embedding_svc=system._embedding,
+            evidence_weight=0.0,
+        )
 
         async with engine.connect() as conn:
             block = await get_block(conn, "w0")
@@ -135,17 +133,16 @@ class TestAdditiveRescoreWeights:
         await _seed_mature_block(engine, block_id="w2", alpha=2.0, beta=2.0)
 
         llm.default_alignment = 1.0  # maximally positive evidence
-        async with engine.begin() as conn:
-            await rescore_blocks(
-                conn, block_ids=["w1"],
-                llm=system._llm, embedding_svc=system._embedding,
-                evidence_weight=1.0,
-            )
-            await rescore_blocks(
-                conn, block_ids=["w2"],
-                llm=system._llm, embedding_svc=system._embedding,
-                evidence_weight=2.0,
-            )
+        await rescore_blocks(
+            engine, block_ids=["w1"],
+            llm=system._llm, embedding_svc=system._embedding,
+            evidence_weight=1.0,
+        )
+        await rescore_blocks(
+            engine, block_ids=["w2"],
+            llm=system._llm, embedding_svc=system._embedding,
+            evidence_weight=2.0,
+        )
 
         async with engine.connect() as conn:
             b1 = await get_block(conn, "w1")

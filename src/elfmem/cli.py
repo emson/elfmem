@@ -1065,14 +1065,17 @@ def dream(
             ),
         ),
     ] = False,
-    rescore_max: Annotated[
+    max_count: Annotated[
         int | None,
         typer.Option(
             "--max",
             help=(
-                "Override rescore budget. Use a large value (e.g. 1000) for "
-                "a one-shot deep sweep. Default from config "
-                "(consolidation.rescore.max_per_run, typically 20)."
+                "Budget cap (ADR 0007). Applies to inbox processing "
+                "(default from consolidation.max_inbox_per_run, typically 5) "
+                "and, with --rescore, to the rescore pass too (default from "
+                "consolidation.rescore.max_per_run, typically 20) — the same "
+                "number caps each stage that actually runs this call. Use a "
+                "large value (e.g. 100000) for a one-shot full sweep."
             ),
         ),
     ] = None,
@@ -1080,9 +1083,12 @@ def dream(
 ) -> None:
     """Consolidate pending knowledge: embed, align, detect contradictions.
 
-    Default mode processes inbox blocks with LLM scoring. Flags adjust the
-    LLM workload (skip-contradictions, --no-llm) or extend the work to
-    include refreshing existing active blocks (--rescore).
+    Default mode processes inbox blocks with LLM scoring, bounded to
+    ``consolidation.max_inbox_per_run`` blocks per call (default 5 — ADR
+    0007). A larger backlog drains across repeated calls; check the
+    ``inbox_remaining`` on the result. Flags adjust the LLM workload
+    (skip-contradictions, --no-llm) or extend the work to include
+    refreshing existing active blocks (--rescore).
 
     USE WHEN:
       Default (no flags): standard consolidation after a learn batch.
@@ -1090,7 +1096,9 @@ def dream(
       --skip-contradictions: large structured ingest, contradictions unlikely.
       --rescore:          catch-up after --no-llm; periodic hygiene; refresh
                           alignment as the agent's identity evolves.
-      --rescore --max N:  one-shot deep sweep (large N).
+      --max N:            override the inbox-processing budget for this call
+                          (and the rescore budget too, if --rescore is set).
+      --rescore --max N:  one-shot deep sweep (large N) of both stages.
 
     DON'T USE:
       --no-llm by default (degrades SELF-frame coherence over time).
@@ -1111,7 +1119,7 @@ def dream(
         skip_llm=no_llm,
         skip_contradictions=skip_contradictions,
         rescore=rescore,
-        rescore_max=rescore_max,
+        max_count=max_count,
     ))
     if result is None:
         msg = "No pending blocks — nothing to consolidate."
@@ -2698,15 +2706,21 @@ async def _dream(
     skip_llm: bool = False,
     skip_contradictions: bool = False,
     rescore: bool = False,
-    rescore_max: int | None = None,
+    max_count: int | None = None,
 ) -> Any:
-    """Consolidate pending blocks. Returns ConsolidateResult or None if no pending."""
+    """Consolidate pending blocks. Returns ConsolidateResult or None if no pending.
+
+    ``max_count`` (CLI ``--max``, ADR 0007) applies to both inbox processing
+    and rescore catch-up when both run in this call — one flag, same cap on
+    each stage that actually executes.
+    """
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.dream(
             skip_llm=skip_llm,
             skip_contradictions=skip_contradictions,
             rescore=rescore,
-            rescore_max=rescore_max,
+            rescore_max=max_count,
+            inbox_max=max_count,
         )
 
 

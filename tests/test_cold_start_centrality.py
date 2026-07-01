@@ -47,7 +47,11 @@ class TestColdStartCentralityFloor:
                 f"core principle {i}: agents must respect identity and principles"
             )
             bedrock_ids.append(r.block_id)
-        await system.dream()
+        # dream() is budget-limited per call (ADR 0007, default 5); drain the
+        # full 6-block batch across as many calls as it takes.
+        result = await system.dream()
+        while result is not None and result.inbox_remaining > 0:
+            result = await system.dream()
 
         # Manually connect bedrock blocks to give them high centrality.
         for i in range(len(bedrock_ids) - 1):

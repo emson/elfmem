@@ -132,6 +132,7 @@ class TestHealthOnRealConsolidation:
             "prefilter_pass_rate",
             "promotion_rate",
             "deduplication_rate",
+            "contradiction_cap_rate",
         }
 
 

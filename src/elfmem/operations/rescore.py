@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 # Surfaced here so tests and callers share one source of truth. The
@@ -185,7 +185,7 @@ async def select_rescore_candidates(
 
 
 async def rescore_blocks(
-    conn: AsyncConnection,
+    engine: AsyncEngine,
     *,
     block_ids: list[str],
     llm: object,         # LLMService — typed as object to avoid circular import
@@ -194,7 +194,9 @@ async def rescore_blocks(
 ) -> dict[str, int]:
     """Re-run the LLM analysis on each block id and update its scoring.
 
-    For each block:
+    For each block, in its own committed transaction (ADR 0007 — previously
+    all blocks shared one caller-opened transaction, so a mid-run kill lost
+    every already-rescored block, not just the one in flight):
     - Read content from DB.
     - Run ``llm.process_block`` (alignment + summary + tags).
     - Re-embed the new summary.
@@ -207,7 +209,9 @@ async def rescore_blocks(
 
     On LLM timeout: leaves the block as-is (last_scored_at stays NULL or
     its old value), but counts the block as a failure. The next rescore
-    invocation tries again — naturally resumable.
+    invocation tries again — naturally resumable. Now durably so: a kill
+    after block N commits leaves blocks 1..N rescored regardless of what
+    happens to N+1.
 
     Does not touch contradictions or graph edges. Edge regeneration is
     deferred to a future ``--rebuild-edges`` patch (cost is O(N²)).
@@ -230,47 +234,48 @@ async def rescore_blocks(
     now_iso = datetime.now(UTC).isoformat()
 
     for block_id in block_ids:
-        block = await get_block(conn, block_id)
-        if block is None or block["status"] != "active":
-            continue
+        async with engine.begin() as conn:
+            block = await get_block(conn, block_id)
+            if block is None or block["status"] != "active":
+                continue
 
-        content = block["content"]
-        try:
-            analysis = await asyncio.wait_for(
-                llm.process_block(content, ""),  # type: ignore[attr-defined]
-                timeout=_LLM_PROCESS_TIMEOUT,
+            content = block["content"]
+            try:
+                analysis = await asyncio.wait_for(
+                    llm.process_block(content, ""),  # type: ignore[attr-defined]
+                    timeout=_LLM_PROCESS_TIMEOUT,
+                )
+            except (TimeoutError, Exception):  # noqa: BLE001 — boundary
+                # LLM unreachable / timed out; leave block untouched. The next
+                # rescore call retries it. This makes rescore naturally
+                # resumable on partial failure.
+                failed += 1
+                continue
+
+            summary_text = analysis.summary or content
+            summary_vec = await embedding_svc.embed(  # type: ignore[attr-defined]
+                summary_text.strip().lower()
             )
-        except (TimeoutError, Exception):  # noqa: BLE001 — boundary
-            # LLM unreachable / timed out; leave block untouched. The next
-            # rescore call retries it. This makes rescore naturally
-            # resumable on partial failure.
-            failed += 1
-            continue
 
-        summary_text = analysis.summary or content
-        summary_vec = await embedding_svc.embed(  # type: ignore[attr-defined]
-            summary_text.strip().lower()
-        )
+            new_alpha, new_beta, _ = compute_bayesian_update_ab(
+                float(block["success_count"]),
+                float(block["failure_count"]),
+                signal=analysis.alignment_score,
+                weight=evidence_weight,
+            )
 
-        new_alpha, new_beta, _ = compute_bayesian_update_ab(
-            float(block["success_count"]),
-            float(block["failure_count"]),
-            signal=analysis.alignment_score,
-            weight=evidence_weight,
-        )
-
-        await update_block_scoring(
-            conn,
-            block_id,
-            self_alignment=analysis.alignment_score,
-            embedding=summary_vec,
-            embedding_model=embedding_svc.model_name,  # type: ignore[attr-defined]
-            summary=analysis.summary,
-            last_scored_at=now_iso,
-            success_count=new_alpha,
-            failure_count=new_beta,
-        )
-        rescored += 1
+            await update_block_scoring(
+                conn,
+                block_id,
+                self_alignment=analysis.alignment_score,
+                embedding=summary_vec,
+                embedding_model=embedding_svc.model_name,  # type: ignore[attr-defined]
+                summary=analysis.summary,
+                last_scored_at=now_iso,
+                success_count=new_alpha,
+                failure_count=new_beta,
+            )
+            rescored += 1
 
     return {"rescored": rescored, "failed": failed, "attempted": rescored + failed}
 

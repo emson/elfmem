@@ -39,3 +39,4 @@ Links to plans, research, issues, simulation results.
 | [0004](0004-manual-constitutional-review.md) | Manual constitutional review (v0.18) | Accepted |
 | [0005](0005-peer-protocol-hardening.md) | Peer-protocol hardening (v0.19) | Accepted |
 | [0006](0006-defer-multi-parameter-self-tuning.md) | Defer multi-parameter self-tuning (issue #73) | Accepted |
+| [0007](0007-bound-and-checkpoint-consolidation.md) | Bound and checkpoint consolidation for slow LLM adapters | Accepted |

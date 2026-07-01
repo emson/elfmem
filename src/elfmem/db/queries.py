@@ -140,8 +140,15 @@ async def get_active_blocks_with_embeddings(
 
 
 async def get_inbox_blocks(conn: AsyncConnection) -> list[dict[str, Any]]:
-    """Fetch all blocks with status='inbox'. Used by consolidate()."""
-    result = await conn.execute(select(blocks).where(blocks.c.status == "inbox"))
+    """Fetch all blocks with status='inbox', oldest first. Used by consolidate().
+
+    Explicit FIFO order matters when ``max_inbox_per_run`` (ADR 0007) slices
+    to a prefix of the inbox — without it, the oldest block could be starved
+    indefinitely behind newer arrivals.
+    """
+    result = await conn.execute(
+        select(blocks).where(blocks.c.status == "inbox").order_by(blocks.c.created_at)
+    )
     return [dict(row) for row in result.mappings()]
 
 
