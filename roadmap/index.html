@@ -639,34 +639,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#in-progress" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        In Progress
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="In Progress">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚧 Bound and checkpoint consolidation for slow LLM adapters
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#next" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2391,34 +2363,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#in-progress" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        In Progress
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="In Progress">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚧 Bound and checkpoint consolidation for slow LLM adapters
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#next" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2719,6 +2663,11 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.19.2</strong></td>
+<td>Bound and checkpoint consolidation for slow LLM adapters — <code>consolidation.contradiction_top_k</code> (default 10) caps contradiction-detection LLM calls per inbox block to the K most similar candidates, bounding worst-case cost to O(K) regardless of active-set size; <code>consolidation.max_inbox_per_run</code> (default 5) self-terminates <code>dream()</code>/<code>consolidate()</code> runs, surfaced as <code>--max</code> and <code>ConsolidateResult.inbox_remaining</code>; <code>rescore_blocks()</code> now commits per-block instead of one all-or-nothing transaction. Unplanned, bug-driven (same pattern as v0.19.0) — mitigates but does not fully close the <code>elfmem dream</code> kill-and-lose-progress failure mode; per-block commit durability inside <code>consolidate()</code> itself is a follow-up (<a href="https://github.com/emson/elfmem/pull/78">#78</a>, <a href="docs/decisions/0007-bound-and-checkpoint-consolidation.md">ADR 0007</a>)</td>
+<td>2026-07-02</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.19.1</strong></td>
 <td><code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult.health</code> — five diagnostic ratios per cycle (<code>edge_creation_rate</code>, <code>contradiction_detection_rate</code>, <code>prefilter_pass_rate</code>, <code>promotion_rate</code>, <code>deduplication_rate</code>). Observability only; same additive shape as v0.18.1. Defers multi-parameter self-tuning (<a href="docs/decisions/0006-defer-multi-parameter-self-tuning.md">ADR 0006</a>) with explicit reopen triggers. Also: CI now enforces ROADMAP↔docs/roadmap.md sync; <code>AGENTS.md</code> added with the memory-routing rule earned from Mira's peer message (<a href="https://github.com/emson/elfmem/pull/74">#74</a>, closes <a href="https://github.com/emson/elfmem/issues/73">#73</a>)</td>
 <td>2026-06-06</td>
@@ -2772,37 +2721,15 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 </table>
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
-<h2 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h2>
-<h3 id="bound-and-checkpoint-consolidation-for-slow-llm-adapters">🚧 Bound and checkpoint consolidation for slow LLM adapters<a class="headerlink" href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" title="Permanent link">&para;</a></h3>
-<p>Unplanned, bug-driven (same pattern as v0.19.0's peer-protocol hardening —
-pre-empts nothing, slots in ahead of the telemetry-gated v0.20 work).
-<code>elfmem dream</code> against a local LM Studio adapter (~14s/call) was killed
-three times with zero output: unbounded per-block contradiction cost
-(O(n_active), no cap beyond the existing 0.40 cosine prefilter) plus a
-single all-or-nothing transaction for the whole batch (in both
-<code>consolidate()</code> and <code>rescore()</code>) combine to make one run take arbitrarily
-long with no partial progress if interrupted.</p>
-<p>Shipped on branch <code>consolidation-checkpointing</code>
-(<a href="https://github.com/emson/elfmem/pull/78">PR #78</a>): top-K cap on
-contradiction checks per block (<code>consolidation.contradiction_top_k</code>,
-default 10), per-block incremental commits in <code>rescore_blocks()</code>, and a
-self-terminating budget on <code>dream()</code>/<code>consolidate()</code>
-(<code>consolidation.max_inbox_per_run</code>, default 5) surfaced as <code>--max</code> and
-<code>ConsolidateResult.inbox_remaining</code>. Per-block commit durability inside
-<code>consolidate()</code> itself — the counterpart fix for the inbox-processing path,
-and the riskier of the two durability changes (edge-decision ordering
-depends on the full end-of-batch active set) — is scoped as a follow-up, not
-in this PR. See
-<a href="docs/decisions/0007-bound-and-checkpoint-consolidation.md">ADR 0007</a> and
-<a href="docs/plans/plan_consolidation_checkpointing.md"><code>docs/plans/plan_consolidation_checkpointing.md</code></a>.</p>
-<hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
 <h3 id="v020-production-signal-response">📋 v0.20 — Production signal response<a class="headerlink" href="#v020-production-signal-response" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
-(an unplanned signal from elf's own peer-messaging usage; see "In Progress"
-above and <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>). The
-telemetry gate is unchanged — date-bound, not version-bound.</p>
+(an unplanned signal from elf's own peer-messaging usage; see "Recently
+Released" above and <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>).
+v0.19.2 (consolidation checkpointing) also slotted in ahead of this without
+renumbering it — the telemetry gate is unchanged — date-bound, not
+version-bound.</p>
 </blockquote>
 <p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)

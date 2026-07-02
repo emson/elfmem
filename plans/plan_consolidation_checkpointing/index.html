@@ -2218,10 +2218,11 @@ of any external process-kill limit:</p>
 concurrency changes, no daemon/background service, no adapter
 local-vs-cloud branching — see ADR 0007 for why those were rejected.</p>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
-<p>Ships as a single minor version bump (next available, e.g. v0.20.0 — confirm
-against <code>pyproject.toml</code> at release time). All three changes are additive:
-new config fields with defaults that preserve current behaviour for
-small/typical corpora, and an additive <code>ConsolidateResult</code> field.</p>
+<p>Shipped as <strong>v0.19.2</strong> — a patch, not v0.20.0, since v0.20 is reserved for
+the telemetry-gated "Production signal response" work (see ROADMAP.md
+"Next"). All three changes are additive: new config fields with defaults
+that preserve current behaviour for small/typical corpora, and an additive
+<code>ConsolidateResult</code> field.</p>
 <h2 id="changes-ordered-by-risk">Changes, ordered by risk<a class="headerlink" href="#changes-ordered-by-risk" title="Permanent link">&para;</a></h2>
 <h3 id="change-1-top-k-cap-on-contradiction-checks-per-block-shipped">Change 1: Top-K cap on contradiction checks per block — SHIPPED<a class="headerlink" href="#change-1-top-k-cap-on-contradiction-checks-per-block-shipped" title="Permanent link">&para;</a></h3>
 <p><strong>Effort:</strong> ~1 hr | <strong>Risk:</strong> low (bounded, config-gated)</p>
