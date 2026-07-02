@@ -47,6 +47,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.19.2** | Bound and checkpoint consolidation for slow LLM adapters — `consolidation.contradiction_top_k` (default 10) caps contradiction-detection LLM calls per inbox block to the K most similar candidates, bounding worst-case cost to O(K) regardless of active-set size; `consolidation.max_inbox_per_run` (default 5) self-terminates `dream()`/`consolidate()` runs, surfaced as `--max` and `ConsolidateResult.inbox_remaining`; `rescore_blocks()` now commits per-block instead of one all-or-nothing transaction. Unplanned, bug-driven (same pattern as v0.19.0) — mitigates but does not fully close the `elfmem dream` kill-and-lose-progress failure mode; per-block commit durability inside `consolidate()` itself is a follow-up ([#78](https://github.com/emson/elfmem/pull/78), [ADR 0007](docs/decisions/0007-bound-and-checkpoint-consolidation.md)) | 2026-07-02 |
 | ✅ **v0.19.1** | `ConsolidationHealthMetrics` on `ConsolidateResult.health` — five diagnostic ratios per cycle (`edge_creation_rate`, `contradiction_detection_rate`, `prefilter_pass_rate`, `promotion_rate`, `deduplication_rate`). Observability only; same additive shape as v0.18.1. Defers multi-parameter self-tuning ([ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md)) with explicit reopen triggers. Also: CI now enforces ROADMAP↔docs/roadmap.md sync; `AGENTS.md` added with the memory-routing rule earned from Mira's peer message ([#74](https://github.com/emson/elfmem/pull/74), closes [#73](https://github.com/emson/elfmem/issues/73)) | 2026-06-06 |
 | ✅ **v0.19.0** | Peer-protocol hardening — `peers:` in `config.yaml` now load-bearing; canonical-DID routing eliminates `outbox/alv/` vs `inbox/elf-alv/` slug drift; atomic + idempotent envelope writes (dotfile temp + `os.rename`); recipient-readiness precondition replaces silent black-hole sends; one-shot legacy folder migration. Wire-compatible with v0.18 peers ([#71](https://github.com/emson/elfmem/pull/71), [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)) | 2026-05-25 |
 | ✅ **v0.18.1** | `ContradictionFinding` surfaces per-pair detection-time signals (`cosine`, `tag_jaccard`, `category_match`, `hours_apart`) on `ConsolidateResult.contradictions` — agents can gate suppression rules without recomputing from current block state ([#69](https://github.com/emson/elfmem/pull/69)) | 2026-05-24 |
@@ -62,43 +63,16 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
-## In Progress
-
-### 🚧 Bound and checkpoint consolidation for slow LLM adapters
-
-Unplanned, bug-driven (same pattern as v0.19.0's peer-protocol hardening —
-pre-empts nothing, slots in ahead of the telemetry-gated v0.20 work).
-`elfmem dream` against a local LM Studio adapter (~14s/call) was killed
-three times with zero output: unbounded per-block contradiction cost
-(O(n_active), no cap beyond the existing 0.40 cosine prefilter) plus a
-single all-or-nothing transaction for the whole batch (in both
-`consolidate()` and `rescore()`) combine to make one run take arbitrarily
-long with no partial progress if interrupted.
-
-Shipped on branch `consolidation-checkpointing`
-([PR #78](https://github.com/emson/elfmem/pull/78)): top-K cap on
-contradiction checks per block (`consolidation.contradiction_top_k`,
-default 10), per-block incremental commits in `rescore_blocks()`, and a
-self-terminating budget on `dream()`/`consolidate()`
-(`consolidation.max_inbox_per_run`, default 5) surfaced as `--max` and
-`ConsolidateResult.inbox_remaining`. Per-block commit durability inside
-`consolidate()` itself — the counterpart fix for the inbox-processing path,
-and the riskier of the two durability changes (edge-decision ordering
-depends on the full end-of-batch active set) — is scoped as a follow-up, not
-in this PR. See
-[ADR 0007](docs/decisions/0007-bound-and-checkpoint-consolidation.md) and
-[`docs/plans/plan_consolidation_checkpointing.md`](docs/plans/plan_consolidation_checkpointing.md).
-
----
-
 ## Next
 
 ### 📋 v0.20 — Production signal response
 
 > Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
-> (an unplanned signal from elf's own peer-messaging usage; see "In Progress"
-> above and [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)). The
-> telemetry gate is unchanged — date-bound, not version-bound.
+> (an unplanned signal from elf's own peer-messaging usage; see "Recently
+> Released" above and [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)).
+> v0.19.2 (consolidation checkpointing) also slotted in ahead of this without
+> renumbering it — the telemetry gate is unchanged — date-bound, not
+> version-bound.
 
 v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in [archived plan](docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))

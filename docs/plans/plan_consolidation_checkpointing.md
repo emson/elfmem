@@ -31,10 +31,11 @@ local-vs-cloud branching — see ADR 0007 for why those were rejected.
 
 ## Scope
 
-Ships as a single minor version bump (next available, e.g. v0.20.0 — confirm
-against `pyproject.toml` at release time). All three changes are additive:
-new config fields with defaults that preserve current behaviour for
-small/typical corpora, and an additive `ConsolidateResult` field.
+Shipped as **v0.19.2** — a patch, not v0.20.0, since v0.20 is reserved for
+the telemetry-gated "Production signal response" work (see ROADMAP.md
+"Next"). All three changes are additive: new config fields with defaults
+that preserve current behaviour for small/typical corpora, and an additive
+`ConsolidateResult` field.
 
 ## Changes, ordered by risk
 

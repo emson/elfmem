@@ -9,6 +9,8 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.19.2] — 2026-07-02
+
 ### Added
 - `consolidation.contradiction_top_k` (default 10): caps contradiction-detection
   LLM calls per inbox block to the K most similar active blocks passing the
