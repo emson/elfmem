@@ -10,29 +10,27 @@
       
       
       
-        <link rel="canonical" href="https://emson.github.io/elfmem/plans/">
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/plan_consolidation_checkpointing/">
       
-      
-        <link rel="prev" href="../testing_principles/">
       
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Implementation Plans - elfmem</title>
+        <title>Bound and Checkpoint Consolidation for Slow LLM Adapters - elfmem</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,7 +49,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#implementation-plans" class="md-skip">
+        <a href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +90,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -112,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Implementation Plans
+              Bound and Checkpoint Consolidation for Slow LLM Adapters
             
           </span>
         </div>
@@ -219,7 +217,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -238,7 +236,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../quickstart/" class="md-tabs__link">
+      <a href="../../quickstart/" class="md-tabs__link">
         
   
   
@@ -257,7 +255,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../roadmap/" class="md-tabs__link">
+      <a href="../../roadmap/" class="md-tabs__link">
         
   
   
@@ -278,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
           
   
   
@@ -298,7 +296,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
           
   
   
@@ -318,7 +316,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../amgs_architecture/" class="md-tabs__link">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
           
   
   
@@ -338,7 +336,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
           
   
   
@@ -358,7 +356,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../research/long_term_evolution/" class="md-tabs__link">
+        <a href="../../research/long_term_evolution/" class="md-tabs__link">
           
   
   
@@ -378,7 +376,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../decisions/" class="md-tabs__link">
+        <a href="../../decisions/" class="md-tabs__link">
           
   
   
@@ -398,7 +396,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../coding_principles/" class="md-tabs__link">
+        <a href="../../coding_principles/" class="md-tabs__link">
           
   
   
@@ -414,13 +412,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -460,7 +456,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -490,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -517,7 +513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -544,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../roadmap/" class="md-nav__link">
+      <a href="../../roadmap/" class="md-nav__link">
         
   
   
@@ -623,7 +619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
         
   
   
@@ -651,7 +647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
         
   
   
@@ -679,7 +675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
         
   
   
@@ -707,7 +703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
         
   
   
@@ -735,7 +731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../multiple_mcp_steps/" class="md-nav__link">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
         
   
   
@@ -763,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_setup/" class="md-nav__link">
+      <a href="../../dev_setup/" class="md-nav__link">
         
   
   
@@ -850,7 +846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
         
   
   
@@ -878,7 +874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
         
   
   
@@ -906,7 +902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
         
   
   
@@ -993,7 +989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../amgs_architecture/" class="md-nav__link">
+      <a href="../../amgs_architecture/" class="md-nav__link">
         
   
   
@@ -1021,7 +1017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulation_overview/" class="md-nav__link">
+      <a href="../../simulation_overview/" class="md-nav__link">
         
   
   
@@ -1049,7 +1045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dreaming_architecture/" class="md-nav__link">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
         
   
   
@@ -1077,7 +1073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph_connect_design/" class="md-nav__link">
+      <a href="../../graph_connect_design/" class="md-nav__link">
         
   
   
@@ -1105,7 +1101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent_friendly_principles/" class="md-nav__link">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
         
   
   
@@ -1192,7 +1188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
         
   
   
@@ -1220,7 +1216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../elfmem_tool/" class="md-nav__link">
+      <a href="../../elfmem_tool/" class="md-nav__link">
         
   
   
@@ -1307,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/long_term_evolution/" class="md-nav__link">
+      <a href="../../research/long_term_evolution/" class="md-nav__link">
         
   
   
@@ -1335,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/scoring_proposed_evaluation/" class="md-nav__link">
+      <a href="../../research/scoring_proposed_evaluation/" class="md-nav__link">
         
   
   
@@ -1363,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/memory_scoring_survey/" class="md-nav__link">
+      <a href="../../research/memory_scoring_survey/" class="md-nav__link">
         
   
   
@@ -1391,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+      <a href="../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
         
   
   
@@ -1419,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph_improvement_research/" class="md-nav__link">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
         
   
   
@@ -1447,7 +1443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research_agent_patterns/" class="md-nav__link">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
         
   
   
@@ -1475,7 +1471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../visualisation_research/" class="md-nav__link">
+      <a href="../../visualisation_research/" class="md-nav__link">
         
   
   
@@ -1503,7 +1499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulation_behaviour_research/" class="md-nav__link">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
         
   
   
@@ -1531,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design_simulation_guide/" class="md-nav__link">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
         
   
   
@@ -1559,7 +1555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
         
   
   
@@ -1646,7 +1642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/" class="md-nav__link">
+      <a href="../../decisions/" class="md-nav__link">
         
   
   
@@ -1674,7 +1670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
         
   
   
@@ -1702,7 +1698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/0002-v017-scope/" class="md-nav__link">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
         
   
   
@@ -1730,7 +1726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
         
   
   
@@ -1758,7 +1754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+      <a href="../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
         
   
   
@@ -1786,7 +1782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+      <a href="../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
         
   
   
@@ -1873,7 +1869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../coding_principles/" class="md-nav__link">
+      <a href="../../coding_principles/" class="md-nav__link">
         
   
   
@@ -1901,7 +1897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing_principles/" class="md-nav__link">
+      <a href="../../testing_principles/" class="md-nav__link">
         
   
   
@@ -1933,31 +1929,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
             
   
   
@@ -1975,7 +1966,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_11">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1990,37 +1981,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Implementation Plans
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -2036,81 +2000,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-lives-here" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What lives here
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#active-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Active plan
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#historical-plans-frozen-artifacts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Historical plans (frozen artifacts)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#archive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Archive
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#writing-a-new-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Writing a new plan
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2150,10 +2039,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-lives-here" class="md-nav__link">
+  <a href="#executive-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What lives here
+        Executive summary
       
     </span>
   </a>
@@ -2161,10 +2050,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#active-plan" class="md-nav__link">
+  <a href="#scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Active plan
+        Scope
       
     </span>
   </a>
@@ -2172,10 +2061,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#historical-plans-frozen-artifacts" class="md-nav__link">
+  <a href="#changes-ordered-by-risk" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Historical plans (frozen artifacts)
+        Changes, ordered by risk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changes, ordered by risk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#change-1-top-k-cap-on-contradiction-checks-per-block-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change 1: Top-K cap on contradiction checks per block — SHIPPED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change-2-per-block-incremental-commit-in-consolidate-follow-up-not-in-this-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change 2: Per-block incremental commit in consolidate() — FOLLOW-UP (not in this branch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change-3-per-block-incremental-commit-in-rescore_blocks-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change 3: Per-block incremental commit in rescore_blocks() — SHIPPED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change-4-self-terminating-budget-on-dreamconsolidate-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change 4: Self-terminating budget on dream()/consolidate() — SHIPPED
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals-per-adr-0007" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-goals (per ADR 0007)
       
     </span>
   </a>
@@ -2183,10 +2133,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#archive" class="md-nav__link">
+  <a href="#migration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Archive
+        Migration
       
     </span>
   </a>
@@ -2194,10 +2144,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#writing-a-new-plan" class="md-nav__link">
+  <a href="#risks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Writing a new plan
+        Risks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-resolved-2026-07-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions (resolved 2026-07-01)
       
     </span>
   </a>
@@ -2221,7 +2182,7 @@
 
 
   
-    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/README.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/plan_consolidation_checkpointing.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2229,212 +2190,192 @@
   
 
 
-<h1 id="implementation-plans">Implementation Plans<a class="headerlink" href="#implementation-plans" title="Permanent link">&para;</a></h1>
-<p>This directory holds plan documents — the design records for elfmem subsystems
-and upcoming releases.</p>
-<h2 id="what-lives-here">What lives here<a class="headerlink" href="#what-lives-here" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Category</th>
-<th>Location</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Active plan</strong></td>
-<td><code>docs/plans/*.md</code> (top level)</td>
-<td>Currently being implemented</td>
-</tr>
-<tr>
-<td><strong>Historical plans</strong></td>
-<td><code>docs/plans/*.md</code> (top level)</td>
-<td>Design records for shipped subsystems — "frozen artifacts"</td>
-</tr>
-<tr>
-<td><strong>Archive</strong></td>
-<td><code>docs/plans/archive/</code></td>
-<td>Plans for shipped features (post-2026-05) and superseded preliminary plans</td>
-</tr>
-</tbody>
-</table>
-<p>For the project direction, see <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a> at the repo root.
-For load-bearing decisions, see <a href="../decisions/"><code>docs/decisions/</code></a>.
-For research that didn't ship, see <a href="../research/"><code>docs/research/</code></a>.</p>
-<h2 id="active-plan">Active plan<a class="headerlink" href="#active-plan" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Plan</th>
-<th>Subsystem</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="plan_consolidation_checkpointing/"><code>plan_consolidation_checkpointing.md</code></a></td>
-<td>Bound + checkpoint <code>dream()</code>/<code>consolidate()</code>/<code>rescore()</code> for slow LLM adapters (<a href="../decisions/0007-bound-and-checkpoint-consolidation/">ADR 0007</a>)</td>
-<td>Proposed</td>
-</tr>
-</tbody>
-</table>
-<h2 id="historical-plans-frozen-artifacts">Historical plans (frozen artifacts)<a class="headerlink" href="#historical-plans-frozen-artifacts" title="Permanent link">&para;</a></h2>
-<p>These describe the intent and trade-offs at the time of implementation. They
-are <strong>not</strong> maintained — for current behaviour read the source code and
-<a href="../amgs_architecture/"><code>docs/amgs_architecture.md</code></a>.</p>
-<table>
-<thead>
-<tr>
-<th>Plan</th>
-<th>Subsystem</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>plan_agent_communication_v1.md</code></td>
-<td>Peer messaging protocol</td>
-</tr>
-<tr>
-<td><code>plan_agent_friendly_refactor.md</code></td>
-<td>Agent-first API design</td>
-</tr>
-<tr>
-<td><code>plan_cog_loop.md</code></td>
-<td>Cognitive loop operations</td>
-</tr>
-<tr>
-<td><code>plan_consolidate_summary.md</code></td>
-<td>Consolidation and summarisation</td>
-</tr>
-<tr>
-<td><code>plan_contradiction_detection_band.md</code></td>
-<td>Contradiction detection</td>
-</tr>
-<tr>
-<td><code>plan_db_locking.md</code></td>
-<td>SQLite locking strategy</td>
-</tr>
-<tr>
-<td><code>plan_deep_sleep_rescoring.md</code></td>
-<td>Deep-sleep rescoring (v0.13.3)</td>
-</tr>
-<tr>
-<td><code>plan_dreaming_architecture.md</code></td>
-<td>Dream / consolidation orchestration</td>
-</tr>
-<tr>
-<td><code>plan_elfmem_init.md</code></td>
-<td><code>elfmem init</code> project setup command</td>
-</tr>
-<tr>
-<td><code>plan_elfmem_optimise.md</code></td>
-<td>Performance optimisation</td>
-</tr>
-<tr>
-<td><code>plan_elfmem_reflect.md</code></td>
-<td>Reflective metadata</td>
-</tr>
-<tr>
-<td><code>plan_embedding_lock.md</code></td>
-<td>Embedding model lock (Dmitry's report)</td>
-</tr>
-<tr>
-<td><code>plan_graph_composite_scoring.md</code></td>
-<td>Edge composite scoring formula</td>
-</tr>
-<tr>
-<td><code>plan_graph_connect.md</code></td>
-<td>Manual edge operations</td>
-</tr>
-<tr>
-<td><code>plan_graph_hebbian.md</code></td>
-<td>Hebbian co-retrieval edge learning</td>
-</tr>
-<tr>
-<td><code>plan_graph_temporal_decay.md</code></td>
-<td>Edge temporal decay</td>
-</tr>
-<tr>
-<td><code>issue_self_tune_research.md</code></td>
-<td>Multi-parameter self-tuning research (issue #73 → ADR 0006); shipped <code>ConsolidationHealthMetrics</code></td>
-</tr>
-<tr>
-<td><code>plan_logging_strategy.md</code></td>
-<td>Logging conventions</td>
-</tr>
-<tr>
-<td><code>plan_mind_block_improvements.md</code></td>
-<td>Theory-of-Mind block improvements</td>
-</tr>
-<tr>
-<td><code>plan_opensource_refactor.md</code></td>
-<td>Open-source launch preparation</td>
-</tr>
-<tr>
-<td><code>plan_outcome_scoring.md</code></td>
-<td>Outcome-based confidence updates</td>
-</tr>
-<tr>
-<td><code>plan_peer_inbox_trigger.md</code></td>
-<td>Peer inbox processing triggers</td>
-</tr>
-<tr>
-<td><code>plan_penalize.md</code></td>
-<td>Penalisation and decay acceleration</td>
-</tr>
-<tr>
-<td><code>plan_project_init.md</code></td>
-<td>Project detection and config discovery</td>
-</tr>
-<tr>
-<td><code>plan_smart_mcp_cli.md</code></td>
-<td>MCP and CLI interface design</td>
-</tr>
-<tr>
-<td><code>plan_token_usage_tracking.md</code></td>
-<td>Token usage accumulation</td>
-</tr>
-<tr>
-<td><code>plan_visualisation.md</code></td>
-<td>Knowledge graph visualisation dashboard</td>
-</tr>
-</tbody>
-</table>
-<p>Plus supporting documents: <code>hebbian_agent_simulation.md</code>,
-<code>learnedmembench_adapter.md</code>, <code>locomo_optimisation_plan.md</code>,
-<code>simulation_graph_temporal_decay.md</code>, and the <code>step_NN_*.md</code> step-by-step
-build sequence.</p>
-<h2 id="archive">Archive<a class="headerlink" href="#archive" title="Permanent link">&para;</a></h2>
-<p>The <code>archive/</code> subdirectory holds plans that have been <strong>explicitly superseded</strong>
-or shipped post-cleanup:</p>
-<table>
-<thead>
-<tr>
-<th>Archived plan</th>
-<th>Reason</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>archive/plan_v0.15.3_centrality_floor.md</code></td>
-<td>Shipped in v0.15.3 (2026-05-17)</td>
-</tr>
-<tr>
-<td><code>archive/plan_confidence_architecture.md</code></td>
-<td>Superseded by <code>plan_memory_scoring.md</code> (preliminary design)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="writing-a-new-plan">Writing a new plan<a class="headerlink" href="#writing-a-new-plan" title="Permanent link">&para;</a></h2>
-<p>When proposing a new subsystem or release:</p>
+<h1 id="bound-and-checkpoint-consolidation-for-slow-llm-adapters">Bound and Checkpoint Consolidation for Slow LLM Adapters<a class="headerlink" href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> IN PROGRESS — Changes 1, 3, 4 implemented on branch
+<code>consolidation-checkpointing</code> (2026-07-01); Change 2 (per-block commit inside
+<code>consolidate()</code> itself) remains as a follow-up per the risk ordering below.
+<strong>Date:</strong> 2026-07-01
+<strong>Driver:</strong> <code>elfmem dream</code> killed three times against a local LM Studio adapter
+(~14s/call), zero output each time. See <a href="../../decisions/0007-bound-and-checkpoint-consolidation/">ADR 0007</a>
+for the full context and rejected alternatives.</p>
+<h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p><code>consolidate()</code>/<code>dream()</code> has two structural properties that make it scale
+badly against a slow LLM adapter or a large active-block corpus, independent
+of any external process-kill limit:</p>
 <ol>
-<li><strong>Check if it warrants a plan</strong>: small fixes don't. Architectural changes do.</li>
-<li><strong>Use <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a></strong> for direction commitments — plans are implementation detail.</li>
-<li><strong>Use <a href="../decisions/"><code>docs/decisions/</code></a></strong> for load-bearing reasoning — ADRs are append-only.</li>
-<li><strong>Plan structure</strong>: status, driver, executive summary, scope per version, schema/code changes, tests, migration, risks, decision asks.</li>
-<li><strong>When the plan ships</strong>, move it to <code>archive/</code> and update <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a>.</li>
+<li>Per-block contradiction cost is O(n_active) in the worst case — the
+   existing cosine prefilter (0.40) cuts ~95% of pairs by precision but has
+   no cap on cardinality.</li>
+<li>The entire batch (every block's reads, LLM calls, and writes) is one
+   <code>async with self._engine.begin()</code> transaction — nothing is durable until
+   the whole call returns, so a kill anywhere loses everything processed so
+   far, in both <code>consolidate()</code> and <code>rescore()</code>.</li>
 </ol>
+<p>This plan makes three changes: a hard per-block cap on contradiction checks
+(top-K), per-block incremental commits in both <code>consolidate()</code> and
+<code>rescore_blocks()</code>, and a self-terminating per-run budget on
+<code>consolidate()</code>/<code>dream()</code> mirroring the existing <code>--rescore --max</code>. No
+concurrency changes, no daemon/background service, no adapter
+local-vs-cloud branching — see ADR 0007 for why those were rejected.</p>
+<h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
+<p>Ships as a single minor version bump (next available, e.g. v0.20.0 — confirm
+against <code>pyproject.toml</code> at release time). All three changes are additive:
+new config fields with defaults that preserve current behaviour for
+small/typical corpora, and an additive <code>ConsolidateResult</code> field.</p>
+<h2 id="changes-ordered-by-risk">Changes, ordered by risk<a class="headerlink" href="#changes-ordered-by-risk" title="Permanent link">&para;</a></h2>
+<h3 id="change-1-top-k-cap-on-contradiction-checks-per-block-shipped">Change 1: Top-K cap on contradiction checks per block — SHIPPED<a class="headerlink" href="#change-1-top-k-cap-on-contradiction-checks-per-block-shipped" title="Permanent link">&para;</a></h3>
+<p><strong>Effort:</strong> ~1 hr | <strong>Risk:</strong> low (bounded, config-gated)</p>
+<p><strong>Problem:</strong> <code>src/elfmem/operations/consolidate.py:439-451</code> loops over every
+active block in <code>evolving_vecs</code>, checking the cached cosine similarity
+against <code>contradiction_similarity_prefilter</code> (default 0.40) before issuing a
+<code>detect_contradiction</code> LLM call. Every block that clears the threshold gets
+checked — no limit on how many that can be.</p>
+<p><strong>Fix:</strong>
+- Add <code>contradiction_top_k: int = 10</code> to <code>MemoryConfig</code> in <code>config.py</code> (near
+  <code>contradiction_similarity_prefilter</code>, line ~61). (Default resolved — see
+  "Decisions" above; no further data pull needed to land this change.)
+- In <code>_collect_decisions()</code>, before the contradiction loop at line 439:
+  compute all <code>(a_block, sim)</code> pairs clearing the prefilter first (reusing
+  <code>sim_cache</code>), sort by <code>sim</code> descending, take the top
+  <code>contradiction_top_k</code>, and only issue LLM calls for those. Skip the rest
+  without incrementing <code>pairs_above_prefilter</code> beyond what's actually
+  checked — <code>ConsolidationHealthMetrics.prefilter_pass_rate</code> should reflect
+  <em>checked</em> pairs, not just <em>eligible</em> pairs, or add a new counter
+  (<code>pairs_capped</code>) so the existing health metric doesn't silently change
+  meaning. Decide which during implementation and note it in the docstring.
+- Default value: pick from real <code>prefilter_pass_rate</code> data if available
+  (<code>elfmem status</code> / health metrics on this project's own DB) rather than
+  guessing; fall back to 10 if no data exists, documented as "generous for
+  typical corpora, revisit via health metrics if it bites."</p>
+<p><strong>Test:</strong> unit test with a synthetic active set where &gt;K blocks clear the
+prefilter — assert exactly K <code>detect_contradiction</code> calls are made (via
+<code>MockLLMService</code> call count), not <code>len(passing)</code>.</p>
+<h3 id="change-2-per-block-incremental-commit-in-consolidate-follow-up-not-in-this-branch">Change 2: Per-block incremental commit in <code>consolidate()</code> — FOLLOW-UP (not in this branch)<a class="headerlink" href="#change-2-per-block-incremental-commit-in-consolidate-follow-up-not-in-this-branch" title="Permanent link">&para;</a></h3>
+<p><strong>Effort:</strong> ~2-3 hrs | <strong>Risk:</strong> medium (touches the core write path)</p>
+<p><strong>Problem:</strong> <code>_collect_decisions()</code> (read + LLM, no writes) and
+<code>_apply_decisions()</code> (all writes) are two phases of one call, both inside
+the single transaction opened by <code>api.py:791</code>. A kill during
+<code>_collect_decisions()</code> loses every already-scored block; a kill during
+<code>_apply_decisions()</code> loses the whole write batch.</p>
+<p><strong>Fix:</strong>
+- Restructure <code>consolidate()</code>'s inbox loop so each block's decision
+  (produced by the per-block body currently inside <code>_collect_decisions()</code>,
+  <code>consolidate.py:338-478</code>) is applied and committed before moving to the
+  next block, rather than accumulating <code>block_decisions</code>/
+  <code>contradiction_decisions</code>/<code>edge_decisions</code> for the whole inbox and writing
+  them all at the end (<code>_apply_decisions()</code>, <code>consolidate.py:663-669</code>).
+- Edge decisions currently depend on the full <code>newly_promoted</code> +
+  <code>evolving_vecs</code> state computed after the loop (<code>_compute_edge_decisions()</code>,
+  called at line 480 with the <em>final</em> evolving set) — confirm during
+  implementation whether edge scoring can be computed per-block against the
+  evolving set <em>so far</em> (consistent with "later inbox blocks see earlier
+  decisions" behaviour already documented at <code>consolidate.py:332</code>) without
+  changing edge-creation semantics. If not, edges may need a second,
+  smaller finalization pass — keep this pass reasonably bounded (it's O(new
+  blocks), not O(active blocks), so it's not the source of the original
+  problem).
+- Each per-block commit uses its own <code>async with self._engine.begin()</code> (or
+  equivalent), replacing the single outer transaction in <code>api.py:791</code>.
+- <code>set_config(conn, "last_consolidated_at", ...)</code> (<code>api.py:807</code>) should move
+  to after the loop completes (or after each block — either is fine, this
+  is a cheap idempotent write).</p>
+<p><strong>Test:</strong> simulate a kill mid-batch (process N blocks, raise/interrupt
+before block N+1, e.g. via a <code>MockLLMService</code> that raises after N calls in a
+test double) and assert the first N blocks are active in the DB and the
+inbox correctly still contains the rest, ready for the next <code>dream()</code> call.</p>
+<h3 id="change-3-per-block-incremental-commit-in-rescore_blocks-shipped">Change 3: Per-block incremental commit in <code>rescore_blocks()</code> — SHIPPED<a class="headerlink" href="#change-3-per-block-incremental-commit-in-rescore_blocks-shipped" title="Permanent link">&para;</a></h3>
+<p><strong>Effort:</strong> ~1 hr | <strong>Risk:</strong> low (simpler loop, no edge/contradiction
+interaction)</p>
+<p><strong>Problem:</strong> Same class of bug as Change 2, but simpler: <code>rescore()</code>
+(<code>api.py:1011-1019</code>) wraps <code>select_rescore_candidates()</code> +
+<code>rescore_blocks()</code> in one transaction; <code>rescore_blocks()</code>
+(<code>rescore.py:232-273</code>) already skips failed blocks gracefully but all
+successful <code>update_block_scoring()</code> writes share the outer transaction.</p>
+<p><strong>Fix:</strong> Move the per-block write (<code>update_block_scoring()</code>,
+<code>rescore.py:262-269</code>) into its own committed transaction per iteration,
+independent of the candidate-selection transaction. <code>select_rescore_candidates()</code>
+can remain a single read-only call.</p>
+<p><strong>Test:</strong> same shape as Change 2's kill-mid-batch test, scaled down —
+assert blocks rescored before an injected failure have <code>last_scored_at</code>
+updated and are excluded from the next <code>select_rescore_candidates()</code> call.</p>
+<h3 id="change-4-self-terminating-budget-on-dreamconsolidate-shipped">Change 4: Self-terminating budget on <code>dream()</code>/<code>consolidate()</code> — SHIPPED<a class="headerlink" href="#change-4-self-terminating-budget-on-dreamconsolidate-shipped" title="Permanent link">&para;</a></h3>
+<p><strong>Effort:</strong> ~1-2 hrs | <strong>Risk:</strong> low (additive, opt-in via config/flag)</p>
+<p><strong>Problem:</strong> <code>consolidate()</code> always processes the entire inbox in one call;
+no way to bound how much work a single invocation takes on, unlike
+<code>rescore()</code>'s existing <code>max_per_run</code>/<code>--max</code>.</p>
+<p><strong>Fix:</strong>
+- Add <code>max_inbox_per_run: int | None = 5</code> to <code>MemoryConfig</code> in <code>config.py</code>
+  (near <code>inbox_threshold</code>). <code>None</code> still means unbounded (e.g. for
+  programmatic callers that explicitly opt back out), but the shipped
+  default is 5 — see ADR 0007 for the arithmetic grounding this default in
+  the reported incident's own numbers.
+- In <code>consolidate()</code>/<code>_collect_decisions()</code>, after reading the inbox
+  (<code>consolidate.py:284</code>), slice to at most <code>max_inbox_per_run</code> blocks
+  (oldest first, matching existing inbox FIFO semantics) when the config
+  value is not <code>None</code>.
+- <code>ConsolidateResult</code> gains an additive field, <code>inbox_remaining: int</code>,
+  populated from <code>len(inbox) - processed</code> before slicing. <code>ConsolidateResult.__str__</code>/
+  <code>summary</code> mentions remaining count when nonzero, e.g. "... 4 remaining —
+  run dream() again to continue."
+- CLI: <code>dream --max N</code> (already exists at <code>cli.py:1068-1078</code> for the rescore
+  budget) now also bounds inbox processing when inbox work happens in the
+  same invocation. One flag, applied independently to each stage that
+  actually runs in that call — see ADR 0007's resolution. Update the flag's
+  help text accordingly; no new flag name.</p>
+<p><strong>Test:</strong> inbox of 10 blocks, <code>max_inbox_per_run=3</code> — assert exactly 3
+processed, <code>inbox_remaining == 7</code>, and a second <code>dream()</code> call drains the
+next 3.</p>
+<h2 id="non-goals-per-adr-0007">Non-goals (per ADR 0007)<a class="headerlink" href="#non-goals-per-adr-0007" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No concurrent/parallel LLM calls.</li>
+<li>No background daemon / trickle-consolidation service.</li>
+<li>No adapter local-vs-cloud detection or branching logic.</li>
+<li>No change to per-call timeouts (<code>LLMConfig.timeout</code>) — document raising it
+  for slow local adapters instead.</li>
+</ul>
+<h2 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">&para;</a></h2>
+<p>All changes are additive (new config fields default to today's behaviour;
+new result field defaults to 0/absent). No schema migration. Existing
+callers of <code>consolidate()</code>/<code>dream()</code>/<code>rescore()</code> continue to work unchanged.
+<code>learn_document()</code> (<code>api.py:932-948</code>) already loops on <code>should_dream</code>, so a
+budget-limited <code>dream()</code> call that doesn't fully drain the inbox is
+naturally compatible — verify this explicitly in a test once Change 4 lands.</p>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Change 2 is the riskiest: it touches the core read/LLM/write structure of
+  <code>consolidate()</code> and needs care around edge-decision computation ordering
+  (see note above). Land Changes 1, 3, and 4 first (independent, lower
+  risk) and Change 2 last, once the others are validated.</li>
+<li>Picking <code>contradiction_top_k</code>'s default without real health-metric data
+  risks either a no-op default (too high) or unexpectedly skipped
+  contradiction checks on dense corpora (too low). Pull <code>prefilter_pass_rate</code>
+  from this project's own <code>elfmem status</code>/health metrics before finalizing
+  the default.</li>
+</ul>
+<h2 id="decisions-resolved-2026-07-01">Decisions (resolved 2026-07-01)<a class="headerlink" href="#decisions-resolved-2026-07-01" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong><code>--max</code> naming</strong>: reuse the existing flag (no <code>--inbox-max</code>). When both
+   inbox processing and <code>--rescore</code> run in the same invocation, <code>--max</code>
+   applies the same numeric cap to each stage independently. See ADR 0007.</li>
+<li><strong>Defaults</strong>: <code>contradiction_top_k=10</code> (provisional, ADR-0006-style
+   reopen trigger via health metrics); <code>max_inbox_per_run=5</code> (grounded in
+   the reported incident's own numbers — see ADR 0007 — <em>not</em> unbounded,
+   because Change 2/3's durability fix for <code>consolidate()</code> itself is
+   deferred to a follow-up branch, so the budget is today's only default-on
+   protection against the original failure).</li>
+<li><strong>Implementation order approved</strong>: Changes 1, 3, 4 ship together on
+   branch <code>consolidation-checkpointing</code>. Change 2 (per-block commit inside
+   <code>consolidate()</code> itself — the highest-risk change, touching edge-decision
+   ordering) ships on a follow-up branch once (1)/(3)/(4) are validated.</li>
+</ol>
+<p>Remaining open item, to confirm once Change 2 is actually implemented:
+whether <code>_compute_edge_decisions()</code> can be called incrementally per block
+(re-querying the committed active set so far) without changing the final
+edge graph versus today's end-of-batch computation, or needs a small
+finalization pass. Analysis in ADR 0007 suggests per-block recomputation
+against the live active set produces an equivalent graph as long as edge
+creation is symmetric — needs verification against <code>edge_degree_cap</code>
+ordering effects when actually implemented.</p>
 
 
 
@@ -2511,10 +2452,10 @@ or shipped post-cleanup:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

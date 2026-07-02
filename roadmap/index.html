@@ -647,6 +647,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="In Progress">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚧 Bound and checkpoint consolidation for slow LLM adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2382,6 +2399,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="In Progress">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚧 Bound and checkpoint consolidation for slow LLM adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2739,10 +2773,30 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
 <h2 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h2>
-<p><em>Nothing currently committed. v0.20 scope is observation-driven — see <strong>Next</strong>.</em></p>
+<h3 id="bound-and-checkpoint-consolidation-for-slow-llm-adapters">🚧 Bound and checkpoint consolidation for slow LLM adapters<a class="headerlink" href="#bound-and-checkpoint-consolidation-for-slow-llm-adapters" title="Permanent link">&para;</a></h3>
+<p>Unplanned, bug-driven (same pattern as v0.19.0's peer-protocol hardening —
+pre-empts nothing, slots in ahead of the telemetry-gated v0.20 work).
+<code>elfmem dream</code> against a local LM Studio adapter (~14s/call) was killed
+three times with zero output: unbounded per-block contradiction cost
+(O(n_active), no cap beyond the existing 0.40 cosine prefilter) plus a
+single all-or-nothing transaction for the whole batch (in both
+<code>consolidate()</code> and <code>rescore()</code>) combine to make one run take arbitrarily
+long with no partial progress if interrupted.</p>
+<p>Shipped on branch <code>consolidation-checkpointing</code>
+(<a href="https://github.com/emson/elfmem/pull/78">PR #78</a>): top-K cap on
+contradiction checks per block (<code>consolidation.contradiction_top_k</code>,
+default 10), per-block incremental commits in <code>rescore_blocks()</code>, and a
+self-terminating budget on <code>dream()</code>/<code>consolidate()</code>
+(<code>consolidation.max_inbox_per_run</code>, default 5) surfaced as <code>--max</code> and
+<code>ConsolidateResult.inbox_remaining</code>. Per-block commit durability inside
+<code>consolidate()</code> itself — the counterpart fix for the inbox-processing path,
+and the riskier of the two durability changes (edge-decision ordering
+depends on the full end-of-batch active set) — is scoped as a follow-up, not
+in this PR. See
+<a href="docs/decisions/0007-bound-and-checkpoint-consolidation.md">ADR 0007</a> and
+<a href="docs/plans/plan_consolidation_checkpointing.md"><code>docs/plans/plan_consolidation_checkpointing.md</code></a>.</p>
 <hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
-<p>Driven by production signal from v0.17 and v0.18. Specific items not yet committed.</p>
 <h3 id="v020-production-signal-response">📋 v0.20 — Production signal response<a class="headerlink" href="#v020-production-signal-response" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
