@@ -231,6 +231,10 @@ class ConsolidationHealthMetrics:
       surfaced for operator corroboration.
     - ``deduplication_rate``: sanity check that dedup is doing useful
       work, not just rejecting most of the inbox.
+    - ``contradiction_cap_rate`` (ADR 0007): of the pairs that clear the
+      cosine prefilter, the fraction skipped because they fell outside the
+      per-block ``contradiction_top_k`` cap. Persistently non-zero on a real
+      deployment is the reopen trigger for raising ``contradiction_top_k``.
 
     All fields are in [0.0, 1.0] except ``edge_creation_rate`` which is
     an unbounded non-negative ratio (a single promoted block can form up
@@ -242,6 +246,7 @@ class ConsolidationHealthMetrics:
     prefilter_pass_rate: float
     promotion_rate: float
     deduplication_rate: float
+    contradiction_cap_rate: float = 0.0
 
     def to_dict(self) -> dict[str, float]:
         return {
@@ -250,6 +255,7 @@ class ConsolidationHealthMetrics:
             "prefilter_pass_rate": round(self.prefilter_pass_rate, 3),
             "promotion_rate": round(self.promotion_rate, 3),
             "deduplication_rate": round(self.deduplication_rate, 3),
+            "contradiction_cap_rate": round(self.contradiction_cap_rate, 3),
         }
 
 
@@ -281,10 +287,18 @@ class ConsolidateResult:
     # ``ConsolidateResult`` directly (tests, MCP mocks) continue to work
     # unchanged. Consumers reading ``.health`` must None-check.
     health: ConsolidationHealthMetrics | None = None
+    # Inbox blocks left unprocessed by ``consolidation.max_inbox_per_run``
+    # (ADR 0007). 0 unless the inbox was larger than the per-run budget.
+    inbox_remaining: int = 0
 
     @property
     def summary(self) -> str:
         if self.processed == 0 and self.rescored == 0 and self.rescore_failed == 0:
+            if self.inbox_remaining:
+                return (
+                    f"Nothing to consolidate. Inbox was empty "
+                    f"({self.inbox_remaining} remaining)."
+                )
             return "Nothing to consolidate. Inbox was empty."
         parts: list[str] = []
         if self.processed > 0:
@@ -304,7 +318,10 @@ class ConsolidateResult:
             if self.processed > 0
             else "Rescored: "
         )
-        return prefix + ", ".join(parts) + "."
+        suffix = "."
+        if self.inbox_remaining:
+            suffix = f" — {self.inbox_remaining} remaining, run dream() again to continue."
+        return prefix + ", ".join(parts) + suffix
 
     def __str__(self) -> str:
         return self.summary
@@ -320,6 +337,7 @@ class ConsolidateResult:
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
             "health": self.health.to_dict() if self.health is not None else None,
+            "inbox_remaining": self.inbox_remaining,
         }
 
 

@@ -91,12 +91,14 @@ GUIDES: dict[str, AgentGuide] = {
             "Safe to call speculatively — returns None instantly if nothing is pending."
         ),
         when_not=(
-            "In a tight loop. One call processes ALL pending blocks. "
+            "In a tight loop. "
             "Don't call before remember() — blocks need to queue first."
         ),
         cost=(
             "LLM call per pending block (alignment scoring + tag inference). "
-            "Returns None immediately (zero cost) if inbox is empty."
+            "Bounded to consolidation.max_inbox_per_run per call (default 5 — "
+            "ADR 0007), not the whole inbox; a larger backlog drains across "
+            "repeated calls. Returns None immediately (zero cost) if inbox is empty."
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
@@ -104,27 +106,35 @@ GUIDES: dict[str, AgentGuide] = {
             "contradictions list of ContradictionFinding records carrying per-pair "
             "detection-time signals (cosine, tag_jaccard, category_match, hours_apart) "
             "agents can use to gate suppression rules. "
-            "Also includes .health (ConsolidationHealthMetrics): five diagnostic "
+            "inbox_remaining reports blocks left after this call's budget "
+            "(consolidation.max_inbox_per_run, default 5) — nonzero means call "
+            "dream() again to keep draining. "
+            "Also includes .health (ConsolidationHealthMetrics): six diagnostic "
             "ratios per cycle (edge_creation_rate, contradiction_detection_rate, "
-            "prefilter_pass_rate, promotion_rate, deduplication_rate) for monitoring "
-            "the static thresholds in operations/consolidate.py — see ADR 0006. "
+            "prefilter_pass_rate, promotion_rate, deduplication_rate, "
+            "contradiction_cap_rate) for monitoring the static thresholds in "
+            "operations/consolidate.py — see ADR 0006 and ADR 0007. "
             ".health is None when called on an empty inbox. "
             "None if inbox was empty. None is not an error."
         ),
         next=(
             "After dream(), newly consolidated blocks are searchable via frame() and recall(). "
             "Frame cache is cleared automatically. "
+            "If result.inbox_remaining > 0, call dream() again (or loop until it "
+            "reaches 0, like learn_document() does) to fully drain a large backlog. "
             "If policy is set, adaptive threshold adjusts based on promotion rate. "
             "Tip: blocks with shared tags form graph edges at lower cosine similarity — "
             "richer tags mean a better-connected knowledge graph."
         ),
         example=(
-            "# Always-on agent pattern\n"
+            "# Always-on agent pattern — drains a backlog across calls\n"
             "result = await system.remember('new observation')\n"
             "if system.should_dream:\n"
             "    dream_result = await system.dream()\n"
+            "    while dream_result and dream_result.inbox_remaining > 0:\n"
+            "        dream_result = await system.dream()\n"
             "    if dream_result:\n"
-            "        print(dream_result)  # Consolidated 10: 9 promoted, 16 edges."
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
         ),
     ),
     "learn": AgentGuide(
@@ -192,25 +202,33 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         when_not=(
             "Inbox is empty — safe to call but a no-op. "
-            "Avoid calling in a tight loop; one call processes all pending blocks."
+            "Avoid calling in a tight loop."
         ),
         cost=(
             "LLM call per block (alignment scoring + tag inference). "
-            "Slow for large inboxes; fast for small ones."
+            "Bounded to consolidation.max_inbox_per_run per call (default 5 — "
+            "ADR 0007), not the whole inbox; pass max_inbox_per_run explicitly "
+            "(e.g. a large value) for a one-shot full-drain sweep."
         ),
         returns=(
-            "ConsolidateResult with counts: processed (total inbox blocks), "
+            "ConsolidateResult with counts: processed (blocks processed this call, "
+            "capped by the budget — not necessarily the whole inbox), "
             "promoted (moved to active), deduplicated (near-duplicates found), "
             "edges_created (knowledge graph edges built), contradictions_detected "
-            "(opposing pairs detected and inserted into the contradictions table)."
+            "(opposing pairs detected and inserted into the contradictions table), "
+            "inbox_remaining (blocks left after this call's budget — nonzero "
+            "means call consolidate()/dream() again to keep draining)."
         ),
         next=(
             "Promoted blocks are now searchable via frame() and recall(). "
+            "If inbox_remaining > 0, call again to finish draining the backlog. "
             "Call status() to verify memory state."
         ),
         example=(
             "result = await system.consolidate()\n"
-            "print(result)  # Consolidated 5: 4 promoted, 1 deduped, 8 edges."
+            "print(result)  # Consolidated 5: 4 promoted, 1 deduped, 8 edges.\n"
+            "if result.inbox_remaining:\n"
+            "    result = await system.consolidate()  # drain the rest"
         ),
     ),
     "frame": AgentGuide(

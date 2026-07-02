@@ -9,6 +9,39 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `consolidation.contradiction_top_k` (default 10): caps contradiction-detection
+  LLM calls per inbox block to the K most similar active blocks passing the
+  existing cosine prefilter, bounding worst-case per-block cost to O(K)
+  regardless of active-set size. New `ConsolidationHealthMetrics.contradiction_cap_rate`
+  reports how often the cap actually binds.
+- `consolidation.max_inbox_per_run` (default 5): bounds how many inbox blocks
+  one `consolidate()`/`dream()` call processes. `ConsolidateResult.inbox_remaining`
+  reports what's left; call `dream()` again (or loop on it, like
+  `learn_document()` already does) to drain a larger backlog.
+
+### Changed
+- `dream --max N` previously only affected `--rescore`'s budget (a no-op
+  without `--rescore`). It now *also* bounds inbox processing in the same
+  invocation via the new `consolidation.max_inbox_per_run` budget above —
+  existing automation using `dream --rescore --max N` expecting N to bound
+  only the rescore pass will now also have inbox processing capped to N in
+  that same call. Run inbox processing and `--rescore` as separate calls if
+  you need independent budgets for each.
+- `rescore_blocks()` now commits each block in its own transaction instead of
+  sharing one transaction for the whole batch — a crash partway through a
+  `--rescore` run now preserves every block already rescored, instead of
+  losing the whole batch. `rescore()`'s docstring claim of "brief write locks
+  per block" is now accurate (previously aspirational).
+- `get_inbox_blocks()` now returns inbox blocks in explicit FIFO order
+  (oldest first), so `max_inbox_per_run` truncation can't starve old blocks.
+
+See [ADR 0007](docs/decisions/0007-bound-and-checkpoint-consolidation.md) —
+motivated by `elfmem dream` being killed repeatedly against a slow local LLM
+adapter with zero forward progress. Per-block durability inside
+`consolidate()` itself (the counterpart fix for the inbox-processing path) is
+scoped as a follow-up.
+
 ---
 
 ## [0.19.1] — 2026-06-06

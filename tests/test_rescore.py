@@ -315,11 +315,10 @@ class TestRescoreExecution:
         # Leave them NULL (debt scenario) — already eligible.
         ids = [r[0] for r in rows]
 
-        async with test_engine.begin() as conn:
-            result = await rescore_blocks(
-                conn, block_ids=ids,
-                llm=system._llm, embedding_svc=system._embedding,
-            )
+        result = await rescore_blocks(
+            test_engine, block_ids=ids,
+            llm=system._llm, embedding_svc=system._embedding,
+        )
         assert result["rescored"] >= 1
         # All NULLs cleared.
         async with test_engine.connect() as conn:

@@ -19,7 +19,7 @@ For research that didn't ship, see [`docs/research/`](../research/).
 
 | Plan | Subsystem | Status |
 |---|---|---|
-| [`plan_memory_scoring.md`](plan_memory_scoring.md) | v0.16/v0.17 scoring bundle | In progress |
+| [`plan_consolidation_checkpointing.md`](plan_consolidation_checkpointing.md) | Bound + checkpoint `dream()`/`consolidate()`/`rescore()` for slow LLM adapters ([ADR 0007](../decisions/0007-bound-and-checkpoint-consolidation.md)) | Proposed |
 
 ## Historical plans (frozen artifacts)
 

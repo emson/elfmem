@@ -58,13 +58,34 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## In Progress
 
-_Nothing currently committed. v0.20 scope is observation-driven — see **Next**._
+### 🚧 Bound and checkpoint consolidation for slow LLM adapters
+
+Unplanned, bug-driven (same pattern as v0.19.0's peer-protocol hardening —
+pre-empts nothing, slots in ahead of the telemetry-gated v0.20 work).
+`elfmem dream` against a local LM Studio adapter (~14s/call) was killed
+three times with zero output: unbounded per-block contradiction cost
+(O(n_active), no cap beyond the existing 0.40 cosine prefilter) plus a
+single all-or-nothing transaction for the whole batch (in both
+`consolidate()` and `rescore()`) combine to make one run take arbitrarily
+long with no partial progress if interrupted.
+
+Shipped on branch `consolidation-checkpointing`
+([PR #78](https://github.com/emson/elfmem/pull/78)): top-K cap on
+contradiction checks per block (`consolidation.contradiction_top_k`,
+default 10), per-block incremental commits in `rescore_blocks()`, and a
+self-terminating budget on `dream()`/`consolidate()`
+(`consolidation.max_inbox_per_run`, default 5) surfaced as `--max` and
+`ConsolidateResult.inbox_remaining`. Per-block commit durability inside
+`consolidate()` itself — the counterpart fix for the inbox-processing path,
+and the riskier of the two durability changes (edge-decision ordering
+depends on the full end-of-batch active set) — is scoped as a follow-up, not
+in this PR. See
+[ADR 0007](docs/decisions/0007-bound-and-checkpoint-consolidation.md) and
+[`docs/plans/plan_consolidation_checkpointing.md`](docs/plans/plan_consolidation_checkpointing.md).
 
 ---
 
 ## Next
-
-Driven by production signal from v0.17 and v0.18. Specific items not yet committed.
 
 ### 📋 v0.20 — Production signal response
 

@@ -758,6 +758,7 @@ class MemorySystem:
 
     async def consolidate(
         self, *, skip_llm: bool = False, skip_contradictions: bool = False,
+        max_inbox_per_run: int | None = None,
     ) -> ConsolidateResult:
         """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
 
@@ -766,7 +767,6 @@ class MemorySystem:
         context manager handles this automatically.
 
         DON'T USE WHEN: Inbox is empty — safe to call but returns zero counts.
-        Avoid calling in a tight loop; one call processes all pending blocks.
 
         COST: LLM call per block (alignment scoring + tag inference). Slow for
         large inboxes; fast when inbox is small. Options for bulk ingestion:
@@ -775,18 +775,29 @@ class MemorySystem:
         - skip_llm=True: bypasses ALL LLM calls (embed + promote only).
           Fastest but blocks get neutral scoring and no summaries.
 
+        One call processes at most ``max_inbox_per_run`` blocks (default from
+        ``consolidation.max_inbox_per_run``, currently 5 — ADR 0007). A large
+        inbox is drained across repeated calls, not in one unbounded run;
+        check ``inbox_remaining`` on the result and call again if nonzero.
+        Pass a large ``max_inbox_per_run`` (e.g. 100000) for a one-shot
+        full-drain sweep on a fast adapter, matching the ``rescore()``
+        convention for its own ``max_count``.
+
         RETURNS: ConsolidateResult with counts: processed, promoted,
-        deduplicated, edges_created, contradictions_detected. processed=0
-        means inbox was empty. contradictions_detected is the per-call LLM
-        verdict (above-threshold pairs found this batch), not a cumulative
-        DB row count — some pairs may already exist in the contradictions
-        table from prior calls and are silently deduplicated on insert.
+        deduplicated, edges_created, contradictions_detected, inbox_remaining.
+        processed=0 means inbox was empty. contradictions_detected is the
+        per-call LLM verdict (above-threshold pairs found this batch), not a
+        cumulative DB row count — some pairs may already exist in the
+        contradictions table from prior calls and are silently deduplicated
+        on insert.
 
         NEXT: Promoted blocks are now searchable via frame() and recall().
         Also triggers curate() automatically if curate_interval has elapsed.
+        If inbox_remaining > 0, call consolidate()/dream() again to continue.
         """
         current_hours = self._current_active_hours()
         mem = self._config.memory
+        budget = max_inbox_per_run if max_inbox_per_run is not None else mem.max_inbox_per_run
 
         async with self._engine.begin() as conn:
             result = await consolidate(
@@ -801,12 +812,17 @@ class MemorySystem:
                 edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
                 contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
+                contradiction_top_k=mem.contradiction_top_k,
                 skip_llm=skip_llm,
                 skip_contradictions=skip_contradictions,
+                max_inbox_per_run=budget,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
-        self._pending = 0
+        # ADR 0007: a budget-limited run may leave blocks in the inbox, so
+        # _pending tracks what's actually left rather than assuming a full
+        # drain. should_dream/status() stay accurate across repeated calls.
+        self._pending = result.inbox_remaining
         self._frame_cache.clear()
 
         async with self._engine.connect() as conn:
@@ -1008,15 +1024,19 @@ class MemorySystem:
             min_age_hours=cfg.min_age_hours,
             target_max_age_days=cfg.target_max_age_days,
         )
-        async with self._engine.begin() as conn:
+        # Candidate selection is read-only (its own short connection); each
+        # candidate is then rescored in its own committed transaction inside
+        # rescore_blocks (ADR 0007) — a kill mid-run keeps every block
+        # rescored so far instead of losing the whole batch.
+        async with self._engine.connect() as conn:
             candidates = await select_rescore_candidates(
                 conn, filt=filt, max_count=budget,
             )
-            return await rescore_blocks(
-                conn, block_ids=candidates,
-                llm=self._llm, embedding_svc=self._embedding,
-                evidence_weight=self._config.memory.rescore_evidence_weight,
-            )
+        return await rescore_blocks(
+            self._engine, block_ids=candidates,
+            llm=self._llm, embedding_svc=self._embedding,
+            evidence_weight=self._config.memory.rescore_evidence_weight,
+        )
 
     async def dream(
         self,
@@ -1025,6 +1045,7 @@ class MemorySystem:
         skip_contradictions: bool = False,
         rescore: bool = False,
         rescore_max: int | None = None,
+        inbox_max: int | None = None,
     ) -> ConsolidateResult | None:
         """Consolidate pending blocks at a natural pause point.
 
@@ -1034,16 +1055,21 @@ class MemorySystem:
         execution (end of a reasoning step, waiting for user input, between tasks).
         Safe to call speculatively — returns None instantly if nothing is pending.
 
-        DON'T USE WHEN: In a tight loop. One call processes all pending blocks.
+        DON'T USE WHEN: In a tight loop.
 
         COST: LLM call per pending block (unless skip_llm=True). Returns None
-        immediately (zero cost) if inbox is empty.
+        immediately (zero cost) if inbox is empty. One call processes at most
+        ``inbox_max`` blocks (default from ``consolidation.max_inbox_per_run``,
+        currently 5 — ADR 0007); a larger backlog drains across repeated
+        calls. Check the result's ``inbox_remaining`` and call again if
+        nonzero — ``learn_document()`` already loops this way.
 
         RETURNS: ConsolidateResult if blocks were processed; None if inbox was
         empty. None is not an error — it means "nothing needed doing."
 
         NEXT: After dream(), newly consolidated blocks are searchable via frame()
-        and recall(). The frame cache is cleared automatically.
+        and recall(). The frame cache is cleared automatically. If the result's
+        inbox_remaining > 0, call dream() again to continue draining.
 
         Note: _pending is an advisory counter. If blocks were added externally
         (e.g., another process), dream() may return None despite inbox having
@@ -1061,6 +1087,11 @@ class MemorySystem:
                 with ``skip_llm`` (rescore needs the LLM by definition).
             rescore_max: Override the per-call rescore budget (default from
                 ``consolidation.rescore.max_per_run``).
+            inbox_max: Override the per-call inbox-processing budget (default
+                from ``consolidation.max_inbox_per_run``). The CLI's ``--max``
+                flag maps to both this and ``rescore_max`` in the same
+                invocation (ADR 0007) — pass them separately here for
+                independent control.
 
         Example::
 
@@ -1083,6 +1114,7 @@ class MemorySystem:
         if self._pending > 0:
             result = await self.consolidate(
                 skip_llm=skip_llm, skip_contradictions=skip_contradictions,
+                max_inbox_per_run=inbox_max,
             )
         if rescore:
             rs = await self.rescore(max_count=rescore_max)

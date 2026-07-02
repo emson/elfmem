@@ -55,10 +55,28 @@ class MemoryConfig(BaseModel):
     search_window_hours: float = 200.0
     vector_n_seeds_multiplier: int = 4
 
+    max_inbox_per_run: int | None = 5
+    # Bounds how many inbox blocks one consolidate()/dream() call processes.
+    # None = unbounded (pre-ADR-0007 behaviour). Default 5 is a stopgap until
+    # per-block commit durability lands (ADR 0007 Change 2): at 5 blocks ×
+    # (1 process_block + up to contradiction_top_k contradiction calls), one
+    # dream() call is bounded to ~13 min even at the ~14s/call local-adapter
+    # latency that motivated this cap. Half of inbox_threshold, so a normal
+    # auto-triggered batch still drains in one call. Override with --max /
+    # this field once ADR 0007 Change 2 ships and a kill is no longer
+    # catastrophic.
+
     # Quality thresholds
     self_alignment_threshold: float = 0.70
     contradiction_threshold: float = 0.80
     contradiction_similarity_prefilter: float = 0.40  # Pre-filter before LLM (~95% fewer calls)
+    contradiction_top_k: int = 10
+    # Hard cap on contradiction LLM calls per inbox block, applied after the
+    # cosine prefilter above. Bounds worst-case per-block cost to O(K)
+    # regardless of active-set size (ADR 0007). Provisional default, same
+    # spirit as the static thresholds in ADR 0006 — revisit via
+    # ConsolidationHealthMetrics.contradiction_cap_rate if it binds in
+    # practice. Tracked in issue #79.
     near_dup_exact_threshold: float = 0.95
     near_dup_near_threshold: float = 0.90
 
