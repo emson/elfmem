@@ -18,11 +18,16 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - `consolidation.max_inbox_per_run` (default 5): bounds how many inbox blocks
   one `consolidate()`/`dream()` call processes. `ConsolidateResult.inbox_remaining`
   reports what's left; call `dream()` again (or loop on it, like
-  `learn_document()` already does) to drain a larger backlog. `dream --max N`
-  (CLI) now applies this budget, in addition to its existing effect on
-  `--rescore`'s budget when both run in the same invocation.
+  `learn_document()` already does) to drain a larger backlog.
 
 ### Changed
+- `dream --max N` previously only affected `--rescore`'s budget (a no-op
+  without `--rescore`). It now *also* bounds inbox processing in the same
+  invocation via the new `consolidation.max_inbox_per_run` budget above —
+  existing automation using `dream --rescore --max N` expecting N to bound
+  only the rescore pass will now also have inbox processing capped to N in
+  that same call. Run inbox processing and `--rescore` as separate calls if
+  you need independent budgets for each.
 - `rescore_blocks()` now commits each block in its own transaction instead of
   sharing one transaction for the whole batch — a crash partway through a
   `--rescore` run now preserves every block already rescored, instead of

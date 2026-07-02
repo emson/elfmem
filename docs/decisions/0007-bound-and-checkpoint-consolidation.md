@@ -91,9 +91,13 @@ once deferred debt is large.
    cost to O(K), independent of active-set size. **Default: 10** —
    provisional, chosen the same way ADR 0006 chose its static thresholds
    (round-number default, not fitted to data we don't have), with the same
-   kind of reopen trigger: revisit via `ConsolidationHealthMetrics.prefilter_pass_rate`
-   if production deployments regularly exceed it, at which point the
-   correct move is raising the config value, not removing the cap.
+   kind of reopen trigger: revisit via the new
+   `ConsolidationHealthMetrics.contradiction_cap_rate` if it's regularly
+   nonzero on a real deployment, at which point the correct move is raising
+   the config value, not removing the cap. Tracked in
+   [issue #79](https://github.com/emson/elfmem/issues/79) — ADR 0006's
+   pattern of tying "provisional" defaults to a tracked issue + observable
+   trigger, not a comment that never gets revisited.
 
 2. **Commit consolidation decisions incrementally, per inbox block**,
    instead of one all-or-nothing transaction — apply and commit each

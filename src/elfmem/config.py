@@ -75,7 +75,8 @@ class MemoryConfig(BaseModel):
     # cosine prefilter above. Bounds worst-case per-block cost to O(K)
     # regardless of active-set size (ADR 0007). Provisional default, same
     # spirit as the static thresholds in ADR 0006 — revisit via
-    # ConsolidationHealthMetrics.prefilter_pass_rate if it binds in practice.
+    # ConsolidationHealthMetrics.contradiction_cap_rate if it binds in
+    # practice. Tracked in issue #79.
     near_dup_exact_threshold: float = 0.95
     near_dup_near_threshold: float = 0.90
 
