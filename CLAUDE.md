@@ -183,7 +183,7 @@ Claude-specific particulars (the bits that aren't generalisable):
   Don't mirror it into elfmem.
 
 
-<!-- elfmem:start v0.13.2 -->
+<!-- elfmem:start v0.19.3 -->
 ## elfmem — Project Memory
 
 _auto-generated from `.elfmem/config.yaml` — edit OUTSIDE these markers._
@@ -207,11 +207,13 @@ Add to `.claude.json` to give Claude persistent memory:
 {
   "mcpServers": {
     "elfmem": {
-      "command": "elfmem",
+      "command": "/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.venv/bin/elfmem",
       "args": [
         "serve",
         "--config",
-        "/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.elfmem/config.yaml"
+        "/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.elfmem/config.yaml",
+        "--env-file",
+        "/Users/emson/Dropbox/devel/projects/ai/elf0_mem_sim/.env"
       ]
     }
   }

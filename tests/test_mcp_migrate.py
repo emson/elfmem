@@ -26,6 +26,20 @@ def _write_config(path: Path, servers: dict) -> None:
     path.write_text(json.dumps({"mcpServers": servers}), encoding="utf-8")
 
 
+def _write_nested_config(path: Path, projects: dict) -> None:
+    """Write the real ~/.claude.json shape: projects[path].mcpServers[name]."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"projects": {p: {"mcpServers": s} for p, s in projects.items()}}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _marked_project(tmp_path: Path, name: str) -> Path:
+    """A tmp_path subdirectory with a .git marker so get_project_info resolves it."""
+    proj = tmp_path / name
+    (proj / ".git").mkdir(parents=True)
+    return proj
+
+
 class TestIsElfmemEntry:
     def test_command_match(self):
         assert is_elfmem_entry({"command": "elfmem", "args": ["serve"]})
@@ -565,3 +579,205 @@ class TestApplyResultSurface:
         assert not d["all_ok"]
         assert d["results"][0]["backup"] == "/tmp/b"
         assert d["results"][2]["backup"] is None
+
+
+# ── Nested ~/.claude.json shape + wrong-project drift (ADR 0008) ──────────────
+
+
+class TestNestedProjectsShape:
+    """~/.claude.json nests entries under projects[path].mcpServers, not a
+    flat top-level mcpServers key — the shape the flat-scanning tests above
+    never exercise."""
+
+    def test_deprecated_env_detected_in_nested_shape(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve"],
+                    "env": {"ELFMEM_DB_PATH": "/x"},
+                }
+            }
+        })
+        findings = scan_file(path)
+        assert len(findings) == 1
+        assert findings[0].project_path == str(proj)
+        assert any("ELFMEM_DB_PATH" in i for i in findings[0].issues)
+
+    def test_no_finding_for_clean_nested_entry(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        config_path = proj / ".elfmem" / "config.yaml"
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve", "--config", str(config_path)],
+                }
+            }
+        })
+        assert scan_file(path) == []
+
+    def test_flat_shape_still_scanned_alongside_nested(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        path = tmp_path / "claude.json"
+        payload = {
+            "mcpServers": {
+                "elfmem": {"command": "elfmem", "args": ["serve"], "env": {"ELFMEM_DB_PATH": "/x"}},
+            },
+            "projects": {
+                str(proj): {"mcpServers": {
+                    "elfmem": {"command": "elfmem", "args": ["serve"], "env": {"ELFMEM_DB_PATH": "/y"}},
+                }},
+            },
+        }
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        findings = scan_file(path)
+        assert len(findings) == 2
+        assert {f.project_path for f in findings} == {None, str(proj)}
+
+
+class TestWrongProjectDrift:
+    """The bug this ADR fixes: an entry's --config points at a different
+    project than the one it's filed under in ~/.claude.json."""
+
+    def test_drift_flagged_when_config_points_elsewhere(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        wrong_config = tmp_path / "unrelated" / ".elfmem" / "config.yaml"
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve", "--config", str(wrong_config)],
+                }
+            }
+        })
+        findings = scan_file(path)
+        assert len(findings) == 1
+        f = findings[0]
+        assert any("stale or copied from another project" in i for i in f.issues)
+        expected = str((proj / ".elfmem" / "config.yaml").resolve())
+        assert f.suggested["args"] == ["serve", "--config", expected]
+
+    def test_drift_fix_preserves_other_keys(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        wrong_config = tmp_path / "unrelated" / ".elfmem" / "config.yaml"
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "uv",
+                    "args": ["run", "elfmem", "serve", "--config", str(wrong_config)],
+                    "alwaysAllow": ["elfmem_recall"],
+                }
+            }
+        })
+        f = scan_file(path)[0]
+        # command/args shape (uv-run wrapping) is left alone — only the
+        # --config value is corrected — and alwaysAllow survives untouched.
+        assert f.suggested["command"] == "uv"
+        assert f.suggested["args"][0:3] == ["run", "elfmem", "serve"]
+        assert f.suggested["alwaysAllow"] == ["elfmem_recall"]
+
+    def test_no_drift_flagged_when_project_unresolvable(self, tmp_path: Path):
+        # A "project" path with no .git/pyproject.toml/etc marker anywhere in
+        # its ancestry can't be resolved by get_project_info — the check must
+        # not misfire (or crash) in that case.
+        unmarked = tmp_path / "no_markers_here"
+        unmarked.mkdir()
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(unmarked): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve", "--config", "/wherever/.elfmem/config.yaml"],
+                }
+            }
+        })
+        assert scan_file(path) == []
+
+    def test_relative_config_resolved_against_project_root_not_scan_cwd(
+        self, tmp_path: Path
+    ):
+        # A relative --config is what 'elfmem serve' itself would resolve
+        # against its own cwd (the project root Claude Code spawns it in) —
+        # the drift check must resolve it the same way, not against whatever
+        # directory 'elfmem migrate'/'doctor' happens to be run from.
+        proj = _marked_project(tmp_path, "myproj")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve", "--config", ".elfmem/config.yaml"],
+                }
+            }
+        })
+        assert scan_file(path) == []
+
+    def test_relative_config_pointing_elsewhere_still_flagged(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {
+                "elfmem": {
+                    "command": "elfmem",
+                    "args": ["serve", "--config", "../other/.elfmem/config.yaml"],
+                }
+            }
+        })
+        findings = scan_file(path)
+        assert len(findings) == 1
+        assert any("stale or copied from another project" in i for i in findings[0].issues)
+
+    def test_step_ids_unique_across_projects_with_same_server_name(self, tmp_path: Path):
+        proj_a = _marked_project(tmp_path, "a")
+        proj_b = _marked_project(tmp_path, "b")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj_a): {"elfmem": {"command": "elfmem", "args": ["serve", "--config", "/wrong/a.yaml"]}},
+            str(proj_b): {"elfmem": {"command": "elfmem", "args": ["serve", "--config", "/wrong/b.yaml"]}},
+        })
+        plan = build_plan(paths=(path,))
+        assert plan.pending_count == 2
+        assert len({s.id for s in plan.steps}) == 2
+
+    def test_apply_writes_back_into_correct_nested_project(self, tmp_path: Path):
+        proj_a = _marked_project(tmp_path, "a")
+        proj_b = _marked_project(tmp_path, "b")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj_a): {"elfmem": {"command": "elfmem", "args": ["serve", "--config", "/wrong/a.yaml"]}},
+            str(proj_b): {"elfmem": {"command": "elfmem", "args": ["serve", "--config", "/wrong/b.yaml"]}},
+        })
+        plan = build_plan(paths=(path,))
+        result = apply_plan(plan)
+        assert result.all_ok
+        assert len(result.applied) == 2
+        # One shared backup — both steps target the same physical file.
+        assert len({r.backup for r in result.results}) == 1
+
+        data = json.loads(path.read_text())
+        a_args = data["projects"][str(proj_a)]["mcpServers"]["elfmem"]["args"]
+        b_args = data["projects"][str(proj_b)]["mcpServers"]["elfmem"]["args"]
+        assert a_args == ["serve", "--config", str((proj_a / ".elfmem" / "config.yaml").resolve())]
+        assert b_args == ["serve", "--config", str((proj_b / ".elfmem" / "config.yaml").resolve())]
+
+    def test_idempotent_after_fix(self, tmp_path: Path):
+        proj = _marked_project(tmp_path, "myproj")
+        path = tmp_path / "claude.json"
+        _write_nested_config(path, {
+            str(proj): {"elfmem": {"command": "elfmem", "args": ["serve", "--config", "/wrong.yaml"]}},
+        })
+        plan = build_plan(paths=(path,))
+        apply_plan(plan)
+        assert scan_file(path) == []
+
+
+class TestDefaultScanPathsIncludeGlobalClaudeJson:
+    def test_home_claude_json_is_a_default_scan_path(self):
+        from elfmem.migrate import DEFAULT_SCAN_PATHS
+        assert Path.home() / ".claude.json" in DEFAULT_SCAN_PATHS

@@ -40,3 +40,4 @@ Links to plans, research, issues, simulation results.
 | [0005](0005-peer-protocol-hardening.md) | Peer-protocol hardening (v0.19) | Accepted |
 | [0006](0006-defer-multi-parameter-self-tuning.md) | Defer multi-parameter self-tuning (issue #73) | Accepted |
 | [0007](0007-bound-and-checkpoint-consolidation.md) | Bound and checkpoint consolidation for slow LLM adapters | Accepted |
+| [0008](0008-mcp-entry-default.md) | MCP entry generation default, drift detection, and migration | Accepted |
