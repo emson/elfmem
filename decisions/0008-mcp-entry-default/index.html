@@ -10,31 +10,27 @@
       
       
       
-        <link rel="canonical" href="https://emson.github.io/elfmem/decisions/">
+        <link rel="canonical" href="https://emson.github.io/elfmem/decisions/0008-mcp-entry-default/">
       
       
-        <link rel="prev" href="../design_simulation_quick_ref/">
-      
-      
-        <link rel="next" href="0001-power-law-decay-rejected/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Index - elfmem</title>
+        <title>0008 — MCP entry generation default, drift detection, and migration - elfmem</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,7 +49,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#decision-records" class="md-skip">
+        <a href="#0008-mcp-entry-generation-default-drift-detection-and-migration" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +90,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -114,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Index
+              0008 — MCP entry generation default, drift detection, and migration
             
           </span>
         </div>
@@ -221,7 +217,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -240,7 +236,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../quickstart/" class="md-tabs__link">
+      <a href="../../quickstart/" class="md-tabs__link">
         
   
   
@@ -259,7 +255,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../roadmap/" class="md-tabs__link">
+      <a href="../../roadmap/" class="md-tabs__link">
         
   
   
@@ -280,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
           
   
   
@@ -300,7 +296,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
           
   
   
@@ -320,7 +316,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../amgs_architecture/" class="md-tabs__link">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
           
   
   
@@ -340,7 +336,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
           
   
   
@@ -360,7 +356,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../research/long_term_evolution/" class="md-tabs__link">
+        <a href="../../research/long_term_evolution/" class="md-tabs__link">
           
   
   
@@ -376,13 +372,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -402,7 +396,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../coding_principles/" class="md-tabs__link">
+        <a href="../../coding_principles/" class="md-tabs__link">
           
   
   
@@ -422,7 +416,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../plans/" class="md-tabs__link">
+        <a href="../../plans/" class="md-tabs__link">
           
   
   
@@ -462,7 +456,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -492,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -519,7 +513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -546,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../roadmap/" class="md-nav__link">
+      <a href="../../roadmap/" class="md-nav__link">
         
   
   
@@ -625,7 +619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
         
   
   
@@ -653,7 +647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
         
   
   
@@ -681,7 +675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
+      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
         
   
   
@@ -709,7 +703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
         
   
   
@@ -737,7 +731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../multiple_mcp_steps/" class="md-nav__link">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
         
   
   
@@ -765,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_setup/" class="md-nav__link">
+      <a href="../../dev_setup/" class="md-nav__link">
         
   
   
@@ -852,7 +846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
         
   
   
@@ -880,7 +874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
         
   
   
@@ -908,7 +902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
         
   
   
@@ -995,7 +989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../amgs_architecture/" class="md-nav__link">
+      <a href="../../amgs_architecture/" class="md-nav__link">
         
   
   
@@ -1023,7 +1017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulation_overview/" class="md-nav__link">
+      <a href="../../simulation_overview/" class="md-nav__link">
         
   
   
@@ -1051,7 +1045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dreaming_architecture/" class="md-nav__link">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
         
   
   
@@ -1079,7 +1073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph_connect_design/" class="md-nav__link">
+      <a href="../../graph_connect_design/" class="md-nav__link">
         
   
   
@@ -1107,7 +1101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agent_friendly_principles/" class="md-nav__link">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
         
   
   
@@ -1194,7 +1188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
         
   
   
@@ -1222,7 +1216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../elfmem_tool/" class="md-nav__link">
+      <a href="../../elfmem_tool/" class="md-nav__link">
         
   
   
@@ -1309,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/long_term_evolution/" class="md-nav__link">
+      <a href="../../research/long_term_evolution/" class="md-nav__link">
         
   
   
@@ -1337,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/scoring_proposed_evaluation/" class="md-nav__link">
+      <a href="../../research/scoring_proposed_evaluation/" class="md-nav__link">
         
   
   
@@ -1365,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/memory_scoring_survey/" class="md-nav__link">
+      <a href="../../research/memory_scoring_survey/" class="md-nav__link">
         
   
   
@@ -1393,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+      <a href="../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
         
   
   
@@ -1421,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph_improvement_research/" class="md-nav__link">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
         
   
   
@@ -1449,7 +1443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../research_agent_patterns/" class="md-nav__link">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
         
   
   
@@ -1477,7 +1471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../visualisation_research/" class="md-nav__link">
+      <a href="../../visualisation_research/" class="md-nav__link">
         
   
   
@@ -1505,7 +1499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulation_behaviour_research/" class="md-nav__link">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
         
   
   
@@ -1533,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design_simulation_guide/" class="md-nav__link">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
         
   
   
@@ -1561,7 +1555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
         
   
   
@@ -1593,31 +1587,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -1635,7 +1624,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1650,37 +1639,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Index
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -1696,48 +1658,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Format
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#current-adrs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Current ADRs
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1750,7 +1670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="0001-power-law-decay-rejected/" class="md-nav__link">
+      <a href="../0001-power-law-decay-rejected/" class="md-nav__link">
         
   
   
@@ -1778,7 +1698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="0002-v017-scope/" class="md-nav__link">
+      <a href="../0002-v017-scope/" class="md-nav__link">
         
   
   
@@ -1806,7 +1726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="0003-defer-constitutional-evolution/" class="md-nav__link">
+      <a href="../0003-defer-constitutional-evolution/" class="md-nav__link">
         
   
   
@@ -1834,7 +1754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="0004-manual-constitutional-review/" class="md-nav__link">
+      <a href="../0004-manual-constitutional-review/" class="md-nav__link">
         
   
   
@@ -1862,7 +1782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="0005-peer-protocol-hardening/" class="md-nav__link">
+      <a href="../0005-peer-protocol-hardening/" class="md-nav__link">
         
   
   
@@ -1949,7 +1869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../coding_principles/" class="md-nav__link">
+      <a href="../../coding_principles/" class="md-nav__link">
         
   
   
@@ -1977,7 +1897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing_principles/" class="md-nav__link">
+      <a href="../../testing_principles/" class="md-nav__link">
         
   
   
@@ -2064,7 +1984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../plans/" class="md-nav__link">
+      <a href="../../plans/" class="md-nav__link">
         
   
   
@@ -2119,10 +2039,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#format" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Format
+        Context
       
     </span>
   </a>
@@ -2130,10 +2050,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-adrs" class="md-nav__link">
+  <a href="#alternatives-considered" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current ADRs
+        Alternatives considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-implementation-review-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-implementation review findings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2157,7 +2121,7 @@
 
 
   
-    <a href="https://github.com/emson/elfmem/edit/main/docs/decisions/README.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/emson/elfmem/edit/main/docs/decisions/0008-mcp-entry-default.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2165,83 +2129,217 @@
   
 
 
-<h1 id="decision-records">Decision Records<a class="headerlink" href="#decision-records" title="Permanent link">&para;</a></h1>
-<p>Architecture Decision Records (ADRs) for elfmem. Each file documents a significant decision: the context, the alternatives considered, the choice made, and why.</p>
-<p>ADRs are <strong>append-only</strong>. We don't edit old decisions; if a decision is superseded, we write a new ADR that references it.</p>
-<h2 id="format">Format<a class="headerlink" href="#format" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a># NNNN — Short title
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>**Status**: Accepted | Superseded by NNNN | Deprecated
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>**Date**: YYYY-MM-DD
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>**Deciders**: who reasoned about this
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>## Context
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>What was the situation that called for a decision?
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>## Alternatives considered
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>What options were on the table? With brief notes on each.
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>## Decision
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>What did we choose? Why?
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>## Consequences
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>What does this commit us to? What does it preclude?
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>## References
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>Links to plans, research, issues, simulation results.
+<h1 id="0008-mcp-entry-generation-default-drift-detection-and-migration">0008 — MCP entry generation default, drift detection, and migration<a class="headerlink" href="#0008-mcp-entry-generation-default-drift-detection-and-migration" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted
+<strong>Date</strong>: 2026-07-05
+<strong>Deciders</strong>: Ben Emson, elf</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p><code>mcp_json_snippet()</code> (<code>src/elfmem/project.py</code>) is the function <code>elfmem init</code>
+prints and embeds into a project's <code>CLAUDE.md</code>/<code>AGENTS.md</code> managed section —
+the JSON block a user pastes into a Claude Code MCP config to give an agent
+persistent memory. Until this ADR it generated:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;elfmem&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elfmem&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;serve&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--config&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&lt;path&gt;&quot;</span><span class="p">]}}}</span>
 </span></code></pre></div>
-<h2 id="current-adrs">Current ADRs<a class="headerlink" href="#current-adrs" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Title</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="0001-power-law-decay-rejected/">0001</a></td>
-<td>Power-law decay rejected</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0002-v017-scope/">0002</a></td>
-<td>v0.17 scope: bundle four scoring fixes</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0003-defer-constitutional-evolution/">0003</a></td>
-<td>Defer constitutional evolution mechanisms</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0004-manual-constitutional-review/">0004</a></td>
-<td>Manual constitutional review (v0.18)</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0005-peer-protocol-hardening/">0005</a></td>
-<td>Peer-protocol hardening (v0.19)</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0006-defer-multi-parameter-self-tuning/">0006</a></td>
-<td>Defer multi-parameter self-tuning (issue #73)</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0007-bound-and-checkpoint-consolidation/">0007</a></td>
-<td>Bound and checkpoint consolidation for slow LLM adapters</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="0008-mcp-entry-default/">0008</a></td>
-<td>MCP entry generation default, drift detection, and migration</td>
-<td>Accepted</td>
-</tr>
-</tbody>
-</table>
+<p>Two independent, real incidents traced to this shape:</p>
+<ol>
+<li><strong>Wrong-project drift, this repo's own dev instance.</strong> elfmem's own
+   <code>~/.claude.json</code> entry for this project had drifted to point at an
+   unrelated global config/db (<code>~/.elfmem/config.yaml</code>, <code>~/.elfmem/agent.db</code>)
+   with no <code>peer:</code> section — silently breaking peer messaging. Root cause:
+   <code>elfmem</code> only exists at <code>.venv/bin/elfmem</code> in this project's own
+   <code>uv</code>-managed dev venv, not on any PATH the spawning process reliably
+   inherits, so a bare <code>"elfmem"</code> command was never the actual problem here —
+   the entry had been hand-edited at some point to a stale absolute path and
+   nothing detected the drift.</li>
+<li><strong>Silent missing credentials, a sibling elf instance in another project.</strong>
+   A peer report (<code>elf:alv</code>, 2026-07-05) found that project's MCP server ran
+   in mock mode indefinitely because <code>.mcp.json</code> launched it without any
+   mechanism to deliver <code>ANTHROPIC_API_KEY</code> to the spawned subprocess — no
+   error, just silent degradation.</li>
+</ol>
+<p>Both share a root cause: <strong>the generated snippet assumes an execution
+context (PATH resolution, inherited shell environment) that an MCP-spawned
+subprocess does not reliably have</strong>, and nothing in elfmem validates that
+assumption after the fact.</p>
+<p>Existing, reusable infrastructure was found already in place
+(<code>src/elfmem/migrate.py</code>, <code>tests/test_mcp_migrate.py</code>, ~30 tests): a
+<code>MigrationFinding</code>/<code>MigrationStep</code>/<code>MigrationPlan</code> model with atomic
+tmp+<code>os.replace()</code> writes, automatic timestamped backups, a sha256
+staleness gate, idempotent skip, and dry-run — wired into
+<code>elfmem doctor --migrate-mcp</code> (read-only preview) and
+<code>elfmem migrate {status|plan|apply}</code> (writes, behind confirm/<code>--yes</code>).
+Its detection logic (<code>_suggest_entry()</code>) only handled two things: renaming
+two deprecated env var names, and rewriting a legacy <code>python -m elfmem.mcp</code>
+invocation. It had no notion of "is this entry correct for <em>this</em> project" —
+and its <code>DEFAULT_SCAN_PATHS</code> didn't even include the real global
+<code>~/.claude.json</code> (Claude Code's actual per-project MCP config file), nor
+could its scanner parse that file's nested
+<code>{"projects": {&lt;path&gt;: {"mcpServers": {...}}}}</code> shape — it only understood a
+flat top-level <code>mcpServers</code> key (the <code>.mcp.json</code> shape). So the existing
+migration tool could not have caught either incident above, even though its
+surrounding pipeline is sound.</p>
+<p>A design-space simulation (optimize intent, 12 adversarial scenarios: varied
+install contexts, missing <code>.env</code>, deliberate cross-project config sharing,
+Windows paths, concurrent writes, CI non-interactivity — see session
+transcript) was run before this decision to avoid picking a design that
+solves the two known incidents but reintroduces a new failure mode.</p>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<p><strong>A — Branch on detected install context</strong> (project venv → <code>uv run elfmem</code>,
+else bare <code>elfmem</code>). <em>Rejected</em>: requires a heuristic ("is <code>sys.prefix</code>
+under the project root?") that itself needs edge-case handling for atypical
+venv layouts, adding a magic-number-shaped branch to maintain for something
+a simpler rule solves outright. Violates "no magic numbers" / SIMPLE.</p>
+<p><strong>B — Always prefix with <code>uv run --env-file .env</code>.</strong> <em>Rejected</em>: assumes
+every downstream project uses <code>uv</code> and keeps a project-root <code>.env</code>, neither
+of which elfmem can assume for consumers who <code>pip install elfmem</code> without
+<code>uv</code>, or who export credentials at the shell/process-supervisor level
+instead.</p>
+<p><strong>C — Embed literal secret values directly in the generated <code>"env"</code>
+object.</strong> <em>Rejected outright</em>, not just deprioritized: <code>.mcp.json</code> is
+explicitly a git-shared, team-visible convention (per Alv's report on the
+sibling incident) — baking API keys into it is a credential-leak vector.
+Even for <code>~/.claude.json</code> (not git-shared), a uniform "never embed secrets,
+regardless of which file this ends up in" rule is simpler and safer than a
+per-file-location exception.</p>
+<p><strong>D — Detect "wrong project" by deep-comparing config <em>content</em>.</strong>
+<em>Rejected</em>: comparing YAML content (name, db, identity) is fragile against
+legitimate per-deployment config variation and doesn't distinguish "stale
+pointer" from "user intentionally customized this project's own config."
+The simpler, structurally-guaranteed signal is available for free: the real
+<code>~/.claude.json</code> already tells you which project an entry belongs to via
+its <code>projects[&lt;path&gt;]</code> dict key, so "does <code>--config</code>'s resolved path equal
+<code>get_project_info(Path(path)).config</code>'s resolved path" is a path-identity
+check, not a content diff — no new function, reuses <code>get_project_info()</code>.</p>
+<p><strong>E — Auto-apply the fix silently during <code>elfmem init --refresh</code> or MCP
+server startup.</strong> <em>Rejected</em>: violates the existing, deliberately
+conservative <code>migrate.py</code> UX (preview → explicit <code>--yes</code> confirm → backup
+always taken). A user who has a rare, intentional reason to point one
+project's entry at another's config would have it silently rewritten with
+no chance to decline. Detection stays permissive-but-visible; only
+<code>elfmem migrate apply</code> (already gated) writes.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>New default command shape</strong>: <code>mcp_json_snippet()</code> resolves the
+   absolute path of the currently-running <code>elfmem</code> executable
+   (<code>shutil.which("elfmem") or sys.argv[0]</code>, then <code>Path(...).resolve()</code>) and
+   uses that as <code>command</code>, instead of a bare <code>"elfmem"</code> string. This is a
+   single, uniform rule — no install-context branching — because an
+   absolute path is spawn-correct regardless of whether <code>elfmem</code> came from
+   a project-local <code>uv</code> venv, a global <code>uv tool</code>/<code>pipx</code> install, or an
+   activated <code>pip</code> venv: subprocess spawning with an absolute path never
+   consults <code>PATH</code>.</li>
+<li><strong>Env var delivery</strong>: <code>elfmem serve</code> gains a new <code>--env-file PATH</code>
+   option (<code>src/elfmem/cli.py</code>), backed by a new pure function
+   <code>parse_env_file()</code>/<code>load_env_file()</code> in <code>project.py</code> — a minimal
+   dotenv-style <code>KEY=VALUE</code> parser (comments, blank lines, quoted values),
+   applied via <code>os.environ.setdefault()</code> so real environment variables
+   always take precedence over the file. <code>mcp_json_snippet()</code> appends
+   <code>--env-file &lt;abs path&gt;</code> only when a <code>.env</code> file actually exists at the
+   given <code>project_root</code> — never fabricated, and never embedding literal
+   key values in the JSON output. This makes <code>--env-file</code> a real,
+   documented <code>elfmem serve</code> flag rather than relying on <code>uv run</code>'s
+   own built-in flag of the same name, which only exists when the spawned
+   <code>command</code> is <code>uv</code> itself — true in this repo's dev convention, not
+   guaranteed for consumers.</li>
+<li><strong>Drift detection</strong>: extend <code>migrate.py</code>'s per-entry issue list with a
+   new check, scoped to entries found under a <code>projects[&lt;path&gt;]</code> key: does
+   the entry's <code>--config</code> argument resolve to the same file as
+   <code>get_project_info(Path(path)).config</code>? If not, add an issue and a
+   suggested fix (regenerate via the same logic as <code>mcp_json_snippet()</code>).
+   Composes with the existing env-var-rename and legacy-invocation checks
+   on the same <code>MigrationFinding</code> — no new pipeline.</li>
+<li><strong>Scan-path/shape fix</strong>: add <code>~/.claude.json</code> to <code>DEFAULT_SCAN_PATHS</code>;
+   extend the scanner to also walk the nested
+   <code>data["projects"][path]["mcpServers"]</code> shape in addition to the existing
+   flat <code>data["mcpServers"]</code> shape (used by <code>.mcp.json</code>), producing the same
+   <code>MigrationFinding</code>/<code>MigrationStep</code> model either way — only the
+   <code>json_pointer</code> differs (<code>/mcpServers/&lt;name&gt;</code> vs.
+   <code>/projects/&lt;path&gt;/mcpServers/&lt;name&gt;</code>), which the existing <code>json_pointer</code>
+   field on <code>MigrationStep</code> already accommodates.</li>
+<li><strong>Rollout</strong>: additive only. <code>elfmem doctor --migrate-mcp</code> picks up the
+   new checks in its existing read-only preview; <code>elfmem migrate apply</code>
+   remains the only write path, unchanged confirm/<code>--yes</code>/<code>--dry-run</code>
+   gating. No change to default <code>doctor</code> output for users with no drift.</li>
+</ol>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Existing entries generated by the old snippet keep working exactly as
+  before — nothing here changes runtime behavior for a correctly-wired
+  entry. Only entries that are actually wrong (bare command unresolvable,
+  or <code>--config</code> pointing at a different project) get flagged, and only
+  <code>migrate apply</code> (explicit, confirmed, backed up) changes them.</li>
+<li>A user with no <code>.env</code> at their project root gets a snippet with no
+  <code>--env-file</code> flag — this is a visible gap (no flag present, greppable),
+  not a silent one, but it does not by itself prove the <em>served</em> process
+  has working credentials if they're relying on shell-inherited env vars
+  that happen to be absent. Closing that residual gap (per Alv's own
+  suggestion: a doctor check that verifies the <em>served</em> process actually
+  has reachable credentials, not just that a config file exists) is
+  explicitly <strong>not</strong> done here — recorded as the direct follow-up trigger.</li>
+<li>The rare case of a user deliberately pointing one project's entry at
+  another project's config will surface as a <code>migrate status</code> finding.
+  Cost is a one-time "review this diff" prompt, not a silent rewrite —
+  acceptable per the existing conservative migration UX.</li>
+<li>Windows path resolution for the executable-discovery step
+  (<code>shutil.which</code>/<code>sys.argv[0]</code>) has more platform variance than
+  <code>Path.resolve()</code> alone; flagged as a residual risk from the design
+  simulation, addressed with an explicit test rather than an assumption.</li>
+</ul>
+<h2 id="post-implementation-review-findings">Post-implementation review findings<a class="headerlink" href="#post-implementation-review-findings" title="Permanent link">&para;</a></h2>
+<p>An adversarial edge-case pass across both new code paths, before merge,
+found and fixed two real bugs the simulation's scenario set didn't surface,
+and identified one accepted residual risk:</p>
+<ol>
+<li><strong><code>_resolve_elfmem_command()</code>'s fallback resolved the wrong directory.</strong>
+   The first implementation called <code>Path(sys.executable).resolve().parent</code>
+   before checking for a sibling <code>elfmem</code> console script. A venv's <code>python</code>
+   is itself a symlink to a shared interpreter (confirmed against this
+   repo's own uv-managed venv: <code>.venv/bin/python3</code> → uv's centrally-managed
+   toolchain under <code>~/.local/share/uv/python/...</code>). Resolving it <em>before</em>
+   taking the parent lands in that shared toolchain directory, which has no
+   <code>elfmem</code> console script — the exact bug this fallback exists to avoid,
+   just relocated. Fixed by taking <code>sys.executable</code>'s parent unresolved
+   (the venv's own <code>bin/</code>, where <code>elfmem</code> actually lives), only resolving
+   the final sibling path once found. Caught by a test that failed on first
+   run (<code>test_falls_back_to_executable_sibling_when_which_fails</code>) — direct
+   confirmation the review methodology worked, not a theoretical concern.</li>
+<li><strong>Relative <code>--config</code> values resolved against the wrong base.</strong> The
+   drift check's <code>Path(cfg_arg).resolve()</code> resolved a relative <code>--config</code>
+   value against the <em>scanning</em> process's cwd (wherever <code>elfmem
+   migrate</code>/<code>doctor</code> happens to be invoked from), not the project root the
+   entry is actually spawned in by Claude Code. Fixed to join a relative
+   <code>cfg_arg</code> onto the known <code>project_root</code> before resolving — matching how
+   <code>elfmem serve --config &lt;relative&gt;</code> would actually behave when spawned.</li>
+<li><strong>Accepted residual risk, not fixed here: whole-file sha256 hash gate on
+   <code>~/.claude.json</code>.</strong> <code>_apply_file_group</code>'s staleness check hashes the
+   <em>entire</em> source file; <code>~/.claude.json</code> is a shared, actively-written file
+   (Claude Code itself updates per-session bookkeeping fields — <code>numStartups</code>,
+   <code>lastCost</code>, <code>lastAPIDuration</code>, etc. — for every project, not just the one
+   being migrated). A <code>migrate plan</code> → <code>migrate apply</code> gap that spans another
+   Claude Code session boundary risks the whole batch (potentially many
+   unrelated projects' fixes) coming back <code>"stale"</code>, even when the specific
+   entry being fixed didn't change. This fails <em>safe</em> (a stale rejection
+   just asks the user to re-plan; it never corrupts data or applies a wrong
+   fix), so it's a UX friction risk, not a correctness risk. Not fixed in
+   this change: doing so properly means scoping the hash check to the
+   JSON-pointer-targeted subtree instead of the whole file, which touches
+   the core safety mechanism shared by every migration kind, not just this
+   one — a larger, separate change. <strong>Trigger to revisit</strong>: a real user
+   reports <code>migrate apply</code> against <code>~/.claude.json</code> failing as stale more
+   than rarely.</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>src/elfmem/project.py</code> — <code>mcp_json_snippet()</code>, <code>_resolve_elfmem_command()</code>,
+  <code>parse_env_file()</code>/<code>load_env_file()</code></li>
+<li><code>src/elfmem/cli.py</code> — <code>serve --env-file</code>, <code>init</code> call sites</li>
+<li><code>src/elfmem/migrate.py</code> — <code>_suggest_entry()</code>, <code>scan_file_with_warnings()</code>,
+  <code>DEFAULT_SCAN_PATHS</code></li>
+<li><code>tests/test_mcp_migrate.py</code>, <code>tests/test_project.py</code></li>
+<li>Peer message from <code>elf:alv</code>, 2026-07-05 — cross-project MCP env-wiring
+  report that named the same failure category</li>
+<li>CHANGELOG.md <code>[Unreleased]</code> — user-facing summary</li>
+</ul>
 
 
 
@@ -2318,10 +2416,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

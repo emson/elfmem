@@ -2663,6 +2663,11 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 </thead>
 <tbody>
 <tr>
+<td>✅ <strong>v0.19.3</strong></td>
+<td>MCP entry default, drift detection, and migration — <code>mcp_json_snippet()</code> now resolves the running <code>elfmem</code> executable to an absolute path instead of a bare <code>"elfmem"</code> string (broke on project-local <code>uv</code> venvs); <code>elfmem serve --env-file</code> reliably delivers API keys to the spawned MCP subprocess instead of silently degrading to mock/no-op behaviour; <code>elfmem migrate</code>/<code>doctor --migrate-mcp</code> now scan the real <code>~/.claude.json</code> (previously omitted) and its nested <code>projects[path].mcpServers</code> shape, with a new drift check catching an MCP entry wired to a <em>different</em> project's config. Unplanned, bug-driven — found via elfmem's own dev instance drifting to an unrelated config/db with peer messaging silently broken (<a href="https://github.com/emson/elfmem/pull/81">#81</a>, <a href="docs/decisions/0008-mcp-entry-default.md">ADR 0008</a>)</td>
+<td>2026-07-14</td>
+</tr>
+<tr>
 <td>✅ <strong>v0.19.2</strong></td>
 <td>Bound and checkpoint consolidation for slow LLM adapters — <code>consolidation.contradiction_top_k</code> (default 10) caps contradiction-detection LLM calls per inbox block to the K most similar candidates, bounding worst-case cost to O(K) regardless of active-set size; <code>consolidation.max_inbox_per_run</code> (default 5) self-terminates <code>dream()</code>/<code>consolidate()</code> runs, surfaced as <code>--max</code> and <code>ConsolidateResult.inbox_remaining</code>; <code>rescore_blocks()</code> now commits per-block instead of one all-or-nothing transaction. Unplanned, bug-driven (same pattern as v0.19.0) — mitigates but does not fully close the <code>elfmem dream</code> kill-and-lose-progress failure mode; per-block commit durability inside <code>consolidate()</code> itself is a follow-up (<a href="https://github.com/emson/elfmem/pull/78">#78</a>, <a href="docs/decisions/0007-bound-and-checkpoint-consolidation.md">ADR 0007</a>)</td>
 <td>2026-07-02</td>
@@ -2727,9 +2732,9 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 <p>Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
 (an unplanned signal from elf's own peer-messaging usage; see "Recently
 Released" above and <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>).
-v0.19.2 (consolidation checkpointing) also slotted in ahead of this without
-renumbering it — the telemetry gate is unchanged — date-bound, not
-version-bound.</p>
+v0.19.2 (consolidation checkpointing) and v0.19.3 (MCP entry default +
+drift migration) also slotted in ahead of this without renumbering it —
+the telemetry gate is unchanged — date-bound, not version-bound.</p>
 </blockquote>
 <p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)
