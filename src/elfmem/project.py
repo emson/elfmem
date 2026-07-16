@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import sys
 import tomllib
 from pathlib import Path
@@ -82,6 +83,10 @@ KEY_MODULES: dict[str, str] = {
         "review_constitutional, accept/revert/list_amendments"
     ),
     "src/elfmem/db/migrate.py": "Schema migration + backup utilities",
+    "src/elfmem/migrate.py": (
+        "Claude MCP config drift scanner + apply pipeline — "
+        "elfmem doctor --migrate-mcp, elfmem migrate {status,plan,apply}"
+    ),
     "src/elfmem/adapters/factory.py": "make_llm_adapter() / make_embedding_adapter()",
     "src/elfmem/adapters/anthropic.py": "AnthropicLLMAdapter — Claude via official SDK",
     "src/elfmem/adapters/openai.py": "OpenAILLMAdapter + OpenAIEmbeddingAdapter",
@@ -537,6 +542,7 @@ def _build_section(
     db_path: str,
     config_path: str,
     identity: str = "",
+    project_root: Path | str | None = None,
 ) -> str:
     """Build the managed elfmem block for an agent doc file.
 
@@ -558,7 +564,7 @@ def _build_section(
         elfmem_version = _pkg_version("elfmem")
     except Exception:
         elfmem_version = "unknown"
-    mcp = mcp_json_snippet(config_path=config_path)
+    mcp = mcp_json_snippet(config_path=config_path, project_root=project_root)
     name_line = f"- **Project:** {name}\n" if name else ""
     db_line = f"- **Database:** `{db_path}`\n" if db_path else ""
     config_line = f"- **Config:** `{config_path}`\n" if config_path else ""
@@ -597,6 +603,7 @@ def write_agent_section(
     db_path: str,
     config_path: str,
     identity: str = "",
+    project_root: Path | str | None = None,
 ) -> str:
     """Write or update the managed elfmem section in an agent doc file.
 
@@ -610,6 +617,7 @@ def write_agent_section(
         db_path=db_path,
         config_path=config_path,
         identity=identity,
+        project_root=project_root,
     )
 
     if not doc_path.exists():
@@ -636,20 +644,112 @@ def write_agent_section(
     return "appended"
 
 
+# ── Env file loading ──────────────────────────────────────────────────────────
+
+
+def parse_env_file(path: Path) -> dict[str, str]:
+    """Parse KEY=VALUE lines from a dotenv-style file.
+
+    Blank lines and lines starting with '#' are skipped. Values may be
+    wrapped in single or double quotes, stripped on output. Lines without an
+    '=' are skipped rather than raising — a malformed line here shouldn't
+    take down MCP server startup.
+    """
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        values[key] = value
+    return values
+
+
+def load_env_file(path: Path) -> None:
+    """Load *path* into os.environ, without overriding already-set variables.
+
+    Real environment variables (set by the process supervisor, shell export,
+    etc.) always win over a .env fallback default — this loader only fills
+    in what's missing.
+    """
+    for key, value in parse_env_file(path).items():
+        os.environ.setdefault(key, value)
+
+
 # ── MCP snippet ───────────────────────────────────────────────────────────────
 
 
-def mcp_json_snippet(config_path: str) -> str:
+def _resolve_elfmem_command() -> str:
+    """Return an absolute path to the currently-running ``elfmem`` executable.
+
+    A bare ``"elfmem"`` command relies on the spawning process's PATH, which
+    Claude Code's MCP subprocess does not reliably inherit — this broke on a
+    project-local ``uv``-managed venv where ``elfmem`` only exists at
+    ``.venv/bin/elfmem`` (see ADR 0008). Resolving to an absolute path here,
+    at generation time, works identically whether elfmem is installed in a
+    project venv, a global uv/pipx tool, or an activated pip venv — no
+    install-context detection needed.
+
+    Fallback order when ``elfmem`` isn't on PATH (``shutil.which`` misses):
+    try the console script next to the running interpreter (``sys.executable``
+    and ``elfmem`` are always installed into the same venv/tool ``bin/``
+    directory by pip/uv), which stays correct even when ``elfmem init`` was
+    invoked via ``python -m elfmem.cli`` — a bare ``sys.argv[0]`` in that case
+    points at a ``.py`` file, not an executable. ``sys.argv[0]`` is the last
+    resort, not the primary fallback.
+
+    Deliberately does NOT ``.resolve()`` ``sys.executable`` before taking its
+    parent: a venv's ``python`` is itself a symlink to a shared interpreter
+    (e.g. uv's centrally-managed toolchain) — resolving it first lands in
+    that shared directory, which does not contain this venv's own
+    console scripts. ``sys.executable``'s *unresolved* parent is the venv's
+    real ``bin/`` directory, where ``elfmem`` actually lives.
+    """
+    which_result = shutil.which("elfmem")
+    if which_result is not None:
+        return str(Path(which_result).resolve())
+
+    exe_suffix = ".exe" if sys.platform == "win32" else ""
+    sibling = Path(sys.executable).parent / f"elfmem{exe_suffix}"
+    if sibling.exists():
+        return str(sibling.resolve())
+
+    return str(Path(sys.argv[0]).resolve())
+
+
+def mcp_json_snippet(config_path: str, project_root: Path | str | None = None) -> str:
     """Return the JSON block to paste into .claude.json.
 
     Uses only --config; the serve command reads project.db from the config,
     so --db is not needed when a project config is in use.
+
+    ``command`` is the absolute path of the currently-running ``elfmem``
+    executable (see ``_resolve_elfmem_command``), not a bare command name.
+
+    When *project_root* is given and a ``.env`` file exists there, appends
+    ``serve``'s own ``--env-file <abs path>`` option so the spawned MCP
+    subprocess actually receives OPENAI_API_KEY / ANTHROPIC_API_KEY — omitted
+    (not fabricated) when no ``.env`` exists, since silently degrading to
+    mock/no-op embeddings with no error is worse than an explicit gap the
+    user can see in `elfmem doctor`. Never embeds literal key values: `.env`
+    is gitignored by convention, unlike the MCP config file itself, which
+    may be git-shared.
     """
+    args = ["serve", "--config", config_path]
+    if project_root is not None:
+        env_file = Path(project_root) / ".env"
+        if env_file.exists():
+            args += ["--env-file", str(env_file.resolve())]
+
     snippet = {
         "mcpServers": {
             "elfmem": {
-                "command": "elfmem",
-                "args": ["serve", "--config", config_path],
+                "command": _resolve_elfmem_command(),
+                "args": args,
             }
         }
     }

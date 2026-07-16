@@ -419,12 +419,15 @@ def init(
             db_path=render_db,
             config_path=resolved_config,
             identity=self_description or "",
+            project_root=proj_root,
         )
         doc_path_str = str(doc_path)
 
     # ── Output ─────────────────────────────────────────────────────────────
 
-    mcp_snippet = _project.mcp_json_snippet(config_path=resolved_config)
+    mcp_snippet = _project.mcp_json_snippet(
+        config_path=resolved_config, project_root=proj_root
+    )
 
     if json_output:
         out: dict[str, Any] = {
@@ -1273,12 +1276,30 @@ def serve(
             help="Enable self-tuning consolidation policy.",
         ),
     ] = False,
+    env_file: Annotated[
+        str | None,
+        typer.Option(
+            "--env-file",
+            help=(
+                "Load KEY=VALUE pairs from this file into the environment "
+                "before starting (e.g. OPENAI_API_KEY, ANTHROPIC_API_KEY). "
+                "Never overrides variables already set in the environment."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """Start the elfmem MCP server for agent tool integration.
 
     --db is optional when a project config with project.db is discoverable
     from the current directory (set up via 'elfmem init').
     """
+    if env_file:
+        env_file_path = Path(env_file)
+        if not env_file_path.exists():
+            typer.echo(f"Error: --env-file not found: {env_file_path}", err=True)
+            raise typer.Exit(1)
+        _project.load_env_file(env_file_path)
+
     try:
         from elfmem.mcp import main as mcp_main
     except ImportError:
@@ -3061,6 +3082,7 @@ def _doctor_migrate_mcp(json_output: bool) -> None:
             "findings": [
                 {
                     "file": str(f.file),
+                    "project_path": f.project_path,
                     "server_name": f.server_name,
                     "issues": f.issues,
                     "current": f.current,

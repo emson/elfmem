@@ -33,6 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from elfmem.project import get_project_info
+
 # Env var aliases that have been renamed. Map deprecated → canonical.
 DEPRECATED_ENV_VARS: dict[str, str] = {
     "ELFMEM_CONFIG_PATH": "ELFMEM_CONFIG",
@@ -40,21 +42,32 @@ DEPRECATED_ENV_VARS: dict[str, str] = {
 }
 
 # Default Claude config locations to scan, in priority order.
+# ~/.claude.json is Claude Code's real global config — each project's
+# mcpServers entry lives nested under projects[<project path>], a distinct
+# shape from the flat mcpServers used by .mcp.json / claude_code_config.json
+# (see scan_file_with_warnings and ADR 0008).
 DEFAULT_SCAN_PATHS: tuple[Path, ...] = (
     Path.home() / ".claude" / "claude_code_config.json",
     Path.cwd() / ".claude.json",
+    Path.home() / ".claude.json",
 )
 
 
 @dataclass(frozen=True)
 class MigrationFinding:
-    """One actionable finding for an elfmem MCP entry that needs updating."""
+    """One actionable finding for an elfmem MCP entry that needs updating.
+
+    ``project_path`` is set when the entry was found nested under
+    ``projects[<project_path>].mcpServers`` in a global ``~/.claude.json``
+    (None for the flat top-level ``mcpServers`` shape used by ``.mcp.json``).
+    """
 
     file: Path
     server_name: str
     issues: list[str] = field(default_factory=list)
     current: dict[str, Any] = field(default_factory=dict)
     suggested: dict[str, Any] = field(default_factory=dict)
+    project_path: str | None = None
 
     @property
     def needs_migration(self) -> bool:
@@ -70,11 +83,27 @@ def is_elfmem_entry(entry: dict[str, Any]) -> bool:
     return "elfmem" in blob
 
 
-def _suggest_entry(entry: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+def _extract_config_arg(args: list[Any]) -> str | None:
+    """Return the value following '--config' in a serve invocation's args."""
+    for i, a in enumerate(args):
+        if a == "--config" and i + 1 < len(args):
+            return str(args[i + 1])
+    return None
+
+
+def _suggest_entry(
+    entry: dict[str, Any], *, project_root: Path | None = None
+) -> tuple[dict[str, Any], list[str]]:
     """Return (suggested_entry, issues) — what the entry should look like.
 
     Conservative: keeps user customisations (alwaysAllow, command shape) and
     only rewrites the parts that are demonstrably stale.
+
+    *project_root* is the project this entry is nested under (only known for
+    entries found via the ``~/.claude.json`` ``projects[path]`` shape — see
+    ADR 0008). When given, checks whether ``--config`` actually points at
+    that project's own config; a mismatch means the entry was copied from,
+    or drifted to, an unrelated project.
     """
     issues: list[str] = []
     suggested = json.loads(json.dumps(entry))  # deep copy
@@ -125,6 +154,33 @@ def _suggest_entry(entry: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
             issues.append(
                 "launch pattern: 'python -m elfmem.mcp' → 'elfmem serve --config <path>'"
             )
+
+    # 3. Detect an entry nested under the wrong project — its --config
+    # doesn't match the project it's actually filed under.
+    if project_root is not None:
+        cfg_arg = _extract_config_arg(suggested.get("args", []))
+        if cfg_arg:
+            expected = get_project_info(project_root)
+            if expected is not None:
+                # A relative --config is what elfmem serve would resolve
+                # against ITS cwd (the project root Claude Code spawns it
+                # in) — resolve it the same way here, not against whatever
+                # cwd 'elfmem migrate'/'doctor' itself happens to run from.
+                cfg_path = Path(cfg_arg).expanduser()
+                if not cfg_path.is_absolute():
+                    cfg_path = project_root / cfg_path
+                actual_resolved = cfg_path.resolve()
+                expected_resolved = expected.config.resolve()
+                if actual_resolved != expected_resolved:
+                    issues.append(
+                        f"--config points at {actual_resolved}, but the "
+                        f"project at {project_root} resolves to "
+                        f"{expected_resolved} — entry looks stale or copied "
+                        "from another project"
+                    )
+                    new_args = list(suggested["args"])
+                    new_args[new_args.index("--config") + 1] = str(expected_resolved)
+                    suggested["args"] = new_args
 
     return suggested, issues
 
@@ -199,6 +255,37 @@ def scan_file_with_warnings(
                     suggested=suggested,
                 )
             )
+
+    # ~/.claude.json's real shape: each project's mcpServers nests under
+    # projects[<project path>], not a flat top-level key (see ADR 0008).
+    # project_root is known exactly here — it's the dict key itself — so the
+    # wrong-project drift check in _suggest_entry can run.
+    projects = data.get("projects") or {}
+    if isinstance(projects, dict):
+        for project_path, project_data in projects.items():
+            if not isinstance(project_data, dict):
+                continue
+            nested_servers = project_data.get("mcpServers") or {}
+            if not isinstance(nested_servers, dict):
+                continue
+            for name, entry in nested_servers.items():
+                if not isinstance(entry, dict) or not is_elfmem_entry(entry):
+                    continue
+                suggested, issues = _suggest_entry(
+                    entry, project_root=Path(project_path)
+                )
+                if issues:
+                    findings.append(
+                        MigrationFinding(
+                            file=path,
+                            server_name=name,
+                            issues=issues,
+                            current=entry,
+                            suggested=suggested,
+                            project_path=project_path,
+                        )
+                    )
+
     return findings, None
 
 
@@ -249,6 +336,7 @@ class MigrationStep:
     before: dict[str, Any]
     after: dict[str, Any]
     json_pointer: str
+    project_path: str | None = None
     reversible: bool = True
     post_apply_step: str = ""
 
@@ -263,6 +351,7 @@ class MigrationStep:
             "before": self.before,
             "after": self.after,
             "json_pointer": self.json_pointer,
+            "project_path": self.project_path,
             "reversible": self.reversible,
             "post_apply_step": self.post_apply_step,
             "apply_command": f"elfmem migrate apply --id {self.id} --yes",
@@ -369,22 +458,38 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _step_id(file: Path, server_name: str) -> str:
+def _step_id(file: Path, server_name: str, project_path: str | None = None) -> str:
     """Stable, human-readable identifier for one migration step.
 
     Format: ``mcp-{server_name}@{file_basename_stem}-{short_hash}``. The hash
     component disambiguates two files with the same basename in different
-    locations (e.g. multiple project ``.claude.json`` files).
+    locations (e.g. multiple project ``.claude.json`` files), and — when
+    *project_path* is given — two entries with the same server name nested
+    under different projects within one ``~/.claude.json`` (the common case:
+    every project's elfmem entry is conventionally named "elfmem").
     """
-    h = hashlib.sha256(str(file).encode()).hexdigest()[:8]
+    key = str(file) if project_path is None else f"{file}::{project_path}"
+    h = hashlib.sha256(key.encode()).hexdigest()[:8]
     stem = file.stem.replace(".", "-")
     return f"mcp-{server_name}@{stem}-{h}"
 
 
+def _json_pointer_escape(segment: str) -> str:
+    """Escape a literal path segment for embedding in a JSON pointer (RFC 6901)."""
+    return segment.replace("~", "~0").replace("/", "~1")
+
+
 def _finding_to_step(finding: MigrationFinding) -> MigrationStep:
     issues_text = "; ".join(finding.issues)
+    if finding.project_path is None:
+        pointer = f"/mcpServers/{finding.server_name}"
+    else:
+        pointer = (
+            f"/projects/{_json_pointer_escape(finding.project_path)}"
+            f"/mcpServers/{finding.server_name}"
+        )
     return MigrationStep(
-        id=_step_id(finding.file, finding.server_name),
+        id=_step_id(finding.file, finding.server_name, finding.project_path),
         kind="claude_mcp_config",
         summary=f"Update '{finding.server_name}' MCP entry: {issues_text}",
         file=finding.file,
@@ -392,7 +497,8 @@ def _finding_to_step(finding: MigrationFinding) -> MigrationStep:
         issues=list(finding.issues),
         before=finding.current,
         after=finding.suggested,
-        json_pointer=f"/mcpServers/{finding.server_name}",
+        json_pointer=pointer,
+        project_path=finding.project_path,
         reversible=True,
         post_apply_step="Restart Claude Code so MCP servers reload.",
     )
@@ -458,6 +564,27 @@ def _server_name_from_pointer(pointer: str) -> str:
     return pointer.rsplit("/", 1)[-1]
 
 
+def _servers_container(
+    data: dict[str, Any], project_path: str | None
+) -> dict[str, Any] | None:
+    """Return the mcpServers dict a step targets, or None if it's gone.
+
+    Flat shape (project_path=None): data["mcpServers"] — used by .mcp.json.
+    Nested shape: data["projects"][project_path]["mcpServers"] — the real
+    ~/.claude.json layout (see ADR 0008). The returned dict is the live
+    object nested inside *data*; mutating it in place mutates *data*.
+    """
+    if project_path is None:
+        servers = data.get("mcpServers")
+        return servers if isinstance(servers, dict) else None
+    projects = data.get("projects") or {}
+    project = projects.get(project_path)
+    if not isinstance(project, dict):
+        return None
+    servers = project.get("mcpServers")
+    return servers if isinstance(servers, dict) else None
+
+
 def _check_step_preconditions(
     step: MigrationStep,
     data: dict[str, Any],
@@ -467,9 +594,9 @@ def _check_step_preconditions(
     Pulled out so file-grouped apply can reuse the same idempotency and
     server-presence checks per step before mutating the in-memory state.
     """
-    servers = data.get("mcpServers") or {}
+    servers = _servers_container(data, step.project_path)
     server_name = _server_name_from_pointer(step.json_pointer)
-    if server_name not in servers:
+    if servers is None or server_name not in servers:
         return "skipped", f"server '{server_name}' is no longer present in {step.file}"
     if servers[server_name] == step.after:
         return "skipped", f"'{server_name}' already matches the canonical pattern"
@@ -519,9 +646,9 @@ def apply_step(step: MigrationStep, *, dry_run: bool = False) -> StepApplyResult
     try:
         backup = _backup_path(step.file, step.id)
         backup.write_bytes(_resolve_target(step.file).read_bytes())
-        servers = data["mcpServers"]
+        servers = _servers_container(data, step.project_path)
+        assert servers is not None  # guaranteed by the precondition check above
         servers[server_name] = step.after
-        data["mcpServers"] = servers
         _atomic_write_json(step.file, data)
     except OSError as e:
         return StepApplyResult(
@@ -605,7 +732,9 @@ def _apply_file_group(
             continue
         # Mutate in-memory; commit happens once after the loop.
         server_name = _server_name_from_pointer(step.json_pointer)
-        data["mcpServers"][server_name] = step.after
+        servers = _servers_container(data, step.project_path)
+        assert servers is not None  # guaranteed by the precondition check above
+        servers[server_name] = step.after
         pending.append(step)
 
     if not pending:
@@ -690,6 +819,7 @@ def format_finding(finding: MigrationFinding) -> str:
     """Render one finding as a human-readable diff for terminal display."""
     lines = [
         f"  File: {finding.file}",
+        *([f"  Project: {finding.project_path}"] if finding.project_path else []),
         f"  Server: {finding.server_name}",
         "  Issues:",
     ]
