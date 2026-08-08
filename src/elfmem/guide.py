@@ -463,12 +463,14 @@ GUIDES: dict[str, AgentGuide] = {
     "setup": AgentGuide(
         name="setup",
         what=(
-            "Bootstrap the cognitive loop: seeds 10 constitutional blocks, then adds optional "
-            "identity description and domain values to the SELF frame."
+            "Bootstrap agent identity: adds optional identity description and domain values "
+            "to the SELF frame. Pass seed=True to also seed 10 constitutional blocks that "
+            "form a cognitive loop — an opinionated starting personality, not a default."
         ),
         when=(
             "First use — before any other operations. Also when the agent's role, values, or "
-            "constraints change significantly. Constitutional blocks ship with every instance."
+            "constraints change significantly. seed=True is worth considering on first use if "
+            "you want a ready-made cognitive-loop starting point rather than a blank slate."
         ),
         when_not=(
             "Every session — SELF blocks persist across restarts. Duplicates are rejected "
