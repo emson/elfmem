@@ -312,6 +312,15 @@ existing verb? If yes, extend it.
 `pinned: true` is the guard that supersession never had - a pinned block is
 never proposed for removal and is always included in its frame.
 
+The Taxonomy Contract (research doc §4.7, verified against Zhou et al.,
+[arXiv 2607.26637v1](https://arxiv.org/html/2607.26637v1)) gives a
+principled way to decide *when* a block should be its own file vs. grouped
+under a `##` heading with siblings: sibling distinction and relatedness (are
+the siblings actually different, do they actually belong together),
+parent-child coverage, tree-wide proximity, and structural economy.
+`elf-review` (§5.4) is the natural place to periodically re-evaluate this
+against real content, not a one-time migration choice.
+
 ### 5.3 The mutation API that was missing
 
 | Operation | Command | LLM cost |
@@ -739,7 +748,12 @@ Phase 6  flip authority: DB becomes derived; delete-and-reindex is now safe
 ```
 
 Phase 4 is the gate. If retrieval output diverges, stop and diagnose - do not
-proceed on the assumption that the new ranking is "probably fine".
+proceed on the assumption that the new ranking is "probably fine". This is
+not theoretical caution: external evidence (research doc §4.7) measured the
+*same* organizational store shape scoring 86.1% on one benchmark and 37.5%
+on another - organization choice is a real correctness risk, not a safe
+aesthetic decision, which is exactly what this gate exists to catch before
+authority flips.
 
 Phase 5 is worth doing deliberately: the four surviving role slots hold *earned*
 content (recovery surfaces, minimum-force on commands) that is arguably better
@@ -812,6 +826,8 @@ decay activity, steps 1-7 still stand and step 8 needs re-argument.
    deferred, and measured there at +33pp under drift.
 3. **One file per block, or many blocks per file?** This document assumes
    many-per-file with `##` headings. One-per-file is simpler to parse and
-   diff, worse to browse.
+   diff, worse to browse. Research doc §4.7 (Taxonomy Contract, P1-P5) gives
+   a principled framework for deciding this per content area rather than as
+   one fixed global rule - see that section before committing either way.
 4. **Do the peer, mind, and amendment subsystems survive v2 unchanged**, or
    is this the moment to reassess them against the same usage evidence?

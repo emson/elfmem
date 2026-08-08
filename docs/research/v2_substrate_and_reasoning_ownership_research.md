@@ -274,6 +274,50 @@ systems work some other way. The field is young (every surviving source dated De
 art" claim was explicitly checked and refuted). MOSS, the strongest single source for §4.1,
 is one deployment with no external replication.
 
+### 4.7 Addendum (2026-08-08) — file/directory organization, not just storage
+
+§4.1–4.6 answered *where the data lives* (files vs. database). A separate paper — Zhou et
+al., ["Filesystem-Based Memory for LLM Agents: Organization, Evolution, and
+Sustainability"](https://arxiv.org/html/2607.26637v1) (UIUC, UC San Diego, UC Merced, Adobe
+Research, Texas A&M) — studies *how the files should be organized*, at 32k–128k token scale
+(comparable to elfmem's own 31.6k-token corpus, §1.1). Five claims below were verified
+directly against the primary text via WebFetch, not taken from the secondhand digest that
+prompted this addendum — confidence: high for all five.
+
+- **The "Taxonomy Contract"** (P1–P5, Section 2.1): sibling distinction (siblings
+  distinguishable by label alone), sibling relatedness (siblings belong together),
+  parent-child coverage (a parent covers its children), tree-wide proximity (distance
+  mirrors relatedness), structural economy (structure serves the search, not itself). A
+  concrete framework for §11 open decision 3 (one file per block vs. many-per-file) — the
+  answer isn't a fixed rule, it's "whichever satisfies P1–P5 for this content," decided and
+  periodically re-decided by `elf-review`, not fixed once at migration time.
+- **Organization risk, not just organization benefit.** The same agent-curated store shape
+  scored 86.1% on LoCoMo and 37.5% on PersonaMem 32k (Table 1) — organization choice can be
+  a large correctness risk depending on task type, not a safe aesthetic decision. Directly
+  strengthens why the companion plan's §8 Phase 4 migration gate (verify retrieval output
+  before flipping authority) is load-bearing, not optional ceremony.
+- **Curator strength shapes style, not quality; searcher strength pays directly.** On
+  PersonaMem 128k, correctness across three curator strengths was 73.8% → 66.7% → 71.4% —
+  not even monotone in model strength — while resulting store structure varied from 122 to
+  2 to 105 files (Section 4.3). Supports §5's `elf-review`/`elf-recall` split on independent
+  grounds: `elf-review` (curator) doesn't need a strong model; an agentic `elf-recall`
+  (searcher) does. If step 5's `api_key_env` gateway is ever used to route to a stronger
+  model somewhere, this is the evidence for where.
+- **Taxonomy adherence erodes with growth except under the strongest curator** (Section
+  4.4) — only the strongest management agent tested held organization at 140 accumulated
+  tasks; weaker curators visibly drifted. A concrete, named risk for `elf-review`: it should
+  check its own proposals against P1–P5 explicitly, not rely on unchecked LLM judgment
+  staying good over many cycles.
+- **The tool harness is a control knob**, reshaping the resulting store "as strongly as
+  swapping the model" (Section 4.5). Whatever mutation tools `elf-review` gets beyond
+  `edit`/`forget`/`ls` (§1 — a `move`/`split`/`merge` tool, say) is itself a design decision
+  with measured effect on outcome — worth treating deliberately when step 8 specs it, not
+  adding tools ad hoc.
+
+Source captured at
+`/Users/emson/Dropbox/vaults/elf_vault_proj/elf_vault/sources/papers/filesystem-based-memory-for-llm-agents.md`
+(2026-08-08).
+
 ---
 
 ## 5. Simulation II — reasoning ownership
@@ -347,6 +391,11 @@ finding a further improvement.
 - **Peers stay on the protocol path** — Alv/Mira were never going to invoke a `SKILL.md`;
   they call the index directly and reason with their own model. Skills solve the
   Claude-Code-specific slice of this, not the whole peer story.
+- **Curator/searcher model strength should be asymmetric** (§4.7) — external evidence that
+  `elf-review`'s reasoning strength barely moves correctness (it shapes organizational style
+  instead), while an agentic `elf-recall`'s strength pays off directly. Don't spend a
+  stronger model on the cheap, frequent operation; spend it on the one that's occasional and
+  actually reasoning-heavy.
 
 ---
 
@@ -458,9 +507,12 @@ and should not wait on the rest of this document being decided.
    in retrieval scoring? Reading it as always-included preamble is Architecture M from
    ADR 0003 — previously deferred, measured there at +33pp under drift, −7pp under
    stability.
-3. **One file per block, or many blocks per file?** This document assumes many-per-file
-   with `##` headings, matching `ctx`'s own convention. One-per-file is simpler to parse
-   and diff, worse to browse.
+3. **One file per block, or many blocks per file?** §4.7's Taxonomy Contract (P1–P5) gives
+   this a real decision framework instead of a fixed global rule — decided per content area
+   and periodically re-checked by `elf-review`, not chosen once at migration time. This
+   document's working assumption (many-per-file with `##` headings, matching `ctx`'s
+   convention) is easier to browse but needs the sibling-distinction/relatedness checks
+   (P1/P2) to avoid becoming a junk drawer; one-per-file is simpler to parse and diff.
 4. **Do peer, mind, and amendment subsystems survive unchanged**, or does this evidence
    base warrant reassessing them too?
 5. **Should `elf-recall` literally depend on `ctx`, or fork its pattern?** Sharing code
@@ -489,4 +541,6 @@ and should not wait on the rest of this document being decided.
 - Vault-LD: [vault-ld.org](https://vault-ld.org/)
 - SAGE: [arXiv 2605.30711](https://arxiv.org/pdf/2605.30711)
 - Memanto (architecture cited, benchmark claims refuted on independent check): [arXiv 2604.22085](https://arxiv.org/pdf/2604.22085)
+- Zhou et al., "Filesystem-Based Memory for LLM Agents: Organization, Evolution, and
+  Sustainability" (Taxonomy Contract, §4.7): [arXiv 2607.26637v1](https://arxiv.org/html/2607.26637v1)
 - Existing project ADRs referenced: 0001, 0003, 0006, 0007 (`docs/decisions/`)
