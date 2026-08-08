@@ -33,7 +33,7 @@ from elfmem.db.queries import get_config, set_config
 logger = logging.getLogger(__name__)
 
 # Bump this when adding a new migration function.
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 6
 
 
 async def ensure_schema_current(
@@ -83,6 +83,9 @@ async def ensure_schema_current(
 
     if version < 5:
         await _migrate_v5_block_amendments(conn)
+
+    if version < 6:
+        await _migrate_v6_superseded_by(conn)
 
     final = await _get_version(conn)
     logger.info("Schema migrated from v%d to v%d", version, final)
@@ -240,6 +243,27 @@ async def _migrate_v5_block_amendments(conn: AsyncConnection) -> None:
     )
     await set_config(conn, "schema_version", "5")
     logger.info("Migration v5 complete: block_amendments audit table added")
+
+
+# ── Migration: v5 → v6 (supersession audit trail) ───────────────────────────
+
+
+async def _migrate_v6_superseded_by(conn: AsyncConnection) -> None:
+    """Add ``superseded_by`` — the id of the block that replaced this one.
+
+    Until now, supersession wrote ``archive_reason='superseded'`` with no
+    record of *which* block did the superseding — the archived row carried
+    only that *something* replaced it, never what. This is the first half of
+    closing that gap (the second half is the pin guard in
+    ``operations/consolidate.py`` that refuses to supersede a
+    ``self/constitutional`` block at all — see docs/plans/plan_v2_substrate_reevaluation.md
+    §5.3/§9 step 1). Existing archived rows have no way to recover which
+    block superseded them, so this is left NULL on backfill rather than
+    guessed at.
+    """
+    await _add_column(conn, "blocks", "superseded_by", "TEXT")
+    await set_config(conn, "schema_version", "6")
+    logger.info("Migration v6 complete: superseded_by audit column added")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

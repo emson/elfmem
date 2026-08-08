@@ -30,6 +30,10 @@ blocks = Table(
     Column("created_at", Text, nullable=False),
     Column("status", Text, nullable=False, default="inbox"),
     Column("archive_reason", Text),
+    # Supersession audit trail (v2 step 1) — id of the block that replaced
+    # this one when archive_reason='superseded'. NULL for decay/forgotten
+    # archivals and for any block that isn't archived.
+    Column("superseded_by", Text),
     Column("confidence", Float, nullable=False, default=0.50),
     Column("reinforcement_count", Integer, nullable=False, default=0),
     Column("decay_lambda", Float, nullable=False, default=0.01),

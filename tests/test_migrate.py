@@ -186,6 +186,26 @@ class TestMigration:
             version = await ensure_schema_current(conn)
         assert version == CURRENT_SCHEMA_VERSION
 
+    async def test_v6_adds_superseded_by_column(self):
+        """Migration adds the supersession audit-trail column (v2 step 1)."""
+        engine = await _create_v1_engine()
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn)
+
+        async with engine.connect() as conn:
+            result = await conn.execute(text("PRAGMA table_info(blocks)"))
+            cols = [row[1] for row in result]
+            assert "superseded_by" in cols
+
+            # Existing rows backfill to NULL — no way to recover which block
+            # superseded a pre-migration archival.
+            result = await conn.execute(
+                text("SELECT superseded_by FROM blocks WHERE id = 'test1'")
+            )
+            assert result.first()[0] is None
+
+        await engine.dispose()
+
 
 class TestMigrationWithFromConfig:
     async def test_from_config_triggers_migration(self, tmp_path):
