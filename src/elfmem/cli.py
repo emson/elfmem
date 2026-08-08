@@ -194,8 +194,11 @@ def init(
     ] = False,
     seed: Annotated[
         bool,
-        typer.Option("--seed/--no-seed", help="Seed constitutional cognitive loop blocks"),
-    ] = True,
+        typer.Option(
+            "--seed/--no-seed",
+            help="Seed constitutional cognitive loop blocks (opt-in, v2 step 4)",
+        ),
+    ] = False,
     template: Annotated[
         str | None,
         typer.Option(
@@ -218,15 +221,17 @@ def init(
 
     One verb, three behaviours selected by lifecycle state:
 
-    - **Fresh install** (no config, no DB, or empty DB): creates the config,
-      seeds the constitutional cognitive loop, writes the elfmem section to
-      CLAUDE.md / AGENTS.md.
+    - **Fresh install** (no config, no DB, or empty DB): creates the config
+      and writes the elfmem section to CLAUDE.md / AGENTS.md. Writes zero
+      memory blocks by default (v2 step 4) — nothing is added to memory
+      before you've expressed a preference. Pass ``--seed`` to also seed the
+      constitutional cognitive loop.
     - **Established instance** (config + DB with content rows): refresh-only
       mode. Skips config write; re-renders the agent doc section from the
-      LIVE config (not from inferred defaults — Bug A fix); runs the
-      constitutional seed idempotently (no-op when all roles are filled);
-      installs the AGENT.md fragment. Print banner: ``[established —
-      refreshing only]``.
+      LIVE config (not from inferred defaults — Bug A fix); if ``--seed`` is
+      passed, runs the constitutional seed idempotently (no-op when all
+      roles are filled); installs the AGENT.md fragment. Print banner:
+      ``[established — refreshing only]``.
     - **Orphaned DB** (configured DB is empty but populated DB exists at a
       neighbour path): refuses with a pointer to ``elfmem rescue``.
     - **Unreadable DB**: refuses with a pointer to ``elfmem doctor``.
@@ -243,13 +248,16 @@ def init(
       prefer ``elfmem rescue``.
     - ``--global`` uses ``~/.elfmem/`` regardless of project detection.
     - ``--no-docs`` skips CLAUDE.md / AGENTS.md updates.
-    - ``--no-seed`` skips constitutional seeding entirely.
+    - ``--seed`` opts into the 10 constitutional cognitive-loop blocks — an
+      opinionated starting personality, not a requirement. Previously this
+      was the default; a fresh install now writes zero blocks unless asked.
 
     Examples:
 
-        elfmem init                                   # fresh or refresh, auto
+        elfmem init                                   # fresh or refresh, auto — writes zero blocks
+        elfmem init --seed                            # also seed the constitutional cognitive loop
         elfmem init --self "I am a software engineering assistant"
-        elfmem init --template coding --self "My coding principles..."
+        elfmem init --seed --template coding --self "My coding principles..."
         elfmem init --global                          # force global config
         elfmem init --no-docs                         # skip doc update
     """
@@ -468,6 +476,8 @@ def init(
         if seed_results:
             created = sum(1 for r in seed_results if r["status"] == "created")
             out["constitutional_blocks"] = {"created": created, "total": len(seed_results)}
+        elif not seed and not state.established:
+            out["constitutional_blocks"] = {"skipped": True, "hint": "elfmem init --seed"}
         if self_result is not None:
             out["self_block"] = self_result
         if doc_action is not None:
@@ -491,6 +501,12 @@ def init(
                     f"✓  Seed:      Blocks already present "
                     f"({skipped} skipped, constitutional{label})."
                 )
+        elif not seed and not state.established:
+            typer.echo(
+                "   Seed:      Skipped (default). Nothing was added to memory. "
+                "Run 'elfmem init --seed' for the 10 constitutional "
+                "cognitive-loop blocks, or add --template <name> alongside it."
+            )
         if self_result is not None:
             status_msg = self_result["status"]
             if status_msg == "created":

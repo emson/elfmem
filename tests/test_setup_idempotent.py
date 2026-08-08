@@ -36,6 +36,45 @@ class TestRoleTagsPresent:
         assert tuple(b["role"] for b in CONSTITUTIONAL_SEED) == CONSTITUTIONAL_ROLES
 
 
+class TestSetupDefaultsToNoSeed:
+    """v2 step 4: onboarding no longer writes opinionated content by default."""
+
+    async def test_default_call_seeds_nothing(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+        )
+        result = await system.setup()
+        assert result.total_attempted == 0
+        assert result.blocks_created == 0
+
+    async def test_identity_only_does_not_seed_constitutional(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+        )
+        result = await system.setup(identity="I am a trading assistant.")
+        assert result.total_attempted == 1
+        assert result.blocks_created == 1
+
+    async def test_explicit_seed_true_still_seeds(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        cfg = ElfmemConfig(memory=MemoryConfig(inbox_threshold=3))
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm,
+            embedding_service=mock_embedding, config=cfg,
+        )
+        result = await system.setup(seed=True)
+        assert result.blocks_created == len(CONSTITUTIONAL_SEED)
+
+
 class TestSetupIdempotency:
     async def test_first_setup_creates_all_roles(
         self, test_engine, mock_llm, mock_embedding,

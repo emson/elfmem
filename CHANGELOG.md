@@ -38,6 +38,22 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   money. `doctor`'s existing "API keys" check now also reports whether the
   key came from `.env` or the real environment.
 
+### Changed
+- **Breaking**: `elfmem init`'s `--seed` now defaults to off (v2 step 4).
+  Previously a fresh install silently wrote 10 constitutional cognitive-loop
+  blocks into memory before you had expressed any preference, costing 10+
+  LLM calls to consolidate and requiring `--no-seed` to opt out. A fresh
+  `elfmem init` now creates the config and database and writes zero memory
+  blocks; text and JSON output both say so explicitly, with the exact
+  command to opt in. **Migration**: scripts or automation relying on
+  `elfmem init` seeding by default must add `--seed` explicitly.
+  `MemorySystem.setup()`'s `seed` parameter and the `elfmem_setup` MCP tool
+  default the same way, for consistency across all three entry points —
+  callers relying on the old default must now pass `seed=True` explicitly.
+  Established instances (config + DB already present) are unaffected either
+  way: re-running `elfmem init` without `--seed` is the same idempotent
+  no-op refresh it always was.
+
 ### Fixed
 - Near-duplicate consolidation no longer silently supersedes (archives)
   blocks tagged `self/constitutional`. Previously `consolidate()`/`dream()`

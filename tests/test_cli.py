@@ -427,3 +427,65 @@ class TestDoctorResolveFlag:
         monkeypatch.setattr("elfmem.cli._doctor_preflight", fake_preflight)
         result = runner.invoke(app, ["doctor", "--db", str(tmp_path / "x.db")])
         assert "LLM preflight" not in result.output
+
+
+# ── init command — seed defaults (v2 step 4) ────────────────────────────────
+
+
+class TestInitSeedDefault:
+    """A fresh install writes zero memory blocks unless --seed is passed.
+
+    Every invocation passes --db explicitly into tmp_path: init's default DB
+    path is ~/.elfmem/databases/<project-name>.db (global, keyed only by
+    project name — see project.default_db_path), not scoped under tmp_path.
+    pytest reuses a rotating set of tmp_path basenames across runs, so
+    without an explicit --db a "fresh install" test can silently observe an
+    already-seeded DB left by an earlier run and report created=0.
+    """
+
+    def _fresh_project(self, tmp_path, monkeypatch: pytest.MonkeyPatch) -> str:
+        (tmp_path / ".git").mkdir()
+        monkeypatch.chdir(tmp_path)
+        return str(tmp_path / "test.db")
+
+    def test_default_creates_no_constitutional_blocks(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        db_path = self._fresh_project(tmp_path, monkeypatch)
+        result = runner.invoke(app, ["init", "--no-docs", "--db", db_path, "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "constitutional_blocks" not in data or data["constitutional_blocks"].get(
+            "skipped"
+        )
+
+    def test_default_text_output_shows_skipped_hint(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        db_path = self._fresh_project(tmp_path, monkeypatch)
+        result = runner.invoke(app, ["init", "--no-docs", "--db", db_path])
+        assert result.exit_code == 0
+        assert "Skipped" in result.output
+        assert "--seed" in result.output
+
+    def test_explicit_seed_flag_creates_constitutional_blocks(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        db_path = self._fresh_project(tmp_path, monkeypatch)
+        result = runner.invoke(
+            app, ["init", "--no-docs", "--db", db_path, "--seed", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["constitutional_blocks"]["created"] == 10
+
+    def test_no_seed_flag_still_works_explicitly(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        db_path = self._fresh_project(tmp_path, monkeypatch)
+        result = runner.invoke(
+            app, ["init", "--no-docs", "--db", db_path, "--no-seed", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data.get("constitutional_blocks", {}).get("skipped") is True

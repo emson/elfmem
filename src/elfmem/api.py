@@ -1326,13 +1326,15 @@ class MemorySystem:
         identity: str | None = None,
         values: list[str] | None = None,
         *,
-        seed: bool = True,
+        seed: bool = False,
     ) -> SetupResult:
-        """Bootstrap agent identity: seed constitutional blocks and optional identity.
+        """Bootstrap agent identity: optional identity/values, optional constitutional seed.
 
-        USE WHEN: First use — before any other operations. Seeds 10 constitutional
-        blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
-        then adds any identity description and domain values you provide.
+        USE WHEN: First use — before any other operations. Adds any identity
+        description and domain values you provide. Pass seed=True to also
+        seed 10 constitutional blocks that form a cognitive loop (curiosity,
+        feedback, balance, etc.) — an opinionated starting personality, not
+        a requirement.
 
         DON'T USE WHEN: Every session — SELF blocks persist across restarts.
         Re-running is idempotent: each constitutional block fills a stable
@@ -1344,19 +1346,23 @@ class MemorySystem:
 
         RETURNS: SetupResult with blocks_created (new) and total_attempted.
         blocks_created=0 means all were already present — safe, not an error.
+        With no identity, no values, and seed=False (the default), this is a
+        no-op: total_attempted=0.
 
         NEXT: SELF blocks sit in inbox until dream() or consolidate() runs.
-        After consolidation, frame('self') returns constitutional blocks as
-        guaranteed slots. Call dream() or let the session context manager
-        handle consolidation automatically.
+        After consolidation, frame('self') returns constitutional blocks (if
+        seeded) as guaranteed slots, plus any domain values you added. Call
+        dream() or let the session context manager handle consolidation
+        automatically.
 
         Args:
             identity: Optional identity description stored as a self/context block.
             values:   Optional list of domain-specific principles, each stored
                       as a separate self/value block.
-            seed:     Seed the 10 constitutional blocks (default True). Pass
-                      False to skip constitutional seeding and only add
-                      identity/values — useful for custom bootstrapping.
+            seed:     Seed the 10 constitutional blocks (default False — v2
+                      step 4: onboarding no longer writes opinionated content
+                      before you've expressed a preference). Pass True to
+                      seed the constitutional cognitive loop.
 
         Example::
 
@@ -1364,7 +1370,11 @@ class MemorySystem:
                 identity="I am a trading assistant focused on risk-adjusted returns.",
                 values=["cut losing positions early", "size positions to max 2% risk"],
             )
-            print(result)  # Setup complete: 12/12 new blocks created.
+            print(result)  # Setup complete: 3/3 new blocks created.
+
+            # Opt into the constitutional cognitive loop too:
+            result = await system.setup(seed=True)
+            print(result)  # Setup complete: 10/10 new blocks created.
         """
         results: list[LearnResult] = []
 

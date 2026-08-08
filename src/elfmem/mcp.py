@@ -183,7 +183,7 @@ async def _tool_dream(
 async def _tool_setup(
     identity: str | None = None,
     values: list[str] | None = None,
-    seed: bool = True,
+    seed: bool = False,
 ) -> dict[str, Any]:
     result = await _mem().setup(identity=identity, values=values, seed=seed)
     return result.to_dict()
@@ -550,20 +550,21 @@ async def elfmem_dream(
 async def elfmem_setup(
     identity: str | None = None,
     values: list[str] | None = None,
-    seed: bool = True,
+    seed: bool = False,
 ) -> dict[str, Any]:
     """Bootstrap agent identity in the SELF frame.
 
-    Call this on first use to establish who you are. Seeds 10 constitutional
-    blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
-    then adds any identity description and values you provide.
+    Call this on first use to establish who you are — adds any identity
+    description and values you provide. Pass seed=True to also seed 10
+    constitutional blocks that form a cognitive loop (curiosity, feedback,
+    balance, etc.) — an opinionated starting personality, not a requirement.
 
     Safe to call multiple times — exact duplicate content is silently rejected,
-    so re-running is harmless. Constitutional blocks are created once, then
-    skipped on subsequent calls.
+    so re-running is harmless. Constitutional blocks (if seeded) are created
+    once, then skipped on subsequent calls.
 
-    seed:     Seed the 10 constitutional blocks (default True). Pass False to
-              skip constitutional seeding and only add identity/values.
+    seed:     Seed the 10 constitutional blocks (default False — this no
+              longer happens silently; opt in explicitly).
     identity: Optional natural language description of agent role and constraints.
     values:   Optional list of domain-specific principles (each stored separately).
 
