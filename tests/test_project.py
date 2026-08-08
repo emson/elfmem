@@ -11,6 +11,7 @@ import pytest
 
 from elfmem.project import (
     _resolve_elfmem_command,
+    find_env_file,
     load_env_file,
     mcp_json_snippet,
     parse_env_file,
@@ -135,3 +136,28 @@ class TestLoadEnvFile:
         f.write_text("ELFMEM_TEST_VAR=from_file\n", encoding="utf-8")
         load_env_file(f)
         assert os.environ["ELFMEM_TEST_VAR"] == "from_shell"
+
+
+class TestFindEnvFile:
+    """v2 step 3 — .env discovery mirrors find_local_config's walk-up pattern."""
+
+    def test_finds_env_at_project_root(self, tmp_path: Path):
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".env").write_text("FOO=bar\n", encoding="utf-8")
+        assert find_env_file(tmp_path) == tmp_path / ".env"
+
+    def test_finds_env_from_nested_subdirectory(self, tmp_path: Path):
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".env").write_text("FOO=bar\n", encoding="utf-8")
+        nested = tmp_path / "src" / "pkg"
+        nested.mkdir(parents=True)
+        assert find_env_file(nested) == tmp_path / ".env"
+
+    def test_returns_none_when_no_env_file(self, tmp_path: Path):
+        (tmp_path / ".git").mkdir()
+        assert find_env_file(tmp_path) is None
+
+    def test_returns_none_when_no_project_root(self, tmp_path: Path):
+        # No project marker anywhere under tmp_path — find_project_root
+        # walks up to home and stops, per its own contract.
+        assert find_env_file(tmp_path) is None

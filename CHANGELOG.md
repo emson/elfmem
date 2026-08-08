@@ -24,6 +24,19 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   `frame()`'s relevance-ranked retrieval. Exposed via CLI (`elfmem edit`,
   `elfmem forget`, `elfmem ls`) and MCP (`elfmem_edit`, `elfmem_forget`,
   `elfmem_ls`).
+- `.env` at the project root is now auto-discovered and loaded for every CLI
+  command (v2 step 3), via a new `find_env_file()` walk-up matching
+  `find_local_config()`'s pattern. Previously `.env` loading was opt-in and
+  `serve --env-file`-only (v0.19.3) — `remember`, `recall`, `doctor`, and
+  every other command never saw a project's `.env` unless the key happened
+  to already be in the real shell environment. Real environment variables
+  still always win (unchanged `load_env_file` setdefault semantics).
+- `elfmem doctor --resolve`: makes one real LLM call against the configured
+  `llm:` section to confirm the key actually works, rather than checking
+  only that an API-key string is present in the environment. Opt-in, since
+  unlike every other doctor check it costs time and (for hosted models)
+  money. `doctor`'s existing "API keys" check now also reports whether the
+  key came from `.env` or the real environment.
 
 ### Fixed
 - Near-duplicate consolidation no longer silently supersedes (archives)
@@ -46,6 +59,21 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   callers; the live near-duplicate/supersede logic has lived in
   `operations/consolidate.py` since an earlier refactor. `cosine_similarity`
   is unaffected and remains in `memory/dedup.py`.
+=======
+- `.env` at the project root is now auto-discovered and loaded for every CLI
+  command (v2 step 3), via a new `find_env_file()` walk-up matching
+  `find_local_config()`'s pattern. Previously `.env` loading was opt-in and
+  `serve --env-file`-only (v0.19.3) — `remember`, `recall`, `doctor`, and
+  every other command never saw a project's `.env` unless the key happened
+  to already be in the real shell environment. Real environment variables
+  still always win (unchanged `load_env_file` setdefault semantics).
+- `elfmem doctor --resolve`: makes one real LLM call against the configured
+  `llm:` section to confirm the key actually works, rather than checking
+  only that an API-key string is present in the environment. Opt-in, since
+  unlike every other doctor check it costs time and (for hosted models)
+  money. `doctor`'s existing "API keys" check now also reports whether the
+  key came from `.env` or the real environment.
+>>>>>>> feat-doctor-env-preflight
 
 ## [0.19.3] — 2026-07-14
 
