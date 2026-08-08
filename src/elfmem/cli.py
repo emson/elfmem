@@ -47,7 +47,10 @@ from elfmem.config import ElfmemConfig
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
 from elfmem.types import (
+    BlockSummary,
     CurateResult,
+    EditResult,
+    ForgetResult,
     FrameResult,
     LearnResult,
     MindOutcomeResult,
@@ -985,6 +988,62 @@ def recall(
         _recall(db_path, config_path, query, top_k, frame)
     )
     _json(format_recall_response(result)) if json_output else typer.echo(result.text)
+
+
+@app.command()
+def edit(
+    block_id: str,
+    content: str,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Replace an active block's content directly. No LLM mediation."""
+    db_path, config_path = _resolve_paths(db, config)
+    result = _run(_edit(db_path, config_path, block_id, content))
+    _json(result.to_dict()) if json_output else typer.echo(str(result))
+
+
+@app.command()
+def forget(
+    block_id: str,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Archive a block by explicit request. Idempotent — safe to call twice."""
+    db_path, config_path = _resolve_paths(db, config)
+    result = _run(_forget(db_path, config_path, block_id))
+    _json(result.to_dict()) if json_output else typer.echo(str(result))
+
+
+@app.command(name="ls")
+def ls_cmd(
+    tag: Annotated[
+        str | None, typer.Option("--tag", help="SQL LIKE pattern, e.g. 'self/%'")
+    ] = None,
+    category: Annotated[str | None, typer.Option("--category")] = None,
+    limit: Annotated[int, typer.Option("--limit")] = 50,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List active blocks — a deterministic, unscored view of memory."""
+    db_path, config_path = _resolve_paths(db, config)
+    results = _run(_ls(db_path, config_path, tag, category, limit))
+    if json_output:
+        _json([r.to_dict() for r in results])
+    elif not results:
+        typer.echo("No active blocks match.")
+    else:
+        for r in results:
+            typer.echo(str(r))
 
 
 @app.command()
@@ -2649,6 +2708,27 @@ async def _recall(
 ) -> FrameResult:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.frame(frame, query=query or None, top_k=top_k)
+
+
+async def _edit(db_path: str, config: str | None, block_id: str, content: str) -> EditResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.edit(block_id, content)
+
+
+async def _forget(db_path: str, config: str | None, block_id: str) -> ForgetResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.forget(block_id)
+
+
+async def _ls(
+    db_path: str,
+    config: str | None,
+    tag: str | None,
+    category: str | None,
+    limit: int,
+) -> list[BlockSummary]:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.ls(tag, category, limit=limit)
 
 
 async def _status(db_path: str, config: str | None) -> SystemStatus:

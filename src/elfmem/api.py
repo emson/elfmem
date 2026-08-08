@@ -23,16 +23,21 @@ from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
 from elfmem.db.models import metadata
 from elfmem.db.queries import (
+    get_block,
     get_block_counts,
     get_config,
     get_inbox_count,
+    get_tags_batch,
     get_total_active_hours,
+    list_active_blocks,
     load_co_retrieval_staging,
     prune_stale_co_retrieval_staging,
     seed_builtin_data,
     set_config,
+    update_block_content,
+    update_block_status,
 )
-from elfmem.exceptions import ElfmemError, FrameError, ProjectNotFound
+from elfmem.exceptions import BlockNotFound, ElfmemError, FrameError, ProjectNotFound
 from elfmem.guide import get_guide
 from elfmem.logging_config import configure_logging
 from elfmem.memory.graph import stage_and_promote_co_retrievals
@@ -52,6 +57,8 @@ from elfmem.token_counter import TokenCounter
 from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
+    ArchiveReason,
+    BlockSummary,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
@@ -60,7 +67,9 @@ from elfmem.types import (
     ConstitutionalReviewResult,
     CurateResult,
     DisconnectResult,
+    EditResult,
     ExportResult,
+    ForgetResult,
     FrameResult,
     ImportResult,
     LearnDocumentResult,
@@ -972,6 +981,152 @@ class MemorySystem:
         )
         self._record_op("learn_document", doc_result.summary)
         return doc_result
+
+    async def edit(self, block_id: str, content: str) -> EditResult:
+        """Replace an active block's content directly — no LLM mediation.
+
+        USE WHEN: A stored memory is wrong, stale, or needs rewording, and
+        you know which block. This is the direct write path RC1 identified
+        as missing — previously the only way to change a block's content was
+        an indirect side effect of near-duplicate supersession.
+
+        DON'T USE WHEN: The block is in inbox (not yet consolidated) or
+        already archived — edit() only targets active blocks. For an inbox
+        block, just learn() the corrected version instead.
+
+        COST: One embedding call (the new content must be re-embedded). No
+        LLM call — alignment/tags/summary are not re-scored here.
+
+        RETURNS: EditResult with the block's id.
+
+        NEXT: The block's summary and last_scored_at are cleared, so it is
+        first in line for the next dream(--rescore) or consolidate() cycle.
+        Confidence, reinforcement_count, and decay_lambda are untouched —
+        editing content is not a knowledge-confirmation event.
+
+        Raises:
+            BlockNotFound: block_id doesn't exist or isn't active.
+
+        Example::
+
+            result = await system.edit(block_id, "Corrected: prefers tabs, not spaces.")
+        """
+        async with self._engine.begin() as conn:
+            block = await get_block(conn, block_id)
+            if block is None or block["status"] != "active":
+                raise BlockNotFound(block_id)
+            embedding = await self._embedding.embed(content.strip().lower())
+            await update_block_content(
+                conn,
+                block_id=block_id,
+                content=content,
+                embedding=embedding,
+                embedding_model=self._embedding.model_name,
+            )
+        self._frame_cache.clear()
+        result = EditResult(block_id=block_id)
+        self._record_op("edit", result.summary)
+        return result
+
+    async def forget(self, block_id: str) -> ForgetResult:
+        """Archive a block by explicit request — the direct delete path.
+
+        USE WHEN: A memory should no longer be active — it's wrong, no
+        longer relevant, or was seeded content you never wanted. This is
+        the direct delete path RC1 identified as missing; previously blocks
+        could only leave active memory via near-duplicate supersession or
+        decay, neither of which is a deliberate human choice.
+
+        DON'T USE WHEN: You want a block to stop showing up in retrieval
+        temporarily without losing it forever — forget() is a real archive
+        (tags, edges, and contradictions involving this block are removed).
+
+        COST: Instant. No LLM or embedding calls.
+
+        RETURNS: ForgetResult. status='forgotten' on a real archive;
+        status='already_archived' if the block was archived already — this
+        is a safe no-op, not an error, so forget() is idempotent to call.
+
+        NEXT: The block no longer appears in frame(), recall(), or ls().
+
+        Raises:
+            BlockNotFound: block_id doesn't exist at all (any status).
+
+        Example::
+
+            result = await system.forget(block_id)
+            print(result)  # Forgot block a1b2c3d4.
+        """
+        async with self._engine.begin() as conn:
+            block = await get_block(conn, block_id)
+            if block is None:
+                raise BlockNotFound(block_id)
+            if block["status"] == "archived":
+                result = ForgetResult(block_id=block_id, status="already_archived")
+                self._record_op("forget", result.summary)
+                return result
+            await update_block_status(
+                conn, block_id, "archived",
+                archive_reason=ArchiveReason.FORGOTTEN.value,
+            )
+        self._frame_cache.clear()
+        result = ForgetResult(block_id=block_id, status="forgotten")
+        self._record_op("forget", result.summary)
+        return result
+
+    async def ls(
+        self,
+        tag: str | None = None,
+        category: str | None = None,
+        *,
+        limit: int = 50,
+    ) -> list[BlockSummary]:
+        """List active blocks — a deterministic, unscored view of memory.
+
+        USE WHEN: You need to see what's in memory to find a block_id for
+        edit()/forget(), or to audit memory contents directly. This is the
+        direct read path RC1 identified as missing.
+
+        DON'T USE WHEN: You want relevance-ranked results for a query — use
+        recall() or frame() instead. ls() does not rank by similarity,
+        centrality, or reinforcement; it is a flat listing, most-recently-
+        active first.
+
+        COST: Instant. No LLM or embedding calls.
+
+        RETURNS: List of BlockSummary, most-recently-reinforced first.
+        Empty list if nothing matches (not an error).
+
+        NEXT: Pass a returned .id to edit() or forget().
+
+        Args:
+            tag: Optional SQL LIKE pattern (e.g. 'self/%' for a prefix
+                 match), same semantics as frame()'s tag_filter.
+            category: Optional exact category match.
+            limit: Maximum rows returned (default 50).
+
+        Example::
+
+            for b in await system.ls(tag="self/%"):
+                print(b)  # a1b2c3d4 Apply minimum force... [self/value]
+        """
+        async with self._engine.connect() as conn:
+            rows = await list_active_blocks(
+                conn, tag=tag, category=category, limit=limit,
+            )
+            ids = [row["id"] for row in rows]
+            tags_map = await get_tags_batch(conn, ids)
+        return [
+            BlockSummary(
+                id=row["id"],
+                content=row["content"],
+                category=row["category"],
+                tags=tags_map.get(row["id"], []),
+                created_at=row["created_at"],
+                reinforcement_count=row["reinforcement_count"],
+            )
+            for row in rows
+        ]
 
     async def rescore(
         self, *, max_count: int | None = None,

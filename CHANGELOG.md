@@ -9,6 +9,22 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `MemorySystem.edit(block_id, content)`, `.forget(block_id)`, `.ls(tag=,
+  category=, limit=)` — the direct block mutation API (v2 step 2). Previously
+  the only way to change a block's content was an indirect side effect of
+  near-duplicate supersession, and there was no delete or list API at all.
+  `edit()` re-embeds the new content and clears `summary`/`last_scored_at`
+  for the next rescore pass, leaving confidence/reinforcement untouched.
+  `forget()` archives with `archive_reason='forgotten'` (the `ArchiveReason.FORGOTTEN`
+  enum value existed since the type was defined but had no write path until
+  now) and is idempotent — forgetting an already-archived block returns
+  `status='already_archived'`, not an error. `ls()` is a deterministic,
+  unscored listing (no LLM or embedding calls), distinct from `recall()`/
+  `frame()`'s relevance-ranked retrieval. Exposed via CLI (`elfmem edit`,
+  `elfmem forget`, `elfmem ls`) and MCP (`elfmem_edit`, `elfmem_forget`,
+  `elfmem_ls`).
+
 ### Fixed
 - Near-duplicate consolidation no longer silently supersedes (archives)
   blocks tagged `self/constitutional`. Previously `consolidate()`/`dream()`

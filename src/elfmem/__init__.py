@@ -40,6 +40,7 @@ from elfmem.policy import ConsolidationPolicy
 from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
+    BlockSummary,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
@@ -51,7 +52,9 @@ from elfmem.types import (
     CurateResult,
     DisconnectResult,
     DisplacedEdge,
+    EditResult,
     ExportResult,
+    ForgetResult,
     FrameResult,
     ImportResult,
     LearnDocumentResult,
@@ -86,6 +89,9 @@ __all__ = [
     # Result types
     "LearnResult",
     "LearnDocumentResult",
+    "EditResult",
+    "ForgetResult",
+    "BlockSummary",
     "ConsolidateResult",
     "ConsolidationHealthMetrics",
     "ContradictionFinding",
