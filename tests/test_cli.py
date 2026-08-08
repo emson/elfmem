@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
@@ -9,7 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from elfmem.api import MemorySystem
-from elfmem.cli import app
+from elfmem.cli import _doctor_preflight, _load_project_env, app
 from elfmem.types import (
     CurateResult,
     FrameResult,
@@ -244,3 +245,99 @@ class TestTemplatesCommand:
         for t in data["templates"]:
             assert "description" in t
             assert len(t["description"]) > 0
+
+
+# ── .env auto-loading (v2 step 3) ───────────────────────────────────────────
+
+
+class TestLoadProjectEnv:
+    def test_loads_env_when_project_found(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("ELFMEM_TEST_VAR", raising=False)
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".env").write_text("ELFMEM_TEST_VAR=from_dotenv\n", encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        found = _load_project_env()
+        assert found == tmp_path / ".env"
+        assert os.environ["ELFMEM_TEST_VAR"] == "from_dotenv"
+
+    def test_real_env_var_wins_over_dotenv(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ELFMEM_TEST_VAR", "from_shell")
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".env").write_text("ELFMEM_TEST_VAR=from_dotenv\n", encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        _load_project_env()
+        assert os.environ["ELFMEM_TEST_VAR"] == "from_shell"
+
+    def test_returns_none_when_no_env_file(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / ".git").mkdir()
+        monkeypatch.chdir(tmp_path)
+        assert _load_project_env() is None
+
+
+# ── doctor --resolve preflight (v2 step 3) ──────────────────────────────────
+
+
+class _FakeLLM:
+    def __init__(self, *, fail: bool = False) -> None:
+        self._fail = fail
+
+    async def process_block(self, block: str, self_context: str):
+        if self._fail:
+            raise ConnectionError("could not reach base_url")
+        from elfmem.types import BlockAnalysis
+        return BlockAnalysis(alignment_score=0.5, tags=[], summary=None)
+
+
+class TestDoctorPreflight:
+    async def test_reports_ok_on_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "elfmem.adapters.factory.make_llm_adapter",
+            lambda cfg, counter: _FakeLLM(),
+        )
+        ok, detail = await _doctor_preflight(None)
+        assert ok is True
+        assert "OK" in detail
+
+    async def test_reports_failure_without_raising(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            "elfmem.adapters.factory.make_llm_adapter",
+            lambda cfg, counter: _FakeLLM(fail=True),
+        )
+        ok, detail = await _doctor_preflight(None)
+        assert ok is False
+        assert "ConnectionError" in detail
+
+
+class TestDoctorResolveFlag:
+    def test_resolve_flag_triggers_preflight_check(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path
+    ) -> None:
+        async def fake_preflight(config):
+            return True, "mock-model — OK (5ms)"
+
+        monkeypatch.setattr("elfmem.cli._doctor_preflight", fake_preflight)
+        result = runner.invoke(
+            app, ["doctor", "--db", str(tmp_path / "x.db"), "--resolve"]
+        )
+        assert "LLM preflight" in result.output
+        assert "mock-model" in result.output
+
+    def test_without_resolve_flag_no_preflight_check(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path
+    ) -> None:
+        async def fake_preflight(config):
+            raise AssertionError("preflight should not run without --resolve")
+
+        monkeypatch.setattr("elfmem.cli._doctor_preflight", fake_preflight)
+        result = runner.invoke(app, ["doctor", "--db", str(tmp_path / "x.db")])
+        assert "LLM preflight" not in result.output

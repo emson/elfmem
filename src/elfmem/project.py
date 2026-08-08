@@ -187,6 +187,24 @@ def find_local_config(start: Path | None = None) -> Path | None:
     return candidate if candidate.exists() else None
 
 
+def find_env_file(start: Path | None = None) -> Path | None:
+    """Walk up from *start* to find an existing <project_root>/.env.
+
+    Mirrors ``find_local_config``'s discovery pattern (v2 step 3). Previously
+    ``.env`` was only loaded via ``serve --env-file``, an opt-in flag — every
+    other command (``remember``, ``recall``, ``doctor``, ...) never saw a
+    project's ``.env`` at all unless the key happened to already be in the
+    real shell environment. Callers should still prefer real environment
+    variables: ``load_env_file`` (below) uses ``setdefault`` so a value
+    already present in ``os.environ`` is never overridden by the file.
+    """
+    root = find_project_root(start)
+    if root is None:
+        return None
+    candidate = root / ".env"
+    return candidate if candidate.exists() else None
+
+
 def _read_env(names: tuple[str, ...]) -> tuple[str | None, str | None]:
     """Read the first set env var in *names*, warning about deprecated aliases.
 

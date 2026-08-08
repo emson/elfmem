@@ -91,6 +91,22 @@ def _main(
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 
+def _load_project_env() -> Path | None:
+    """Auto-load a project-root .env into os.environ, if one exists (v2 step 3).
+
+    Previously .env was only loaded via ``serve --env-file``, an opt-in flag
+    — every other command (remember, recall, doctor, ...) never saw a
+    project's .env at all unless the key happened to already be in the real
+    shell environment. Real environment variables always win — see
+    ``load_env_file``'s setdefault semantics. Returns the .env path found
+    (for callers that want to report the source), or None.
+    """
+    env_path = _project.find_env_file()
+    if env_path is not None:
+        _project.load_env_file(env_path)
+    return env_path
+
+
 def _resolve_paths(
     db: str | None,
     config: str | None,
@@ -101,7 +117,11 @@ def _resolve_paths(
     db_path always resolves to something (falls back to ~/.elfmem/agent.db).
     Exits with code 1 only if both explicit --db and all fallbacks are absent
     — which in practice means the global fallback path is always returned.
+
+    Also auto-loads a project-root .env before resolving — see
+    ``_load_project_env``.
     """
+    _load_project_env()
     config_path, _source = _project.resolve_config(config)
     db_path, _db_source = _project.resolve_db(db, config_path)
     return db_path, config_path
@@ -562,6 +582,13 @@ def doctor(
             help="Scan Claude MCP configs for stale elfmem entries and print fixes.",
         ),
     ] = False,
+    resolve: Annotated[
+        bool,
+        typer.Option(
+            "--resolve",
+            help="Also make one real LLM call to confirm the configured key works.",
+        ),
+    ] = False,
 ) -> None:
     """Diagnose your elfmem setup. Reports what is configured and what is missing.
 
@@ -569,16 +596,24 @@ def doctor(
     active for the current directory. Checks API keys, SELF blocks, peer
     communication setup (identity, inbox/outbox paths, delivery paths, inbox
     drift), and whether the project's agent doc (CLAUDE.md / AGENTS.md) is
-    configured.
+    configured. A project-root .env is auto-loaded before any check runs (same
+    discovery as every other command), so the "API keys" check reflects it.
 
     Exits with code 1 if any required item is missing; 0 if fully configured.
-    Read-only: never writes to the database or config files.
+    Read-only: never writes to the database or config files. --resolve is the
+    one exception to "free" — it makes a real LLM call, so it costs time and
+    (for hosted models) money, which is why it is opt-in rather than a
+    default check.
 
     Use --modules to print the key module map without running health checks.
     Use --migrate-mcp to scan ~/.claude/claude_code_config.json and the local
     .claude.json for elfmem MCP entries that use deprecated env vars or the
     legacy 'python -m elfmem.mcp' launch pattern. Prints a diff per finding;
     never writes — you apply the change yourself.
+    Use --resolve to confirm the configured LLM key actually works, not just
+    that a string is present in the environment — this is the check that
+    would have caught a silently-degrading mock/no-op adapter at setup time
+    rather than at first real use.
     """
     if modules:
         typer.echo(_project.format_key_modules())
@@ -586,6 +621,7 @@ def doctor(
     if migrate_mcp:
         _doctor_migrate_mcp(json_output)
         return
+    env_path = _load_project_env()
     checks: list[dict[str, Any]] = []
     failed = False
 
@@ -748,14 +784,19 @@ def doctor(
             pass
 
     # ── API keys ───────────────────────────────────────────────────────────
+    # env_path was loaded (if found) before any check ran, so this reflects
+    # .env-provided keys too, not just the real shell environment.
 
     has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY"))
     has_openai = bool(os.getenv("OPENAI_API_KEY"))
+    key_name = "ANTHROPIC_API_KEY" if has_anthropic else ("OPENAI_API_KEY" if has_openai else None)
+    key_source = f" (from {env_path})" if key_name and env_path is not None else ""
     _check(
         "API keys",
         has_anthropic or has_openai,
-        "ANTHROPIC_API_KEY" if has_anthropic else ("OPENAI_API_KEY" if has_openai else "none set"),
-        "export ANTHROPIC_API_KEY='sk-ant-...' or OPENAI_API_KEY='sk-...'",
+        f"{key_name}{key_source}" if key_name else "none set",
+        "export ANTHROPIC_API_KEY='sk-ant-...' or OPENAI_API_KEY='sk-...', "
+        "or add it to a .env file at your project root",
     )
 
     # ── SELF blocks ────────────────────────────────────────────────────────
@@ -887,6 +928,18 @@ def doctor(
         peer_checks = _run(_doctor_peer_checks(db_path, config_path))
         for pc in peer_checks:
             _check(pc["label"], pc["ok"], pc["detail"], pc["suggestion"])
+
+    # ── LLM preflight (opt-in — the only check that makes a real call) ──────
+
+    if resolve:
+        ok, detail = _run(_doctor_preflight(config_path))
+        _check(
+            "LLM preflight",
+            ok,
+            detail,
+            "Check llm.model / llm.base_url in config.yaml and the API key "
+            "reported above." if not ok else "",
+        )
 
     # ── Output ─────────────────────────────────────────────────────────────
 
@@ -2671,6 +2724,36 @@ async def _outcome(
 ) -> OutcomeResult:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.outcome(block_ids, signal, weight=weight, source=source)
+
+
+async def _doctor_preflight(config: str | None) -> tuple[bool, str]:
+    """Make one real LLM call to confirm the configured key actually works (v2 step 3).
+
+    Unlike every other doctor check, this is a real network call — costs
+    time and (for hosted models) money — so it is opt-in via --resolve, not
+    part of the default fast/free check set. Scoped to the current single
+    llm: config section; profile-based routing is a later step, not this one.
+
+    Returns (ok, detail). Never raises — construction or call failures
+    (bad key, unreachable base_url, network error) are caught and reported
+    as a failed check, matching the "fails loudly instead of degrading
+    silently" fix this step exists for.
+    """
+    import time
+
+    from elfmem.adapters.factory import make_llm_adapter
+    from elfmem.config import ElfmemConfig
+    from elfmem.token_counter import TokenCounter
+
+    cfg = ElfmemConfig.from_yaml(config) if config else ElfmemConfig()
+    try:
+        llm = make_llm_adapter(cfg, TokenCounter())
+        start = time.monotonic()
+        await llm.process_block("preflight check", "")
+        elapsed_ms = (time.monotonic() - start) * 1000
+        return True, f"{cfg.llm.model} — OK ({elapsed_ms:.0f}ms)"
+    except Exception as e:
+        return False, f"{cfg.llm.model} — {type(e).__name__}: {e}"
 
 
 async def _doctor_scoring_drift(
