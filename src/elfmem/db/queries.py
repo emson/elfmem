@@ -424,6 +424,33 @@ async def get_tags_batch(
     return tags_map
 
 
+async def list_active_blocks(
+    conn: AsyncConnection,
+    *,
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """List active blocks, optionally filtered by tag pattern and/or category.
+
+    Ordered by last_reinforced_at descending (most recently active first).
+    Pure read — no LLM or embedding calls. ``tag`` is a SQL LIKE pattern,
+    matching the semantics of ``frame()``'s existing ``tag_filter`` (e.g.
+    'self/%' for a prefix match) rather than requiring an exact tag string.
+    """
+    stmt = select(blocks).where(blocks.c.status == "active")
+    if category is not None:
+        stmt = stmt.where(blocks.c.category == category)
+    if tag is not None:
+        tagged_ids = select(block_tags.c.block_id).where(block_tags.c.tag.like(tag))
+        stmt = stmt.where(blocks.c.id.in_(tagged_ids))
+    stmt = stmt.order_by(blocks.c.last_reinforced_at.desc())
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    result = await conn.execute(stmt)
+    return [dict(row) for row in result.mappings()]
+
+
 async def get_blocks_by_tag_pattern(
     conn: AsyncConnection,
     pattern: str,

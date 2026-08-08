@@ -11,7 +11,10 @@ from typer.testing import CliRunner
 from elfmem.api import MemorySystem
 from elfmem.cli import app
 from elfmem.types import (
+    BlockSummary,
     CurateResult,
+    EditResult,
+    ForgetResult,
     FrameResult,
     LearnResult,
     OutcomeResult,
@@ -63,6 +66,18 @@ def mock_managed(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     )
     mem.dream.return_value = None
     mem.should_dream = False
+    mem.edit.return_value = EditResult(block_id="abc12345")
+    mem.forget.return_value = ForgetResult(block_id="abc12345", status="forgotten")
+    mem.ls.return_value = [
+        BlockSummary(
+            id="abc12345",
+            content="a listed block",
+            category="knowledge",
+            tags=["python"],
+            created_at="2024-01-01T00:00:00",
+            reinforcement_count=1,
+        )
+    ]
 
     @asynccontextmanager
     async def _managed(*args: object, **kwargs: object) -> object:
@@ -128,6 +143,77 @@ class TestRecallCommand:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "text" in data
+
+
+# ── edit / forget / ls commands ────────────────────────────────────────────────
+
+
+class TestEditCommand:
+    def test_text_output_shows_edited(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app, ["edit", "abc12345", "new content", "--db", "test.db"]
+        )
+        assert result.exit_code == 0
+        assert "Edited" in result.output
+
+    def test_content_passed_through(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app, ["edit", "abc12345", "new content", "--db", "test.db"]
+        )
+        assert result.exit_code == 0
+        args, _ = mock_managed.edit.call_args
+        assert args == ("abc12345", "new content")
+
+    def test_json_output_has_block_id(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app, ["edit", "abc12345", "new content", "--db", "test.db", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["block_id"] == "abc12345"
+
+
+class TestForgetCommand:
+    def test_text_output_shows_forgot(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(app, ["forget", "abc12345", "--db", "test.db"])
+        assert result.exit_code == 0
+        assert "Forgot" in result.output
+
+    def test_json_output_has_status(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app, ["forget", "abc12345", "--db", "test.db", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "forgotten"
+
+
+class TestLsCommand:
+    def test_text_output_lists_blocks(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(app, ["ls", "--db", "test.db"])
+        assert result.exit_code == 0
+        assert "a listed block" in result.output
+
+    def test_json_output_is_a_list(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(app, ["ls", "--db", "test.db", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+        assert data[0]["id"] == "abc12345"
+
+    def test_tag_filter_passed_through(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app, ["ls", "--db", "test.db", "--tag", "self/%"]
+        )
+        assert result.exit_code == 0
+        args, _ = mock_managed.ls.call_args
+        assert args[0] == "self/%"
+
+    def test_empty_result_shows_message(self, mock_managed: AsyncMock) -> None:
+        mock_managed.ls.return_value = []
+        result = runner.invoke(app, ["ls", "--db", "test.db"])
+        assert result.exit_code == 0
+        assert "No active blocks" in result.output
 
 
 # ── status command ────────────────────────────────────────────────────────────

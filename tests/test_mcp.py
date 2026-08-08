@@ -13,8 +13,11 @@ import pytest
 
 from elfmem.api import MemorySystem
 from elfmem.types import (
+    BlockSummary,
     ConsolidateResult,
     CurateResult,
+    EditResult,
+    ForgetResult,
     FrameResult,
     LearnResult,
     MindOutcomeResult,
@@ -121,6 +124,44 @@ class TestMcpTools:
         )
         result = await _tool_recall(query="test")
         assert result["blocks"][0]["id"] == "xyz789"
+
+    async def test_edit_returns_dict_with_block_id(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_edit
+
+        mock_mem.edit.return_value = EditResult(block_id="abc123")
+        result = await _tool_edit(block_id="abc123", content="new content")
+        assert result["block_id"] == "abc123"
+        mock_mem.edit.assert_awaited_once_with("abc123", "new content")
+
+    async def test_forget_returns_dict_with_status(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_forget
+
+        mock_mem.forget.return_value = ForgetResult(block_id="abc123", status="forgotten")
+        result = await _tool_forget(block_id="abc123")
+        assert result["status"] == "forgotten"
+
+    async def test_ls_returns_list_of_dicts(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_ls
+
+        mock_mem.ls.return_value = [
+            BlockSummary(
+                id="abc123",
+                content="a block",
+                category="knowledge",
+                tags=["python"],
+                created_at="2024-01-01T00:00:00",
+                reinforcement_count=1,
+            )
+        ]
+        result = await _tool_ls()
+        assert result[0]["id"] == "abc123"
+
+    async def test_ls_passes_filters_through(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_ls
+
+        mock_mem.ls.return_value = []
+        await _tool_ls(tag="self/%", category="knowledge", limit=10)
+        mock_mem.ls.assert_awaited_once_with("self/%", "knowledge", limit=10)
 
     async def test_status_returns_dict_with_health(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import _tool_status

@@ -118,6 +118,28 @@ async def _tool_recall(
     return format_recall_response(result)
 
 
+async def _tool_edit(block_id: str, content: str) -> dict[str, Any]:
+    mem = _mem()
+    result = await mem.edit(block_id, content)
+    return result.to_dict()
+
+
+async def _tool_forget(block_id: str) -> dict[str, Any]:
+    mem = _mem()
+    result = await mem.forget(block_id)
+    return result.to_dict()
+
+
+async def _tool_ls(
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    mem = _mem()
+    results = await mem.ls(tag, category, limit=limit)
+    return [r.to_dict() for r in results]
+
+
 async def _tool_status(peer_inbox: bool = False) -> dict[str, Any]:
     mem = _mem()
     result = (await mem.status()).to_dict()
@@ -412,6 +434,42 @@ async def elfmem_recall(
         | "simulate" (Theory-of-Mind retrieval — self constitution + mind/* blocks).
     """
     return await _tool_recall(query, top_k=top_k, frame=frame)
+
+
+@mcp.tool()
+async def elfmem_edit(block_id: str, content: str) -> dict[str, Any]:
+    """Replace an active block's content directly. No LLM mediation.
+
+    Use when a stored memory is wrong, stale, or needs rewording and you
+    know its block_id (e.g. from elfmem_ls). No LLM call — only an
+    embedding re-computation. Confidence and reinforcement are untouched.
+    """
+    return await _tool_edit(block_id, content)
+
+
+@mcp.tool()
+async def elfmem_forget(block_id: str) -> dict[str, Any]:
+    """Archive a block by explicit request — the direct delete path.
+
+    Use when a memory should no longer be active. Idempotent: forgetting
+    an already-archived block returns status='already_archived', not an error.
+    """
+    return await _tool_forget(block_id)
+
+
+@mcp.tool()
+async def elfmem_ls(
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """List active blocks — a deterministic, unscored view of memory.
+
+    Use to find a block_id for elfmem_edit/elfmem_forget, or to audit
+    memory contents directly. Not relevance-ranked — use elfmem_recall
+    for that. tag is a SQL LIKE pattern (e.g. 'self/%').
+    """
+    return await _tool_ls(tag, category, limit)
 
 
 @mcp.tool()

@@ -132,6 +132,94 @@ class LearnResult:
 
 
 @dataclass
+class EditResult:
+    """Result of edit() — replacing an active block's content.
+
+    USE WHEN: Confirming a content edit landed and re-embedding was queued.
+    COST: Zero — pure summary.
+    RETURNS: The edited block's id.
+    NEXT: The block's summary/last_scored_at are cleared; dream() or
+    consolidate() will refresh them on the next cycle.
+    """
+
+    block_id: str
+
+    @property
+    def summary(self) -> str:
+        return f"Edited block {self.block_id[:8]}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {"block_id": self.block_id}
+
+
+@dataclass
+class ForgetResult:
+    """Result of forget() — archiving a block by explicit request.
+
+    USE WHEN: Confirming a block was removed from active memory.
+    DON'T USE WHEN: You need to check whether a block exists before calling —
+    forget() on an already-archived block is a safe no-op, not an error.
+    COST: Zero — pure summary.
+    RETURNS: block_id and status ('forgotten' | 'already_archived').
+    NEXT: None — the block no longer appears in frame()/recall()/ls().
+    """
+
+    block_id: str
+    status: str  # "forgotten" | "already_archived"
+
+    @property
+    def summary(self) -> str:
+        if self.status == "already_archived":
+            return f"Block {self.block_id[:8]} was already archived."
+        return f"Forgot block {self.block_id[:8]}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {"block_id": self.block_id, "status": self.status}
+
+
+@dataclass
+class BlockSummary:
+    """One row of ls() — a deterministic, unscored listing of an active block.
+
+    Unlike ScoredBlock (retrieval output), there is no similarity, centrality,
+    or reinforcement-derived score here — ls() is a flat listing, not a ranked
+    retrieval. Use frame()/recall() when relevance ranking matters.
+    """
+
+    id: str
+    content: str
+    category: str
+    tags: list[str]
+    created_at: str
+    reinforcement_count: int
+
+    @property
+    def summary(self) -> str:
+        tag_str = f" [{', '.join(self.tags[:3])}]" if self.tags else ""
+        truncated = self.content[:80] + ("…" if len(self.content) > 80 else "")
+        return f"{self.id[:8]} {truncated}{tag_str}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "category": self.category,
+            "tags": self.tags,
+            "created_at": self.created_at,
+            "reinforcement_count": self.reinforcement_count,
+        }
+
+
+@dataclass
 class LearnDocumentResult:
     """Result of ingesting a document via learn_document().
 

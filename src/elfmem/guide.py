@@ -164,6 +164,75 @@ GUIDES: dict[str, AgentGuide] = {
             "print(result)  # Stored block a1b2c3d4. Status: created."
         ),
     ),
+    "edit": AgentGuide(
+        name="edit",
+        what="Replace an active block's content directly — no LLM mediation.",
+        when=(
+            "A stored memory is wrong, stale, or needs rewording, and you know "
+            "which block_id. The direct write path — previously the only way to "
+            "change content was an indirect side effect of near-duplicate supersession."
+        ),
+        when_not=(
+            "The block is in inbox (not yet consolidated) — learn() the corrected "
+            "version instead. The block is already archived — edit() only targets active blocks."
+        ),
+        cost="One embedding call to re-embed the new content. No LLM call.",
+        returns="EditResult with the block's id.",
+        next=(
+            "summary and last_scored_at are cleared — the block is first in line "
+            "for the next dream(--rescore). Confidence and reinforcement_count are untouched."
+        ),
+        example=(
+            "result = await system.edit(block_id, 'Corrected: prefers tabs, not spaces.')\n"
+            "print(result)  # Edited block a1b2c3d4."
+        ),
+    ),
+    "forget": AgentGuide(
+        name="forget",
+        what="Archive a block by explicit request — the direct delete path.",
+        when=(
+            "A memory should no longer be active — wrong, no longer relevant, or "
+            "unwanted seeded content. The direct delete path — previously blocks "
+            "could only leave active memory via supersession or decay, never a "
+            "deliberate choice."
+        ),
+        when_not=(
+            "You want retrieval suppressed temporarily without real deletion — "
+            "forget() removes the block's tags, edges, and contradictions permanently."
+        ),
+        cost="Instant. No LLM or embedding calls.",
+        returns=(
+            "ForgetResult. status='forgotten' on a real archive; "
+            "status='already_archived' if it was archived already — safe no-op, not an error."
+        ),
+        next="The block no longer appears in frame(), recall(), or ls().",
+        example=(
+            "result = await system.forget(block_id)\n"
+            "print(result)  # Forgot block a1b2c3d4."
+        ),
+    ),
+    "ls": AgentGuide(
+        name="ls",
+        what="List active blocks — a deterministic, unscored view of memory.",
+        when=(
+            "You need to find a block_id for edit()/forget(), or audit memory "
+            "contents directly. The direct read path RC1 identified as missing."
+        ),
+        when_not=(
+            "You want relevance-ranked results for a query — use recall() or "
+            "frame() instead. ls() does not rank by similarity or centrality."
+        ),
+        cost="Instant. No LLM or embedding calls.",
+        returns=(
+            "List of BlockSummary, most-recently-reinforced first. "
+            "Empty list if nothing matches."
+        ),
+        next="Pass a returned .id to edit() or forget().",
+        example=(
+            "for b in await system.ls(tag='self/%'):\n"
+            "    print(b)  # a1b2c3d4 Apply minimum force... [self/value]"
+        ),
+    ),
     "learn_document": AgentGuide(
         name="learn_document",
         what="Ingest a document: chunk, learn each chunk, auto-consolidate.",
