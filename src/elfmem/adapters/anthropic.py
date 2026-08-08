@@ -50,6 +50,7 @@ class AnthropicLLMAdapter:
         max_tokens: int = 512,
         timeout: int = 30,
         max_retries: int = 3,
+        api_key: str | None = None,
         process_block_model: str | None = None,
         contradiction_model: str | None = None,
         process_block_prompt: str | None = None,
@@ -74,7 +75,12 @@ class AnthropicLLMAdapter:
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
         )
         self._token_counter = token_counter
+        # api_key=None is the SDK's own documented default: fall back to
+        # ANTHROPIC_API_KEY. Passing it explicitly (v2 step 5) only changes
+        # behaviour when the caller resolved a key from a differently-named
+        # env var via LLMConfig.api_key_env.
         self._client = anthropic.AsyncAnthropic(
+            api_key=api_key,
             timeout=float(timeout),
             max_retries=max_retries,
         )

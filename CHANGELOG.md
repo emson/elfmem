@@ -37,6 +37,24 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   unlike every other doctor check it costs time and (for hosted models)
   money. `doctor`'s existing "API keys" check now also reports whether the
   key came from `.env` or the real environment.
+- `llm.api_key_env` / `embeddings.api_key_env` config fields (v2 step 5):
+  name the environment variable your provider's API key actually lives in.
+  Previously every OpenAI-compatible adapter always read the literal
+  `OPENAI_API_KEY`, regardless of `base_url` — so Together.ai, Groq,
+  OpenRouter, or any other provider only worked if you misnamed your key
+  `OPENAI_API_KEY`. `AnthropicLLMAdapter` gains the equivalent `api_key`
+  constructor param (previously relied entirely on the SDK reading
+  `ANTHROPIC_API_KEY`, with no override). Unset (the default) is unchanged
+  behaviour: `OPENAI_API_KEY` for OpenAI-compatible adapters,
+  `ANTHROPIC_API_KEY` for `claude-*` models. A misconfigured `api_key_env`
+  resolves to no key rather than silently falling back to a real-but-wrong
+  one — the resolved key is used exactly as passed, never guessed at.
+  ```yaml
+  llm:
+    model: "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    base_url: "https://api.together.xyz/v1"
+    api_key_env: "TOGETHER_API_KEY"
+  ```
 
 ### Changed
 - **Breaking**: `elfmem init`'s `--seed` now defaults to off (v2 step 4).
