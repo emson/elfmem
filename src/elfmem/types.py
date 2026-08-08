@@ -290,6 +290,15 @@ class ConsolidateResult:
     # Inbox blocks left unprocessed by ``consolidation.max_inbox_per_run``
     # (ADR 0007). 0 unless the inbox was larger than the per-run budget.
     inbox_remaining: int = 0
+    # Near-duplicate matches refused because the candidate-to-be-archived
+    # block was tagged self/constitutional (v2 step 1 pin guard, see
+    # docs/plans/plan_v2_substrate_reevaluation.md §5.3/§9). The incoming
+    # block was promoted alongside it instead of silently overwriting it —
+    # 0 means every near-duplicate this call encountered was safe to
+    # supersede normally. A nonzero value is not an error; it means a
+    # near-duplicate pair is now sitting in active memory for a human (or a
+    # future corpus-level review) to reconcile.
+    blocked_supersessions: int = 0
 
     @property
     def summary(self) -> str:
@@ -308,6 +317,8 @@ class ConsolidateResult:
             parts.append(f"{self.edges_created} edges")
             if self.contradictions_detected:
                 parts.append(f"{self.contradictions_detected} contradictions")
+            if self.blocked_supersessions:
+                parts.append(f"{self.blocked_supersessions} constitutional supersessions blocked")
         if self.rescored or self.rescore_failed:
             rs = f"{self.rescored} rescored"
             if self.rescore_failed:
@@ -338,6 +349,7 @@ class ConsolidateResult:
             "rescore_failed": self.rescore_failed,
             "health": self.health.to_dict() if self.health is not None else None,
             "inbox_remaining": self.inbox_remaining,
+            "blocked_supersessions": self.blocked_supersessions,
         }
 
 

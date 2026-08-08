@@ -272,6 +272,7 @@ async def _collect_decisions(
     int,
     int,
     int,
+    int,
 ]:
     """Read inbox, embed, score with LLM, and compute all decisions.
 
@@ -280,8 +281,8 @@ async def _collect_decisions(
 
     Returns (block_decisions, edge_decisions, contradiction_decisions,
     processed_count, pair_checks_done, pairs_above_prefilter, pairs_capped,
-    inbox_remaining). All counts are 0 if the inbox was empty.
-    ``pair_checks_done`` counts every (inbox_block, active_block) pair the
+    inbox_remaining, blocked_supersessions). All counts are 0 if the inbox was
+    empty. ``pair_checks_done`` counts every (inbox_block, active_block) pair the
     contradiction loop considered; ``pairs_above_prefilter`` counts the
     subset that survived the cosine prefilter; ``pairs_capped`` (ADR 0007)
     counts the subset of those that were skipped anyway because they fell
@@ -289,10 +290,13 @@ async def _collect_decisions(
     ``ConsolidationHealthMetrics`` in the caller (issue #73, ADR 0006).
     ``inbox_remaining`` is the count left unprocessed after ``max_inbox_per_run``
     truncation — 0 unless the inbox was larger than the budget.
+    ``blocked_supersessions`` (v2 step 1) counts near-duplicate matches that
+    would have silently archived a ``self/constitutional`` block; the incoming
+    block is promoted alongside it instead. See docs/plans/plan_v2_substrate_reevaluation.md.
     """
     inbox = await get_inbox_blocks(conn)
     if not inbox:
-        return [], [], [], 0, 0, 0, 0, 0
+        return [], [], [], 0, 0, 0, 0, 0, 0
 
     inbox_remaining = 0
     if max_inbox_per_run is not None and len(inbox) > max_inbox_per_run:
@@ -341,6 +345,7 @@ async def _collect_decisions(
     pair_checks_done = 0
     pairs_above_prefilter = 0
     pairs_capped = 0  # ADR 0007: prefilter-passing pairs skipped by contradiction_top_k
+    blocked_supersessions = 0  # v2 step 1: near-dups refused against self/constitutional
 
     # Mutable snapshot: tracks the evolving active set within this batch.
     # Superseded blocks are removed; promoted blocks are added.
@@ -384,8 +389,20 @@ async def _collect_decisions(
 
         supersedes_id: str | None = None
         if not is_message and best_active is not None and best_sim >= near_dup_near_threshold:
-            supersedes_id = best_active["id"]
-            evolving_vecs.pop(best_active["content"].strip().lower(), None)
+            if "self/constitutional" in tags_map.get(best_active["id"], []):
+                # Pin guard (v2 step 1): never silently supersede a
+                # constitutional block. The incoming block is promoted
+                # alongside it instead of overwriting it — nothing is
+                # destroyed; a human (or a future corpus-level review)
+                # reconciles the near-duplicate pair. This is the fix for
+                # the mechanism documented in
+                # docs/plans/plan_v2_substrate_reevaluation.md §2.3: six of
+                # ten seeded constitutional roles were lost this way on the
+                # live instance with no guard and no audit trail.
+                blocked_supersessions += 1
+            else:
+                supersedes_id = best_active["id"]
+                evolving_vecs.pop(best_active["content"].strip().lower(), None)
 
         # LLM scoring — external I/O with timeout, shared lock only.
         # skip_llm: bypass LLM calls entirely (embed + promote only).
@@ -523,6 +540,7 @@ async def _collect_decisions(
         pairs_above_prefilter,
         pairs_capped,
         inbox_remaining,
+        blocked_supersessions,
     )
 
 
@@ -556,7 +574,8 @@ async def _apply_decisions(
 
         if d.action == "supersede" and d.supersedes_id:
             await update_block_status(
-                conn, d.supersedes_id, "archived", archive_reason="superseded"
+                conn, d.supersedes_id, "archived",
+                archive_reason="superseded", superseded_by=d.block_id,
             )
             deduplicated += 1
 
@@ -677,6 +696,7 @@ async def consolidate(
         pairs_above_prefilter,
         pairs_capped,
         inbox_remaining,
+        blocked_supersessions,
     ) = await _collect_decisions(
         conn,
         llm=llm,
@@ -701,6 +721,7 @@ async def consolidate(
         return ConsolidateResult(
             processed=0, promoted=0, deduplicated=0, edges_created=0,
             inbox_remaining=inbox_remaining,
+            blocked_supersessions=blocked_supersessions,
         )
 
     promoted, deduplicated, edges_created = await _apply_decisions(
@@ -730,6 +751,7 @@ async def consolidate(
         deduplicated=deduplicated,
         edges_created=edges_created,
         inbox_remaining=inbox_remaining,
+        blocked_supersessions=blocked_supersessions,
         contradictions_detected=len(contradiction_decisions),
         contradictions=[
             ContradictionFinding(

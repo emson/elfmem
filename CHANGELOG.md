@@ -9,6 +9,28 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Near-duplicate consolidation no longer silently supersedes (archives)
+  blocks tagged `self/constitutional`. Previously `consolidate()`/`dream()`
+  would archive any active block within `near_dup_near_threshold` (0.90)
+  cosine of an incoming block with no tier, pin, or tag check — including
+  constitutional identity blocks, which lost tags, edges, and evidence in
+  the same call (`update_block_status` hard-deletes them on archive). The
+  incoming near-duplicate is now promoted alongside the protected block
+  instead, and `ConsolidateResult.blocked_supersessions` reports how many
+  times this fired so operators can see it rather than lose data silently.
+- Ordinary (non-constitutional) supersession now records which block did
+  the superseding: `blocks.superseded_by` (schema v6) is set alongside
+  `archive_reason='superseded'`, closing the "archived, but by what?" audit
+  gap on the path responsible for nearly all archivals in practice.
+
+### Removed
+- `memory/dedup.py::find_near_duplicate` / `resolve_near_duplicate` and the
+  `EXACT_DUP_THRESHOLD`/`NEAR_DUP_THRESHOLD` constants — dead code with no
+  callers; the live near-duplicate/supersede logic has lived in
+  `operations/consolidate.py` since an earlier refactor. `cosine_similarity`
+  is unaffected and remains in `memory/dedup.py`.
+
 ## [0.19.3] — 2026-07-14
 
 ### Changed

@@ -183,11 +183,17 @@ async def update_block_status(
     status: str,
     *,
     archive_reason: str | None = None,
+    superseded_by: str | None = None,
 ) -> None:
     """Transition a block to a new status.
 
     When archiving, explicitly deletes related tags, edges, and contradictions
     since FK CASCADE only fires on physical DELETE, not on status UPDATE.
+
+    ``superseded_by`` (v2 step 1) records the id of the replacing block when
+    ``archive_reason='superseded'`` — the audit trail supersession never had.
+    Callers pass it only for that archive reason; it is a plain optional
+    column write otherwise.
     """
     if status == "archived":
         await conn.execute(
@@ -209,6 +215,8 @@ async def update_block_status(
     values: dict[str, object] = {"status": status}
     if archive_reason is not None:
         values["archive_reason"] = archive_reason
+    if superseded_by is not None:
+        values["superseded_by"] = superseded_by
     await conn.execute(update(blocks).where(blocks.c.id == block_id).values(**values))
 
 

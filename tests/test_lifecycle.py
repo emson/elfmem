@@ -557,6 +557,97 @@ class TestDecayTierDetermination:
             assert block is not None
 
 
+class TestConstitutionalSupersessionGuard:
+    """Pin guard: self/constitutional blocks are never silently superseded.
+
+    v2 step 1 (docs/plans/plan_v2_substrate_reevaluation.md §5.3/§9) — the
+    fix for the mechanism that lost 6 of 10 seeded constitutional roles on
+    the live instance with no guard and no audit trail.
+    """
+
+    async def test_constitutional_block_not_superseded(self, system_setup) -> None:
+        """A near-duplicate never silently overwrites a self/constitutional block."""
+        engine, mock_llm, mock_embedding = system_setup
+        mock_llm.tag_overrides = {"constitutional-principle": ["self/constitutional"]}
+
+        async with engine.begin() as conn:
+            await learn(
+                conn,
+                content="This is a constitutional-principle about honesty.",
+                category="self",
+                source="api",
+            )
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=10.0,
+            )
+
+            await learn(
+                conn,
+                content="This is a reworded constitutional-principle about honesty.",
+                category="self",
+                source="api",
+            )
+
+            embedding_with_override = MockEmbeddingService(
+                similarity_overrides={
+                    frozenset({
+                        "This is a constitutional-principle about honesty.".lower().strip(),
+                        "This is a reworded constitutional-principle about honesty.".lower().strip(),
+                    }): 0.92
+                }
+            )
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=embedding_with_override,
+                current_active_hours=10.0,
+            )
+
+            assert result.blocked_supersessions == 1
+            assert result.deduplicated == 0
+            active = await get_active_blocks(conn)
+            assert len(active) == 2  # both survive — nothing was destroyed
+
+    async def test_ordinary_block_still_superseded_with_audit_trail(self, system_setup) -> None:
+        """Non-constitutional near-duplicates still supersede, now with superseded_by recorded."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            first = await learn(
+                conn,
+                content="Use async patterns in Python for I/O-bound tasks.",
+                category="knowledge",
+                source="api",
+            )
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=10.0,
+            )
+
+            second = await learn(
+                conn,
+                content="Use async/await in Python for I/O-bound task handling.",
+                category="knowledge",
+                source="api",
+            )
+
+            embedding_with_override = MockEmbeddingService(
+                similarity_overrides={
+                    frozenset({
+                        "Use async patterns in Python for I/O-bound tasks.".lower().strip(),
+                        "Use async/await in Python for I/O-bound task handling.".lower().strip(),
+                    }): 0.92
+                }
+            )
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=embedding_with_override,
+                current_active_hours=10.0,
+            )
+
+            assert result.deduplicated == 1
+            assert result.blocked_supersessions == 0
+            archived = await get_block(conn, first.block_id)
+            assert archived is not None
+            assert archived["status"] == "archived"
+            assert archived["superseded_by"] == second.block_id
+
+
 class TestContradictionStorage:
     """Contradiction detection at consolidation."""
 
