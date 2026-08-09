@@ -52,13 +52,3 @@ class AmendmentProposalModel(BaseModel):
             "says about the constitutional block. Plain, specific, audit-readable."
         ),
     )
-
-
-class ContradictionScore(BaseModel):
-    """Structured response for contradiction detection."""
-
-    score: float = Field(
-        ge=0.0,
-        le=1.0,
-        description="Contradiction score: 0=compatible, 1=directly contradictory",
-    )

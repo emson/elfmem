@@ -95,24 +95,3 @@ the evidence. Rules for the proposal:
 Respond with JSON:
 {{"proposed_content": "<string>", "rationale": "<string>"}}
 """
-
-CONTRADICTION_PROMPT: str = """\
-You are detecting logical contradictions between two memory blocks.
-
-## Block A
-{block_a}
-
-## Block B
-{block_b}
-
-Rate how contradictory these blocks are:
-- 0.0: Compatible — can both be true simultaneously
-- 0.3: Tension — different emphases or perspectives, not directly contradictory
-- 0.7: Conflicting — one implies the other is wrong or outdated
-- 1.0: Direct contradiction — both cannot be true at the same time
-
-Focus on logical contradiction, not just difference of opinion or emphasis.
-Technical corrections (Block B updates/supersedes Block A) score high (0.7+).
-
-Respond with JSON: {{"score": <float between 0.0 and 1.0>}}
-"""

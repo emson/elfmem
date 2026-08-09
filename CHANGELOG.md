@@ -10,6 +10,23 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `MemorySystem.review_corpus()` / `elfmem review corpus` / `elfmem_review_corpus`
+  (v2 step 6a): deterministic staleness detection for ordinary memory — zero
+  LLM calls, pure SQL/math over already-active blocks. A block is proposed
+  for archival only when three weak signals all agree: long-unused
+  (`review.corpus.stale_min_hours_since_reinforced`, default ~30 days),
+  rarely reinforced (`stale_max_reinforcement_count`, default ≤2), and never
+  confirmed by an outcome. Nothing is applied automatically — proposals go
+  through the same interactive accept/reject/skip/quit walkthrough
+  constitutional review already uses (`--json`/`--yes` for scripting), and
+  `forget()` gains an optional `reason` parameter (default unchanged:
+  `ArchiveReason.FORGOTTEN`) so an accepted staleness proposal is applied
+  with `reason=ArchiveReason.DECAYED`, keeping the audit trail honest about
+  *why* a block was archived. Nested under the existing `elfmem review`
+  command group as `review corpus` — the bare `elfmem review` (no
+  subcommand) is unchanged and still runs constitutional review;
+  duplicate/contradiction detection (the part that needs one whole-corpus
+  LLM call) is a later addition to the same command, not built yet.
 - `MemorySystem.edit(block_id, content)`, `.forget(block_id)`, `.ls(tag=,
   category=, limit=)` — the direct block mutation API (v2 step 2). Previously
   the only way to change a block's content was an indirect side effect of
@@ -88,6 +105,41 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   gap on the path responsible for nearly all archivals in practice.
 
 ### Removed
+- **Breaking**: decay-driven block archival (v2 step 7a, ADR 0009).
+  `curate()` no longer archives blocks whose recency falls below
+  `prune_threshold` — in months of self-hosted operation this trigger never
+  fired once (41 blocks archived `superseded`, 0 `decayed`), while
+  `review_corpus()` (step 6a) already covers the same "unused, rarely
+  reinforced" signal deterministically, at zero LLM cost, with human review
+  before anything is archived. `CurateResult.archived` and
+  `MemoryConfig.prune_threshold` are removed. **Migration**: use
+  `elfmem review corpus` / `review_corpus()` for staleness detection, and
+  `forget(reason=ArchiveReason.DECAYED)` to apply an accepted proposal.
+  Decay tier / `decay_lambda` / recency themselves are **not** removed — they
+  remain live inputs to retrieval ranking, edge-decay pruning, and curate's
+  own top-N reinforcement scoring.
+- **Breaking**: pairwise LLM contradiction detection at consolidate-time (v2
+  step 7b, ADR 0010). It was the dominant LLM cost of `consolidate()` (up to
+  10 contradiction calls per 1 alignment-scoring call per inbox block, ADR
+  0007) for a realized yield of 14 lifetime findings, 12 (86%) still
+  unresolved — corroborated by MemoryAgentBench's Conflict Resolution
+  competency, purpose-built to test this mechanism, scoring 4.8% with it
+  fully enabled. Removed: `MemoryConfig.contradiction_threshold` /
+  `.contradiction_similarity_prefilter` / `.contradiction_top_k`,
+  `LLMConfig.contradiction_model`, `dream()`/`consolidate()`'s
+  `skip_contradictions` parameter and the `--skip-contradictions` CLI flag,
+  `LLMService.detect_contradiction()` (and all three adapter
+  implementations), `ConsolidateResult.contradictions_detected` /
+  `.contradictions`, the `ContradictionFinding` type, and
+  `ConsolidationHealthMetrics.contradiction_detection_rate` /
+  `.prefilter_pass_rate` / `.contradiction_cap_rate`. **Migration**: none
+  needed for typical callers (additive fields/flags); custom `LLMService`
+  adapters no longer need to implement `detect_contradiction`. **Kept
+  unchanged**: the `contradictions` table and contradiction *suppression* at
+  recall time (`context/contradiction.py::suppress_contradictions`, live on
+  every `frame()`/`recall()` call) — existing findings keep suppressing; new
+  content simply isn't auto-checked until a corpus-level LLM review (step
+  6b) replaces this write path.
 - `memory/dedup.py::find_near_duplicate` / `resolve_near_duplicate` and the
   `EXACT_DUP_THRESHOLD`/`NEAR_DUP_THRESHOLD` constants — dead code with no
   callers; the live near-duplicate/supersede logic has lived in

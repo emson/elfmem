@@ -1,6 +1,6 @@
 """Configuration for the LoCoMo benchmark harness."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -24,7 +24,6 @@ class LoCoMoConfig:
     top_k: int = 10
     inbox_threshold: int = 50
     search_window_hours: float = 10000.0
-    contradiction_similarity_prefilter: float = 0.65
     answer_model: str = "google/gemma-4-26b-a4b"
     answer_max_tokens: int = 100
     max_conversations: int | None = None

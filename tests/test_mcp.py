@@ -188,10 +188,10 @@ class TestMcpTools:
         from elfmem.mcp import _tool_curate
 
         mock_mem.curate.return_value = CurateResult(
-            archived=1, edges_pruned=2, reinforced=3
+            edges_pruned=2, reinforced=3
         )
         result = await _tool_curate()
-        assert result["archived"] == 1
+        assert result["edges_pruned"] == 2
 
     async def test_guide_returns_string(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import _tool_guide
@@ -218,7 +218,7 @@ class TestMcpTools:
         )
         await _tool_dream(rescore=True, rescore_max=5)
         mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=False,
+            skip_llm=False,
             rescore=True, rescore_max=5,
         )
 
@@ -230,21 +230,7 @@ class TestMcpTools:
         )
         await _tool_dream(no_llm=True)
         mock_mem.dream.assert_called_once_with(
-            skip_llm=True, skip_contradictions=False,
-            rescore=False, rescore_max=None,
-        )
-
-    async def test_dream_threads_skip_contradictions_flag(
-        self, mock_mem: AsyncMock
-    ) -> None:
-        from elfmem.mcp import _tool_dream
-
-        mock_mem.dream.return_value = ConsolidateResult(
-            processed=2, promoted=2, deduplicated=0, edges_created=1,
-        )
-        await _tool_dream(skip_contradictions=True)
-        mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=True,
+            skip_llm=True,
             rescore=False, rescore_max=None,
         )
 
@@ -257,7 +243,7 @@ class TestMcpTools:
         )
         await _tool_dream()
         mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=False,
+            skip_llm=False,
             rescore=False, rescore_max=None,
         )
 

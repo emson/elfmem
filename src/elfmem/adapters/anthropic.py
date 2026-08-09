@@ -11,15 +11,10 @@ from __future__ import annotations
 
 import anthropic
 
-from elfmem.adapters.models import (
-    AmendmentProposalModel,
-    BlockAnalysisModel,
-    ContradictionScore,
-)
+from elfmem.adapters.models import AmendmentProposalModel, BlockAnalysisModel
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
-    CONTRADICTION_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -27,7 +22,6 @@ from elfmem.types import BlockAnalysis
 
 # Tool names used for forced structured-output calls.
 _ANALYZE_BLOCK_TOOL = "analyze_block"
-_SCORE_CONTRADICTION_TOOL = "score_contradiction"
 _PROPOSE_AMENDMENT_TOOL = "propose_amendment"
 
 
@@ -52,9 +46,7 @@ class AnthropicLLMAdapter:
         max_retries: int = 3,
         api_key: str | None = None,
         process_block_model: str | None = None,
-        contradiction_model: str | None = None,
         process_block_prompt: str | None = None,
-        contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
         token_counter: TokenCounter | None = None,
     ) -> None:
@@ -62,14 +54,9 @@ class AnthropicLLMAdapter:
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._process_block_model = process_block_model
-        self._contradiction_model = contradiction_model
         self._process_block_prompt = (
             process_block_prompt if process_block_prompt is not None
             else BLOCK_ANALYSIS_PROMPT
-        )
-        self._contradiction_prompt = (
-            contradiction_prompt if contradiction_prompt is not None
-            else CONTRADICTION_PROMPT
         )
         self._valid_self_tags: frozenset[str] = (
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
@@ -209,23 +196,3 @@ class AnthropicLLMAdapter:
             "proposed_content": result.proposed_content,
             "rationale": result.rationale,
         }
-
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Score the logical contradiction between two memory blocks.
-
-        USE WHEN:   Called by consolidate() for candidate pairs above the cosine prefilter.
-        DON'T USE:  Testing — use MockLLMService instead (no API cost).
-        COST:       1 Anthropic API call via forced tool use.
-        RETURNS:    float ∈ [0.0, 1.0]; >= contradiction_threshold means active contradiction.
-        NEXT:       Score compared against MemoryConfig.contradiction_threshold in consolidate().
-        """
-        prompt = self._contradiction_prompt.format(block_a=block_a, block_b=block_b)
-        raw = await self._call_tool(
-            tool_name=_SCORE_CONTRADICTION_TOOL,
-            description="Score the logical contradiction between two memory blocks.",
-            schema=ContradictionScore.model_json_schema(),
-            prompt=prompt,
-            model=self._effective_model(self._contradiction_model),
-        )
-        result = ContradictionScore.model_validate(raw)
-        return float(result.score)

@@ -22,15 +22,10 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai.types.shared_params import ResponseFormatJSONObject
 from pydantic import ValidationError
 
-from elfmem.adapters.models import (
-    AmendmentProposalModel,
-    BlockAnalysisModel,
-    ContradictionScore,
-)
+from elfmem.adapters.models import AmendmentProposalModel, BlockAnalysisModel
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
-    CONTRADICTION_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -79,9 +74,7 @@ class OpenAILLMAdapter:
         base_url: str | None = None,
         api_key: str | None = None,
         process_block_model: str | None = None,
-        contradiction_model: str | None = None,
         process_block_prompt: str | None = None,
-        contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
         token_counter: TokenCounter | None = None,
     ) -> None:
@@ -90,14 +83,9 @@ class OpenAILLMAdapter:
         self._max_tokens = max_tokens
         self._max_retries = max_retries
         self._process_block_model = process_block_model
-        self._contradiction_model = contradiction_model
         self._process_block_prompt = (
             process_block_prompt if process_block_prompt is not None
             else BLOCK_ANALYSIS_PROMPT
-        )
-        self._contradiction_prompt = (
-            contradiction_prompt if contradiction_prompt is not None
-            else CONTRADICTION_PROMPT
         )
         self._valid_self_tags: frozenset[str] = (
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
@@ -240,27 +228,6 @@ class OpenAILLMAdapter:
                     "proposed_content": result.proposed_content,
                     "rationale": result.rationale,
                 }
-            except (ValidationError, json.JSONDecodeError) as exc:
-                last_exc = exc
-        raise last_exc  # type: ignore[misc]
-
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Score the logical contradiction between two memory blocks.
-
-        USE WHEN:   Called by consolidate() for candidate pairs above the cosine prefilter.
-        DON'T USE:  Testing — use MockLLMService instead (no API cost).
-        COST:       1 OpenAI API call. Retries up to max_retries on schema violations.
-        RETURNS:    float ∈ [0.0, 1.0]; >= contradiction_threshold means active contradiction.
-        NEXT:       Score compared against MemoryConfig.contradiction_threshold in consolidate().
-        """
-        prompt = self._contradiction_prompt.format(block_a=block_a, block_b=block_b)
-        model = self._effective_model(self._contradiction_model)
-        last_exc: Exception | None = None
-        for _ in range(self._max_retries):
-            text = await self._complete(prompt, model)
-            try:
-                result = ContradictionScore.model_validate_json(text)
-                return float(result.score)
             except (ValidationError, json.JSONDecodeError) as exc:
                 last_exc = exc
         raise last_exc  # type: ignore[misc]

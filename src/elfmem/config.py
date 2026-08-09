@@ -38,9 +38,8 @@ class LLMConfig(BaseModel):
     # provider whose key isn't literally named OPENAI_API_KEY.
     api_key_env: str | None = None
 
-    # Per-call model overrides — None = use model above
+    # Per-call model override — None = use model above
     process_block_model: str | None = None
-    contradiction_model: str | None = None
 
 
 class EmbeddingConfig(BaseModel):
@@ -65,7 +64,6 @@ class MemoryConfig(BaseModel):
     # Lifecycle thresholds
     inbox_threshold: int = 10
     curate_interval_hours: float = 40.0
-    prune_threshold: float = 0.05
     search_window_hours: float = 200.0
     vector_n_seeds_multiplier: int = 4
 
@@ -73,24 +71,16 @@ class MemoryConfig(BaseModel):
     # Bounds how many inbox blocks one consolidate()/dream() call processes.
     # None = unbounded (pre-ADR-0007 behaviour). Default 5 is a stopgap until
     # per-block commit durability lands (ADR 0007 Change 2): at 5 blocks ×
-    # (1 process_block + up to contradiction_top_k contradiction calls), one
-    # dream() call is bounded to ~13 min even at the ~14s/call local-adapter
-    # latency that motivated this cap. Half of inbox_threshold, so a normal
+    # 1 process_block call each, one dream() call is bounded well within the
+    # ~14s/call local-adapter latency that motivated this cap (originally
+    # also bounding contradiction_top_k contradiction calls, retired in v2
+    # step 7b — ADR 0010). Half of inbox_threshold, so a normal
     # auto-triggered batch still drains in one call. Override with --max /
     # this field once ADR 0007 Change 2 ships and a kill is no longer
     # catastrophic.
 
     # Quality thresholds
     self_alignment_threshold: float = 0.70
-    contradiction_threshold: float = 0.80
-    contradiction_similarity_prefilter: float = 0.40  # Pre-filter before LLM (~95% fewer calls)
-    contradiction_top_k: int = 10
-    # Hard cap on contradiction LLM calls per inbox block, applied after the
-    # cosine prefilter above. Bounds worst-case per-block cost to O(K)
-    # regardless of active-set size (ADR 0007). Provisional default, same
-    # spirit as the static thresholds in ADR 0006 — revisit via
-    # ConsolidationHealthMetrics.contradiction_cap_rate if it binds in
-    # practice. Tracked in issue #79.
     near_dup_exact_threshold: float = 0.95
     near_dup_near_threshold: float = 0.90
 
@@ -155,8 +145,8 @@ class PromptsConfig(BaseModel):
     """Configuration for LLM prompt templates.
 
     Three levels of override:
-    1. Inline string (process_block, contradiction)
-    2. File path (process_block_file, contradiction_file) — resolved relative to cwd
+    1. Inline string (process_block)
+    2. File path (process_block_file) — resolved relative to cwd
     3. Custom LLMService implementation passed directly to MemorySystem.__init__()
 
     Inline takes priority over file. If neither is set, library defaults
@@ -165,11 +155,9 @@ class PromptsConfig(BaseModel):
 
     # Level 1: Inline overrides — None = use library default
     process_block: str | None = None
-    contradiction: str | None = None
 
     # Level 2: File path overrides — None = not used
     process_block_file: str | None = None
-    contradiction_file: str | None = None
 
     # Tag vocabulary override — None = use VALID_SELF_TAGS from prompts.py
     valid_self_tags: list[str] | None = None
@@ -177,10 +165,6 @@ class PromptsConfig(BaseModel):
     def resolve_process_block(self) -> str:
         """Resolve the block analysis prompt: inline > file > default."""
         return self._resolve(self.process_block, self.process_block_file, "process_block")
-
-    def resolve_contradiction(self) -> str:
-        """Resolve the contradiction prompt: inline > file > default."""
-        return self._resolve(self.contradiction, self.contradiction_file, "contradiction")
 
     def resolve_valid_tags(self) -> frozenset[str]:
         """Resolve the valid tag vocabulary."""
@@ -192,7 +176,6 @@ class PromptsConfig(BaseModel):
     def validate_templates(self) -> None:
         """Raise ValueError if any resolved prompt is missing required variables."""
         _check_vars(self.resolve_process_block(), ["self_context", "block"], "process_block")
-        _check_vars(self.resolve_contradiction(), ["block_a", "block_b"], "contradiction")
 
     @staticmethod
     def _resolve(inline: str | None, filepath: str | None, prompt_name: str) -> str:
@@ -203,7 +186,6 @@ class PromptsConfig(BaseModel):
         from elfmem import prompts
         defaults = {
             "process_block": prompts.BLOCK_ANALYSIS_PROMPT,
-            "contradiction": prompts.CONTRADICTION_PROMPT,
         }
         return defaults[prompt_name]
 
@@ -285,6 +267,32 @@ class RescoreConfig(BaseModel):
     exclude_tags: list[str] = Field(default_factory=lambda: ["system/no-rescore"])
 
 
+class CorpusReviewConfig(BaseModel):
+    """Configuration for `elfmem review corpus` — deterministic staleness
+    detection (v2 step 6a).
+
+    Independent of the decay-tier system (`decay_lambda`, still live in
+    retrieval scoring and edge pruning): no lambda, no interaction with
+    curate(). This is the replacement for curate()'s decay-driven block
+    archival, which step 7a retired as evidenced-inert (see ADR 0009). A
+    block is a staleness candidate only when three weak, cheap-to-compute
+    signals all agree — long-unused, rarely reinforced, and never confirmed
+    by an outcome — rather than any single strong signal. Pure SQL/math; no
+    LLM call, unlike the duplicate/contradiction detection step 6b adds later.
+    """
+
+    stale_min_hours_since_reinforced: float = Field(default=720.0, gt=0.0)
+    # ~30 days. A block untouched for less than this is not a candidate
+    # regardless of its other signals.
+
+    stale_max_reinforcement_count: int = Field(default=2, ge=0)
+    # A block reinforced more than this many times has earned enough
+    # standing that staleness needs stronger evidence than "unused a while".
+
+    max_proposals: int = Field(default=20, ge=1)
+    # Per-cycle ceiling, same rationale as ReviewConfig.max_proposals below.
+
+
 class ReviewConfig(BaseModel):
     """Configuration for constitutional review (v0.18).
 
@@ -319,6 +327,7 @@ class ReviewConfig(BaseModel):
     max_proposals: int = Field(default=5, ge=1)
     min_block_evidence: float = Field(default=2.0, ge=0.0)
     min_age_days: float = Field(default=30.0, ge=0.0)
+    corpus: CorpusReviewConfig = Field(default_factory=lambda: CorpusReviewConfig())
 
 
 def _slug(text: str) -> str:
@@ -566,7 +575,6 @@ def render_default_config(project: ProjectConfig | None = None) -> str:
           inbox_threshold: {d.memory.inbox_threshold}
           curate_interval_hours: {d.memory.curate_interval_hours}
           self_alignment_threshold: {d.memory.self_alignment_threshold}
-          contradiction_threshold: {d.memory.contradiction_threshold}
           near_dup_exact_threshold: {d.memory.near_dup_exact_threshold}
           near_dup_near_threshold: {d.memory.near_dup_near_threshold}
           edge_score_threshold: {d.memory.edge_score_threshold}
@@ -588,7 +596,6 @@ def render_default_config(project: ProjectConfig | None = None) -> str:
         # Custom prompts (optional — uncomment to override library defaults):
         # prompts:
         #   process_block_file: "~/.elfmem/prompts/process_block.txt"
-        #   contradiction_file: "~/.elfmem/prompts/contradiction.txt"
         """)
 
     return project_section + settings

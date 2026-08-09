@@ -47,7 +47,9 @@ from elfmem.config import ElfmemConfig
 from elfmem.exceptions import ElfmemError
 from elfmem.guide import get_guide
 from elfmem.types import (
+    ArchiveReason,
     BlockSummary,
+    CorpusReviewResult,
     CurateResult,
     EditResult,
     ForgetResult,
@@ -1174,17 +1176,6 @@ def dream(
             ),
         ),
     ] = False,
-    skip_contradictions: Annotated[
-        bool,
-        typer.Option(
-            "--skip-contradictions",
-            help=(
-                "Keep LLM scoring + summaries but skip O(n²) contradiction "
-                "detection. For large structured ingest where contradictions "
-                "are unlikely (signed exports, trusted bundles)."
-            ),
-        ),
-    ] = False,
     rescore: Annotated[
         bool,
         typer.Option(
@@ -1212,19 +1203,18 @@ def dream(
     ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Consolidate pending knowledge: embed, align, detect contradictions.
+    """Consolidate pending knowledge: embed, align, promote to active memory.
 
     Default mode processes inbox blocks with LLM scoring, bounded to
     ``consolidation.max_inbox_per_run`` blocks per call (default 5 — ADR
     0007). A larger backlog drains across repeated calls; check the
     ``inbox_remaining`` on the result. Flags adjust the LLM workload
-    (skip-contradictions, --no-llm) or extend the work to include
-    refreshing existing active blocks (--rescore).
+    (--no-llm) or extend the work to include refreshing existing active
+    blocks (--rescore).
 
     USE WHEN:
       Default (no flags): standard consolidation after a learn batch.
       --no-llm:           LLM down / bulk load / cost-sensitive batch.
-      --skip-contradictions: large structured ingest, contradictions unlikely.
       --rescore:          catch-up after --no-llm; periodic hygiene; refresh
                           alignment as the agent's identity evolves.
       --max N:            override the inbox-processing budget for this call
@@ -1248,7 +1238,6 @@ def dream(
     result = _run(_dream(
         db_path, config_path,
         skip_llm=no_llm,
-        skip_contradictions=skip_contradictions,
         rescore=rescore,
         max_count=max_count,
     ))
@@ -1267,7 +1256,7 @@ def curate(
     ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Archive decayed blocks, prune weak edges, reinforce top knowledge."""
+    """Prune weak/decayed edges, reinforce top knowledge."""
     db_path, config_path = _resolve_paths(db, config)
     result: CurateResult = _run(_curate(db_path, config_path))
     _json(result.to_dict()) if json_output else typer.echo(str(result))
@@ -2584,6 +2573,93 @@ def review_default(
     )
 
 
+def _render_corpus_proposal(idx: int, total: int, proposal: Any) -> None:
+    """Render one corpus-review proposal block to stdout (interactive flow)."""
+    short = proposal.block_id[:8]
+    typer.echo("")
+    typer.echo(f"[{idx}/{total}] block {short}… ({proposal.kind})")
+    typer.echo(f"  {proposal.reason}")
+    typer.echo(f"  {proposal.content_preview}")
+
+
+@review_app.command("corpus")
+def review_corpus_cmd(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG"),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes", "-y",
+            help="Auto-accept every proposal (skip interactive prompt).",
+        ),
+    ] = False,
+) -> None:
+    """Run a corpus-level review cycle: deterministic staleness detection.
+
+    Default: interactive — walks through each proposal and prompts
+    accept/reject/skip/quit. With --json or when stdin/stdout is not a
+    TTY, the proposals are emitted as JSON and nothing is applied.
+
+    Zero LLM calls. Distinct from the bare `elfmem review` (constitutional
+    review) — this reviews ordinary memory for staleness, not drift between
+    recent activity and self/constitutional blocks.
+    """
+    db_path, config_path = _resolve_paths(db, config)
+    result: CorpusReviewResult = _run(_review_corpus(db_path, config_path))
+
+    if json_output or not _ttys_attached():
+        _json(result.to_dict())
+        return
+
+    if not result.proposals:
+        typer.echo(
+            f"Corpus review: {result.reviewed_count} active block(s) reviewed, "
+            "no proposals."
+        )
+        return
+
+    n = len(result.proposals)
+    typer.echo(
+        f"Reviewing {result.reviewed_count} active block(s); "
+        f"{n} proposal(s)."
+    )
+
+    accepted = rejected = skipped = quit_count = 0
+    for i, prop in enumerate(result.proposals, start=1):
+        _render_corpus_proposal(i, n, prop)
+        if yes:
+            choice = "a"
+        else:
+            choice = typer.prompt(
+                "  Action [a]ccept / [r]eject / [s]kip / [q]uit",
+                default="s", show_default=False,
+            ).strip().lower()[:1]
+        if choice == "a":
+            outcome = _run(_forget(
+                db_path, config_path, prop.block_id, reason=ArchiveReason.DECAYED,
+            ))
+            accepted += 1
+            typer.echo(f"  {outcome}")
+        elif choice == "q":
+            quit_count = n - i + 1
+            break
+        elif choice == "r":
+            rejected += 1
+            typer.echo("  Rejected.")
+        else:
+            skipped += 1
+            typer.echo("  Skipped.")
+
+    typer.echo("")
+    typer.echo(
+        f"Done. Accepted: {accepted}, rejected: {rejected}, "
+        f"skipped: {skipped}, abandoned: {quit_count}."
+    )
+
+
 @review_app.command("accept")
 def review_accept(
     block_id: str,
@@ -2784,9 +2860,20 @@ async def _edit(db_path: str, config: str | None, block_id: str, content: str) -
         return await mem.edit(block_id, content)
 
 
-async def _forget(db_path: str, config: str | None, block_id: str) -> ForgetResult:
+async def _forget(
+    db_path: str,
+    config: str | None,
+    block_id: str,
+    *,
+    reason: ArchiveReason = ArchiveReason.FORGOTTEN,
+) -> ForgetResult:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
-        return await mem.forget(block_id)
+        return await mem.forget(block_id, reason=reason)
+
+
+async def _review_corpus(db_path: str, config: str | None) -> CorpusReviewResult:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.review_corpus()
 
 
 async def _ls(
@@ -2904,7 +2991,6 @@ async def _dream(
     config: str | None,
     *,
     skip_llm: bool = False,
-    skip_contradictions: bool = False,
     rescore: bool = False,
     max_count: int | None = None,
 ) -> Any:
@@ -2917,7 +3003,6 @@ async def _dream(
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.dream(
             skip_llm=skip_llm,
-            skip_contradictions=skip_contradictions,
             rescore=rescore,
             rescore_max=max_count,
             inbox_max=max_count,

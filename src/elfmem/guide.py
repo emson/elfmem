@@ -102,19 +102,14 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
-            "deduplicated, edges_created, contradictions_detected counts, plus a "
-            "contradictions list of ContradictionFinding records carrying per-pair "
-            "detection-time signals (cosine, tag_jaccard, category_match, hours_apart) "
-            "agents can use to gate suppression rules. "
+            "deduplicated, edges_created counts. "
             "inbox_remaining reports blocks left after this call's budget "
             "(consolidation.max_inbox_per_run, default 5) — nonzero means call "
             "dream() again to keep draining. "
-            "Also includes .health (ConsolidationHealthMetrics): six diagnostic "
-            "ratios per cycle (edge_creation_rate, contradiction_detection_rate, "
-            "prefilter_pass_rate, promotion_rate, deduplication_rate, "
-            "contradiction_cap_rate) for monitoring the static thresholds in "
-            "operations/consolidate.py — see ADR 0006 and ADR 0007. "
-            ".health is None when called on an empty inbox. "
+            "Also includes .health (ConsolidationHealthMetrics): three diagnostic "
+            "ratios per cycle (edge_creation_rate, promotion_rate, deduplication_rate) "
+            "for monitoring the static thresholds in operations/consolidate.py — "
+            "see ADR 0006. .health is None when called on an empty inbox. "
             "None if inbox was empty. None is not an error."
         ),
         next=(
@@ -205,7 +200,13 @@ GUIDES: dict[str, AgentGuide] = {
             "ForgetResult. status='forgotten' on a real archive; "
             "status='already_archived' if it was archived already — safe no-op, not an error."
         ),
-        next="The block no longer appears in frame(), recall(), or ls().",
+        next=(
+            "The block no longer appears in frame(), recall(), or ls(). "
+            "Pass reason=ArchiveReason.DECAYED when applying an accepted "
+            "review_corpus() proposal, so the audit trail distinguishes a "
+            "direct decision from an accepted staleness finding — default "
+            "is ArchiveReason.FORGOTTEN."
+        ),
         example=(
             "result = await system.forget(block_id)\n"
             "print(result)  # Forgot block a1b2c3d4."
@@ -283,8 +284,7 @@ GUIDES: dict[str, AgentGuide] = {
             "ConsolidateResult with counts: processed (blocks processed this call, "
             "capped by the budget — not necessarily the whole inbox), "
             "promoted (moved to active), deduplicated (near-duplicates found), "
-            "edges_created (knowledge graph edges built), contradictions_detected "
-            "(opposing pairs detected and inserted into the contradictions table), "
+            "edges_created (knowledge graph edges built), "
             "inbox_remaining (blocks left after this call's budget — nonzero "
             "means call consolidate()/dream() again to keep draining)."
         ),
@@ -352,7 +352,7 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "curate": AgentGuide(
         name="curate",
-        what="Maintenance: archive decayed blocks, prune weak edges, reinforce top knowledge.",
+        what="Maintenance: prune weak/decayed edges, reinforce top knowledge.",
         when=(
             "Explicit maintenance after heavy use, or when retrieval quality degrades. "
             "Also runs automatically when curate_interval_hours elapses after consolidate()."
@@ -363,9 +363,11 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         cost="Fast. Database operations only; no LLM calls.",
         returns=(
-            "CurateResult with counts: archived (decayed blocks removed from active), "
-            "edges_pruned (weak graph edges removed), "
-            "reinforced (top-N blocks had reinforcement boosted)."
+            "CurateResult with counts: edges_pruned (weak graph edges removed), "
+            "edges_decayed (temporally-decayed edges removed), "
+            "reinforced (top-N blocks had reinforcement boosted). "
+            "Decayed blocks are no longer archived by curate() — use "
+            "review_corpus() (elfmem review corpus) for staleness detection instead."
         ),
         next=(
             "Memory is now cleaner. "
@@ -373,7 +375,7 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         example=(
             "result = await system.curate()\n"
-            "print(result)  # Curated: 2 archived, 1 edges pruned, 5 reinforced."
+            "print(result)  # Curated: 1 edges pruned, 5 reinforced."
         ),
     ),
     "rescore": AgentGuide(
@@ -1127,6 +1129,42 @@ GUIDES: dict[str, AgentGuide] = {
             "            drift_score=proposal.drift_score,\n"
             "        )\n"
             "        print(f'Applied amendment {amend.amendment_id}')"
+        ),
+    ),
+    "review_corpus": AgentGuide(
+        name="review_corpus",
+        what=(
+            "READ-ONLY: surface ordinary blocks that have quietly stopped "
+            "earning their place — long-unused, rarely reinforced, never "
+            "confirmed by an outcome. Zero LLM calls (pure SQL/math). "
+            "Applies NOTHING. The corpus-level counterpart to "
+            "review_constitutional() — checks staleness, not drift."
+        ),
+        when=(
+            "Periodically, as memory accumulates, to find candidates for "
+            "forget() before they silently pile up. Safe to call any time."
+        ),
+        when_not=(
+            "Expecting automatic archival — nothing is applied until you "
+            "call forget() per proposal you accept. Expecting duplicate or "
+            "contradiction detection — that's a later addition, not built yet."
+        ),
+        cost="Zero LLM calls — one read of all active blocks, pure comparison.",
+        returns=(
+            "CorpusReviewResult with reviewed_count and proposals (each a "
+            "CorpusProposal: block_id, kind='stale', reason, content_preview)."
+        ),
+        next=(
+            "For each proposal you accept, call "
+            "forget(proposal.block_id, reason=ArchiveReason.DECAYED)."
+        ),
+        example=(
+            "result = await system.review_corpus()\n"
+            "for proposal in result.proposals:\n"
+            "    print(proposal)  # [stale] a1b2c3d4…: not reinforced in 812h ...\n"
+            "    if agent_decides_to_accept(proposal):\n"
+            "        from elfmem.types import ArchiveReason\n"
+            "        await system.forget(proposal.block_id, reason=ArchiveReason.DECAYED)"
         ),
     ),
     "accept_amendment": AgentGuide(

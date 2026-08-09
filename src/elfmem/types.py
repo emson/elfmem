@@ -262,47 +262,14 @@ class LearnDocumentResult:
 
 
 @dataclass
-class ContradictionFinding:
-    """One contradiction detected during consolidate(), with detection-time signals.
-
-    Surfaced on ``ConsolidateResult.contradictions`` so agents can apply
-    per-deployment suppression rules (e.g., "high cosine with high tag
-    overlap likely means same topic, not contradiction") on dream output
-    without recomputing from current block state. The features capture
-    signal at the moment of detection — block content / tags / categories
-    may have changed by the time the row is read at recall.
-    """
-
-    block_a_id: str
-    block_b_id: str
-    score: float          # LLM contradiction confidence in [0, 1]
-    cosine: float         # embedding similarity at detection (clamped ≥ 0)
-    tag_jaccard: float    # |A∩B| / |A∪B| over the two blocks' tag sets
-    category_match: bool  # block-level proxy for shared framing
-    hours_apart: float    # |hours_a − hours_b| at detection time
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "block_a_id": self.block_a_id,
-            "block_b_id": self.block_b_id,
-            "score": self.score,
-            "cosine": self.cosine,
-            "tag_jaccard": self.tag_jaccard,
-            "category_match": self.category_match,
-            "hours_apart": self.hours_apart,
-        }
-
-
-@dataclass
 class ConsolidationHealthMetrics:
     """Diagnostic ratios from one consolidation cycle.
 
     Observability-only — no policy or runtime behaviour reads these. They
-    exist so operators (and future plans) can detect whether any of the
-    four static thresholds in ``operations/consolidate.py``
-    (``EDGE_SCORE_THRESHOLD``, ``CONTRADICTION_THRESHOLD``,
-    ``CONTRADICTION_SIMILARITY_PREFILTER``, per-tier ``decay_lambda``) is
-    systematically misbehaving on a real deployment.
+    exist so operators (and future plans) can detect whether either of the
+    two remaining static thresholds in ``operations/consolidate.py``
+    (``EDGE_SCORE_THRESHOLD``, per-tier ``decay_lambda``) is systematically
+    misbehaving on a real deployment.
 
     Trigger conditions for revisiting multi-parameter self-tuning are in
     ADR 0006. Field semantics:
@@ -310,19 +277,10 @@ class ConsolidationHealthMetrics:
     - ``edge_creation_rate``: edges created per promoted block. Falling
       to near-zero suggests EDGE_SCORE_THRESHOLD is too strict;
       ballooning suggests it's too loose.
-    - ``contradiction_detection_rate``: contradictions flagged per pair
-      check. Persistently zero means contradictions aren't being found;
-      persistently high means the threshold may be too loose.
-    - ``prefilter_pass_rate``: pairs above the cosine prefilter per pair
-      check. Answers "is the prefilter spending LLM calls on noise?"
     - ``promotion_rate``: same signal ``ConsolidationPolicy`` uses, but
       surfaced for operator corroboration.
     - ``deduplication_rate``: sanity check that dedup is doing useful
       work, not just rejecting most of the inbox.
-    - ``contradiction_cap_rate`` (ADR 0007): of the pairs that clear the
-      cosine prefilter, the fraction skipped because they fell outside the
-      per-block ``contradiction_top_k`` cap. Persistently non-zero on a real
-      deployment is the reopen trigger for raising ``contradiction_top_k``.
 
     All fields are in [0.0, 1.0] except ``edge_creation_rate`` which is
     an unbounded non-negative ratio (a single promoted block can form up
@@ -330,20 +288,14 @@ class ConsolidationHealthMetrics:
     """
 
     edge_creation_rate: float
-    contradiction_detection_rate: float
-    prefilter_pass_rate: float
     promotion_rate: float
     deduplication_rate: float
-    contradiction_cap_rate: float = 0.0
 
     def to_dict(self) -> dict[str, float]:
         return {
             "edge_creation_rate": round(self.edge_creation_rate, 3),
-            "contradiction_detection_rate": round(self.contradiction_detection_rate, 3),
-            "prefilter_pass_rate": round(self.prefilter_pass_rate, 3),
             "promotion_rate": round(self.promotion_rate, 3),
             "deduplication_rate": round(self.deduplication_rate, 3),
-            "contradiction_cap_rate": round(self.contradiction_cap_rate, 3),
         }
 
 
@@ -353,16 +305,6 @@ class ConsolidateResult:
     promoted: int
     deduplicated: int
     edges_created: int
-    # Contradictions detected and inserted into the contradictions table this
-    # call. Detection runs on every above-prefilter pair unless
-    # ``skip_contradictions=True``; the count was previously invisible from
-    # ``ConsolidateResult`` even though detection ran and rows were written.
-    # Surfaced in v0.14.0 (issue #50 item 1).
-    contradictions_detected: int = 0
-    # Per-pair findings with detection-time features (cosine, tag_jaccard,
-    # category_match, hours_apart). Enables agent-side rules without an
-    # extra DB query. Empty when no pairs detected.
-    contradictions: list[ContradictionFinding] = field(default_factory=list)
     # Deep-sleep rescoring counts (v0.13.3). Populated when dream() is
     # called with rescore=True; otherwise zeros. Tracks the second phase
     # of dream — refreshing existing active blocks, separate from the
@@ -403,8 +345,6 @@ class ConsolidateResult:
             if self.deduplicated:
                 parts.append(f"{self.deduplicated} deduped")
             parts.append(f"{self.edges_created} edges")
-            if self.contradictions_detected:
-                parts.append(f"{self.contradictions_detected} contradictions")
             if self.blocked_supersessions:
                 parts.append(f"{self.blocked_supersessions} constitutional supersessions blocked")
         if self.rescored or self.rescore_failed:
@@ -431,8 +371,6 @@ class ConsolidateResult:
             "promoted": self.promoted,
             "deduplicated": self.deduplicated,
             "edges_created": self.edges_created,
-            "contradictions_detected": self.contradictions_detected,
-            "contradictions": [c.to_dict() for c in self.contradictions],
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
             "health": self.health.to_dict() if self.health is not None else None,
@@ -443,7 +381,6 @@ class ConsolidateResult:
 
 @dataclass
 class CurateResult:
-    archived: int
     edges_pruned: int
     reinforced: int
     constitutional_reinforced: int = 0
@@ -452,12 +389,10 @@ class CurateResult:
 
     @property
     def summary(self) -> str:
-        if not any([self.archived, self.edges_pruned, self.reinforced,
+        if not any([self.edges_pruned, self.reinforced,
                     self.constitutional_reinforced, self.edges_decayed]):
             return "Curated: nothing required."
         parts: list[str] = []
-        if self.archived:
-            parts.append(f"{self.archived} archived")
         if self.edges_pruned:
             parts.append(f"{self.edges_pruned} edges pruned")
         if self.edges_decayed:
@@ -482,7 +417,6 @@ class CurateResult:
 
     def to_dict(self) -> dict[str, int]:
         return {
-            "archived": self.archived,
             "edges_pruned": self.edges_pruned,
             "reinforced": self.reinforced,
             "constitutional_reinforced": self.constitutional_reinforced,
@@ -1458,6 +1392,77 @@ class ConstitutionalReviewResult:
             "skipped_count": self.skipped_count,
             "insufficient_history": self.insufficient_history,
             "failed_proposal_count": self.failed_proposal_count,
+        }
+
+
+# ── Corpus review types (v2 step 6a) ─────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class CorpusProposal:
+    """One proposed action from `review_corpus()`, awaiting accept/reject.
+
+    USE WHEN: Surfacing a corpus-level review finding for explicit review.
+    DON'T USE WHEN: Applying it — call ``forget(block_id, reason=...)``.
+    COST: Zero by itself (it is a value object).
+    RETURNS: Which block, what kind of finding, and why.
+    NEXT: Accept -> forget(block_id, reason=ArchiveReason.DECAYED); reject -> discard.
+
+    ``kind`` is 'stale' today (deterministic, no LLM). 'duplicate' and
+    'contradiction' (LLM-detected) are a later addition — this field exists
+    now so that addition doesn't need a new type, only a new value.
+    """
+
+    block_id: str
+    kind: str
+    reason: str
+    content_preview: str
+
+    @property
+    def summary(self) -> str:
+        return f"[{self.kind}] {self.block_id[:8]}…: {self.reason}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "block_id": self.block_id,
+            "kind": self.kind,
+            "reason": self.reason,
+            "content_preview": self.content_preview,
+        }
+
+
+@dataclass(frozen=True)
+class CorpusReviewResult:
+    """Result of ``review_corpus()`` — proposed archivals + counts.
+
+    USE WHEN: The agent has called a corpus review cycle.
+    DON'T USE WHEN: You only need the raw proposals — read ``.proposals``.
+    COST: Zero LLM calls for 'stale' proposals (pure SQL/math).
+    RETURNS: Proposals plus the number of active blocks considered.
+    NEXT: Iterate ``.proposals`` and call ``forget()`` per choice.
+    """
+
+    reviewed_count: int
+    proposals: list[CorpusProposal] = field(default_factory=list)
+
+    @property
+    def summary(self) -> str:
+        n = len(self.proposals)
+        if n == 0:
+            return f"Corpus review: {self.reviewed_count} reviewed, no proposals."
+        noun = "proposal" if n == 1 else "proposals"
+        return f"Corpus review: {n} {noun} ({self.reviewed_count} reviewed)."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "reviewed_count": self.reviewed_count,
+            "proposals": [p.to_dict() for p in self.proposals],
         }
 
 

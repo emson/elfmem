@@ -22,9 +22,6 @@ class MockLLMService:
         tag_overrides: Substring → tags mapping; first match wins.
         default_summary_prefix: Prefix prepended to block content for default summary.
         summary_overrides: Substring → exact summary mapping; first match wins.
-        default_contradiction: Default contradiction score (0.0–1.0).
-        contradiction_overrides: (sub_a, sub_b) → score; matches when
-            sub_a in block_a AND sub_b in block_b.
     """
 
     def __init__(
@@ -36,8 +33,6 @@ class MockLLMService:
         tag_overrides: dict[str, list[str]] | None = None,
         default_summary_prefix: str = "Summary: ",
         summary_overrides: dict[str, str] | None = None,
-        default_contradiction: float = 0.1,
-        contradiction_overrides: dict[tuple[str, str], float] | None = None,
         amendment_overrides: dict[str, dict[str, str]] | None = None,
         amendment_raise_for: list[str] | None = None,
     ) -> None:
@@ -47,8 +42,6 @@ class MockLLMService:
         self._tag_overrides = tag_overrides or {}
         self._default_summary_prefix = default_summary_prefix
         self._summary_overrides = summary_overrides or {}
-        self._default_contradiction = default_contradiction
-        self._contradiction_overrides = contradiction_overrides or {}
         # Amendment-proposal overrides: substring → {"proposed_content", "rationale"}.
         # If amendment_raise_for is set, a propose_amendment call where the block
         # content contains any of those substrings raises RuntimeError — exercises
@@ -56,7 +49,6 @@ class MockLLMService:
         self._amendment_overrides = amendment_overrides or {}
         self._amendment_raise_for = list(amendment_raise_for or [])
         self.process_block_calls: int = 0
-        self.contradiction_calls: int = 0
         self.propose_amendment_calls: int = 0
 
     # ── Public attribute aliases ──────────────────────────────────────────────
@@ -94,14 +86,6 @@ class MockLLMService:
     @alignment_overrides.setter
     def alignment_overrides(self, value: dict[str, float]) -> None:
         self._alignment_overrides = value
-
-    @property
-    def contradiction_overrides(self) -> dict[tuple[str, str], float]:
-        return self._contradiction_overrides
-
-    @contradiction_overrides.setter
-    def contradiction_overrides(self, value: dict[tuple[str, str], float]) -> None:
-        self._contradiction_overrides = value
 
     # ── Protocol methods ──────────────────────────────────────────────────────
 
@@ -150,14 +134,6 @@ class MockLLMService:
                 f"{len(evidence_summaries)} evidence summaries considered."
             ),
         }
-
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Return contradiction score. Checks overrides first, then default."""
-        self.contradiction_calls += 1
-        for (sub_a, sub_b), score in self._contradiction_overrides.items():
-            if sub_a in block_a and sub_b in block_b:
-                return score
-        return self._default_contradiction
 
     # ── Private helpers ───────────────────────────────────────────────────────
 

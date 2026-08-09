@@ -768,16 +768,24 @@ text wholesale.
 The full v2 is a large change. It decomposes into independently shippable
 pieces, ordered by value per unit of risk:
 
-| Step | Ship | Fixes | Risk |
-|---|---|---|---|
-| **1** | Pin guard on supersession + supersession log | stops active data loss | trivial |
-| **2** | `edit()` / `forget()` / `ls()` | RC1, the headline complaint | low |
-| **3** | `doctor --resolve` + `.env` everywhere + preflight | RC4 | low |
-| **4** | `init` writes zero blocks | RC5 | low |
-| **5** | LLM gateway profiles + `api_key_env` | OpenRouter/local | low |
-| **6** | `elfmem review` corpus-level, proposal-only | RC2 | medium |
-| **7** | Retire pairwise contradiction + decay | cost, complexity | medium |
-| **8** | Markdown substrate + derived index | structural | high |
+| Step | Ship | Fixes | Risk | Status |
+|---|---|---|---|---|
+| **1** | Pin guard on supersession + supersession log | stops active data loss | trivial | DONE |
+| **2** | `edit()` / `forget()` / `ls()` | RC1, the headline complaint | low | DONE |
+| **3** | `doctor --resolve` + `.env` everywhere + preflight | RC4 | low | DONE |
+| **4** | `init` writes zero blocks | RC5 | low | DONE |
+| **5** | LLM gateway profiles + `api_key_env` | OpenRouter/local | low | DONE |
+| **6** | `elfmem review` corpus-level, proposal-only | RC2 | medium | 6a DONE, 6b pending |
+| **7a** | Retire decay-driven block archival (ADR 0009) | cost, complexity | low | DONE |
+| **7b** | Retire pairwise contradiction detection (ADR 0010) | cost, complexity | medium | DONE |
+| **8** | Markdown substrate + derived index | structural | high | not started |
+
+Step 7 split into 7a/7b after grounding showed the two retirements have
+different replacement-readiness and different blast radius: 7a's replacement
+(6a) had already shipped and the archival trigger was evidenced-inert
+(0 real archivals); 7b accepts a real, disclosed coverage gap for new
+content until step 6b (LLM corpus-level review) ships. See ADR 0009 and
+ADR 0010 for the full grounding and consequences.
 
 **Steps 1-5 are worth doing regardless of whether step 8 is ever taken.** They
 are small, independently valuable, and each closes a reported problem. Step 1

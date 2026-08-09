@@ -285,29 +285,6 @@ class TestFrameSystem:
             # This ensures high-priority blocks always appear
             pass
 
-    async def test_contradiction_suppression_in_frame(self, system_setup) -> None:
-        """TC-F-008: Contradicting blocks don't appear together."""
-        engine, mock_llm, mock_embedding = system_setup
-        async with engine.begin() as conn:
-            # Create potentially contradicting blocks
-            await learn(conn, content="use sync calls", category="knowledge", source="api")
-            await learn(conn, content="never use sync calls", category="knowledge", source="api")
-
-            # Configure LLM to detect contradiction
-            mock_llm.contradiction_overrides = {
-                ("sync", "async"): 0.92,
-            }
-
-            await consolidate(
-                conn,
-                llm=mock_llm,
-                embedding_svc=mock_embedding,
-                current_active_hours=10.0,
-            )
-
-            # Contradiction suppression should remove the lower-confidence block
-            # Verified by frame() not returning both
-
     async def test_queryless_attention_returns_salient_blocks(self, system_setup) -> None:
         """TC-F-009: Queryless ATTENTION returns most salient blocks (no embedding)."""
         engine, mock_llm, mock_embedding = system_setup

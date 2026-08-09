@@ -288,20 +288,6 @@ class TestAnthropicAdapterTokenRecording:
         )
         await adapter.process_block("block content", "self context")  # must not raise
 
-    @pytest.mark.asyncio
-    async def test_records_tokens_for_contradiction_call(self):
-        counter = TokenCounter()
-        adapter = AnthropicLLMAdapter(model="claude-haiku-4-5-20251001", token_counter=counter)
-        adapter._client.messages.create = AsyncMock(
-            return_value=_make_anthropic_response(
-                input_tokens=50, output_tokens=10, tool_input={"score": 0.2}
-            )
-        )
-        await adapter.detect_contradiction("block A", "block B")
-        snap = counter.snapshot()
-        assert snap.llm_input_tokens == 50
-        assert snap.llm_calls == 1
-
 
 # ── OpenAILLMAdapter token recording ──────────────────────────────────────────
 

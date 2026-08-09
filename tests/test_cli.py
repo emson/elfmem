@@ -58,7 +58,7 @@ def mock_managed(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         text="recalled context", blocks=[], frame_name="attention"
     )
     mem.status.return_value = _make_system_status(health="good")
-    mem.curate.return_value = CurateResult(archived=0, edges_pruned=0, reinforced=0)
+    mem.curate.return_value = CurateResult(edges_pruned=0, reinforced=0)
     mem.outcome.return_value = OutcomeResult(
         blocks_updated=1,
         mean_confidence_delta=0.0,
@@ -245,11 +245,11 @@ class TestCurateCommand:
         result = runner.invoke(app, ["curate", "--db", "test.db"])
         assert result.exit_code == 0
 
-    def test_json_has_archived_key(self, mock_managed: AsyncMock) -> None:
+    def test_json_has_edges_pruned_key(self, mock_managed: AsyncMock) -> None:
         result = runner.invoke(app, ["curate", "--db", "test.db", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
-        assert "archived" in data
+        assert "edges_pruned" in data
 
 
 # ── guide command ─────────────────────────────────────────────────────────────

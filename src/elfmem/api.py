@@ -65,6 +65,7 @@ from elfmem.types import (
     ConnectsResult,
     ConsolidateResult,
     ConstitutionalReviewResult,
+    CorpusReviewResult,
     CurateResult,
     DisconnectResult,
     EditResult,
@@ -766,7 +767,7 @@ class MemorySystem:
         return result
 
     async def consolidate(
-        self, *, skip_llm: bool = False, skip_contradictions: bool = False,
+        self, *, skip_llm: bool = False,
         max_inbox_per_run: int | None = None,
     ) -> ConsolidateResult:
         """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
@@ -778,9 +779,7 @@ class MemorySystem:
         DON'T USE WHEN: Inbox is empty — safe to call but returns zero counts.
 
         COST: LLM call per block (alignment scoring + tag inference). Slow for
-        large inboxes; fast when inbox is small. Options for bulk ingestion:
-        - skip_contradictions=True: keeps LLM summaries + alignment but skips
-          O(n²) contradiction detection. Best for large ingestion batches.
+        large inboxes; fast when inbox is small.
         - skip_llm=True: bypasses ALL LLM calls (embed + promote only).
           Fastest but blocks get neutral scoring and no summaries.
 
@@ -793,12 +792,8 @@ class MemorySystem:
         convention for its own ``max_count``.
 
         RETURNS: ConsolidateResult with counts: processed, promoted,
-        deduplicated, edges_created, contradictions_detected, inbox_remaining.
-        processed=0 means inbox was empty. contradictions_detected is the
-        per-call LLM verdict (above-threshold pairs found this batch), not a
-        cumulative DB row count — some pairs may already exist in the
-        contradictions table from prior calls and are silently deduplicated
-        on insert.
+        deduplicated, edges_created, inbox_remaining. processed=0 means
+        inbox was empty.
 
         NEXT: Promoted blocks are now searchable via frame() and recall().
         Also triggers curate() automatically if curate_interval has elapsed.
@@ -815,15 +810,11 @@ class MemorySystem:
                 embedding_svc=self._embedding,
                 current_active_hours=current_hours,
                 self_alignment_threshold=mem.self_alignment_threshold,
-                contradiction_threshold=mem.contradiction_threshold,
                 near_dup_exact_threshold=mem.near_dup_exact_threshold,
                 near_dup_near_threshold=mem.near_dup_near_threshold,
                 edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
-                contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
-                contradiction_top_k=mem.contradiction_top_k,
                 skip_llm=skip_llm,
-                skip_contradictions=skip_contradictions,
                 max_inbox_per_run=budget,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
@@ -848,7 +839,6 @@ class MemorySystem:
                 await _curate(
                     conn,
                     current_active_hours=current_hours,
-                    prune_threshold=mem.prune_threshold,
                     edge_prune_threshold=mem.edge_prune_threshold,
                     reinforce_top_n=mem.curate_reinforce_top_n,
                 )
@@ -1028,7 +1018,9 @@ class MemorySystem:
         self._record_op("edit", result.summary)
         return result
 
-    async def forget(self, block_id: str) -> ForgetResult:
+    async def forget(
+        self, block_id: str, *, reason: ArchiveReason = ArchiveReason.FORGOTTEN,
+    ) -> ForgetResult:
         """Archive a block by explicit request — the direct delete path.
 
         USE WHEN: A memory should no longer be active — it's wrong, no
@@ -1049,6 +1041,15 @@ class MemorySystem:
 
         NEXT: The block no longer appears in frame(), recall(), or ls().
 
+        Args:
+            block_id: The block to archive.
+            reason: Audit trail for *why* — defaults to FORGOTTEN (a direct
+                    human/agent decision). `review_corpus()` (v2 step 6a)
+                    passes DECAYED when applying an accepted staleness
+                    proposal, so `archive_reason` distinguishes "I decided
+                    to remove this" from "corpus review found it stale and
+                    I accepted that finding" in the same audit column.
+
         Raises:
             BlockNotFound: block_id doesn't exist at all (any status).
 
@@ -1067,11 +1068,56 @@ class MemorySystem:
                 return result
             await update_block_status(
                 conn, block_id, "archived",
-                archive_reason=ArchiveReason.FORGOTTEN.value,
+                archive_reason=reason.value,
             )
         self._frame_cache.clear()
         result = ForgetResult(block_id=block_id, status="forgotten")
         self._record_op("forget", result.summary)
+        return result
+
+    async def review_corpus(self) -> CorpusReviewResult:
+        """Run a corpus-level review cycle: deterministic staleness detection.
+
+        USE WHEN: Periodically, to find blocks that have quietly stopped
+        earning their place — long-unused, rarely reinforced, never
+        confirmed by an outcome. The corpus-level counterpart to
+        review_constitutional(): proposes, never mutates on its own.
+
+        DON'T USE WHEN: You want automatic archival — nothing is applied
+        until you call forget(proposal.block_id, reason=ArchiveReason.DECAYED)
+        per proposal you accept. See `elfmem review corpus` for the
+        interactive accept/reject/skip walkthrough.
+
+        COST: Zero LLM calls — pure SQL/math over already-active blocks.
+        (Duplicate/contradiction detection, which does need one whole-corpus
+        LLM call, is a later addition to this method's output, not yet
+        built.)
+
+        RETURNS: CorpusReviewResult with reviewed_count and a list of
+        CorpusProposal (kind='stale' today).
+
+        NEXT: Iterate `.proposals`; for each you accept, call
+        `forget(proposal.block_id, reason=ArchiveReason.DECAYED)`.
+
+        Example::
+
+            result = await system.review_corpus()
+            for p in result.proposals:
+                print(p)  # [stale] a1b2c3d4…: not reinforced in 812h (reinforced 0x, ...)
+        """
+        from elfmem.operations.corpus_review import review_corpus as _review_corpus
+
+        current_hours = self._current_active_hours()
+        cfg = self._config.review.corpus
+        async with self._engine.connect() as conn:
+            result = await _review_corpus(
+                conn,
+                current_active_hours=current_hours,
+                min_hours_since_reinforced=cfg.stale_min_hours_since_reinforced,
+                max_reinforcement_count=cfg.stale_max_reinforcement_count,
+                max_proposals=cfg.max_proposals,
+            )
+        self._record_op("review_corpus", result.summary)
         return result
 
     async def ls(
@@ -1197,7 +1243,6 @@ class MemorySystem:
         self,
         *,
         skip_llm: bool = False,
-        skip_contradictions: bool = False,
         rescore: bool = False,
         rescore_max: int | None = None,
         inbox_max: int | None = None,
@@ -1235,8 +1280,6 @@ class MemorySystem:
                 for bulk ingestion where alignment scoring isn't needed.
                 Affected blocks have ``last_scored_at = NULL`` and are picked
                 up first by ``rescore=True`` on a future call.
-            skip_contradictions: Keep LLM summaries but skip O(n²) contradiction
-                detection. Good balance of quality and speed.
             rescore: After processing inbox, also refresh aged or unscored
                 active blocks against the current SELF. Mutually exclusive
                 with ``skip_llm`` (rescore needs the LLM by definition).
@@ -1268,7 +1311,7 @@ class MemorySystem:
         result: ConsolidateResult | None = None
         if self._pending > 0:
             result = await self.consolidate(
-                skip_llm=skip_llm, skip_contradictions=skip_contradictions,
+                skip_llm=skip_llm,
                 max_inbox_per_run=inbox_max,
             )
         if rescore:
@@ -1929,7 +1972,7 @@ class MemorySystem:
         return batch_result
 
     async def curate(self) -> CurateResult:
-        """Archive decayed blocks, prune weak edges, reinforce top-N knowledge.
+        """Prune weak/decayed edges, reinforce top-N knowledge.
 
         USE WHEN: Explicit maintenance after heavy use, or when retrieval
         quality degrades. Also runs automatically after consolidate() when
@@ -1940,9 +1983,9 @@ class MemorySystem:
 
         COST: Fast. Database operations only; no LLM calls.
 
-        RETURNS: CurateResult with counts: archived (decayed blocks removed),
-        edges_pruned (weak edges removed), reinforced (top-N blocks boosted).
-        All zeros means memory was already clean.
+        RETURNS: CurateResult with counts: edges_pruned (weak edges removed),
+        edges_decayed (temporally-decayed edges removed), reinforced (top-N
+        blocks boosted). All zeros means memory was already clean.
 
         NEXT: Memory is cleaner. Retrieval quality may improve.
         """
@@ -1952,7 +1995,6 @@ class MemorySystem:
             result = await _curate(
                 conn,
                 current_active_hours=current_hours,
-                prune_threshold=mem.prune_threshold,
                 edge_prune_threshold=mem.edge_prune_threshold,
                 reinforce_top_n=mem.curate_reinforce_top_n,
             )

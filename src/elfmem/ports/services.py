@@ -44,11 +44,6 @@ class LLMService(Protocol):
         """
         ...
 
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Return a float in [0.0, 1.0] indicating the contradiction strength
-        between two blocks. >= threshold means active contradiction."""
-        ...
-
 
 @runtime_checkable
 class EmbeddingService(Protocol):

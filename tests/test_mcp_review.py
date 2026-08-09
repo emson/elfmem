@@ -23,6 +23,8 @@ from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
     ConstitutionalReviewResult,
+    CorpusProposal,
+    CorpusReviewResult,
     ProposedAmendment,
 )
 
@@ -275,6 +277,34 @@ class TestMcpListAmendments:
         assert result["amendments"] == []
 
 
+# ── review_corpus (v2 step 6a) ───────────────────────────────────────────────
+
+
+class TestReviewCorpus:
+    async def test_returns_dict_with_proposals(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_review_corpus
+
+        mock_mem.review_corpus.return_value = CorpusReviewResult(
+            reviewed_count=10,
+            proposals=[
+                CorpusProposal(
+                    block_id="blk-1", kind="stale",
+                    reason="not reinforced in 812h", content_preview="x",
+                )
+            ],
+        )
+        result = await _tool_review_corpus()
+        assert result["reviewed_count"] == 10
+        assert result["proposals"][0]["block_id"] == "blk-1"
+
+    async def test_no_proposals_returns_empty_list(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_review_corpus
+
+        mock_mem.review_corpus.return_value = CorpusReviewResult(reviewed_count=5)
+        result = await _tool_review_corpus()
+        assert result["proposals"] == []
+
+
 # ── Tool registration ────────────────────────────────────────────────────────
 
 
@@ -292,6 +322,7 @@ class TestToolRegistration:
             "elfmem_accept_amendment",
             "elfmem_revert_amendment",
             "elfmem_list_amendments",
+            "elfmem_review_corpus",
         ):
             tool = await mcp.get_tool(name)
             assert tool is not None, f"missing MCP tool registration: {name}"

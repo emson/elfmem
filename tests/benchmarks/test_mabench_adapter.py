@@ -31,8 +31,3 @@ class TestBuildElfmemConfig:
         assert elfmem_cfg.llm.model == config.elfmem_llm_model
         assert elfmem_cfg.embeddings.model == config.elfmem_embedding_model
         assert elfmem_cfg.memory.top_k == config.top_k
-
-    def test_contradiction_prefilter_forwarded(self) -> None:
-        config = MABenchConfig(contradiction_similarity_prefilter=0.65)
-        elfmem_cfg = build_elfmem_config(config)
-        assert elfmem_cfg.memory.contradiction_similarity_prefilter == 0.65

@@ -1,6 +1,6 @@
 """Configuration for the MemoryAgentBench benchmark harness."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -35,11 +35,6 @@ class MABenchConfig:
     top_k: int = 20
     inbox_threshold: int = 50
     search_window_hours: float = 10000.0
-    # Contradiction detection prefilter. Only pairs with cosine similarity above
-    # this threshold are sent to the LLM for contradiction checking. Real
-    # contradictions (same entity, different claims) have similarity >0.80.
-    # 0.75 keeps all true contradictions while cutting spurious pairs 10×.
-    contradiction_similarity_prefilter: float = 0.75
     chunk_size: int = 256  # words per chunk (~350 tokens, fits in 4096 context)
     consolidate_every_n_chunks: int = 10
 

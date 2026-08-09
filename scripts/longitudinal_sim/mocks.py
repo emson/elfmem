@@ -1,7 +1,7 @@
 """Topic-aware mock services for the longitudinal harness.
 
-Both inherit the protocol shape (async embed / process_block / detect_contradiction)
-but use the ground-truth Topic space instead of hash-based pseudo-randomness.
+Both inherit the protocol shape (async embed / process_block) but use the
+ground-truth Topic space instead of hash-based pseudo-randomness.
 """
 from __future__ import annotations
 
@@ -55,14 +55,11 @@ class TopicAlignmentLLM:
     and a fixed simulated SELF Topic.
 
     Returns BlockAnalysis(alignment_score=cos(block, self), tags=[], summary=...).
-    Contradiction score is the *negative* cosine clipped to [0, 1] — opposed
-    topics signal contradiction.
     """
 
     def __init__(self, *, self_topic: Topic) -> None:
         self._self = self_topic
         self.process_block_calls = 0
-        self.contradiction_calls = 0
 
     async def process_block(self, block: str, self_context: str) -> BlockAnalysis:
         self.process_block_calls += 1
@@ -77,12 +74,3 @@ class TopicAlignmentLLM:
             tags=["sim/topic"],
             summary=f"sim-summary({block[:40]}...)",
         )
-
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        self.contradiction_calls += 1
-        ta = content_to_topic(block_a)
-        tb = content_to_topic(block_b)
-        if ta is None or tb is None:
-            return 0.1
-        cos = ta.cosine(tb)
-        return max(0.0, -cos)

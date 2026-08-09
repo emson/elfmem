@@ -474,9 +474,17 @@ diverging ranking is "probably fine."
 | 4 | `init` writes zero blocks | RC5 | low |
 | 5 | LLM gateway profiles + `api_key_env` | OpenRouter/local support | low |
 | 6 | `elfmem review` — corpus-level, proposal-only | RC2 | medium |
-| 7 | Retire pairwise contradiction + decay | cost, complexity | medium |
+| 7a | Retire decay-driven block archival (ADR 0009) | cost, complexity | low |
+| 7b | Retire pairwise contradiction detection (ADR 0010) | cost, complexity | medium |
 | 8 | Markdown substrate + derived index | structural (§3) | high |
 | 9 | `elf-review` / `elf-recall` skills | reasoning-ownership (§5) | medium — depends on 8 |
+
+Step 7 split after grounding: decay's archival trigger and pairwise
+contradiction detection have different replacement-readiness (6a shipped
+before 7a; 6b, contradiction's replacement, has not shipped) and different
+blast radius (7a's mechanism was evidenced-inert in production; 7b's
+retirement accepts a disclosed coverage gap for new content). See ADR 0009
+and ADR 0010.
 
 **Steps 1–5 are worth doing regardless of whether steps 8–9 are ever taken** — independently
 valuable, low-risk, each closes a reported problem on its own. Step 1 stops live data loss

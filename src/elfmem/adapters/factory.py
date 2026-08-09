@@ -50,7 +50,6 @@ def make_llm_adapter(cfg: ElfmemConfig, token_counter: TokenCounter) -> LLMServi
     the adapters receive pre-resolved strings rather than config objects.
     """
     process_block_prompt = cfg.prompts.resolve_process_block()
-    contradiction_prompt = cfg.prompts.resolve_contradiction()
     valid_self_tags = cfg.prompts.resolve_valid_tags()
 
     if cfg.llm.model.startswith("claude"):
@@ -63,9 +62,7 @@ def make_llm_adapter(cfg: ElfmemConfig, token_counter: TokenCounter) -> LLMServi
             max_retries=cfg.llm.max_retries,
             api_key=api_key,
             process_block_model=cfg.llm.process_block_model,
-            contradiction_model=cfg.llm.contradiction_model,
             process_block_prompt=process_block_prompt,
-            contradiction_prompt=contradiction_prompt,
             valid_self_tags=valid_self_tags,
             token_counter=token_counter,
         )
@@ -79,9 +76,7 @@ def make_llm_adapter(cfg: ElfmemConfig, token_counter: TokenCounter) -> LLMServi
         base_url=cfg.llm.base_url,
         api_key=api_key,
         process_block_model=cfg.llm.process_block_model,
-        contradiction_model=cfg.llm.contradiction_model,
         process_block_prompt=process_block_prompt,
-        contradiction_prompt=contradiction_prompt,
         valid_self_tags=valid_self_tags,
         token_counter=token_counter,
     )

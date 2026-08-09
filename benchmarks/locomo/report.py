@@ -178,7 +178,6 @@ def build_report(
                 "top_k": config.top_k,
                 "inbox_threshold": config.inbox_threshold,
                 "search_window_hours": config.search_window_hours,
-                "contradiction_similarity_prefilter": config.contradiction_similarity_prefilter,
                 "curate_interval_hours": 1000.0,
             },
             "lm_studio_base_url": config.lm_studio_base_url,

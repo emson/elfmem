@@ -167,11 +167,9 @@ async def _tool_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
-    skip_contradictions: bool = False,
 ) -> dict[str, Any]:
     result = await _mem().dream(
         skip_llm=no_llm,
-        skip_contradictions=skip_contradictions,
         rescore=rescore,
         rescore_max=rescore_max,
     )
@@ -361,6 +359,15 @@ async def _tool_review_constitutional(
         return _error_envelope(e)
 
 
+async def _tool_review_corpus() -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        result = await _mem().review_corpus()
+        return result.to_dict()
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
 async def _tool_accept_amendment(
     block_id: str,
     proposed_content: str,
@@ -499,7 +506,7 @@ async def elfmem_outcome(
 
 @mcp.tool()
 async def elfmem_curate() -> dict[str, Any]:
-    """Archive decayed blocks, prune weak edges, reinforce top knowledge.
+    """Prune weak/decayed edges, reinforce top knowledge.
 
     Runs automatically on schedule after consolidation.
     Call manually only if retrieval quality visibly degrades.
@@ -512,17 +519,15 @@ async def elfmem_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
-    skip_contradictions: bool = False,
 ) -> dict[str, Any]:
-    """Deep consolidation: embed, align, detect contradictions, build graph.
+    """Deep consolidation: embed, align, promote to active memory, build graph.
 
     Call when elfmem_remember indicates should_dream=True, or when you want
     to consolidate pending knowledge. Safe at natural pause points.
 
     Embedding & LLM calls per pending block. Slow if many pending.
-    Returns: blocks processed, promoted, dedup'd, edges created,
-    contradictions_detected — plus rescored / rescore_failed when
-    rescore=True.
+    Returns: blocks processed, promoted, dedup'd, edges created — plus
+    rescored / rescore_failed when rescore=True.
 
     rescore: After processing the inbox, refresh aged or unscored active
              blocks against the current SELF (deep-sleep mode, v0.13.3).
@@ -534,15 +539,11 @@ async def elfmem_dream(
              bulk loads, cost-sensitive batches. Affected blocks have
              last_scored_at=NULL and will be picked up first by a future
              rescore=True call.
-    skip_contradictions: Keep LLM scoring but skip the O(n²) contradiction
-             detection loop. Use for trusted structured ingestion where
-             contradiction discovery isn't needed.
     """
     return await _tool_dream(
         rescore=rescore,
         rescore_max=rescore_max,
         no_llm=no_llm,
-        skip_contradictions=skip_contradictions,
     )
 
 
@@ -833,6 +834,24 @@ async def elfmem_review_constitutional(
         min_block_evidence=min_block_evidence,
         min_age_days=min_age_days,
     )
+
+
+@mcp.tool()
+async def elfmem_review_corpus() -> dict[str, Any]:
+    """Run a corpus-level review cycle: deterministic staleness detection.
+
+    USE WHEN: Periodically, to find ordinary blocks that have quietly
+    stopped earning their place — long-unused, rarely reinforced, never
+    confirmed by an outcome. Zero LLM calls. This only PROPOSES; nothing is
+    applied until elfmem_forget is called per accepted proposal. Distinct
+    from elfmem_review_constitutional, which checks self/constitutional
+    blocks for drift, not ordinary memory for staleness.
+
+    RETURNS: dict with keys ``reviewed_count`` and ``proposals`` (each with
+        block_id, kind='stale', reason, content_preview).
+    NEXT: For each proposal worth applying, call elfmem_forget(block_id).
+    """
+    return await _tool_review_corpus()
 
 
 @mcp.tool()
