@@ -132,6 +132,36 @@ def _resolve_paths(
     return db_path, config_path
 
 
+def _resolve_config_only(config: str | None) -> str | None:
+    """Resolve just the config path — for commands with no notion of "the
+    database" (``index check``/``index rebuild`` write to files/--to only).
+
+    Deliberately does not call ``_resolve_paths``: that also resolves a db
+    path via the global-fallback chain, which refuses to run under pytest
+    (see ``_project._guard_test_fallback``) even though these commands never
+    use the db path at all.
+    """
+    _load_project_env()
+    config_path, _source = _project.resolve_config(config)
+    return config_path
+
+
+def _resolve_memory_dir(memory_dir: str | None, config_path: str | None) -> Path:
+    """Resolve the L1 file-substrate directory: ``--memory-dir``, else
+    ``<config_dir>/memory`` (``.elfmem/memory`` sits alongside
+    ``.elfmem/config.yaml``), else the project root's ``.elfmem/memory``,
+    else ``~/.elfmem/memory``.
+    """
+    if memory_dir is not None:
+        return Path(memory_dir).expanduser()
+    if config_path is not None:
+        return Path(config_path).expanduser().resolve().parent / "memory"
+    root = _project.find_project_root()
+    if root is not None:
+        return root / ".elfmem" / "memory"
+    return Path("~/.elfmem/memory").expanduser()
+
+
 def _run(coro: Any) -> Any:
     """Execute an async coroutine. Catches ElfmemError at the CLI boundary."""
     try:
@@ -2203,17 +2233,51 @@ def export_cmd(
     share: Annotated[str, typer.Option("--share", help="Share level: public|peer|all")] = "public",
     min_confidence: Annotated[float, typer.Option("--min-confidence")] = 0.0,
     output: Annotated[str, typer.Option("-o", "--output", help="Output file path")] = "export.json",
+    to_markdown: Annotated[
+        bool,
+        typer.Option(
+            "--to-markdown",
+            help=(
+                "Export to the .elfmem/memory/ file substrate (v2) instead "
+                "of a JSON bundle. Read-only against the database; only "
+                "writes files under --memory-dir."
+            ),
+        ),
+    ] = False,
+    memory_dir: Annotated[
+        str | None,
+        typer.Option("--memory-dir", help="Target dir for --to-markdown (default: <project>/.elfmem/memory)"),
+    ] = None,
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Export shareable blocks as a JSON bundle.
+    """Export shareable blocks as a JSON bundle, or to markdown files.
 
     Examples:
 
         elfmem export --share public -o knowledge.json
         elfmem export --share all -o sync.json --min-confidence 0.5
+        elfmem export --to-markdown
+        elfmem export --to-markdown --memory-dir /tmp/memory-preview
     """
+    if to_markdown:
+        db_path, config_path = _resolve_paths(db, config)
+        resolved_dir = _resolve_memory_dir(memory_dir, config_path)
+        md_result = _run(_export_markdown_async(db_path, resolved_dir))
+        if json_output:
+            _json(
+                {
+                    "blocks_exported": md_result.blocks_exported,
+                    "files_written": [str(p) for p in md_result.files_written],
+                }
+            )
+        else:
+            typer.echo(f"Exported {md_result.blocks_exported} block(s) to {resolved_dir}")
+            for p in md_result.files_written:
+                typer.echo(f"  {p}")
+        return
+
     from elfmem.types import ExportResult
 
     db_path, config_path = _resolve_paths(db, config)
@@ -2252,6 +2316,161 @@ def import_cmd(
         _json(result.to_dict())
     else:
         typer.echo(str(result))
+
+
+# ── Index (v2 file substrate) subcommands ────────────────────────────────────
+# The derived L2 index rebuilds from the L1 .elfmem/memory/ files with zero
+# LLM calls. None of these write to your live/configured --db: `check` never
+# opens a database at all, `rebuild` only ever writes to --to, and `parity`
+# opens the live db read-only for comparison. Flipping the live CLI over to
+# read/write through files is a separate, later step (not this one).
+
+index_app = typer.Typer(
+    name="index",
+    help=(
+        "The derived L2 index: rebuild it from .elfmem/memory/ files, or "
+        "check the files alone. Read-only against your configured database "
+        "except where a command explicitly writes to --to."
+    ),
+    no_args_is_help=True,
+)
+app.add_typer(index_app, name="index")
+
+
+@index_app.command("check")
+def index_check_cmd(
+    memory_dir: Annotated[str | None, typer.Option("--memory-dir")] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Parse .elfmem/memory/**.md and report frontmatter errors. No DB touched.
+
+    Examples:
+
+        elfmem index check
+        elfmem index check --memory-dir /tmp/memory-preview
+    """
+    config_path = _resolve_config_only(config)
+    resolved_dir = _resolve_memory_dir(memory_dir, config_path)
+    blocks, errors = _index_check(resolved_dir)
+    if json_output:
+        _json(
+            {
+                "memory_dir": str(resolved_dir),
+                "blocks": blocks,
+                "errors": [
+                    {"file": str(path), "title": e.title, "reason": e.reason}
+                    for path, e in errors
+                ],
+            }
+        )
+        return
+    typer.echo(f"{resolved_dir}: {blocks} block(s), {len(errors)} error(s)")
+    for path, e in errors:
+        typer.echo(f"  {path} — {e.title!r}: {e.reason}")
+
+
+@index_app.command("rebuild")
+def index_rebuild_cmd(
+    to: Annotated[str, typer.Option("--to", help="Target index db path — never your live database")],
+    memory_dir: Annotated[str | None, typer.Option("--memory-dir")] = None,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Wipe --to's blocks/block_tags/edges first if it already has any"),
+    ] = False,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Rebuild a derived SQLite index from .elfmem/memory/ — zero LLM calls.
+
+    Writes only to --to; your configured/live database is never opened.
+
+    Examples:
+
+        elfmem index rebuild --to /tmp/index-preview.db
+        elfmem index rebuild --memory-dir .elfmem/memory --to .elfmem/index.db --force
+    """
+    config_path = _resolve_config_only(config)
+    resolved_dir = _resolve_memory_dir(memory_dir, config_path)
+    cfg = ElfmemConfig.from_yaml(config_path) if config_path else ElfmemConfig()
+    result = _run(_index_rebuild_async(str(Path(to).expanduser()), resolved_dir, cfg, force))
+    if json_output:
+        _json(
+            {
+                "target_db": to,
+                "memory_dir": str(resolved_dir),
+                "blocks_written": result.blocks_written,
+                "self_md_found": result.self_content is not None,
+                "parse_errors": len(result.parse_errors),
+            }
+        )
+        return
+    typer.echo(f"Rebuilt {to} from {resolved_dir}: {result.blocks_written} block(s) written")
+    if result.self_content is not None:
+        typer.echo("  self.md found")
+    if result.parse_errors:
+        typer.echo(f"  {len(result.parse_errors)} frontmatter parse error(s) — see 'elfmem index check'")
+
+
+@index_app.command("parity")
+def index_parity_cmd(
+    live_db: Annotated[
+        str | None,
+        typer.Option("--live-db", help="Database being migrated FROM (default: resolved project db)"),
+    ] = None,
+    memory_dir: Annotated[str | None, typer.Option("--memory-dir")] = None,
+    query: Annotated[
+        list[str] | None,
+        typer.Option("--query", help="Extra semantic query to compare via the attention frame (repeatable)"),
+    ] = None,
+    config: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Read-only migration rehearsal: rebuild a throwaway index from
+    --memory-dir and compare retrieval against --live-db. Never writes to
+    --live-db — this is the plan's Phase 4 gate (docs/plans/v2_substrate),
+    runnable against a real corpus before Phase 5/6 touch it for real.
+
+    Examples:
+
+        elfmem index parity
+        elfmem index parity --live-db ~/.elfmem/databases/elfmem.db --query "error handling"
+    """
+    db_path, config_path = _resolve_paths(None, config)
+    resolved_live_db = live_db or db_path
+    if not Path(resolved_live_db).exists():
+        typer.echo(f"--live-db not found: {resolved_live_db}", err=True)
+        raise typer.Exit(code=1)
+    resolved_dir = _resolve_memory_dir(memory_dir, config_path)
+    cfg = ElfmemConfig.from_yaml(config_path) if config_path else ElfmemConfig()
+    result = _run(_index_parity_async(resolved_live_db, resolved_dir, cfg, query or []))
+    if json_output:
+        _json(
+            {
+                "live_db": resolved_live_db,
+                "memory_dir": str(resolved_dir),
+                "passed": result.passed,
+                "block_count_before": result.block_count_before,
+                "block_count_after": result.block_count_after,
+                "diverging_queries": [
+                    {"query": c.query, "frame": c.frame_name, "before": c.before_ids, "after": c.after_ids}
+                    for c in result.diverging_queries()
+                ],
+            }
+        )
+        return
+    status = "PASS" if result.passed else "FAIL"
+    typer.echo(f"Parity gate: {status}")
+    typer.echo(f"  blocks: {result.block_count_before} -> {result.block_count_after}"
+               f" ({'match' if result.block_count_matches else 'MISMATCH'})")
+    diverging = result.diverging_queries()
+    typer.echo(f"  queries: {len(result.query_checks) - len(diverging)}/{len(result.query_checks)} match")
+    for c in diverging:
+        typer.echo(f"    diverges — frame={c.frame_name} query={c.query!r}")
+        typer.echo(f"      before: {c.before_ids}")
+        typer.echo(f"      after:  {c.after_ids}")
+    if not result.passed:
+        typer.echo("\nDo not treat a diverging ranking as probably fine — diagnose before proceeding.")
 
 
 # ── Mind (Theory of Mind) subcommands ────────────────────────────────────────
@@ -3118,6 +3337,131 @@ async def _import_async(
 ) -> Any:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.import_blocks(path, from_peer=from_peer, self_merge=self_merge)
+
+
+# ── Index (v2 file substrate) async helpers ──────────────────────────────────
+
+
+async def _export_markdown_async(db_path: str, memory_dir: Path) -> Any:
+    """Export every DB-native block to `.elfmem/memory/` files. Read-only
+    against the database — see `migration.export.export_to_markdown`."""
+    from elfmem.db.engine import create_engine
+    from elfmem.migration.export import export_to_markdown
+
+    engine = await create_engine(db_path)
+    try:
+        async with engine.connect() as conn:
+            return await export_to_markdown(conn, memory_dir)
+    finally:
+        await engine.dispose()
+
+
+def _index_check(memory_dir: Path) -> tuple[int, list[tuple[Path, Any]]]:
+    """Parse every block file under *memory_dir* and collect frontmatter
+    errors. Pure file I/O — no DB, no LLM, no embedding calls."""
+    from elfmem.memory.blockfile import parse_blocks
+
+    total_blocks = 0
+    all_errors: list[tuple[Path, Any]] = []
+    for subdir_name in ("notes", "log", "archive"):
+        subdir = memory_dir / subdir_name
+        if not subdir.is_dir():
+            continue
+        for path in sorted(subdir.glob("**/*.md")):
+            result = parse_blocks(path.read_text(encoding="utf-8"))
+            total_blocks += len(result.blocks)
+            all_errors.extend((path, e) for e in result.errors)
+    return total_blocks, all_errors
+
+
+async def _fresh_index_engine(target_db_path: str, *, force: bool) -> Any:
+    """An AsyncEngine at *target_db_path* with the schema created, and its
+    blocks/block_tags/edges tables verified empty (or wiped, with --force).
+
+    Never touches any database other than *target_db_path*.
+    """
+    from sqlalchemy import text
+
+    from elfmem.db.engine import create_engine
+    from elfmem.db.models import metadata
+
+    engine = await create_engine(target_db_path)
+    async with engine.begin() as conn:
+        await conn.run_sync(metadata.create_all)
+        existing = (await conn.execute(text("SELECT COUNT(*) FROM blocks"))).scalar_one()
+        if existing and not force:
+            await engine.dispose()
+            raise ElfmemError(
+                f"{target_db_path} already has {existing} block(s).",
+                recovery=(
+                    "Pass --force to wipe blocks/block_tags/edges and "
+                    "rebuild, or point --to at a fresh path."
+                ),
+            )
+        if existing:
+            await conn.execute(text("DELETE FROM edges"))
+            await conn.execute(text("DELETE FROM block_tags"))
+            await conn.execute(text("DELETE FROM blocks"))
+    return engine
+
+
+async def _index_rebuild_async(
+    target_db_path: str, memory_dir: Path, cfg: ElfmemConfig, force: bool,
+) -> Any:
+    from elfmem.adapters.factory import make_embedding_adapter
+    from elfmem.memory.index_rebuild import rebuild_index
+    from elfmem.token_counter import TokenCounter
+
+    engine = await _fresh_index_engine(target_db_path, force=force)
+    try:
+        embedding_svc = make_embedding_adapter(cfg, TokenCounter())
+        async with engine.begin() as conn:
+            return await rebuild_index(conn, memory_dir, embedding_svc, cfg.embeddings.model)
+    finally:
+        await engine.dispose()
+
+
+async def _index_parity_async(
+    live_db_path: str, memory_dir: Path, cfg: ElfmemConfig, extra_queries: list[str],
+) -> Any:
+    import tempfile
+
+    from elfmem.adapters.factory import make_embedding_adapter
+    from elfmem.context.frames import ATTENTION_FRAME, SELF_FRAME, SIMULATE_FRAME, TASK_FRAME
+    from elfmem.db.engine import create_engine
+    from elfmem.memory.index_rebuild import rebuild_index
+    from elfmem.migration.parity import check_retrieval_parity
+    from elfmem.token_counter import TokenCounter
+
+    embedding_svc = make_embedding_adapter(cfg, TokenCounter())
+
+    with tempfile.TemporaryDirectory() as tmp:
+        rebuild_engine = await _fresh_index_engine(str(Path(tmp) / "index-rebuilt.db"), force=True)
+        try:
+            async with rebuild_engine.begin() as conn:
+                await rebuild_index(conn, memory_dir, embedding_svc, cfg.embeddings.model)
+
+            live_engine = await create_engine(live_db_path)
+            try:
+                queries: list[tuple[str | None, Any]] = [
+                    (None, ATTENTION_FRAME),
+                    (None, SELF_FRAME),
+                    (None, TASK_FRAME),
+                    (None, SIMULATE_FRAME),
+                ]
+                queries.extend((q, ATTENTION_FRAME) for q in extra_queries)
+
+                async with (
+                    live_engine.connect() as conn_before,
+                    rebuild_engine.connect() as conn_after,
+                ):
+                    return await check_retrieval_parity(
+                        conn_before, conn_after, embedding_svc, queries,
+                    )
+            finally:
+                await live_engine.dispose()
+        finally:
+            await rebuild_engine.dispose()
 
 
 async def _mind_create(

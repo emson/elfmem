@@ -35,10 +35,13 @@ from elfmem.db.queries import (
     insert_block,
     insert_peer,
     set_config,
+    update_block_scoring,
     update_peer_stats,
 )
 from elfmem.exceptions import PeerError
+from elfmem.memory.blockfile import Block, parse_blocks, write_blocks
 from elfmem.memory.blocks import compute_content_hash
+from elfmem.ports.services import EmbeddingService
 from elfmem.types import (
     ExportResult,
     ImportResult,
@@ -1079,3 +1082,162 @@ def _write_json(path: Path, data: dict[str, Any]) -> None:
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+
+
+# ── File-native peer landing (v2 step 8, U-012) ────────────────────────────────
+#
+# Additive, not a replacement: import_bundle()/_build_bundle() above are
+# unchanged and still live until U-007 switches MemorySystem's callers over
+# (see build-plan.md's revision note on this unit). These two functions are
+# the new append-only-log landing path and its rebuild-time reconciliation,
+# resolving model.md's peer-bundle defect (D-002) and the confirmed
+# content-hash double-count bug in _import_single_block above.
+
+
+async def land_peer_log_entry(
+    memory_dir: Path,
+    *,
+    content: str,
+    tags: list[str],
+    from_peer: str,
+    msg_id: str,
+    remote_alpha: float | None = None,
+    remote_beta: float | None = None,
+) -> None:
+    """Land one received peer message as its own file. Never mutates an
+    existing file — one message, one file, named by ``msg_id`` — for two
+    reasons at once: (1) fully append-only under concurrent peer writes, no
+    file is ever opened for read-modify-write; (2) sidesteps U-001's
+    per-file duplicate-``id:`` invariant, which is correct and desirable for
+    ordinary notes/log content but would wrongly reject two distinct peer
+    messages that happen to carry identical content (the exact
+    "distinct-messages-same-content" scenario this unit exists to fix) if
+    they landed in one shared file. ``fold_peer_log`` deduplicates by
+    ``msg_id`` and reconciles at rebuild time, not here (Invariant 6).
+
+    USE WHEN: a peer bundle message has been received and accepted (after
+        the existing bundle-version and peer-registration checks).
+    DON'T USE WHEN: writing the merged, final block — that's
+        ``fold_peer_log``'s job, run later, once, at rebuild time.
+    COST: one file write. No LLM, no embedding call — those happen once per
+        distinct fact at fold time, not once per received message.
+    RETURNS: None.
+    NEXT: ``fold_peer_log`` (registered as an `index_rebuild.py`
+        `additional_fold_steps` entry) folds this into the derived index.
+    """
+    peer_dir = memory_dir / "log" / "peer"
+    peer_dir.mkdir(parents=True, exist_ok=True)
+    entry_path = peer_dir / f"{_slugify(from_peer)}-{_slugify(msg_id)}.md"
+
+    extra: dict[str, str] = {"source_peer": from_peer, "msg_id": msg_id}
+    if remote_alpha is not None:
+        extra["remote_alpha"] = f"{remote_alpha:.4f}"
+    if remote_beta is not None:
+        extra["remote_beta"] = f"{remote_beta:.4f}"
+
+    stripped = content.strip()
+    first_line = stripped.splitlines()[0] if stripped else "Untitled"
+    entry_path.write_text(
+        write_blocks(
+            [
+                Block(
+                    title=first_line[:60],
+                    content=content,
+                    id=compute_content_hash(content)[:16],
+                    tags=tags,
+                    extra=extra,
+                )
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+async def fold_peer_log(
+    conn: AsyncConnection,
+    embedding_service: EmbeddingService,
+    embedding_model: str,
+    *,
+    memory_dir: Path,
+) -> int:
+    """Rebuild-time reconciliation of every peer log entry into final blocks.
+
+    Two-stage dedup, matching the ``/simulate`` resolution in model.md:
+    (1) dedup by ``msg_id`` — an exact resend of the same message must not
+    double-count; (2) group the deduplicated entries by their content-hash
+    ``id`` — distinct messages about the same fact are genuine new evidence
+    and *do* accumulate, via the existing trust-weighted
+    ``merge_peer_evidence`` (unchanged math, just triggered here instead of
+    at import time).
+
+    USE WHEN: registered as one of `rebuild_index`'s `additional_fold_steps`
+        (bind `memory_dir` via `functools.partial` at the call site — not
+        built yet, belongs to whatever CLI command invokes a full rebuild).
+    DON'T USE WHEN: importing a single message — that's `land_peer_log_entry`.
+    COST: one embedding call per **distinct fact** (not per message received)
+        — the same amortisation `elfmem index` already gives local content.
+    RETURNS: number of blocks written.
+    NEXT: nothing further — the fold is terminal for this rebuild cycle.
+    """
+    peer_dir = memory_dir / "log" / "peer"
+    if not peer_dir.is_dir():
+        return 0
+
+    entries: list[Block] = []
+    for path in sorted(peer_dir.glob("*.md")):
+        for block in parse_blocks(path.read_text(encoding="utf-8")).blocks:
+            if "source_peer" in block.extra:
+                entries.append(block)
+
+    seen_msg_ids: set[str] = set()
+    deduped: list[Block] = []
+    for block in entries:
+        msg_id = block.extra.get("msg_id")
+        if msg_id is not None:
+            if msg_id in seen_msg_ids:
+                continue
+            seen_msg_ids.add(msg_id)
+        deduped.append(block)
+
+    by_id: dict[str, list[Block]] = {}
+    for block in deduped:
+        assert block.id is not None  # land_peer_log_entry always assigns one
+        by_id.setdefault(block.id, []).append(block)
+
+    written = 0
+    for block_id, group in by_id.items():
+        from_peer = group[0].extra["source_peer"]
+        peer = await get_peer(conn, from_peer)
+        trust = peer["trust"] if peer else 1.0
+
+        alpha, beta = _PEER_PRIOR_ALPHA, _PEER_PRIOR_BETA
+        for block in group:
+            remote_alpha = float(block.extra.get("remote_alpha", "0.5"))
+            remote_beta = float(block.extra.get("remote_beta", "0.5"))
+            alpha, beta = merge_peer_evidence(alpha, beta, remote_alpha, remote_beta, trust)
+        confidence = alpha / (alpha + beta)
+
+        latest = group[-1]
+        await insert_block(
+            conn,
+            block_id=block_id,
+            content=latest.content,
+            category="knowledge",
+            source="peer_import",
+            status="inbox",
+            confidence=confidence,
+            success_count=alpha,
+            failure_count=beta,
+        )
+        if latest.tags:
+            await add_tags(conn, block_id, latest.tags)
+        vec = await embedding_service.embed(latest.content.strip().lower())
+        await update_block_scoring(
+            conn,
+            block_id,
+            embedding=vec,
+            embedding_model=embedding_service.model_name,
+        )
+        written += 1
+
+    return written

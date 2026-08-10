@@ -10,6 +10,21 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `elfmem export --to-markdown [--memory-dir DIR]` and `elfmem index
+  check|rebuild|parity` (v2 substrate, Wave 1-4): terminal commands for the
+  markdown-file substrate work that previously existed only as library code
+  with no CLI entry point. `export --to-markdown` writes every DB-native
+  block to `.elfmem/memory/**.md` (read-only against the database). `index
+  check` parses those files and reports frontmatter errors without opening
+  any database. `index rebuild --to PATH` derives a fresh SQLite index from
+  the files with zero LLM calls — writes only to `--to`, never a live/
+  configured database, and refuses to overwrite a non-empty target without
+  `--force`. `index parity [--live-db PATH]` reruns the plan's Phase 4
+  retrieval-parity gate as a repeatable, read-only rehearsal: rebuilds a
+  throwaway index from the files and compares retrieval against the live
+  database, never writing to it. None of these flip the live CLI's
+  recall/edit/forget/ls over to the file substrate — that remains a later,
+  separate step (see `docs/plans/v2_substrate`).
 - `MemorySystem.review_corpus()` / `elfmem review corpus` / `elfmem_review_corpus`
   (v2 step 6a): deterministic staleness detection for ordinary memory — zero
   LLM calls, pure SQL/math over already-active blocks. A block is proposed
