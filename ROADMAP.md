@@ -6,9 +6,10 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-05-25 (post-v0.19.0 release; original v0.19
-> production-signal slot shifted to v0.20). Reviewed quarterly. Open
-> issues at [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
+> **Last reviewed**: 2026-08-12 (docs/README sync pass — added the v2
+> substrate "In Progress" entry below, previously undocumented here despite
+> being CHANGELOG.md's entire `[Unreleased]` section). Reviewed quarterly.
+> Open issues at [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
 
@@ -55,6 +56,26 @@ These don't change between releases. They constrain what we ship.
 | ✅ **v0.14.x** | Theory of Mind tools in MCP; dream flags exposed | 2026-05-10 |
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.
+
+---
+
+## In Progress
+
+### 🚧 v2 substrate — file-backed memory, direct edit primitives, review over auto-archival
+
+Currently `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md); no version number cut yet. The largest wave of work since v0.19.3, spanning several ADRs:
+
+- **Direct memory management**: `edit()`/`forget()`/`ls()`/`inbox()` — explicit, deterministic, no-LLM primitives (CLI: `elfmem edit`/`forget`/`ls`/`inbox`; MCP: `elfmem_edit`/`elfmem_forget`/`elfmem_ls`/`elfmem_inbox`)
+- **Markdown file substrate**: `elfmem export --to-markdown` writes every block to `.elfmem/memory/**.md`; `elfmem index check/rebuild/parity` is migration-rehearsal tooling — read-only against the live DB except the derived index it builds itself (`docs/plans/v2_substrate`)
+- **Corpus & constitutional review replace silent archival**: `review_corpus()` (zero-LLM staleness detection) and the existing `review_constitutional()` now cover what `curate()` used to do automatically. **Breaking**: decay-driven block archival retired ([ADR 0009](docs/decisions/0009-retire-decay-driven-archival.md)) — `curate()` no longer archives, `CurateResult.archived` is gone; use `elfmem review corpus` + `forget(reason=ArchiveReason.DECAYED)`
+- **Breaking**: pairwise LLM contradiction detection at consolidate-time retired ([ADR 0010](docs/decisions/0010-retire-pairwise-contradiction-detection.md)) — near-zero realized value (14 lifetime findings, 86% unresolved) for what had been the dominant LLM cost of `consolidate()`. Recall-time suppression is unchanged
+- **Breaking**: `elfmem init --seed` now defaults to off — a fresh install writes zero memory blocks unless `--seed` is passed
+- **Provider flexibility**: `llm.api_key_env` / `embeddings.api_key_env` name the real env var for non-Anthropic/OpenAI providers (Together, Groq, OpenRouter, ...); `.env` auto-discovery for every CLI command, not just `serve`
+- **`doctor --resolve`**: one real LLM call to confirm a configured key actually works
+- **Host-supplied analysis**: `dream(host_analyses=...)` lets a host agent session (e.g. a Claude Code session) supply its own alignment/tags/summary per block instead of a configured LLM adapter
+- **Edge metabolism, Stage A**: `metabolism_dry_run()` — read-only preview of goal-directed edge proposals judged against the agent's own `self/goal` blocks, never writes
+
+See CHANGELOG.md's `[Unreleased]` section for the full, itemized list.
 
 ---
 

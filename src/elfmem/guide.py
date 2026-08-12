@@ -657,31 +657,31 @@ GUIDES: dict[str, AgentGuide] = {
             "consolidate() (auto on session close)."
         ),
         returns=(
-            "dict with status='setup_complete', blocks_created (int), and blocks (list of "
-            "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe. "
-            "Constitutional blocks are tagged self/constitutional"
-            " (PERMANENT decay, ~34yr half-life)."
+            "SetupResult with blocks_created (int, new blocks only) and total_attempted (int, "
+            "including duplicates). blocks_created=0 means all were exact duplicates — safe, "
+            "not an error. Constitutional blocks (seed=True) are tagged self/constitutional "
+            "(PERMANENT decay, ~34yr half-life)."
         ),
         next=(
             "SELF blocks sit in inbox until consolidate() runs (auto on session close). "
             "After consolidation, recall(frame='self') always includes constitutional blocks "
-            "(guaranteed slots) plus any domain values you added. "
+            "(guaranteed slots, if seeded) plus any domain values you added. "
             "Check status with elfmem_status() or 'elfmem doctor' CLI. "
             "Three tiers: constitutional (PERMANENT) → values (DURABLE, ~29d)"
             " → context (STANDARD, ~3d)."
         ),
         example=(
-            "# Minimal: seeds 10 constitutional blocks only\n"
-            "elfmem_setup()\n"
+            "# Minimal: identity/values only, no constitutional seed (seed defaults to False)\n"
+            "elfmem_setup(identity='I am a trading assistant focused on risk-adjusted returns.')\n"
             "\n"
-            "# With identity: constitutional + custom identity block\n"
+            "# With domain values too\n"
             "elfmem_setup(\n"
             "    identity='I am a trading assistant focused on risk-adjusted returns.',\n"
             "    values=['cut losing positions early', 'size positions to max 2% risk']\n"
             ")\n"
             "\n"
-            "# Skip constitutional seeding (advanced: manual control)\n"
-            "elfmem_setup(seed=False, identity='Custom agent without default seed')"
+            "# Opt into the 10-block constitutional cognitive loop as well\n"
+            "elfmem_setup(seed=True, identity='I am a trading assistant.')"
         ),
     ),
     "connect": AgentGuide(
@@ -1409,6 +1409,310 @@ GUIDES: dict[str, AgentGuide] = {
             "history = await system.list_amendments(block_id='blk-abcd1234')"
         ),
     ),
+    "from_config": AgentGuide(
+        name="from_config",
+        what="Factory: build a MemorySystem from a database path plus optional config.",
+        when=(
+            "Starting up with an explicit config — a YAML path, a dict of overrides, or a "
+            "pre-built ElfmemConfig object. The standard entry point for library users."
+        ),
+        when_not=(
+            "You want config resolved purely from ELFMEM_* env vars — use from_env() instead. "
+            "You want the database connection torn down automatically — use managed() instead."
+        ),
+        cost="Fast. Opens the DB engine and runs any pending schema migration; no LLM calls.",
+        returns="A ready-to-use MemorySystem instance. Call close() when done, or use managed().",
+        next="Wrap calls in `async with system.session():` or call begin_session() explicitly.",
+        example=(
+            "system = await MemorySystem.from_config('agent.db', config='elfmem.yaml')\n"
+            "async with system.session():\n"
+            "    await system.learn('...')\n"
+            "await system.close()"
+        ),
+    ),
+    "from_env": AgentGuide(
+        name="from_env",
+        what="Factory: build a MemorySystem with config resolved purely from ELFMEM_* env vars.",
+        when=(
+            "Deployment contexts where config lives in the environment (containers, CI, "
+            "process managers) rather than a checked-in YAML file."
+        ),
+        when_not=(
+            "You have an explicit config path or dict in hand — use from_config() instead, "
+            "it's the more general form and from_env() adds nothing on top of it."
+        ),
+        cost="Fast. Opens the DB engine and runs any pending schema migration; no LLM calls.",
+        returns="A ready-to-use MemorySystem instance. Call close() when done, or use managed().",
+        next="Wrap calls in `async with system.session():` or call begin_session() explicitly.",
+        example=(
+            "# ELFMEM_LLM_MODEL, ELFMEM_EMBEDDING_MODEL, etc. read from the environment\n"
+            "system = await MemorySystem.from_env('agent.db')"
+        ),
+    ),
+    "managed": AgentGuide(
+        name="managed",
+        what="Async context manager: full lifecycle — open, optionally auto-dream, close.",
+        when=(
+            "Script-style or one-shot usage where you want the database connection and "
+            "final consolidation handled automatically without a separate close() call."
+        ),
+        when_not=(
+            "A long-lived server process (e.g. the MCP server) that manages its own "
+            "lifecycle — use from_config()/from_env() plus explicit close() there instead."
+        ),
+        cost="Same as from_config(); auto_dream=True adds one dream() call on exit if pending.",
+        returns="Yields a ready-to-use MemorySystem; closes it (and dreams if pending) on exit.",
+        next="Use system.session() inside the block if you also want session-scoped reinforcement.",
+        example=(
+            "async with MemorySystem.managed('agent.db') as system:\n"
+            "    await system.learn('User prefers dark mode.')\n"
+            "    # dream() runs automatically on exit if anything is pending"
+        ),
+    ),
+    "session": AgentGuide(
+        name="session",
+        what="Async context manager: scopes session-based reinforcement bookkeeping.",
+        when=(
+            "You want frame()/recall() calls inside the block to count toward this "
+            "session's reinforcement tracking and end_session() to report active hours."
+        ),
+        when_not=(
+            "You're already inside managed() and don't need session-scoped metrics — "
+            "operations work fine without an active session, just without that bookkeeping."
+        ),
+        cost="Instant. Pure bookkeeping — begin_session()/end_session() under the hood.",
+        returns="Yields self (the MemorySystem). No new object.",
+        next="Operations inside the block behave normally; session_block_ids accumulates.",
+        example=(
+            "async with system.session():\n"
+            "    context = await system.frame('attention', query='deploy checklist')\n"
+            "    print(system.session_block_ids)  # blocks touched so far this session"
+        ),
+    ),
+    "begin_session": AgentGuide(
+        name="begin_session",
+        what="Start a session explicitly, without the session() context-manager sugar.",
+        when=(
+            "You need to start a session in one place and end it in another (e.g. across "
+            "separate request handlers) where a single `async with` block can't span both."
+        ),
+        when_not=(
+            "A single function/block can hold the session — use `async with system.session():` "
+            "instead, it can't leak an unclosed session."
+        ),
+        cost="Instant. Pure bookkeeping.",
+        returns="str — the session id.",
+        next="Call end_session() when the task is done to record active hours.",
+        example=(
+            "session_id = await system.begin_session(task_type='code_review')\n"
+            "...\n"
+            "hours = await system.end_session()"
+        ),
+    ),
+    "end_session": AgentGuide(
+        name="end_session",
+        what="Close a session started with begin_session() and report active hours.",
+        when="Paired with an explicit begin_session() call, once the task is complete.",
+        when_not=(
+            "You used `async with system.session():` — it calls end_session() for you "
+            "automatically on exit."
+        ),
+        cost="Instant. Pure bookkeeping.",
+        returns="float — active hours elapsed during the session.",
+        next="Session-scoped bookkeeping (session_block_ids etc.) resets for the next session.",
+        example=(
+            "hours = await system.end_session()\n"
+            "print(f'Session ran {hours:.2f} active hours')"
+        ),
+    ),
+    "close": AgentGuide(
+        name="close",
+        what="Explicit teardown: closes the underlying database engine.",
+        when=(
+            "You built the MemorySystem with from_config()/from_env() (not managed()) "
+            "and are done with it."
+        ),
+        when_not=(
+            "You used `async with MemorySystem.managed(...):` — it calls close() for you "
+            "automatically on exit."
+        ),
+        cost="Fast. Flushes and closes the DB connection pool; no LLM calls.",
+        returns="None.",
+        next="The MemorySystem instance should not be used again after close().",
+        example=(
+            "system = await MemorySystem.from_config('agent.db')\n"
+            "try:\n"
+            "    await system.learn('...')\n"
+            "finally:\n"
+            "    await system.close()"
+        ),
+    ),
+    "should_dream": AgentGuide(
+        name="should_dream",
+        what="Property: True when the inbox has enough pending blocks to be worth consolidating.",
+        when=(
+            "After remember()/learn() calls, to decide whether this is a natural "
+            "point to dream()."
+        ),
+        when_not=(
+            "As a hard gate — dream() is always safe to call speculatively and returns "
+            "instantly with zero counts if nothing is pending."
+        ),
+        cost="Instant. In-memory check against inbox_threshold; no database access.",
+        returns="bool.",
+        next="If True, call dream() at the next natural pause (not mid-reasoning-step).",
+        example=(
+            "await system.remember('New fact.')\n"
+            "if system.should_dream:\n"
+            "    await system.dream()"
+        ),
+    ),
+    "last_learned_block_id": AgentGuide(
+        name="last_learned_block_id",
+        what="Property: the block id from the most recent learn()/remember() call this session.",
+        when=(
+            "You need to reference the block you just stored without threading its "
+            "id through your own code."
+        ),
+        when_not="You stored multiple blocks and need all of them — use session_block_ids instead.",
+        cost="Instant. In-memory only.",
+        returns="str | None — None if nothing has been learned yet this session.",
+        next="Use it as an argument to connect(), outcome(), edit(), or forget().",
+        example=(
+            "await system.remember('Redis pool size: 20.')\n"
+            "block_id = system.last_learned_block_id\n"
+            "await system.connect(block_id, other_id, relation='supports')"
+        ),
+    ),
+    "last_recall_block_ids": AgentGuide(
+        name="last_recall_block_ids",
+        what="Property: block ids returned by the most recent frame()/recall() call this session.",
+        when=(
+            "You need the ids for outcome() calibration but didn't keep the "
+            "FrameResult/ScoredBlock list around."
+        ),
+        when_not=(
+            "You already have the FrameResult or list[ScoredBlock] in scope — read "
+            ".blocks/[b.id for b in ...] from that directly instead."
+        ),
+        cost="Instant. In-memory only.",
+        returns="list[str] — empty if nothing has been retrieved yet this session.",
+        next="Pass to outcome(block_ids, signal=...) once the outcome is known.",
+        example=(
+            "await system.frame('attention', query='deploy checklist')\n"
+            "block_ids = system.last_recall_block_ids\n"
+            "await system.outcome(block_ids, signal=0.85, source='deploy_fix')"
+        ),
+    ),
+    "session_block_ids": AgentGuide(
+        name="session_block_ids",
+        what="Property: every block id learned or recalled during the current session, in order.",
+        when="End-of-session bookkeeping, logging, or building a session-level outcome batch.",
+        when_not=(
+            "You only need the single most recent id — "
+            "last_learned_block_id/last_recall_block_ids are cheaper to reason about."
+        ),
+        cost="Instant. In-memory only.",
+        returns="list[str]. Resets when a new session begins.",
+        next="(Informational. No action required unless you're batching outcome() calls.)",
+        example=(
+            "async with system.session():\n"
+            "    await system.learn('...')\n"
+            "    await system.frame('attention', query='...')\n"
+            "    print(system.session_block_ids)  # all ids touched, in order"
+        ),
+    ),
+    "visualise": AgentGuide(
+        name="visualise",
+        what="Generate an interactive HTML dashboard of the knowledge graph and write it to disk.",
+        when=(
+            "Debugging retrieval quality, inspecting graph structure, or demoing "
+            "memory state to a human."
+        ),
+        when_not=(
+            "You need programmatic access to the graph — query the database directly or use "
+            "recall()/frame() instead; this is for human visual inspection."
+        ),
+        cost="Fast. Reads the database and renders a static HTML file; no LLM calls.",
+        returns="str — path to the generated HTML file.",
+        next="Open the file in a browser (open_browser=True does this automatically).",
+        example=(
+            "path = system.visualise(include_archived=False, max_nodes=100)\n"
+            "print(f'Dashboard written to {path}')"
+        ),
+    ),
+    "connect_by_query": AgentGuide(
+        name="connect_by_query",
+        what="Find two blocks by natural-language query, then connect them — no block ids needed.",
+        when=(
+            "You know two ideas should be linked but only have descriptions, "
+            "not block ids in hand."
+        ),
+        when_not=(
+            "You already have both block ids — use connect() directly, it's cheaper (no retrieval) "
+            "and doesn't risk matching the wrong block."
+        ),
+        cost="Two retrieval calls (embedding search) plus one connect(). No LLM calls.",
+        returns=(
+            "ConnectByQueryResult with action: 'connected' (edge created/reinforced), "
+            "'insufficient_confidence' (a match fell below min_confidence — nothing connected), "
+            "'dry_run_preview' (dry_run=True — nothing written). Always check "
+            "source_content/target_content before trusting the match was the right block."
+        ),
+        next=(
+            "If action='connected', the edge is live. If 'insufficient_confidence', "
+            "narrow the queries."
+        ),
+        example=(
+            "result = await system.connect_by_query(\n"
+            "    'Redis caching strategy', 'Redis memory management',\n"
+            "    relation='related', min_confidence=0.70,\n"
+            ")\n"
+            "if result.action == 'connected':\n"
+            "    print(result.connect_result)"
+        ),
+    ),
+    "connects": AgentGuide(
+        name="connects",
+        what="Batch edge creation: create or strengthen many edges in one call.",
+        when="You've derived several relationships at once (e.g. from a document or a review pass) "
+        "and want them applied together rather than one connect() call per edge.",
+        when_not="You only have one edge to create — connect() is simpler for a single edge.",
+        cost="Fast. One DB transaction for all edges; no LLM calls.",
+        returns=(
+            "ConnectsResult with results (list[ConnectResult], one per edge), created, reinforced, "
+            "updated, skipped, deferred (counts), and errors (non-fatal per-edge messages — "
+            "one bad edge doesn't fail the whole batch)."
+        ),
+        next="Check .errors for any edges that didn't apply; the rest are already live.",
+        example=(
+            "from elfmem.types import ConnectSpec\n"
+            "result = await system.connects([\n"
+            "    ConnectSpec(source=id_a, target=id_b, relation='supports'),\n"
+            "    ConnectSpec(source=id_b, target=id_c, relation='related'),\n"
+            "])\n"
+            "print(result)  # created=2, reinforced=0, errors=[]"
+        ),
+    ),
+    "peer_remove": AgentGuide(
+        name="peer_remove",
+        what="Unregister a peer from the local roster.",
+        when="A peer relationship has ended, or a peer entry was registered by mistake.",
+        when_not=(
+            "You just want to pause exchange without losing trust history — there's no "
+            "pause primitive; removal is the only option, and it's not reversible from the API."
+        ),
+        cost="Fast. Database delete only; no LLM calls, no network calls.",
+        returns="bool — True if a peer was removed, False if the did wasn't registered.",
+        next=(
+            "Messages already exchanged and imported blocks are unaffected; "
+            "only the roster entry is gone."
+        ),
+        example=(
+            "removed = await system.peer_remove('elf:old-project')\n"
+            "print(removed)  # True"
+        ),
+    ),
 }
 
 # ── Overview ──────────────────────────────────────────────────────────────────
@@ -1429,7 +1733,7 @@ OVERVIEW: str = "\n".join([
     "  outcome(ids, signal)   Fast         Bayesian confidence update from domain result",
     "  connect(src, tgt, ...) Instant      Assert a semantic edge between two blocks",
     "  disconnect(src, tgt)   Instant      Remove a wrong or unwanted edge",
-    "  curate()               Fast         Archive stale blocks, prune weak edges",
+    "  curate()               Fast         Prune weak/decayed edges, reinforce top knowledge",
     "  rescore(max_count?)    LLM call     Deep-sleep: re-evaluate aged blocks vs SELF",
     "  mind_create(subj, ...) Instant      Create a Theory of Mind block for a subject",
     "  mind_predict(id, ...)  Instant      Add a falsifiable prediction to a mind block",

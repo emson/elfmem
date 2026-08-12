@@ -568,22 +568,24 @@ guide = await agent_tools.elfmem_guide(method="outcome")
   "rescore": false,              // Deep-sleep: re-evaluate aged active blocks vs current SELF
   "rescore_max": null,           // Cap rescore work per call (null = use config default)
   "no_llm": false,               // Bypass LLM scoring (embed + promote only)
-  "skip_contradictions": false   // Skip O(n²) contradiction detection
+  "host_analyses": null          // {block_id: {alignment_score, tags, summary}} supplied by the host session
 }
 ```
 
 Default invocation `elfmem_dream()` with no args is unchanged from prior versions. Use the flags when:
 - `rescore=True` — periodically (e.g. weekly) to keep aged blocks aligned with the agent's current SELF
-- `no_llm=True` — during LLM outages, or for bulk ingestion where alignment can be rescored later
-- `skip_contradictions=True` — when ingesting trusted, pre-deduplicated data
+- `no_llm=True` — during LLM outages, or for bulk ingestion where alignment can be rescored later — degrades SELF-frame coherence over time, not for default use
+- `host_analyses={...}` — the host agent session (e.g. this Claude Code session) supplies its own per-block alignment/tags/summary instead of a configured LLM adapter — no local model or API key needed for the covered blocks
+
+Pairwise LLM contradiction detection at consolidate-time was retired ([ADR 0010](decisions/0010-retire-pairwise-contradiction-detection.md)) — there is no `skip_contradictions` flag any more. Recall-time contradiction suppression (using existing records) is unaffected.
 
 ```python
 # Deep-sleep — rescore up to 20 aged blocks
 result = await agent_tools.elfmem_dream(rescore=True, rescore_max=20)
 # Returns: {"processed": 0, "promoted": 0, "rescored": 18, "rescore_failed": 0, ...}
 
-# Bulk ingestion — embed + promote, skip LLM and contradiction work
-result = await agent_tools.elfmem_dream(no_llm=True, skip_contradictions=True)
+# Bulk ingestion — embed + promote, skip LLM work
+result = await agent_tools.elfmem_dream(no_llm=True)
 ```
 
 ---
@@ -934,13 +936,13 @@ elfmem serve --db agent_memory.db
 **Problem:** Consolidation uses more tokens than expected.
 
 **Causes:**
-1. Large inbox (one LLM call per block)
-2. Multiple models (alignment, tags, contradiction detection)
+1. Large inbox (one `process_block` LLM call per block — combines alignment scoring, tag inference, and summary generation)
+2. Rescoring a large aged-block backlog (`dream(rescore=True)`)
 3. Tall knowledge graph (expansion checks)
 
 **Optimization tips:**
-1. Consolidate more frequently (smaller batches) — set `inbox_threshold: 5`
-2. Use a cheaper model for alignment scoring — set `alignment_model: "gpt-4o-mini"`
+1. Consolidate more frequently (smaller batches) — set `inbox_threshold: 5`, or bound each call with `max_inbox_per_run` / `--max`
+2. Use a cheaper model for block analysis specifically — set `llm.process_block_model: "gpt-4o-mini"`
 3. Batch multiple `remember()` calls before consolidation
 
 ---

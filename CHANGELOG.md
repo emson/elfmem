@@ -166,6 +166,39 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   the superseding: `blocks.superseded_by` (schema v6) is set alongside
   `archive_reason='superseded'`, closing the "archived, but by what?" audit
   gap on the path responsible for nearly all archivals in practice.
+- README.md and several `docs/` pages brought current with the v2 substrate
+  work above — a straight read against `cli.py`/`mcp.py`/`api.py` found the
+  README documenting roughly a third of the actual surface (13 of 30 CLI
+  commands, 10 of 30 MCP tools, 31 of 55 `MemorySystem` methods) and
+  asserting things no longer true post-ADR-0009/0010 ("five retrieval
+  frames" — there are four; contradiction detection and automatic
+  block archival both listed as core capabilities). Corrected two broken
+  example invocations (`elfmem peer init NAME` → `--name NAME`; `elfmem
+  export FILE` → `-o FILE`) and a stale `elfmem setup` reference (→ `elfmem
+  init`, also fixed in `doctor`'s own peer-inbox error message in
+  `cli.py`). Documented the previously-missing CLI surface (`edit`/
+  `forget`/`ls`/`inbox`, `templates`, `agent-docs`, `migrate-embeddings`,
+  the `review`/`index`/`mind` command groups), all 30 MCP tools, and the
+  24 previously-undocumented `MemorySystem` API methods and their return
+  types. `guide.py`'s `GUIDES` dict gains the 15 public methods that had
+  no `AgentGuide` entry (`from_config`, `from_env`, `managed`, `session`,
+  `begin_session`, `end_session`, `close`, `should_dream`,
+  `last_learned_block_id`, `last_recall_block_ids`, `session_block_ids`,
+  `visualise`, `connect_by_query`, `connects`, `peer_remove`) — a
+  standing CLAUDE.md rule this repo wasn't meeting — and fixes the
+  existing `setup` entry's `returns`/`example` fields, which still
+  described the pre-v2 return shape and the old seed-by-default behaviour.
+  Retired `docs/mcp_server_setup.md` (dated March 2026, listed 9 of 30
+  commands) outright; rewrote `docs/CLAUDE_CODE_INTEGRATION.md` in place
+  rather than deleting it — four other docs point to it as the canonical
+  Claude Code integration reference, so the stale/broken setup mechanics
+  (invalid `elfmem init` positional-arg syntax, a pre-ADR-0008 MCP config
+  path) were stripped while the content unique to it (Agent Discipline,
+  Simulation-Based Calibration) was kept and tightened. Refreshed
+  `docs/quickstart.md`, `docs/index.md`, `docs/SETUP_AND_CONFIG.md`,
+  `docs/elfmem_tool.md`, and `ROADMAP.md` (added the "In Progress" v2
+  substrate entry this whole wave was otherwise undocumented under) to
+  match; `mkdocs.yml` nav updated for the retired file.
 
 ### Removed
 - **Breaking**: decay-driven block archival (v2 step 7a, ADR 0009).

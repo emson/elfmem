@@ -28,7 +28,7 @@ To build memory that truly evolves, we had to innovate in areas that existing to
 
 **Knowledge must earn its place.** In most memory systems, everything stored is equally permanent. In elfmem, knowledge lives or dies based on whether it's useful. Blocks that guide successful decisions get **reinforced**: their confidence rises, their connections strengthen. Blocks that mislead get **penalised** and eventually **archived**. After a few sessions, the memory is measurably better than when it started.
 
-**Retrieval depends on context.** Looking up a quick fact, exploring a novel problem, and checking your values require fundamentally different strategies. elfmem provides **five retrieval frames**, each a pre-configured scoring pipeline that weights similarity, confidence, recency, centrality, and reinforcement differently for the task at hand.
+**Retrieval depends on context.** Looking up a quick fact, exploring a novel problem, and checking your values require fundamentally different strategies. elfmem provides **four retrieval frames**, each a pre-configured scoring pipeline that weights similarity, confidence, recency, centrality, and reinforcement differently for the task at hand.
 
 **Related knowledge should surface together.** If your agent knows "use Redis for caching" and "Redis requires careful memory management", retrieving one should surface the other, even if the query only matches the first. elfmem builds a **knowledge graph** where semantic edges form during consolidation and strengthen through co-retrieval.
 
@@ -44,7 +44,7 @@ elfmem is designed for the agent's one-shot loop: **read, call, interpret, act**
 - Every exception carries a **`.recovery` field** with the exact code or command to fix the problem
 - `guide()` provides **runtime self-documentation** so the agent can teach itself the API
 - Duplicate `learn()` returns a graceful reject, not an error. Empty `dream()` returns zero counts, not a crash
-- All reasoning (alignment scoring, contradiction detection, tag inference) uses **official SDKs only**: `anthropic` and `openai`, no third-party gateways
+- All reasoning (alignment scoring, tag inference, drift/staleness review) uses **official SDKs only**: `anthropic` and `openai`, no third-party gateways
 
 ---
 
@@ -72,7 +72,7 @@ async def main():
         result = await system.learn("Deploy failed when pool size was left at default (10).")
         print(result)  # "Stored block e5f6g7h8. Status: created."
 
-        # 3. Consolidate: embed, deduplicate, detect contradictions, build graph
+        # 3. Consolidate: embed, deduplicate, build graph
         result = await system.dream()
         print(result)  # "Consolidated 2: 2 promoted, 0 deduped, 3 edges."
 
@@ -272,19 +272,19 @@ await system.outcome([imported_block_id], signal=0.9, source="gilt prediction co
 
 **Recipient-readiness:** when `delivery_path` is set, `peer_send` verifies `<delivery_path>/../config.yaml` exists before writing. A missing marker raises `PeerError` with the exact `elfmem init` recovery — replacing silent black-hole sends to unmounted or uninitialised recipients.
 
-**Inbox/outbox location:** Peer messaging is project-scoped. Your inbox is always `<project>/.elfmem/inbox` (and outbox `<project>/.elfmem/outbox`), derived from the project root (the directory containing `.elfmem/config.yaml`). Run `elfmem setup` once per project to initialise it; peer operations outside any project raise `ProjectNotFound` with a recovery hint.
+**Inbox/outbox location:** Peer messaging is project-scoped. Your inbox is always `<project>/.elfmem/inbox` (and outbox `<project>/.elfmem/outbox`), derived from the project root (the directory containing `.elfmem/config.yaml`). Run `elfmem init` once per project to initialise it; peer operations outside any project raise `ProjectNotFound` with a recovery hint.
 
 Trust is outcome-driven: when peer-originated knowledge leads to good outcomes, trust rises. When it misleads, trust falls. Peer trust also decays slowly over inactivity (90 days), incentivising regular exchange.
 
 ```bash
 # CLI equivalents
-elfmem peer init research-elf
+elfmem peer init --name research-elf
 elfmem peer add elf:vault --name "Vault Elf" \
     --delivery-path ~/shared/vaults/elf_vault_proj/.elfmem/inbox
 elfmem peer send elf:vault "What's your view on UK gilts?"
 elfmem peer inbox --import-all
 elfmem peer list
-elfmem export knowledge.json --share public
+elfmem export -o knowledge.json --share public
 elfmem import peer_knowledge.json --from elf:trader
 ```
 
@@ -299,15 +299,15 @@ await system.learn("Deploy failed: Redis connection timeout on staging.")
 await system.learn("The fix was to increase the connection pool size to 20.")
 
 # BREATHING - seconds, LLM-powered
-# Call at natural pauses. Embeds, deduplicates, detects contradictions, builds graph edges.
+# Call at natural pauses. Embeds, deduplicates, builds graph edges.
 if system.should_dream:
     result = await system.dream()
     print(result)  # "Consolidated 2: 2 promoted, 0 deduped, 4 edges."
 
 # SLEEP - minutes, maintenance
-# Call on schedule. Archives decayed blocks, prunes weak edges, reinforces top knowledge.
+# Call on schedule. Prunes weak/decayed edges, reinforces top knowledge.
 result = await system.curate()
-print(result)  # "Curated: 2 archived, 3 edges pruned, 5 reinforced."
+print(result)  # "Curated: 3 edges pruned, 5 reinforced."
 
 # DEEP SLEEP - LLM-powered, periodic re-evaluation
 # Re-scores aged active blocks against the *current* SELF. Keeps alignment,
@@ -316,7 +316,30 @@ result = await system.dream(rescore=True)
 print(result)  # "... 20 rescored, 0 failed."
 ```
 
-`learn()` is instant because it defers all expensive work to `dream()`. `dream()` does the heavy lifting (embedding, deduplication, contradiction detection, graph construction) in a single batch. `curate()` is the gardener: archiving what's faded, pruning weak connections, reinforcing what matters most. **Deep sleep** (rescoring) closes the loop: as the agent's identity evolves through new learning, existing memories are progressively re-evaluated so they remain aligned with the current self. Run it periodically, or as `elfmem dream --rescore [--max N]`.
+`learn()` is instant because it defers all expensive work to `dream()`. `dream()` does the heavy lifting (embedding, deduplication, graph construction) in a single batch. `curate()` is the gardener: pruning weak and temporally-decayed connections, reinforcing what matters most. Archival itself is deliberate, not automatic: `review_corpus()` (`elfmem review corpus`) surfaces stale candidates — long-unused, rarely reinforced, never confirmed by an outcome — for you to accept or reject; `forget()` then archives on decision. **Deep sleep** (rescoring) closes the loop: as the agent's identity evolves through new learning, existing memories are progressively re-evaluated so they remain aligned with the current self. Run it periodically, or as `elfmem dream --rescore [--max N]`.
+
+### Direct memory management: edit, forget, list, inspect the inbox
+
+The four rhythms above are the *implicit* lifecycle — knowledge earns or loses standing through use. Sometimes you just need direct, deterministic control, with no LLM involved:
+
+```python
+# Fix a block's content in place — re-embeds, clears summary for the next dream() pass
+result = await system.edit(block_id, "Redis connection pooling: set max to 25 in production.")
+print(result)  # "Edited a1b2c3d4…"
+
+# Archive on explicit request — idempotent, safe to call twice
+result = await system.forget(block_id)
+print(result)  # "Forgotten a1b2c3d4… (status: forgotten)"
+
+# List active blocks — flat, unscored, no relevance ranking (unlike frame()/recall())
+rows = await system.ls(tag="ui", limit=20)
+
+# See what's waiting to be consolidated, oldest first
+pending = await system.inbox()
+print(f"{len(pending)} blocks waiting for the next dream()")
+```
+
+`ls()` and `inbox()` are read-only, zero-cost views for when you want to inspect memory state without triggering retrieval scoring. `edit()` and `forget()` are the direct-write counterparts to the reinforce/decay cycle — useful for corrections, redactions, and cleanup that shouldn't have to wait for confidence to fall on its own.
 
 ### Knowledge graph: connections that strengthen through use
 
@@ -378,6 +401,34 @@ Blocks that guided good decisions get stronger. Blocks that misled get weaker. E
 | 0.10 -- 0.20 | Set wrong expectation | Relied on it, outcome contradicted it |
 | 0.00 -- 0.10 | Caused failure | Followed its guidance, things broke |
 
+### Constitutional & corpus review: keeping memory honest
+
+`curate()` no longer archives blocks automatically ([ADR 0009](docs/decisions/0009-retire-decay-driven-archival.md) — a production database showed the trigger never fired in months of use). In its place, two review cycles surface *proposals*; nothing is applied until you or the agent decides.
+
+**Corpus review** is deterministic and free — pure SQL/math, zero LLM calls. A block is proposed for archival only when three weak signals all agree: long-unused, rarely reinforced, and never confirmed by an `outcome()`.
+
+```python
+result = await system.review_corpus()
+print(result)  # "Reviewed 40 blocks: 3 proposals (stale)."
+for p in result.proposals:
+    print(f"  [{p.kind}] {p.block_id[:8]}… {p.reason}: {p.content_preview}")
+    await system.forget(p.block_id, reason=ArchiveReason.DECAYED)  # accept the proposal
+```
+
+**Constitutional review** is LLM-powered and targets the SELF frame specifically: it surfaces `self/constitutional` blocks that have drifted from how the agent now behaves, as proposed amendments with a full, reversible audit trail.
+
+```python
+result = await system.review_constitutional()
+for amendment in result.proposals:
+    print(f"  {amendment.block_id[:8]}… drift={amendment.drift_score:.2f}: {amendment.rationale}")
+    await system.accept_amendment(amendment.block_id, amendment.proposed_content, amendment.rationale)
+
+records = await system.list_amendments(block_id=amendment.block_id)
+await system.revert_amendment(records[0].id)  # every accepted amendment can be undone
+```
+
+Both are exposed on the CLI as `elfmem review corpus` / `elfmem review`, with the same interactive accept/reject/skip/quit walkthrough, or `--json --yes` for scripted use.
+
 ### Knowledge lifecycle
 
 Every block follows the same path:
@@ -387,10 +438,11 @@ BIRTH    →  learn(): fast inbox insert, no API calls
 GROWTH   →  dream(): embedded, scored, deduplicated, graph edges built
 MATURITY →  frame()/outcome(): reinforced on retrieval, confidence rises
 DECAY    →  session-aware clock ticks; unused knowledge loses confidence
-ARCHIVE  →  curate(): blocks below threshold archived, not deleted
+ARCHIVE  →  review_corpus() flags stale candidates for human review;
+            forget() archives on decision, not deleted
 ```
 
-Decay is **session-aware**: the clock only ticks during active use. Knowledge survives holidays and downtime. Reinforcement resets the decay clock. A single successful use can save a fading block.
+Decay is **session-aware**: the clock only ticks during active use. Knowledge survives holidays and downtime. Reinforcement resets the decay clock. A single successful use can save a fading block. Archival is deliberate rather than automatic: `curate()` prunes weak and temporally-decayed *edges* but no longer auto-archives *blocks* — that's `review_corpus()`'s job, gated by human (or agent) review rather than a silent threshold.
 
 ---
 
@@ -402,7 +454,7 @@ Decay is **session-aware**: the clock only ticks during active use. Knowledge su
 | Adaptive decay | Yes | No | No | No |
 | Knowledge graph | Yes | No | No | No |
 | Agent identity (SELF) | Yes | No | No | No |
-| Contradiction detection | Yes | No | No | No |
+| Constitutional review (drift + staleness) | Yes | No | No | No |
 | Feedback loop (outcome) | Yes | No | No | No |
 | Session-aware clock | Yes | No | No | No |
 | Theory of Mind | Yes | No | No | No |
@@ -472,31 +524,185 @@ Add to your MCP config (e.g. `~/.claude.json`):
 }
 ```
 
-Ten tools are exposed to the agent:
+30 tools are exposed to the agent:
+
+**Identity & memory**
 
 | Tool | Purpose |
 |------|---------|
 | `elfmem_setup` | Bootstrap agent identity (run once) |
 | `elfmem_remember` | Store knowledge for future retrieval |
+| `elfmem_edit` | Replace an active block's content directly, no LLM |
+| `elfmem_forget` | Archive a block by explicit request — the direct delete path |
+| `elfmem_ls` | List active blocks — a deterministic, unscored view of memory |
+| `elfmem_inbox` | List pending blocks not yet consolidated, FIFO |
+
+**Retrieval & feedback**
+
+| Tool | Purpose |
+|------|---------|
 | `elfmem_recall` | Retrieve relevant knowledge, rendered for prompt injection |
 | `elfmem_outcome` | Signal how well recalled knowledge helped |
-| `elfmem_dream` | Deep consolidation (embed, dedup, build graph) |
-| `elfmem_curate` | Archive decayed blocks, prune weak edges |
 | `elfmem_status` | Memory health snapshot |
-| `elfmem_connect` | Create or strengthen an edge between two blocks |
-| `elfmem_disconnect` | Remove an edge between two blocks |
-| `elfmem_guide` | Runtime documentation for any tool |
+
+**Consolidation & maintenance**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_dream` | Deep consolidation: embed, align, promote, build graph. `rescore`/`host_analyses` params mirror the CLI's `--rescore`/`--host-analyses` |
+| `elfmem_curate` | Prune weak/decayed edges, reinforce top knowledge (no longer auto-archives) |
+
+**Knowledge graph**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_connect` | Create or strengthen a semantic edge between two blocks |
+| `elfmem_disconnect` | Remove the edge between two blocks |
+
+**Theory of Mind**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_mind_create` | Create a mind block for a subject (another agent, user, stakeholder) |
+| `elfmem_mind_predict` | Add a falsifiable prediction linked to a mind block |
+| `elfmem_mind_list` | List all active mind blocks with prediction statistics |
+| `elfmem_mind_show` | Show a mind block with all linked predictions and outcomes |
+| `elfmem_mind_outcome` | Close a prediction: record hit/miss and calibrate the mind model |
+
+**Peer communication & sharing**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_peer_send` | Send a message to a peer elfmem instance |
+| `elfmem_peer_inbox` | Check for and import pending messages from peers |
+| `elfmem_peer_inbox_status` | Check for unprocessed peer messages without importing them |
+| `elfmem_peer_list` | List all registered peers with trust scores and statistics |
+| `elfmem_export` | Export shareable blocks as a JSON bundle for another instance |
+| `elfmem_import` | Import a block bundle from another elfmem instance |
+
+**Constitutional & corpus review**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_review_constitutional` | Surface drifted self/constitutional blocks as proposed amendments |
+| `elfmem_review_corpus` | Deterministic staleness detection — zero LLM calls |
+| `elfmem_accept_amendment` | Apply a proposed amendment to a constitutional block |
+| `elfmem_revert_amendment` | Undo one amendment: restore a block to its prior content |
+| `elfmem_list_amendments` | List amendment history, newest first, optionally filtered by block |
+
+**Docs**
+
+| Tool | Purpose |
+|------|---------|
+| `elfmem_guide` | Runtime documentation for any operation |
 
 ### CLI: for shell access
 
+Quick start:
+
 ```bash
-elfmem init                                          # project setup
+elfmem init                                          # project setup (writes zero blocks unless --seed)
 elfmem doctor                                        # check config and health
 elfmem remember "User prefers dark mode" --tags ui   # store knowledge
 elfmem recall "code style preferences" --json        # retrieve knowledge
 elfmem status                                        # memory health
 elfmem guide recall                                  # runtime docs
 ```
+
+`elfmem <cmd> --help` documents that command's exact flags; `elfmem guide <method>` gives the agent-facing runtime docs for the matching Python method. Most commands also accept `--db`, `--config`, and `--json` (machine-readable output) in addition to what's shown below. Commands that are normally interactive (`review`, `review corpus`, `review accept`, `review revert`, `migrate apply`, `rescue --apply`) accept `--yes`/`-y` to run non-interactively.
+
+The full command surface, grouped:
+
+**Setup & project**
+
+| Command | Purpose |
+|---|---|
+| `elfmem init [--seed] [--template T] [--self TEXT] [--name TEXT]` | State-aware setup/refresh. Writes zero memory blocks unless `--seed` is passed |
+| `elfmem templates` | List domain seed templates for `init --template` |
+| `elfmem doctor [--resolve] [--migrate-mcp] [--modules]` | Diagnose config/DB discovery, API keys, backups, agent-doc/MCP drift. `--resolve` makes one real LLM call to confirm the key works |
+| `elfmem agent-docs {install\|check\|diff}` | Sync `.elfmem/AGENT.md` from the live config |
+| `elfmem rescue [--apply] [--yes]` | Recover an orphaned DB after a path-resolution drift |
+
+**Write / edit memory**
+
+| Command | Purpose |
+|---|---|
+| `elfmem remember CONTENT [--tags T] [--category C]` | Store knowledge (fast inbox insert) |
+| `elfmem edit BLOCK_ID CONTENT` | Replace an active block's content directly, no LLM |
+| `elfmem forget BLOCK_ID` | Archive a block by explicit request; idempotent |
+| `elfmem outcome BLOCK_IDS SIGNAL [--weight F] [--source S]` | Record an outcome signal [0.0-1.0] to update confidence |
+
+**Read memory**
+
+| Command | Purpose |
+|---|---|
+| `elfmem recall QUERY [--frame F] [--top-k N]` | Retrieve knowledge rendered for prompt injection |
+| `elfmem ls [--tag T] [--category C] [--limit N]` | List active blocks — deterministic, unscored, no LLM |
+| `elfmem inbox [--max N]` | List pending (not-yet-consolidated) blocks, FIFO |
+| `elfmem status [--peer-inbox]` | System health / next-action |
+
+**Maintenance & consolidation**
+
+| Command | Purpose |
+|---|---|
+| `elfmem dream [--rescore] [--no-llm] [--max N] [--host-analyses FILE] [--metabolism-dry-run]` | Consolidate inbox → embed/align/promote. `--rescore` re-evaluates aged blocks against current SELF; `--host-analyses` lets a host agent session supply its own alignment/tags/summary instead of a configured LLM adapter; `--metabolism-dry-run` is a read-only preview of goal-directed edge proposals |
+| `elfmem curate` | Prune weak/decayed edges, reinforce top knowledge (no longer auto-archives blocks — see **Constitutional & corpus review** below) |
+| `elfmem backup` | Clean `VACUUM INTO` backup |
+| `elfmem migrate-embeddings [--execute] [--to MODEL] [--from MODEL] [--batch N]` | Re-embed under a different embedding model (estimate-only unless `--execute`) |
+| `elfmem migrate status\|plan` | Config-drift migration: one-line summary, or a full read-only diff per step |
+| `elfmem migrate apply [--id ID] [--dry-run]` | Apply pending config migration steps atomically, with backups |
+
+**Constitutional & corpus review**
+
+| Command | Purpose |
+|---|---|
+| `elfmem review` | Interactive walkthrough of drifted self/constitutional blocks as proposed amendments |
+| `elfmem review corpus` | Deterministic staleness detection for ordinary memory — zero LLM calls, same accept/reject/skip walkthrough |
+| `elfmem review accept BLOCK_ID [--content-file F] [--rationale R]` | Apply a proposed amendment |
+| `elfmem review revert AMENDMENT_ID` | Undo one amendment |
+| `elfmem review list [--block ID] [--limit N]` | Amendment history |
+
+**Peer communication**
+
+| Command | Purpose |
+|---|---|
+| `elfmem peer init --name NAME` | Set this instance's identity |
+| `elfmem peer add DID --name NAME [--delivery-path PATH] [--self]` | Register a peer |
+| `elfmem peer remove DID` | Remove a peer |
+| `elfmem peer list` | List registered peers with trust scores |
+| `elfmem peer trust DID [--set F]` | View or set trust |
+| `elfmem peer send DID CONTENT [--reply-to ID]` | Send a message |
+| `elfmem peer inbox [--from DID] [--import-all]` | Check for and import pending messages |
+
+**Sharing, export & the file substrate**
+
+| Command | Purpose |
+|---|---|
+| `elfmem export [-o FILE] [--share LEVEL] [--min-confidence F]` | Export shareable blocks to a JSON bundle |
+| `elfmem export --to-markdown [--memory-dir DIR]` | Export every block to `.elfmem/memory/**.md` (read-only against the DB) |
+| `elfmem import PATH [--from DID] [--self-merge]` | Import a block bundle |
+| `elfmem index check [--memory-dir DIR]` | Parse the markdown-file substrate, report frontmatter errors — no DB opened |
+| `elfmem index rebuild --to PATH [--force]` | Derive a fresh SQLite index from the files, zero LLM calls |
+| `elfmem index parity [--live-db PATH] [--query Q]` | Rehearse retrieval parity between the file substrate and the live DB, read-only |
+
+**Theory of Mind**
+
+| Command | Purpose |
+|---|---|
+| `elfmem mind create SUBJECT [--goal T]... [--belief T]... [--fear T]... [--motivation T]...` | Create a mind block |
+| `elfmem mind predict MIND_BLOCK_ID --prediction P --verify-at DATE [--reasoning R]` | Attach a falsifiable prediction |
+| `elfmem mind list` | List mind blocks with prediction stats |
+| `elfmem mind show MIND_BLOCK_ID` | Show a mind block with linked predictions |
+| `elfmem mind outcome DECISION_BLOCK_ID --hit/--miss --reason R` | Close a prediction and calibrate the mind model |
+
+**Dev / debug**
+
+| Command | Purpose |
+|---|---|
+| `elfmem guide [METHOD]` | Runtime docs for one operation, or the full overview |
+| `elfmem serve [--config PATH] [--env-file PATH]` | Start the MCP server |
+
+`elfmem index {check,rebuild,parity}` is migration-rehearsal tooling for the markdown file substrate (`docs/plans/v2_substrate`) — it never writes to the live database; `parity` only reads from it for comparison. `elfmem dream --no-llm` skips LLM calls but degrades SELF-frame coherence over time — it's a debugging escape hatch, not for default use.
 
 ### Python library: for full control
 
@@ -519,15 +725,18 @@ What it does — **state-aware** (one verb, three behaviours selected by detecti
   1. Detects your project root (walks up to find `.git`, `pyproject.toml`, etc.)
   2. Creates `.elfmem/config.yaml` with project settings
   3. Creates a database at `~/.elfmem/databases/{project-name}.db` (outside the repo)
-  4. Seeds the constitutional cognitive loop (10 role-tagged blocks)
+  4. Writes **zero memory blocks by default** — nothing is added before you've
+     expressed a preference. Pass `--seed` to also seed the constitutional
+     cognitive loop (10 role-tagged blocks), optionally layered with a
+     domain `--template` (`elfmem templates` lists options)
   5. Writes an elfmem section into `CLAUDE.md` / `AGENTS.md`
   6. Prints the MCP JSON snippet to paste into `~/.claude.json`
 - **Established instance** (config + populated DB): refresh-only mode. Reads
   the live `.elfmem/config.yaml`, re-renders the agent doc section from it
   (never from inferred defaults), runs the constitutional seed idempotently
-  (no-op when role slots are filled), and applies any pending schema migration
-  with a row-count-validated backup. The config and existing blocks are
-  preserved.
+  if `--seed` is passed (no-op when role slots are already filled), and
+  applies any pending schema migration with a row-count-validated backup.
+  The config and existing blocks are preserved.
 - **Orphaned DB** (configured DB is empty but a populated DB exists at a
   neighbour path): refuses with a pointer to `elfmem rescue`. No data loss.
 
@@ -701,7 +910,6 @@ system = await MemorySystem.from_config("agent.db")
 # elfmem.yaml
 llm:
   model: "claude-sonnet-4-6"
-  contradiction_model: "claude-opus-4-6"   # higher precision for contradictions
 
 embeddings:
   model: "text-embedding-3-small"
@@ -711,7 +919,7 @@ memory:
   inbox_threshold: 10
   curate_interval_hours: 40
   self_alignment_threshold: 0.70
-  prune_threshold: 0.05
+  edge_prune_threshold: 0.10
 ```
 
 ```python
@@ -790,7 +998,8 @@ from elfmem.ports.services import LLMService, EmbeddingService
 
 class MyLLMService:
     async def process_block(self, block: str, self_context: str) -> BlockAnalysis: ...
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float: ...
+    async def propose_amendment(self, *, block_content, block_summary, drift_score, evidence_summaries) -> dict: ...
+    async def propose_goal_directed_edges(self, *, block_content, block_summary, self_goals, candidates, max_edges) -> list: ...
 
 class MyEmbeddingService:
     async def embed(self, text: str) -> np.ndarray: ...
@@ -836,31 +1045,62 @@ async with MemorySystem.managed("agent.db") as system:  # full lifecycle
     ...
 async with system.session():  # session only
     ...
+await system.close()          # explicit teardown outside a context manager
+
+# Session, without the context-manager sugar
+task_id = await system.begin_session(task_type="general")
+#   → str (session id)
+hours = await system.end_session()
+#   → float (active hours this session)
+
+# Session breadcrumbs (properties, no args)
+system.last_learned_block_id     # str | None — most recent learn()/remember()
+system.last_recall_block_ids     # list[str] — most recent frame()/recall()
+system.session_block_ids         # list[str] — every block touched this session
 
 # Write
 result = await system.learn(content, tags=None, category="knowledge")
 #   → LearnResult(block_id="a1b2...", status="created")
 result = await system.remember(content, tags=None)   # alias; also checks should_dream
 #   → LearnResult(block_id="c3d4...", status="created")
+result = await system.learn_document(text, chunk_size=256, tags=None)
+#   → LearnDocumentResult(chunks_total=8, chunks_created=7, chunks_duplicate=1)
+result = await system.edit(block_id, content)         # replace content directly, no LLM
+#   → EditResult(block_id="a1b2...")
+result = await system.forget(block_id)                # archive by explicit request, idempotent
+#   → ForgetResult(block_id="a1b2...", status="forgotten")
 
 # Read
 frame_result = await system.frame(name, query=None, top_k=5)
 #   → FrameResult(text="...", blocks=[ScoredBlock, ...], frame_name="attention")
 blocks = await system.recall(query=None, top_k=5, frame="attention")
 #   → list[ScoredBlock]  (raw, no rendering, no side effects)
+rows = await system.ls(tag=None, category=None, limit=50)
+#   → list[BlockSummary]  (deterministic listing, no scoring, no LLM)
+pending = await system.inbox(max_count=None)
+#   → list[InboxBlockSummary]  (FIFO, not yet consolidated)
 
 # Feedback
 result = await system.outcome(block_ids, signal, weight=1.0, source="")
 #   → OutcomeResult(blocks_updated=3, mean_confidence_delta=0.042, ...)
 
 # Consolidation & maintenance
-result = await system.dream()    # consolidate inbox → active
+result = await system.consolidate(skip_llm=False, host_analyses=None)
+#   → ConsolidateResult(processed=5, promoted=5, deduplicated=0, edges_created=8, ...)
+result = await system.dream()    # consolidate inbox → active (calls consolidate() under the hood)
 #   → ConsolidateResult(processed=5, promoted=5, deduplicated=0, edges_created=8)
-result = await system.curate()   # archive decayed, prune edges
-#   → CurateResult(archived=2, edges_pruned=3, reinforced=5)
+result = await system.dream(rescore=True, rescore_max=20)
+#   → ConsolidateResult(rescored=20, rescore_failed=0, ...)
+counts = await system.rescore(max_count=None)
+#   → dict[str, int]  ({"rescored": N, "failed": N})
+result = await system.metabolism_dry_run(max_count=None)
+#   → MetabolismDryRunResult(blocks_considered, self_goals, candidates, proposals, llm_failures)
+#     Read-only preview of goal-directed edge proposals; never writes edges.
+result = await system.curate()   # prune weak/decayed edges, reinforce top knowledge
+#   → CurateResult(edges_pruned=3, reinforced=5, edges_decayed=1, total_edges_after=40)
 
 # Identity
-result = await system.setup(identity=None, values=None)
+result = await system.setup(identity=None, values=None, seed=False)
 #   → SetupResult(blocks_created=4, total_attempted=4)
 
 # Graph
@@ -868,6 +1108,11 @@ result = await system.connect(source, target, relation="similar")
 #   → ConnectResult(action="created", relation="similar", weight=0.50, ...)
 result = await system.disconnect(source, target)
 #   → DisconnectResult(action="removed", ...)
+result = await system.connect_by_query(source_query, target_query, min_confidence=0.70)
+#   → ConnectByQueryResult(source_id, target_id, action="connected", connect_result=..., ...)
+#     Finds both blocks by query first — verify .source_content/.target_content before trusting it.
+result = await system.connects(edges)   # batch edge creation, list[ConnectSpec]
+#   → ConnectsResult(results=[...], created=3, reinforced=1, updated=0, skipped=0, errors=[])
 
 # Theory of Mind
 result = await system.mind_create(subject, goals=None, beliefs=None, fears=None, motivations=None)
@@ -878,8 +1123,21 @@ result = await system.mind_list()
 #   → list[MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)]
 result = await system.mind_show(mind_block_id)
 #   → MindShowResult(subject, block_id, content, predictions=[PredictionDetail, ...])
-result = await system.mind_outcome(prediction_block_id, hit, reason)
+result = await system.mind_outcome(decision_block_id, hit=True, reason="...")
 #   → MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, ...)
+
+# Constitutional & corpus review
+result = await system.review_corpus()
+#   → CorpusReviewResult(reviewed_count=40, proposals=[CorpusProposal, ...])
+#     Zero LLM calls — deterministic staleness (unused + rarely reinforced + no outcome).
+result = await system.review_constitutional(drift_threshold=None, max_proposals=None)
+#   → ConstitutionalReviewResult(proposals=[ProposedAmendment, ...], reviewed_count=10)
+result = await system.accept_amendment(block_id, proposed_content, rationale=None)
+#   → AmendmentResult(amendment_id=7, block_id="...", pre_content="...", post_content="...")
+result = await system.revert_amendment(amendment_id)
+#   → AmendmentResult(...)  (restores the block to its immediate prior content)
+records = await system.list_amendments(block_id=None, limit=100)
+#   → list[AmendmentRecord]
 
 # Peer communication
 result = await system.peer_init(name)
@@ -896,6 +1154,8 @@ result = await system.peer_send(did, content, *, in_reply_to=None)
 #   → PeerSendResult(msg_id, to_peer, delivery_path)
 result = await system.peer_inbox(*, from_peer=None, import_all=False)
 #   → PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
+status = system.peer_inbox_status()   # sync, filesystem scan only, no import
+#   → PeerInboxStatus(pending=2, oldest_at="...", from_peers=["elf:vault"], ...)
 result = await system.export_blocks(*, share_level="public", output_path, min_confidence=0.3)
 #   → ExportResult(blocks_exported, edges_exported, output_path)
 result = await system.import_blocks(path, *, from_peer=None, is_self_merge=False)
@@ -908,6 +1168,11 @@ print(status)
 #   Session: active (1.2h) | Inbox: 0/10 | Active: 47 blocks | Health: good
 #   Tokens this session: LLM: 2,340 tokens (3 calls) | Embed: 1,200 tokens (5 calls)
 #   Suggestion: Memory is healthy.
+
+ops = system.history(last_n=10)
+#   → list[OperationRecord(operation, summary, timestamp)]  (in-memory, resets on restart)
+path = system.visualise(path=None, open_browser=True, include_archived=False)
+#   → str (path to the generated HTML dashboard)
 
 text = system.guide()            # overview of all operations
 text = system.guide("learn")     # detailed guide for one method
@@ -922,29 +1187,50 @@ All result types implement `__str__()` (one-line summary), `.summary` (same), an
 LearnResult(block_id, status)
 # status: "created" | "duplicate_rejected" | "near_duplicate_superseded"
 
+LearnDocumentResult(chunks_total, chunks_created, chunks_duplicate)
+EditResult(block_id)
+ForgetResult(block_id, status)
+# status: "forgotten" | "already_archived" (idempotent, not an error)
+
 FrameResult(text, blocks, frame_name, cached, edges_promoted)
 # text: rendered prompt-ready string; blocks: list[ScoredBlock]
 
 ScoredBlock(id, content, score, confidence, similarity, recency, centrality, reinforcement, tags, was_expanded)
+BlockSummary(id, content, category, tags, created_at, reinforcement_count)      # ls()
+InboxBlockSummary(id, content, category, tags, created_at)                     # inbox()
 
-ConsolidateResult(processed, promoted, deduplicated, edges_created)
-CurateResult(archived, edges_pruned, reinforced, edges_decayed)
+ConsolidateResult(processed, promoted, deduplicated, edges_created, rescored, rescore_failed, inbox_remaining, health)
+CurateResult(edges_pruned, reinforced, constitutional_reinforced, edges_decayed, total_edges_after)
+# no `archived` field — curate() no longer auto-archives blocks (ADR 0009); see review_corpus()
+MetabolismDryRunResult(blocks_considered, self_goals, candidates, proposals, llm_failures)
 OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized)
 ConnectResult(action, source_id, target_id, relation, weight)
 DisconnectResult(action, source_id, target_id)
+ConnectByQueryResult(source_query, target_query, source_id, target_id, source_content, target_content, action, connect_result)
+ConnectsResult(results, created, reinforced, updated, skipped, deferred, errors)
 SetupResult(blocks_created, total_attempted)
+
+CorpusReviewResult(reviewed_count, proposals)                     # review_corpus()
+ConstitutionalReviewResult(proposals, reviewed_count)              # review_constitutional()
+AmendmentResult(amendment_id, block_id, pre_content, post_content, timestamp, acceptor)
+AmendmentRecord(id, block_id, timestamp, pre_content, post_content, drift_score, rationale, acceptor, reverted_at)
+
 MindPredictResult(prediction_block_id, mind_block_id, edge_id)
 MindShowResult(subject, block_id, content, confidence, predictions)
 MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)
 MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, old_confidence)
 PredictionDetail(block_id, content, status, hit, reason)
+
 PeerInfo(did, name, trust, is_self, delivery_path, messages_in, messages_out, ...)
 PeerSendResult(msg_id, to_peer, delivery_path)
 PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
+PeerInboxStatus(pending, oldest_at, newest_at, from_peers, inbox_dir, warning)  # peer_inbox_status()
 ExportResult(blocks_exported, edges_exported, output_path)
 ImportResult(blocks_imported, blocks_skipped, edges_imported, from_peer)
+
 SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, lifetime_tokens)
 TokenUsage(llm_input_tokens, llm_output_tokens, embedding_tokens, llm_calls, embedding_calls)
+OperationRecord(operation, summary, timestamp)                     # history()
 ```
 
 ---

@@ -3700,7 +3700,7 @@ async def _doctor_peer_checks(
         _add(
             "Peer inbox", False,
             "No project root and no explicit override",
-            "Run 'elfmem setup' inside your project directory",
+            "Run 'elfmem init' inside your project directory",
         )
     elif inbox_dir.exists() and inbox_dir.is_dir():
         _add("Peer inbox", True, str(inbox_dir))

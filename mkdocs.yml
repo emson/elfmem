@@ -65,7 +65,6 @@ nav:
   - Getting Started:
     - Configuration: SETUP_AND_CONFIG.md
     - Claude Code: CLAUDE_CODE_INTEGRATION.md
-    - MCP Server: MCP_SERVER_SETUP.md
     - Multiple MCP Instances: MULTIPLE_MCP_QUICK_REFERENCE.md
     - MCP Steps Reference: multiple_mcp_steps.md
     - Local Dev Setup: dev_setup.md
