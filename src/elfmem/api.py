@@ -26,6 +26,7 @@ from elfmem.db.queries import (
     get_block,
     get_block_counts,
     get_config,
+    get_inbox_blocks,
     get_inbox_count,
     get_tags_batch,
     get_total_active_hours,
@@ -58,6 +59,7 @@ from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
     ArchiveReason,
+    BlockAnalysis,
     BlockSummary,
     ConnectByQueryResult,
     ConnectResult,
@@ -73,8 +75,10 @@ from elfmem.types import (
     ForgetResult,
     FrameResult,
     ImportResult,
+    InboxBlockSummary,
     LearnDocumentResult,
     LearnResult,
+    MetabolismDryRunResult,
     MindOutcomeResult,
     MindPredictResult,
     MindShowResult,
@@ -117,6 +121,49 @@ def _assemble_chunks(sentences: list[str], chunk_size: int) -> list[str]:
     if current:
         chunks.append(" ".join(current))
     return chunks
+
+
+def _parse_host_analyses(
+    raw: dict[str, dict[str, Any]] | None,
+) -> dict[str, BlockAnalysis] | None:
+    """Validate and convert host-supplied ``consolidate(host_analyses=...)``
+    input into ``BlockAnalysis``, reusing the exact schema
+    (``BlockAnalysisModel``) and tag-filtering (``VALID_SELF_TAGS``) a real
+    LLM adapter's response already goes through — host-supplied reasoning
+    gets the same guarantees, not a looser bespoke check. Raises on a
+    malformed entry rather than silently degrading: this is direct
+    structured input from the caller, not unreliable external I/O, so
+    fail-fast is correct here (contrast the broad except around the real
+    adapter call in operations/consolidate.py).
+    """
+    if not raw:
+        return None
+    from pydantic import ValidationError
+
+    from elfmem.adapters.models import BlockAnalysisModel
+    from elfmem.exceptions import HostAnalysisError
+    from elfmem.prompts import VALID_SELF_TAGS
+
+    result: dict[str, BlockAnalysis] = {}
+    for block_id, fields in raw.items():
+        try:
+            parsed = BlockAnalysisModel.model_validate(fields)
+        except ValidationError as e:
+            raise HostAnalysisError(
+                f"Invalid host_analyses entry for block {block_id!r}: {e}",
+                recovery=(
+                    "Each entry must be {\"alignment_score\": <float 0.0-1.0>, "
+                    "\"tags\": [<str>, ...], \"summary\": \"<str>\"}. "
+                    f"Fix block {block_id!r}'s entry and retry."
+                ),
+            ) from e
+        filtered_tags = [t for t in parsed.tags if t in VALID_SELF_TAGS]
+        result[block_id] = BlockAnalysis(
+            alignment_score=parsed.alignment_score,
+            tags=filtered_tags,
+            summary=parsed.summary,
+        )
+    return result
 
 
 class MemorySystem:
@@ -766,9 +813,52 @@ class MemorySystem:
         self._record_op("learn", result.summary)
         return result
 
+    async def inbox(self, max_count: int | None = None) -> list[InboxBlockSummary]:
+        """List pending inbox blocks — not yet consolidated. FIFO order
+        (oldest first), matching the order `consolidate()` would process
+        them under `max_inbox_per_run`.
+
+        USE WHEN: reasoning about pending blocks yourself before calling
+        `consolidate(host_analyses=...)` — e.g. a host agent session (this
+        Claude Code session) supplying its own alignment_score/tags/summary
+        instead of a configured LLM adapter.
+
+        DON'T USE WHEN: you only need a count — `status().inbox_count` is
+        cheaper (no content fetched).
+
+        COST: pure read. No LLM calls, no embedding calls.
+
+        RETURNS: list[InboxBlockSummary] — id, content, category, tags,
+        created_at. Empty list if the inbox is empty.
+
+        NEXT: for each block, decide alignment_score (0.0-1.0), tags (from
+        the self/* vocabulary — self/constitutional, self/constraint,
+        self/value, self/style, self/goal, self/context), and a factual
+        1-2 sentence summary. Then call `consolidate(host_analyses={
+        block_id: {"alignment_score": ..., "tags": [...], "summary": ...}
+        })` — or `dream(host_analyses=...)` to also run rescore/curate in
+        the same call.
+        """
+        async with self._engine.connect() as conn:
+            rows = await get_inbox_blocks(conn)
+            if max_count is not None:
+                rows = rows[:max_count]
+            tags_map = await get_tags_batch(conn, [r["id"] for r in rows])
+        return [
+            InboxBlockSummary(
+                id=r["id"],
+                content=r["content"],
+                category=r["category"],
+                tags=tags_map.get(r["id"], []),
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+
     async def consolidate(
         self, *, skip_llm: bool = False,
         max_inbox_per_run: int | None = None,
+        host_analyses: dict[str, dict[str, Any]] | None = None,
     ) -> ConsolidateResult:
         """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
 
@@ -782,6 +872,8 @@ class MemorySystem:
         large inboxes; fast when inbox is small.
         - skip_llm=True: bypasses ALL LLM calls (embed + promote only).
           Fastest but blocks get neutral scoring and no summaries.
+        - host_analyses: supply the analysis yourself instead of paying for
+          (or depending on) a configured LLM adapter — see below.
 
         One call processes at most ``max_inbox_per_run`` blocks (default from
         ``consolidation.max_inbox_per_run``, currently 5 — ADR 0007). A large
@@ -790,6 +882,23 @@ class MemorySystem:
         Pass a large ``max_inbox_per_run`` (e.g. 100000) for a one-shot
         full-drain sweep on a fast adapter, matching the ``rescore()``
         convention for its own ``max_count``.
+
+        Args:
+            host_analyses: ``{block_id: {"alignment_score": float,
+                "tags": [str, ...], "summary": str}, ...}``. A block id
+                present here is treated as genuinely analysed — the
+                configured LLM adapter is never called for it, and the
+                block is scored exactly as a successful adapter call would
+                score it (not the neutral ``skip_llm`` fallback). Lets a
+                host agent session (e.g. this Claude Code session) supply
+                its own reasoning instead of a configured LLM adapter —
+                see ``inbox()`` for the read half of this loop. Blocks in
+                the batch not covered here still go through the normal
+                path (configured adapter, or ``skip_llm`` fallback).
+                Validated and tag-filtered the same way a real adapter's
+                response is (``VALID_SELF_TAGS``) — a malformed entry
+                raises rather than silently degrading, since this is
+                direct structured input, not unreliable external I/O.
 
         RETURNS: ConsolidateResult with counts: processed, promoted,
         deduplicated, edges_created, inbox_remaining. processed=0 means
@@ -802,6 +911,7 @@ class MemorySystem:
         current_hours = self._current_active_hours()
         mem = self._config.memory
         budget = max_inbox_per_run if max_inbox_per_run is not None else mem.max_inbox_per_run
+        parsed_host_analyses = _parse_host_analyses(host_analyses)
 
         async with self._engine.begin() as conn:
             result = await consolidate(
@@ -816,6 +926,7 @@ class MemorySystem:
                 edge_degree_cap=mem.edge_degree_cap,
                 skip_llm=skip_llm,
                 max_inbox_per_run=budget,
+                host_analyses=parsed_host_analyses,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
@@ -1239,6 +1350,48 @@ class MemorySystem:
             evidence_weight=self._config.memory.rescore_evidence_weight,
         )
 
+    async def metabolism_dry_run(
+        self, *, max_count: int | None = None,
+    ) -> MetabolismDryRunResult:
+        """Propose goal-directed connections without writing anything.
+
+        Edge-metabolism Stage A (docs/plans/plan_edge_metabolism.md): for
+        each rescore-eligible block, judges a widened candidate shortlist
+        against elf's own ``self/goal`` blocks — not just similarity — and
+        reports what it would connect. **Never calls insert_edge.** Stage B
+        (applying proposals live, no gate) is a separate, not-yet-approved
+        decision; this method exists to gather the evidence that decision
+        needs.
+
+        USE WHEN: sanity-checking edge metabolism against real content
+            before deciding whether Stage B is worth building.
+        DON'T USE WHEN: you want edges actually created — nothing here
+            writes to the graph.
+        COST: one LLM call per block considered (same eligibility rule and
+            budget as ``rescore()`` — default 20/run).
+        RETURNS: ``MetabolismDryRunResult`` — proposed connections with
+            one-line reasoning each, plus candidate-pool sizes (evidence for
+            "is there anything here worth connecting" even before reading
+            individual proposals).
+        NEXT: read the proposals by hand. This is the validation step the
+            Zettelkasten-auto-linking deferral (docs/plans/archive/plan_memory_scoring.md)
+            asked for before any live graph-mutation mechanism ships.
+        """
+        from elfmem.operations.rescore import RescoreFilter, select_rescore_candidates
+        from elfmem.operations.rescore import metabolism_dry_run as _metabolism_dry_run
+
+        cfg = self._config.rescore
+        budget = max_count if max_count is not None else cfg.max_per_run
+        filt = RescoreFilter(
+            exclude_categories=tuple(cfg.exclude_categories),
+            exclude_tags=tuple(cfg.exclude_tags),
+            min_age_hours=cfg.min_age_hours,
+            target_max_age_days=cfg.target_max_age_days,
+        )
+        async with self._engine.connect() as conn:
+            candidates = await select_rescore_candidates(conn, filt=filt, max_count=budget)
+            return await _metabolism_dry_run(conn, block_ids=candidates, llm=self._llm)
+
     async def dream(
         self,
         *,
@@ -1246,6 +1399,7 @@ class MemorySystem:
         rescore: bool = False,
         rescore_max: int | None = None,
         inbox_max: int | None = None,
+        host_analyses: dict[str, dict[str, Any]] | None = None,
     ) -> ConsolidateResult | None:
         """Consolidate pending blocks at a natural pause point.
 
@@ -1290,6 +1444,10 @@ class MemorySystem:
                 flag maps to both this and ``rescore_max`` in the same
                 invocation (ADR 0007) — pass them separately here for
                 independent control.
+            host_analyses: supply your own alignment_score/tags/summary for
+                some or all pending blocks instead of the configured LLM
+                adapter — see ``consolidate()``'s ``host_analyses`` and
+                ``inbox()`` for the read half of this loop.
 
         Example::
 
@@ -1313,6 +1471,7 @@ class MemorySystem:
             result = await self.consolidate(
                 skip_llm=skip_llm,
                 max_inbox_per_run=inbox_max,
+                host_analyses=host_analyses,
             )
         if rescore:
             rs = await self.rescore(max_count=rescore_max)

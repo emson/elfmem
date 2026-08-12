@@ -95,3 +95,36 @@ the evidence. Rules for the proposal:
 Respond with JSON:
 {{"proposed_content": "<string>", "rationale": "<string>"}}
 """
+
+GOAL_DIRECTED_EDGE_PROMPT: str = """\
+You are looking for connections between one memory block and a short list of
+candidate blocks, judged against the agent's own stated goals — not by
+surface similarity.
+
+## Agent's active goals
+{self_goals}
+
+## Block being evaluated
+{block_content}
+
+## Candidate blocks
+{candidates}
+
+For each candidate that genuinely serves one of the agent's stated goals if
+connected to the block above, propose a connection. Rules:
+
+- Only propose a connection you can justify against a SPECIFIC goal listed
+  above — name it in your reasoning.
+- Do NOT propose a connection based on topic or vocabulary overlap alone;
+  that is already handled by similarity edges elsewhere. This step exists to
+  find connections similarity would miss.
+- Propose at most {max_edges} connections. Fewer is fine — most blocks will
+  have zero connections that meet this bar. An empty list is a correct,
+  common answer.
+- ``candidate_id`` MUST be copied exactly from the candidate list above. Do
+  not invent an id.
+- ``reasoning`` MUST be one sentence, naming the goal and why it applies.
+
+Respond with JSON:
+{{"proposals": [{{"candidate_id": "<string>", "reasoning": "<string>"}}]}}
+"""

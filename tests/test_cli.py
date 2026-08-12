@@ -252,6 +252,141 @@ class TestCurateCommand:
         assert "edges_pruned" in data
 
 
+# ── dream --metabolism-dry-run (edge-metabolism Stage A) ────────────────────
+
+
+class TestDreamMetabolismDryRun:
+    def test_calls_metabolism_dry_run_not_dream(self, mock_managed: AsyncMock) -> None:
+        from elfmem.types import MetabolismDryRunResult
+
+        mock_managed.metabolism_dry_run.return_value = MetabolismDryRunResult(
+            blocks_considered=2, self_goals=["a goal"],
+        )
+        result = runner.invoke(
+            app, ["dream", "--db", "test.db", "--metabolism-dry-run"]
+        )
+        assert result.exit_code == 0
+        mock_managed.metabolism_dry_run.assert_awaited_once()
+        mock_managed.dream.assert_not_awaited()
+
+    def test_json_output_has_proposals_key(self, mock_managed: AsyncMock) -> None:
+        from elfmem.types import GoalDirectedEdgeProposal, MetabolismDryRunResult
+
+        mock_managed.metabolism_dry_run.return_value = MetabolismDryRunResult(
+            blocks_considered=1, self_goals=["a goal"],
+            proposals=[GoalDirectedEdgeProposal("b1", "c1", "reason")],
+        )
+        result = runner.invoke(
+            app, ["dream", "--db", "test.db", "--metabolism-dry-run", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "proposals" in data
+        assert data["proposals"][0]["candidate_id"] == "c1"
+
+    def test_text_output_lists_each_proposal(self, mock_managed: AsyncMock) -> None:
+        from elfmem.types import GoalDirectedEdgeProposal, MetabolismDryRunResult
+
+        mock_managed.metabolism_dry_run.return_value = MetabolismDryRunResult(
+            blocks_considered=1, self_goals=["a goal"],
+            proposals=[GoalDirectedEdgeProposal("b1", "c1", "serves goal X")],
+        )
+        result = runner.invoke(
+            app, ["dream", "--db", "test.db", "--metabolism-dry-run"]
+        )
+        assert result.exit_code == 0
+        assert "b1 -> c1: serves goal X" in result.output
+
+
+# ── inbox command ────────────────────────────────────────────────────────────
+
+
+class TestInboxCommand:
+    def test_empty_inbox_message(self, mock_managed: AsyncMock) -> None:
+        mock_managed.inbox.return_value = []
+        result = runner.invoke(app, ["inbox", "--db", "test.db"])
+        assert result.exit_code == 0
+        assert "Inbox empty." in result.output
+
+    def test_json_output_lists_pending_blocks(self, mock_managed: AsyncMock) -> None:
+        from elfmem.types import InboxBlockSummary
+
+        mock_managed.inbox.return_value = [
+            InboxBlockSummary(
+                id="b1", content="pending fact", category="knowledge",
+                tags=["self/goal"], created_at="2026-01-01T00:00:00",
+            ),
+        ]
+        result = runner.invoke(app, ["inbox", "--db", "test.db", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data[0]["id"] == "b1"
+        assert data[0]["tags"] == ["self/goal"]
+
+    def test_max_flag_threads_through(self, mock_managed: AsyncMock) -> None:
+        mock_managed.inbox.return_value = []
+        runner.invoke(app, ["inbox", "--db", "test.db", "--max", "3"])
+        mock_managed.inbox.assert_awaited_once_with(3)
+
+
+# ── dream --host-analyses ────────────────────────────────────────────────────
+
+
+class TestDreamHostAnalyses:
+    def test_reads_and_threads_host_analyses_file(
+        self, mock_managed: AsyncMock, tmp_path,
+    ) -> None:
+        analyses_file = tmp_path / "analyses.json"
+        analyses_file.write_text(json.dumps({
+            "b1": {"alignment_score": 0.8, "tags": ["self/goal"], "summary": "s"},
+        }))
+        mock_managed.dream.return_value = None
+        result = runner.invoke(
+            app,
+            ["dream", "--db", "test.db", "--host-analyses", str(analyses_file)],
+        )
+        assert result.exit_code == 0, result.output
+        _, kwargs = mock_managed.dream.call_args
+        assert kwargs["host_analyses"] == {
+            "b1": {"alignment_score": 0.8, "tags": ["self/goal"], "summary": "s"},
+        }
+
+    def test_malformed_json_file_gives_clean_error(
+        self, mock_managed: AsyncMock, tmp_path,
+    ) -> None:
+        analyses_file = tmp_path / "bad.json"
+        analyses_file.write_text("not valid json{{{")
+        result = runner.invoke(
+            app,
+            ["dream", "--db", "test.db", "--host-analyses", str(analyses_file)],
+        )
+        assert result.exit_code == 1
+        assert "Error reading --host-analyses" in result.output
+
+    def test_missing_file_gives_clean_error(self, mock_managed: AsyncMock) -> None:
+        result = runner.invoke(
+            app,
+            ["dream", "--db", "test.db", "--host-analyses", "/no/such/file.json"],
+        )
+        assert result.exit_code == 1
+        assert "Error reading --host-analyses" in result.output
+
+    def test_combined_with_metabolism_dry_run_errors(
+        self, mock_managed: AsyncMock, tmp_path,
+    ) -> None:
+        analyses_file = tmp_path / "analyses.json"
+        analyses_file.write_text("{}")
+        result = runner.invoke(
+            app,
+            [
+                "dream", "--db", "test.db",
+                "--metabolism-dry-run", "--host-analyses", str(analyses_file),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "read-only pass" in result.output
+
+
 # ── guide command ─────────────────────────────────────────────────────────────
 
 

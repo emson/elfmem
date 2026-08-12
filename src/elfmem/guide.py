@@ -95,10 +95,11 @@ GUIDES: dict[str, AgentGuide] = {
             "Don't call before remember() — blocks need to queue first."
         ),
         cost=(
-            "LLM call per pending block (alignment scoring + tag inference). "
-            "Bounded to consolidation.max_inbox_per_run per call (default 5 — "
-            "ADR 0007), not the whole inbox; a larger backlog drains across "
-            "repeated calls. Returns None immediately (zero cost) if inbox is empty."
+            "LLM call per pending block (alignment scoring + tag inference), "
+            "unless host_analyses covers it — see below. Bounded to "
+            "consolidation.max_inbox_per_run per call (default 5 — ADR 0007), "
+            "not the whole inbox; a larger backlog drains across repeated "
+            "calls. Returns None immediately (zero cost) if inbox is empty."
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
@@ -119,7 +120,17 @@ GUIDES: dict[str, AgentGuide] = {
             "reaches 0, like learn_document() does) to fully drain a large backlog. "
             "If policy is set, adaptive threshold adjusts based on promotion rate. "
             "Tip: blocks with shared tags form graph edges at lower cosine similarity — "
-            "richer tags mean a better-connected knowledge graph."
+            "richer tags mean a better-connected knowledge graph. "
+            "host_analyses: supply your own alignment_score/tags/summary for some "
+            "or all pending blocks instead of the configured LLM adapter — e.g. "
+            "this Claude Code session reasoning over inbox() output instead of "
+            "depending on a local model or API key. {block_id: {\"alignment_score\": "
+            "0.0-1.0, \"tags\": [...], \"summary\": \"...\"}, ...}. Scored exactly as "
+            "a successful adapter call would be (last_scored_at stamped, not the "
+            "neutral skip_llm fallback). Blocks not covered still use the normal "
+            "path. Validated the same way a real adapter's response is — a "
+            "malformed entry raises HostAnalysisError with .recovery, since this "
+            "is direct structured input, not unreliable external I/O."
         ),
         example=(
             "# Always-on agent pattern — drains a backlog across calls\n"
@@ -129,7 +140,49 @@ GUIDES: dict[str, AgentGuide] = {
             "    while dream_result and dream_result.inbox_remaining > 0:\n"
             "        dream_result = await system.dream()\n"
             "    if dream_result:\n"
-            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.\n"
+            "\n"
+            "# Host-agent reasoning instead of a configured LLM adapter\n"
+            "pending = await system.inbox()\n"
+            "analyses = {b.id: {\"alignment_score\": 0.8, \"tags\": [\"self/goal\"],\n"
+            "                    \"summary\": \"...\"} for b in pending}  # reason yourself\n"
+            "await system.dream(host_analyses=analyses)"
+        ),
+    ),
+    "inbox": AgentGuide(
+        name="inbox",
+        what="List pending blocks not yet consolidated — FIFO order (oldest first).",
+        when=(
+            "Reasoning about pending blocks yourself before calling "
+            "dream(host_analyses=...) — e.g. this Claude Code session supplying "
+            "its own alignment_score/tags/summary instead of a configured LLM "
+            "adapter (no local model or API key needed for that path)."
+        ),
+        when_not=(
+            "You only need a count — status().inbox_count is cheaper (no "
+            "content fetched). You want to apply the analysis — that's "
+            "dream(host_analyses=...) or consolidate(host_analyses=...)."
+        ),
+        cost="Pure read. No LLM calls, no embedding calls.",
+        returns=(
+            "list[InboxBlockSummary]: id, content, category, tags, created_at. "
+            "Empty list if the inbox is empty."
+        ),
+        next=(
+            "For each block, decide alignment_score (0.0-1.0), tags (from "
+            "self/constitutional, self/constraint, self/value, self/style, "
+            "self/goal, self/context), and a factual 1-2 sentence summary. "
+            "Then call dream(host_analyses={block_id: {...}, ...})."
+        ),
+        example=(
+            "pending = await system.inbox(max_count=10)\n"
+            "for block in pending:\n"
+            "    print(block.id, block.content)\n"
+            "# ... reason about each, then:\n"
+            "await system.dream(host_analyses={\n"
+            "    pending[0].id: {\"alignment_score\": 0.8, \"tags\": [\"self/goal\"],\n"
+            "                    \"summary\": \"...\"},\n"
+            "})"
         ),
     ),
     "learn": AgentGuide(
@@ -421,6 +474,58 @@ GUIDES: dict[str, AgentGuide] = {
             "\n"
             "# Bundled with dream — process inbox, then rescore aged active\n"
             "result = await system.dream(rescore=True, rescore_max=20)"
+        ),
+    ),
+    "metabolism_dry_run": AgentGuide(
+        name="metabolism_dry_run",
+        what=(
+            "Edge-metabolism Stage A (docs/plans/plan_edge_metabolism.md): for "
+            "each rescore-eligible block, judges a widened candidate shortlist "
+            "against elf's own self/goal blocks — not just cosine similarity — "
+            "and reports what it would connect. Never calls insert_edge; "
+            "nothing here is applied to the graph."
+        ),
+        when=(
+            "Sanity-checking the edge-metabolism mechanism against real content "
+            "before deciding whether Stage B (live, ungated application) is "
+            "worth building. This is the validation step the Zettelkasten-"
+            "auto-linking deferral (docs/plans/archive/plan_memory_scoring.md) "
+            "asked for before any live graph-mutation mechanism ships."
+        ),
+        when_not=(
+            "You want edges actually created — this never writes to the graph. "
+            "No self/goal blocks exist yet — every candidate pool is computed "
+            "for nothing since there is nothing to judge relevance against."
+        ),
+        cost=(
+            "One LLM call per block considered (same eligibility rule and "
+            "budget as rescore() — default 20/run). One embedding-free KNN "
+            "scan (pure math) per block for the candidate shortlist."
+        ),
+        returns=(
+            "MetabolismDryRunResult: blocks_considered, self_goals (actual "
+            "content, not just a count), candidates (per block id: [(id, "
+            "summary), ...] — populated even when the LLM call failed or no "
+            "LLM is configured), proposals (block_id, candidate_id, "
+            "reasoning), llm_failures. Empty proposals is the common, "
+            "correct answer; read self_goals/candidates directly if you'd "
+            "rather judge them yourself (e.g. a host agent session applying "
+            "its own reasoning via connect() — no separate 'candidates "
+            "only' mode needed, the same result already carries both)."
+        ),
+        next=(
+            "Read the proposals by hand, or reason over self_goals/"
+            "candidates directly and apply your own judgement via "
+            "connect(). There is currently no Stage B (elfmem applying "
+            "proposals live, unattended) — that decision is open, see the "
+            "plan doc's 'Decision needed' section."
+        ),
+        example=(
+            "result = await system.metabolism_dry_run(max_count=20)\n"
+            "print(result)  # 'Metabolism dry run: 20 block(s) considered, "
+            "3 connection(s) proposed. Nothing written.'\n"
+            "for p in result.proposals:\n"
+            "    print(p.block_id, '->', p.candidate_id, ':', p.reasoning)"
         ),
     ),
     "status": AgentGuide(

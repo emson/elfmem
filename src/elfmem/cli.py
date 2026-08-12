@@ -54,6 +54,7 @@ from elfmem.types import (
     EditResult,
     ForgetResult,
     FrameResult,
+    InboxBlockSummary,
     LearnResult,
     MindOutcomeResult,
     MindPredictResult,
@@ -1148,6 +1149,33 @@ def ls_cmd(
 
 
 @app.command()
+def inbox(
+    max_count: Annotated[int | None, typer.Option("--max")] = None,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List pending blocks not yet consolidated — FIFO order (oldest first).
+
+    Read-only, no LLM calls. USE WHEN reasoning about pending blocks
+    yourself before `dream --host-analyses` — e.g. this Claude Code session
+    supplying alignment_score/tags/summary instead of a configured LLM
+    adapter. See `elfmem guide inbox`.
+    """
+    db_path, config_path = _resolve_paths(db, config)
+    results = _run(_inbox(db_path, config_path, max_count))
+    if json_output:
+        _json([r.to_dict() for r in results])
+    elif not results:
+        typer.echo("Inbox empty.")
+    else:
+        for r in results:
+            typer.echo(str(r))
+
+
+@app.command()
 def status(
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[
@@ -1231,6 +1259,32 @@ def dream(
             ),
         ),
     ] = None,
+    metabolism_dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--metabolism-dry-run",
+            help=(
+                "Propose goal-directed connections (judged against self/goal "
+                "blocks, not similarity) for rescore-eligible blocks and "
+                "report them — writes nothing to the edges table. Stage A of "
+                "docs/plans/plan_edge_metabolism.md; ignores --rescore/--no-llm."
+            ),
+        ),
+    ] = False,
+    host_analyses_file: Annotated[
+        str | None,
+        typer.Option(
+            "--host-analyses",
+            help=(
+                "Path to a JSON file supplying your own alignment_score/tags/"
+                "summary per block instead of the configured LLM adapter — "
+                "{\"block_id\": {\"alignment_score\": 0.8, \"tags\": [...], "
+                "\"summary\": \"...\"}, ...}. See `elfmem inbox` for the read "
+                "half of this loop. Blocks not covered still use the normal "
+                "path (configured adapter, or --no-llm fallback)."
+            ),
+        ),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Consolidate pending knowledge: embed, align, promote to active memory.
@@ -1250,6 +1304,16 @@ def dream(
       --max N:            override the inbox-processing budget for this call
                           (and the rescore budget too, if --rescore is set).
       --rescore --max N:  one-shot deep sweep (large N) of both stages.
+      --metabolism-dry-run: report goal-directed connections the agent would
+                          propose, without writing any — see
+                          docs/plans/plan_edge_metabolism.md.
+      --host-analyses FILE: supply your own per-block analysis (e.g. from
+                          this Claude Code session reasoning over
+                          `elfmem inbox`) instead of the configured LLM
+                          adapter. Composable with --no-llm (covered blocks
+                          get real analysis, the rest get the neutral
+                          fallback) and --rescore (rescore still uses the
+                          configured adapter — out of scope for this flag).
 
     DON'T USE:
       --no-llm by default (degrades SELF-frame coherence over time).
@@ -1263,13 +1327,41 @@ def dream(
             err=True,
         )
         raise typer.Exit(code=1)
+    if metabolism_dry_run and (rescore or no_llm or host_analyses_file):
+        typer.echo(
+            "Error: --metabolism-dry-run is its own read-only pass and "
+            "ignores --rescore/--no-llm/--host-analyses — run it on its own.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    host_analyses: dict[str, dict[str, Any]] | None = None
+    if host_analyses_file:
+        try:
+            with open(host_analyses_file, encoding="utf-8") as f:
+                host_analyses = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            typer.echo(f"Error reading --host-analyses {host_analyses_file}: {e}", err=True)
+            raise typer.Exit(code=1) from e
 
     db_path, config_path = _resolve_paths(db, config)
+
+    if metabolism_dry_run:
+        dry_result = _run(_metabolism_dry_run_async(db_path, config_path, max_count))
+        if json_output:
+            _json(dry_result.to_dict())
+        else:
+            typer.echo(str(dry_result))
+            for p in dry_result.proposals:
+                typer.echo(f"  {p.block_id} -> {p.candidate_id}: {p.reasoning}")
+        return
+
     result = _run(_dream(
         db_path, config_path,
         skip_llm=no_llm,
         rescore=rescore,
         max_count=max_count,
+        host_analyses=host_analyses,
     ))
     if result is None:
         msg = "No pending blocks — nothing to consolidate."
@@ -3111,6 +3203,13 @@ async def _status(db_path: str, config: str | None) -> SystemStatus:
         return await mem.status()
 
 
+async def _inbox(
+    db_path: str, config: str | None, max_count: int | None,
+) -> list[InboxBlockSummary]:
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.inbox(max_count)
+
+
 async def _peer_inbox_status(db_path: str, config: str | None) -> PeerInboxStatus:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return mem.peer_inbox_status()
@@ -3212,6 +3311,7 @@ async def _dream(
     skip_llm: bool = False,
     rescore: bool = False,
     max_count: int | None = None,
+    host_analyses: dict[str, dict[str, Any]] | None = None,
 ) -> Any:
     """Consolidate pending blocks. Returns ConsolidateResult or None if no pending.
 
@@ -3225,7 +3325,16 @@ async def _dream(
             rescore=rescore,
             rescore_max=max_count,
             inbox_max=max_count,
+            host_analyses=host_analyses,
         )
+
+
+async def _metabolism_dry_run_async(
+    db_path: str, config: str | None, max_count: int | None,
+) -> Any:
+    """Edge-metabolism Stage A — read-only, writes nothing to `edges`."""
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        return await mem.metabolism_dry_run(max_count=max_count)
 
 
 async def _curate(db_path: str, config: str | None) -> CurateResult:

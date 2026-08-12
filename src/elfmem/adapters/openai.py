@@ -22,10 +22,15 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai.types.shared_params import ResponseFormatJSONObject
 from pydantic import ValidationError
 
-from elfmem.adapters.models import AmendmentProposalModel, BlockAnalysisModel
+from elfmem.adapters.models import (
+    AmendmentProposalModel,
+    BlockAnalysisModel,
+    GoalDirectedEdgeProposalsModel,
+)
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
+    GOAL_DIRECTED_EDGE_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -228,6 +233,55 @@ class OpenAILLMAdapter:
                     "proposed_content": result.proposed_content,
                     "rationale": result.rationale,
                 }
+            except (ValidationError, json.JSONDecodeError) as exc:
+                last_exc = exc
+        raise last_exc  # type: ignore[misc]
+
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Propose goal-directed connections for one block (edge-metabolism
+        Stage A — docs/plans/plan_edge_metabolism.md). Dry-run only.
+
+        USE WHEN:   Called by rescore's metabolism dry run for each rescored block.
+        DON'T USE:  Testing — use MockLLMService.
+        COST:       1 OpenAI API call. Retries up to max_retries on schema violations.
+        RETURNS:    [{"candidate_id": str, "reasoning": str}, ...], possibly empty.
+        NEXT:       Caller validates candidate_id against its own candidate
+                    set and reports proposals — never writes to `edges`.
+        """
+        goals_block = (
+            "\n".join(f"- {g}" for g in self_goals)
+            if self_goals
+            else "(no self/goal blocks defined yet)"
+        )
+        candidates_block = (
+            "\n".join(f"- id: {cid}\n  content: {content}" for cid, content in candidates)
+            if candidates
+            else "(no candidates)"
+        )
+        prompt = GOAL_DIRECTED_EDGE_PROMPT.format(
+            self_goals=goals_block,
+            block_content=block_summary or block_content,
+            candidates=candidates_block,
+            max_edges=max_edges,
+        )
+        model = self._effective_model(self._process_block_model)
+        last_exc: Exception | None = None
+        for _ in range(self._max_retries):
+            text = await self._complete(prompt, model)
+            try:
+                result = GoalDirectedEdgeProposalsModel.model_validate_json(text)
+                return [
+                    {"candidate_id": p.candidate_id, "reasoning": p.reasoning}
+                    for p in result.proposals[:max_edges]
+                ]
             except (ValidationError, json.JSONDecodeError) as exc:
                 last_exc = exc
         raise last_exc  # type: ignore[misc]

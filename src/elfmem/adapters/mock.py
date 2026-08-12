@@ -35,6 +35,8 @@ class MockLLMService:
         summary_overrides: dict[str, str] | None = None,
         amendment_overrides: dict[str, dict[str, str]] | None = None,
         amendment_raise_for: list[str] | None = None,
+        goal_directed_edge_overrides: dict[str, list[dict[str, str]]] | None = None,
+        goal_directed_edge_raise_for: list[str] | None = None,
     ) -> None:
         self._default_alignment = default_alignment
         self._alignment_overrides = alignment_overrides or {}
@@ -48,8 +50,15 @@ class MockLLMService:
         # the orchestration's tight try/except path without needing a real LLM.
         self._amendment_overrides = amendment_overrides or {}
         self._amendment_raise_for = list(amendment_raise_for or [])
+        # Goal-directed-edge overrides: substring (matched against the
+        # block being evaluated) → list of proposal dicts to return.
+        # goal_directed_edge_raise_for mirrors amendment_raise_for's
+        # partial-failure testing pattern.
+        self._goal_directed_edge_overrides = goal_directed_edge_overrides or {}
+        self._goal_directed_edge_raise_for = list(goal_directed_edge_raise_for or [])
         self.process_block_calls: int = 0
         self.propose_amendment_calls: int = 0
+        self.propose_goal_directed_edges_calls: int = 0
 
     # ── Public attribute aliases ──────────────────────────────────────────────
     # These allow tests to override behaviour after construction
@@ -86,6 +95,14 @@ class MockLLMService:
     @alignment_overrides.setter
     def alignment_overrides(self, value: dict[str, float]) -> None:
         self._alignment_overrides = value
+
+    @property
+    def goal_directed_edge_overrides(self) -> dict[str, list[dict[str, str]]]:
+        return self._goal_directed_edge_overrides
+
+    @goal_directed_edge_overrides.setter
+    def goal_directed_edge_overrides(self, value: dict[str, list[dict[str, str]]]) -> None:
+        self._goal_directed_edge_overrides = value
 
     # ── Protocol methods ──────────────────────────────────────────────────────
 
@@ -134,6 +151,36 @@ class MockLLMService:
                 f"{len(evidence_summaries)} evidence summaries considered."
             ),
         }
+
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Return deterministic goal-directed edge proposals.
+
+        Defaults to an empty list — "no connection meets the bar" is the
+        realistic common case this mirrors. Substring matches in
+        ``goal_directed_edge_raise_for`` raise RuntimeError (partial-failure
+        testing, same pattern as ``amendment_raise_for``). Substring matches
+        in ``goal_directed_edge_overrides`` return that exact list.
+        """
+        self.propose_goal_directed_edges_calls += 1
+        content_lower = block_content.lower()
+        for needle in self._goal_directed_edge_raise_for:
+            if needle.lower() in content_lower:
+                raise RuntimeError(
+                    f"MockLLMService.propose_goal_directed_edges configured "
+                    f"to raise for substring {needle!r}"
+                )
+        for substring, payload in self._goal_directed_edge_overrides.items():
+            if substring.lower() in content_lower:
+                return [dict(p) for p in payload][:max_edges]
+        return []
 
     # ── Private helpers ───────────────────────────────────────────────────────
 

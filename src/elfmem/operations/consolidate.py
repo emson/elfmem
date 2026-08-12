@@ -201,6 +201,7 @@ async def _collect_decisions(
     edge_degree_cap: int,
     skip_llm: bool = False,
     max_inbox_per_run: int | None = None,
+    host_analyses: dict[str, BlockAnalysis] | None = None,
 ) -> tuple[
     list[_BlockDecision],
     list[_EdgeDecision],
@@ -221,6 +222,15 @@ async def _collect_decisions(
     matches that would have silently archived a ``self/constitutional``
     block; the incoming block is promoted alongside it instead. See
     docs/plans/plan_v2_substrate_reevaluation.md.
+
+    ``host_analyses``: a block id present here is treated as genuinely
+    analysed — same as a successful ``llm.process_block()`` call, not a
+    fallback — and ``llm.process_block()`` is never called for it. Lets a
+    host agent session (e.g. a Claude Code session, via
+    ``MemorySystem.inbox()`` + ``dream(host_analyses=...)``) supply its own
+    reasoning instead of a configured LLM adapter, for some or all of the
+    batch. Dedup, tagging, decay, and promotion are otherwise unchanged —
+    this only substitutes where the alignment/tags/summary comes from.
     """
     inbox = await get_inbox_blocks(conn)
     if not inbox:
@@ -321,13 +331,18 @@ async def _collect_decisions(
                 evolving_vecs.pop(best_active["content"].strip().lower(), None)
 
         # LLM scoring — external I/O with timeout, shared lock only.
+        # host_analyses: a host agent session already did this reasoning —
+        # treated as real analysis (llm_skipped stays False), never falls
+        # through to skip_llm or a real LLM call for this block.
         # skip_llm: bypass LLM calls entirely (embed + promote only).
         # Blocks are promoted with neutral scoring AND last_scored_at=NULL,
         # making them first in line for `dream --rescore`. The same NULL
         # signal is set on LLM timeout, so timeout-fallback blocks are no
         # longer a one-way door (the prior bug fixed by v0.13.3).
         llm_skipped = False
-        if skip_llm:
+        if host_analyses is not None and block_id in host_analyses:
+            analysis = host_analyses[block_id]
+        elif skip_llm:
             analysis = _fallback_analysis()
             llm_skipped = True
         else:
@@ -336,7 +351,14 @@ async def _collect_decisions(
                     llm.process_block(content, ""),
                     timeout=_LLM_PROCESS_TIMEOUT,
                 )
-            except TimeoutError:
+            except (TimeoutError, Exception):  # noqa: BLE001 — boundary
+                # Not just timeout: a local/self-hosted model can also return
+                # non-JSON text that exhausts the adapter's own retries and
+                # raises a schema/parse error (ValidationError et al.).
+                # Same fallback either way — rescore_blocks() already treats
+                # this failure class identically; this path didn't, until a
+                # real local-model response ("Please provide the **Age...")
+                # surfaced the gap.
                 analysis = _fallback_analysis()
                 llm_skipped = True
 
@@ -508,6 +530,7 @@ async def consolidate(
     edge_degree_cap: int = EDGE_DEGREE_CAP,
     skip_llm: bool = False,
     max_inbox_per_run: int | None = None,
+    host_analyses: dict[str, BlockAnalysis] | None = None,
 ) -> ConsolidateResult:
     """Promote inbox blocks through the full consolidation pipeline.
 
@@ -552,6 +575,7 @@ async def consolidate(
         edge_degree_cap=edge_degree_cap,
         skip_llm=skip_llm,
         max_inbox_per_run=max_inbox_per_run,
+        host_analyses=host_analyses,
     )
 
     if processed == 0:

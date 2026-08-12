@@ -10,6 +10,46 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `MemorySystem.inbox()` / `elfmem inbox` / `elfmem_inbox` — list pending
+  blocks not yet consolidated (FIFO, read-only, no LLM calls). Paired with
+  a new `host_analyses` parameter on `consolidate()`/`dream()` (CLI:
+  `dream --host-analyses FILE.json`; MCP: `elfmem_dream(host_analyses=...)`)
+  that lets a host agent session (e.g. this Claude Code session) supply its
+  own `{"alignment_score": float, "tags": [...], "summary": str}` per block
+  instead of elfmem's configured LLM adapter — no local model or API key
+  needed for that path. A covered block is scored exactly as a successful
+  adapter call would be (not the neutral `skip_llm` fallback); blocks not
+  covered still use the normal path. Input is validated through the same
+  schema (`BlockAnalysisModel`) and tag-filtering (`VALID_SELF_TAGS`) a
+  real adapter's response already goes through; a malformed entry raises
+  the new `HostAnalysisError` (with `.recovery`) rather than degrading
+  silently — this is direct structured input, not unreliable external I/O.
+  `operations/consolidate.py`'s dedup/promotion pipeline is unchanged and
+  fully covered by the existing test suite (verified behavior-preserving);
+  `host_analyses` only substitutes where a block's analysis comes from.
+- `MemorySystem.metabolism_dry_run()` / `elfmem dream --metabolism-dry-run`
+  — edge-metabolism Stage A (`docs/plans/plan_edge_metabolism.md`). For each
+  rescore-eligible block, judges a widened top-K embedding shortlist
+  (`GOAL_DIRECTED_CANDIDATE_K=30`) against elf's own `self/goal` blocks —
+  not cosine similarity — via a new `LLMService.propose_goal_directed_edges()`
+  port method (implemented on `AnthropicLLMAdapter`, `OpenAILLMAdapter`,
+  `MockLLMService`), and reports up to `GOAL_DIRECTED_MAX_EDGES_PER_BLOCK=3`
+  proposed connections with reasoning per block. Goal content is bounded by
+  `GOAL_DIRECTED_SELF_GOALS_CHAR_BUDGET=2400` and candidates use each
+  block's `summary` (capped by `GOAL_DIRECTED_CANDIDATE_CHAR_CAP=400`) —
+  both found necessary, not precautionary: an unbounded first cut blew a
+  local model's context window outright on the real self-hosted corpus (see
+  the plan doc's "Stage A build findings"). `MetabolismDryRunResult`
+  carries the raw `self_goals`/`candidates` alongside `proposals` — always,
+  even when no LLM is configured or the call fails (`llm_failures`) — so a
+  host agent session can reason over them directly and apply its own
+  judgement via the existing `connect()`/`elfmem_connect`, no separate
+  "candidates only" mode or new apply path needed. **Read-only: never calls
+  `insert_edge`.** No schema migration — reuses the existing, previously
+  unused `edges.note`/`.origin`/`.relation_type` columns. This reopens a
+  previously-deferred idea (`docs/plans/archive/plan_memory_scoring.md`'s
+  "Zettelkasten auto-linking" deferral); applying proposals live (Stage B)
+  is a separate, not-yet-approved decision — see the plan doc.
 - `elfmem export --to-markdown [--memory-dir DIR]` and `elfmem index
   check|rebuild|parity` (v2 substrate, Wave 1-4): terminal commands for the
   markdown-file substrate work that previously existed only as library code
@@ -105,6 +145,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   no-op refresh it always was.
 
 ### Fixed
+- `consolidate()`/`dream()` no longer crashes with an unhandled
+  `ValidationError` when the configured LLM returns non-JSON text for
+  `process_block()` — a real failure mode on local/self-hosted models (seen
+  live via LM Studio), not just a timeout. The inbox-processing path only
+  caught `TimeoutError`; `rescore_blocks()` already caught both and fell
+  back gracefully. `consolidate()` now does the same — the block is
+  promoted with neutral fallback scoring and `last_scored_at=NULL`, first
+  in line for the next `dream --rescore`, instead of aborting the whole run.
 - Near-duplicate consolidation no longer silently supersedes (archives)
   blocks tagged `self/constitutional`. Previously `consolidate()`/`dream()`
   would archive any active block within `near_dup_near_threshold` (0.90)

@@ -132,6 +132,26 @@ Observability-only delta shipped: `ConsolidationHealthMetrics` on `ConsolidateRe
   beyond ~10 entries (federation noise becomes material), or federation to a
   product-elf at scale (per the cloud-architecture sketch in `note-to-alv`).
 
+### 🔍 Goal-directed edge metabolism (tier-2 edges via self frame)
+
+Full plan: [`docs/plans/plan_edge_metabolism.md`](docs/plans/plan_edge_metabolism.md).
+Extends `rescore()` (Deep Sleep) to propose connections judged against elf's
+own `self/goal` blocks, not just cosine similarity — ungated, correctable
+via `connect()`/`forget()`/amending self rather than a human-review step.
+
+This reopens a previously-deferred idea: [`plan_memory_scoring.md`](docs/plans/archive/plan_memory_scoring.md)
+explicitly deferred "Zettelkasten auto-linking" pending evidence that manual
+`connect()` is undertilised (checked against the real self-hosted DB — it
+is) and a way to validate LLM-judged links aren't phantom edges. [ADR 0010](docs/decisions/0010-retire-pairwise-contradiction-detection.md)
+(2026-08-08) retired a different pairwise-LLM mechanism for measured
+near-zero realized value — the most recent and most directly cautionary
+precedent for this shape of feature.
+
+**Status**: Stage A (read-only dry-run instrument, no schema change, no
+edge writes) approved and building. Stage B (live autonomous edge creation)
+requires reviewing Stage A's real output first — recorded as an open
+decision in the plan doc, to become ADR 0011 once resolved.
+
 ---
 
 ## Rejected

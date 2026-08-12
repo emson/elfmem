@@ -290,3 +290,39 @@ class TestLLMTimeoutFallback:
 
         inbox = await get_inbox_blocks(db_conn)
         assert len(inbox) == 0  # block left inbox
+
+
+class TestLLMParseFailureFallback:
+    """A block is still promoted when process_block() raises instead of
+    timing out — e.g. a local/self-hosted model returning non-JSON text
+    that exhausts the adapter's own retries. Same fallback as timeout;
+    found via a real local-model failure, not hypothesised."""
+
+    @pytest.mark.asyncio
+    async def test_block_promoted_on_llm_parse_error(self, db_conn, mock_embedding):
+        class BrokenLLM(MockLLMService):
+            async def process_block(self, block: str, self_context: str):
+                raise ValueError("Invalid JSON: expected value at line 1 column 1")
+
+        await insert_block(
+            db_conn,
+            block_id="broken_block",
+            content="A block whose LLM call raises instead of timing out",
+            category="knowledge",
+            source="test",
+        )
+
+        result = await consolidate(
+            db_conn,
+            llm=BrokenLLM(),
+            embedding_svc=mock_embedding,
+            current_active_hours=0.0,
+        )
+
+        # Block promoted with fallback confidence (0.5), not skipped —
+        # same graceful degradation as the timeout path above.
+        assert result.promoted == 1
+        assert result.processed == 1
+
+        inbox = await get_inbox_blocks(db_conn)
+        assert len(inbox) == 0  # block left inbox

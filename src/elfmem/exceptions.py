@@ -47,6 +47,15 @@ class ConfigError(ElfmemError):
     """Raised when configuration is invalid or references missing resources."""
 
 
+class HostAnalysisError(ElfmemError):
+    """Raised when ``consolidate(host_analyses=...)``/``dream(host_analyses=...)``
+    input fails validation (e.g. a host agent session's own reasoning about
+    a block's alignment_score/tags/summary). Direct structured input, not
+    unreliable external I/O — fail-fast, not a fallback, so the mistake is
+    visible immediately rather than silently degrading to neutral scoring.
+    """
+
+
 class StorageError(ElfmemError):
     """Raised when a database operation fails in an unrecoverable way."""
 

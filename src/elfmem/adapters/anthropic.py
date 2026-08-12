@@ -11,10 +11,15 @@ from __future__ import annotations
 
 import anthropic
 
-from elfmem.adapters.models import AmendmentProposalModel, BlockAnalysisModel
+from elfmem.adapters.models import (
+    AmendmentProposalModel,
+    BlockAnalysisModel,
+    GoalDirectedEdgeProposalsModel,
+)
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
+    GOAL_DIRECTED_EDGE_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -23,6 +28,7 @@ from elfmem.types import BlockAnalysis
 # Tool names used for forced structured-output calls.
 _ANALYZE_BLOCK_TOOL = "analyze_block"
 _PROPOSE_AMENDMENT_TOOL = "propose_amendment"
+_PROPOSE_GOAL_DIRECTED_EDGES_TOOL = "propose_goal_directed_edges"
 
 
 class AnthropicLLMAdapter:
@@ -196,3 +202,54 @@ class AnthropicLLMAdapter:
             "proposed_content": result.proposed_content,
             "rationale": result.rationale,
         }
+
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Propose goal-directed connections for one block (edge-metabolism
+        Stage A — docs/plans/plan_edge_metabolism.md). Dry-run only.
+
+        USE WHEN:   Called by rescore's metabolism dry run for each rescored block.
+        DON'T USE:  Testing — use MockLLMService.
+        COST:       1 Anthropic API call via forced tool use.
+        RETURNS:    [{"candidate_id": str, "reasoning": str}, ...], possibly empty.
+        NEXT:       Caller validates candidate_id against its own candidate
+                    set and reports proposals — never writes to `edges`.
+        """
+        goals_block = (
+            "\n".join(f"- {g}" for g in self_goals)
+            if self_goals
+            else "(no self/goal blocks defined yet)"
+        )
+        candidates_block = (
+            "\n".join(f"- id: {cid}\n  content: {content}" for cid, content in candidates)
+            if candidates
+            else "(no candidates)"
+        )
+        prompt = GOAL_DIRECTED_EDGE_PROMPT.format(
+            self_goals=goals_block,
+            block_content=block_summary or block_content,
+            candidates=candidates_block,
+            max_edges=max_edges,
+        )
+        raw = await self._call_tool(
+            tool_name=_PROPOSE_GOAL_DIRECTED_EDGES_TOOL,
+            description=(
+                "Propose connections between a memory block and candidate "
+                "blocks, judged against the agent's own stated goals."
+            ),
+            schema=GoalDirectedEdgeProposalsModel.model_json_schema(),
+            prompt=prompt,
+            model=self._effective_model(self._process_block_model),
+        )
+        result = GoalDirectedEdgeProposalsModel.model_validate(raw)
+        return [
+            {"candidate_id": p.candidate_id, "reasoning": p.reasoning}
+            for p in result.proposals[:max_edges]
+        ]

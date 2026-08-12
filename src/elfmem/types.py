@@ -220,6 +220,39 @@ class BlockSummary:
 
 
 @dataclass
+class InboxBlockSummary:
+    """One pending inbox block, not yet consolidated. FIFO order (oldest
+    first) — matches how consolidate() would process them under
+    max_inbox_per_run. See ``MemorySystem.inbox()``: the read half of
+    letting a host agent session supply its own alignment/tags/summary via
+    ``dream(host_analyses=...)`` instead of a configured LLM adapter."""
+
+    id: str
+    content: str
+    category: str
+    tags: list[str]
+    created_at: str
+
+    @property
+    def summary(self) -> str:
+        tag_str = f" [{', '.join(self.tags[:3])}]" if self.tags else ""
+        truncated = self.content[:80] + ("…" if len(self.content) > 80 else "")
+        return f"{self.id[:8]} {truncated}{tag_str}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "category": self.category,
+            "tags": self.tags,
+            "created_at": self.created_at,
+        }
+
+
+@dataclass
 class LearnDocumentResult:
     """Result of ingesting a document via learn_document().
 
@@ -422,6 +455,74 @@ class CurateResult:
             "constitutional_reinforced": self.constitutional_reinforced,
             "edges_decayed": self.edges_decayed,
             "total_edges_after": self.total_edges_after,
+        }
+
+
+@dataclass(frozen=True)
+class GoalDirectedEdgeProposal:
+    """One proposed tier-2 connection from edge-metabolism Stage A
+    (docs/plans/plan_edge_metabolism.md). Not yet applied to the graph —
+    Stage A never calls insert_edge."""
+
+    block_id: str
+    candidate_id: str
+    reasoning: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "block_id": self.block_id,
+            "candidate_id": self.candidate_id,
+            "reasoning": self.reasoning,
+        }
+
+
+@dataclass
+class MetabolismDryRunResult:
+    """Everything one ``metabolism_dry_run()`` pass found. Nothing in this
+    result has been written to the edges table — see
+    docs/plans/plan_edge_metabolism.md "Stage A".
+
+    Deliberately includes the raw ingredients (``self_goals``,
+    ``candidates``), not just the pipeline's own ``proposals`` — a caller
+    with no configured LLM (or one that failed; check ``llm_failures``) can
+    still read these and reason over them itself, e.g. a host agent session
+    applying its own judgement via ``connect()``. This is why there is no
+    separate "candidates only" mode: the same result already carries both.
+    """
+
+    blocks_considered: int
+    self_goals: list[str] = field(default_factory=list)
+    # block_id -> [(candidate_id, summary_or_content), ...]
+    candidates: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    proposals: list[GoalDirectedEdgeProposal] = field(default_factory=list)
+    llm_failures: int = 0
+
+    @property
+    def summary(self) -> str:
+        if not self.self_goals:
+            return (
+                f"Metabolism dry run: {self.blocks_considered} block(s) considered, "
+                "no self/goal blocks found — nothing to judge connections against."
+            )
+        parts = [f"{self.blocks_considered} block(s) considered"]
+        parts.append(f"{len(self.proposals)} connection(s) proposed")
+        if self.llm_failures:
+            parts.append(f"{self.llm_failures} LLM call(s) failed — see .candidates for raw data")
+        return f"Metabolism dry run: {', '.join(parts)}. Nothing written."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_considered": self.blocks_considered,
+            "self_goals": self.self_goals,
+            "candidates": {
+                block_id: [{"id": cid, "content": content} for cid, content in pairs]
+                for block_id, pairs in self.candidates.items()
+            },
+            "proposals": [p.to_dict() for p in self.proposals],
+            "llm_failures": self.llm_failures,
         }
 
 

@@ -140,6 +140,11 @@ async def _tool_ls(
     return [r.to_dict() for r in results]
 
 
+async def _tool_inbox(max_count: int | None = None) -> list[dict[str, Any]]:
+    results = await _mem().inbox(max_count)
+    return [r.to_dict() for r in results]
+
+
 async def _tool_status(peer_inbox: bool = False) -> dict[str, Any]:
     mem = _mem()
     result = (await mem.status()).to_dict()
@@ -167,11 +172,13 @@ async def _tool_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
+    host_analyses: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     result = await _mem().dream(
         skip_llm=no_llm,
         rescore=rescore,
         rescore_max=rescore_max,
+        host_analyses=host_analyses,
     )
     if result is None:
         return {"message": "No pending blocks to consolidate", "status": "idle"}
@@ -480,6 +487,19 @@ async def elfmem_ls(
 
 
 @mcp.tool()
+async def elfmem_inbox(max_count: int | None = None) -> list[dict[str, Any]]:
+    """List pending blocks not yet consolidated — FIFO order (oldest first).
+
+    Read-only, no LLM calls. Use this to reason about pending blocks
+    yourself (alignment_score 0.0-1.0, tags from the self/* vocabulary,
+    a factual 1-2 sentence summary) before calling elfmem_dream with
+    host_analyses — i.e. supplying your own analysis instead of relying on
+    elfmem's configured LLM adapter.
+    """
+    return await _tool_inbox(max_count)
+
+
+@mcp.tool()
 async def elfmem_status(peer_inbox: bool = False) -> dict[str, Any]:
     """Memory health snapshot. Check the suggestion field for recommended action.
 
@@ -519,6 +539,7 @@ async def elfmem_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
+    host_analyses: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Deep consolidation: embed, align, promote to active memory, build graph.
 
@@ -539,11 +560,21 @@ async def elfmem_dream(
              bulk loads, cost-sensitive batches. Affected blocks have
              last_scored_at=NULL and will be picked up first by a future
              rescore=True call.
+    host_analyses: supply your own analysis for some or all pending blocks
+             instead of elfmem's configured LLM adapter — e.g. this session
+             reasoning over elfmem_inbox's output. Shape:
+             {"block_id": {"alignment_score": 0.0-1.0, "tags": [...],
+             "summary": "..."}, ...}. tags must come from the self/*
+             vocabulary (self/constitutional, self/constraint, self/value,
+             self/style, self/goal, self/context) — others are silently
+             dropped. Blocks not covered here still use the normal path
+             (configured adapter, or the no_llm fallback).
     """
     return await _tool_dream(
         rescore=rescore,
         rescore_max=rescore_max,
         no_llm=no_llm,
+        host_analyses=host_analyses,
     )
 
 

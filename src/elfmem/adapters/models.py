@@ -52,3 +52,26 @@ class AmendmentProposalModel(BaseModel):
             "says about the constitutional block. Plain, specific, audit-readable."
         ),
     )
+
+
+class GoalDirectedEdgeModel(BaseModel):
+    """One proposed goal-directed connection (edge-metabolism Stage A)."""
+
+    candidate_id: str = Field(
+        description="Must exactly match a candidate id from the prompt's candidate list.",
+    )
+    reasoning: str = Field(
+        description="One sentence naming the specific goal this connection serves.",
+    )
+
+
+class GoalDirectedEdgeProposalsModel(BaseModel):
+    """Structured response for goal-directed edge proposals (edge-metabolism
+    Stage A — see docs/plans/plan_edge_metabolism.md). Dry-run only: the
+    caller never writes these to the edges table without a separate,
+    explicitly-approved Stage B."""
+
+    proposals: list[GoalDirectedEdgeModel] = Field(
+        default_factory=list,
+        description="0 to max_edges proposed connections. Empty is a valid, common answer.",
+    )
