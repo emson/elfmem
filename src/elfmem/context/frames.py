@@ -42,6 +42,19 @@ class FrameDefinition:
     cache: CachePolicy | None
     source: Literal["builtin", "user"] = "user"
     score_boosts: dict[str, float] | None = None
+    # Tag patterns that disqualify a block from a *guaranteed* slot. It can
+    # still be retrieved on merit; it just cannot pre-empt the blocks the
+    # frame exists to protect. SELF needs this because `self/constitutional`
+    # is assigned by the consolidating LLM and has spread to 39 blocks in a
+    # mature instance, nine of them inbound peer letters -- which then won
+    # identity slots from elf's own principles.
+    guarantee_excludes: list[str] = field(default_factory=list)
+    # A queryless frame ignores any query handed to it. Identity is not a
+    # search result: the SELF frame answers "who am I", not "what do I know
+    # about X" (that is ATTENTION). Declaring it here rather than relying on
+    # callers to pass query=None is what makes the frame cache correct --
+    # a result that cannot depend on the query is safe to cache per frame.
+    queryless: bool = False
 
 
 SELF_FRAME = FrameDefinition(
@@ -49,6 +62,14 @@ SELF_FRAME = FrameDefinition(
     weights=SELF_WEIGHTS,
     filters=FrameFilters(tag_patterns=["self/%"]),
     guarantees=["self/constitutional"],
+    # `self/role/%` would be the better guarantee -- it is the authored
+    # vocabulary `init --seed` lays down, one role per principle. It is not
+    # used because it does not survive: consolidation rewrites a seeded block
+    # and re-tags it from the LLM's own vocabulary, so a mature instance has
+    # the ten seeded principles carrying only `self/constitutional`. Excluding
+    # correspondence is the discriminator that *is* structural -- `peer/*`
+    # tags are applied by the peer channel, never inferred.
+    guarantee_excludes=["peer/%"],
     template="self",
     token_budget=600,
     cache=CachePolicy(
@@ -56,6 +77,7 @@ SELF_FRAME = FrameDefinition(
         invalidate_on=["self_block_change", "curate_complete"],
     ),
     source="builtin",
+    queryless=True,
 )
 
 ATTENTION_FRAME = FrameDefinition(
@@ -112,30 +134,41 @@ def get_frame_definition(name: str) -> FrameDefinition:
 
 
 class FrameCache:
-    """Simple TTL cache for frame results. Scoped per session."""
+    """TTL cache for frame results, keyed on every input that shapes them.
+
+    Only queryless frames are cacheable, so the key is (frame, top_k): a
+    queryless result depends on nothing else a caller can vary. Keying on
+    the frame name alone -- as this did until v0.17.1 -- meant a
+    ``top_k=3`` call was served the ten-block result cached by an earlier
+    ``top_k=10`` call, silently ignoring the argument.
+    """
 
     def __init__(self) -> None:
-        self._cache: dict[str, tuple[float, FrameResult]] = {}
+        self._cache: dict[tuple[str, int], tuple[float, FrameResult]] = {}
 
-    def get(self, frame_name: str) -> FrameResult | None:
+    def get(self, frame_name: str, top_k: int) -> FrameResult | None:
         """Return cached result or None if expired/missing."""
-        entry = self._cache.get(frame_name)
+        key = (frame_name, top_k)
+        entry = self._cache.get(key)
         if entry is None:
             return None
         expires_at, result = entry
         if time.monotonic() >= expires_at:
-            del self._cache[frame_name]
+            del self._cache[key]
             return None
         return result
 
-    def set(self, frame_name: str, result: FrameResult, ttl_seconds: int) -> None:
+    def set(
+        self, frame_name: str, result: FrameResult, ttl_seconds: int, top_k: int
+    ) -> None:
         """Cache a result with TTL."""
         expires_at = time.monotonic() + ttl_seconds
-        self._cache[frame_name] = (expires_at, result)
+        self._cache[(frame_name, top_k)] = (expires_at, result)
 
     def invalidate(self, frame_name: str) -> None:
-        """Invalidate a specific frame's cache entry."""
-        self._cache.pop(frame_name, None)
+        """Invalidate every cached result for a frame, at any top_k."""
+        for key in [k for k in self._cache if k[0] == frame_name]:
+            del self._cache[key]
 
     def clear(self) -> None:
         """Clear all cached frames."""

@@ -97,6 +97,33 @@ class FrameResult:
     def __str__(self) -> str:
         return self.summary
 
+    def compose(self, query: str) -> str:
+        """Combine the rendered frame and the query into one complete prompt.
+
+        USE WHEN: You are building the prompt for a *separate* model call and
+        the question is not already in that model's context -- a library
+        caller, an agent loop, a subagent brief.
+
+        DON'T USE WHEN: The host already holds the question, which is the case
+        for every MCP tool call from a chat client. Use ``.text`` there;
+        echoing the question back merely duplicates it, and a paraphrased
+        duplicate is worse than none because the model may answer the copy.
+
+        COST: Instant. Pure string assembly, no retrieval and no LLM call.
+
+        RETURNS: str -- the frame text, then the question under its own
+        heading. Returns the bare question when no blocks were retrieved, so
+        an empty memory degrades to an unaugmented prompt rather than a
+        heading with nothing under it.
+
+        NEXT: Send it as the prompt. Any instruction about *how* to answer
+        belongs in the frame template, not here -- this method stitches, the
+        template speaks.
+        """
+        if not self.text:
+            return query
+        return f"{self.text}\n\n## The question\n{query}"
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "frame_name": self.frame_name,

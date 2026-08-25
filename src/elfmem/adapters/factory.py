@@ -12,8 +12,6 @@ from __future__ import annotations
 
 import os
 
-from elfmem.adapters.anthropic import AnthropicLLMAdapter
-from elfmem.adapters.openai import OpenAIEmbeddingAdapter, OpenAILLMAdapter
 from elfmem.config import ElfmemConfig
 from elfmem.ports.services import EmbeddingService, LLMService
 from elfmem.token_counter import TokenCounter
@@ -53,6 +51,12 @@ def make_llm_adapter(cfg: ElfmemConfig, token_counter: TokenCounter) -> LLMServi
     valid_self_tags = cfg.prompts.resolve_valid_tags()
 
     if cfg.llm.model.startswith("claude"):
+        # Imported here, not at module scope: the anthropic and openai SDKs cost
+        # ~600ms of import time between them, and retrieval-only entry points
+        # (a queryless frame, `elfmem ls`, a prompt hook) construct neither
+        # adapter. Only the branch actually taken pays for its SDK.
+        from elfmem.adapters.anthropic import AnthropicLLMAdapter
+
         api_key = _resolve_api_key(cfg.llm.api_key_env, default_env="ANTHROPIC_API_KEY")
         return AnthropicLLMAdapter(
             model=cfg.llm.model,
@@ -66,6 +70,8 @@ def make_llm_adapter(cfg: ElfmemConfig, token_counter: TokenCounter) -> LLMServi
             valid_self_tags=valid_self_tags,
             token_counter=token_counter,
         )
+    from elfmem.adapters.openai import OpenAILLMAdapter
+
     api_key = _resolve_api_key(cfg.llm.api_key_env, default_env="OPENAI_API_KEY")
     return OpenAILLMAdapter(
         model=cfg.llm.model,
@@ -92,6 +98,8 @@ def make_embedding_adapter(
     embeddings.base_url and, if their key isn't OPENAI_API_KEY,
     embeddings.api_key_env (v2 step 5 — same mechanism as the LLM side).
     """
+    from elfmem.adapters.openai import OpenAIEmbeddingAdapter
+
     api_key = _resolve_api_key(cfg.embeddings.api_key_env, default_env="OPENAI_API_KEY")
     return OpenAIEmbeddingAdapter(
         model=cfg.embeddings.model,

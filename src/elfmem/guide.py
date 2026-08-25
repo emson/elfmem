@@ -374,17 +374,26 @@ GUIDES: dict[str, AgentGuide] = {
         when=(
             "Assembling context for an LLM prompt. "
             "Use 'self' for identity context, 'attention' for query-relevant knowledge, "
-            "'task' for goal/task context."
+            "'task' for goal/task context. 'self' is QUERYLESS: it answers "
+            "'who am I', returns the constitution ordered by how load-bearing "
+            "each principle has proven, and ignores any query passed to it. "
+            "For 'what do I know about X', use 'attention'."
         ),
         when_not=(
             "You only need raw block data without rendering — use recall() instead. "
             "Avoid calling frame() inside tight generation loops; results are cached."
         ),
-        cost="Fast. Embedding call if query provided; no LLM calls.",
+        cost=(
+            "Fast. One embedding call for query-driven frames; none for 'self'. "
+            "No LLM calls."
+        ),
         returns=(
-            "FrameResult. Use result.text for direct prompt injection. "
+            "FrameResult. Use result.text for direct prompt injection, or "
+            "result.compose(query) to get text and question as one prompt when "
+            "the receiving model does not already have the question. "
             "result.blocks contains the scored ScoredBlock candidates. "
-            "result.cached indicates whether this was served from the TTL cache."
+            "result.cached indicates whether this was served from the TTL cache "
+            "(only queryless frames are cacheable)."
         ),
         next=(
             "Inject result.text into your LLM prompt. "
@@ -392,7 +401,7 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         example=(
             "ctx = await system.frame('attention', query='error handling')\n"
-            "prompt = f'{ctx.text}\\nUser: how do I handle errors?'"
+            "prompt = ctx.compose('how do I handle errors?')"
         ),
     ),
     "recall": AgentGuide(

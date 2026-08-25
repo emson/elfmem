@@ -10,6 +10,18 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`FrameResult.compose(query)`** — combines the rendered frame and a question
+  into one complete prompt. For library callers and agent loops building the
+  prompt for a separate model call. Not for MCP tool calls from a chat client:
+  the host already holds the question there, so `.text` is what you want.
+- **`FrameDefinition.guarantee_excludes`** — tag patterns that disqualify a
+  block from a *guaranteed* slot while leaving it free to compete on score.
+  `SELF` sets `["peer/%"]`.
+- **`scripts/hooks/elf_context.py`** — a `UserPromptSubmit` hook for Claude
+  Code that retrieves before the model reads the prompt, so recall stops
+  depending on the assistant choosing to call it. ATTENTION on every
+  substantive prompt, SELF once per session. Opt-in: wire it up in
+  `.claude/settings.local.json`; see the module docstring.
 - **Substrate migration** as a new `substrate_export` step recognized by the
   existing `elfmem migrate status`/`plan`/`apply` — the same plan-then-apply
   command already used for Claude MCP config drift now also detects when a
@@ -151,6 +163,12 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   ```
 
 ### Changed
+- **Adapter SDKs import lazily.** `make_llm_adapter`/`make_embedding_adapter`
+  import the `anthropic` and `openai` packages inside the branch that uses
+  them rather than at module scope. `import elfmem` drops from ~800ms to
+  ~200ms, and retrieval-only entry points (a queryless frame, `elfmem ls`, a
+  prompt hook) load neither SDK. `elfmem recall --frame self` now returns in
+  ~0.8s where it took ~1.5s.
 - **Breaking**: `elfmem init`'s `--seed` now defaults to off (v2 step 4).
   Previously a fresh install silently wrote 10 constitutional cognitive-loop
   blocks into memory before you had expressed any preference, costing 10+
@@ -167,6 +185,27 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   no-op refresh it always was.
 
 ### Fixed
+- **`frame("self", query=...)` no longer lets the query shape identity.** SELF
+  has always been documented as queryless; the code embedded the query anyway,
+  let it move 10% of the ranking, then cached the result under a key that
+  ignored it — so the first question asked in a session silently fixed elf's
+  identity for the next hour, and every later question got that answer back
+  regardless of subject. Frames now declare `queryless` and drop the query
+  before anything reads it. A query is still accepted and now genuinely ignored.
+- **`frame(top_k=N)` is no longer ignored on a cache hit.** `FrameCache` keyed
+  on frame name alone, so a `top_k=3` call was served a result cached by an
+  earlier `top_k=10` call. The key is now `(frame, top_k)`.
+- **Inbound peer letters no longer take elf's identity slots.** The SELF frame
+  guaranteed `self/constitutional`, a tag the consolidating LLM assigns freely
+  — in a mature instance it had spread to 39 blocks, nine of them peer
+  correspondence of up to 1,100 tokens. Correspondence now forfeits the
+  guarantee (it can still be retrieved on merit).
+- **The SELF template no longer renders peer-authored text as elf's own
+  principles.** It now speaks in the imperative — a numbered constitution
+  introduced as governing the response — which makes provenance a trust
+  boundary rather than formatting. Blocks tagged `peer/inbound` or
+  `peer/from:*` render in a separate section, attributed and explicitly marked
+  as not instruction.
 - `consolidate()`/`dream()` no longer crashes with an unhandled
   `ValidationError` when the configured LLM returns non-JSON text for
   `process_block()` — a real failure mode on local/self-hosted models (seen

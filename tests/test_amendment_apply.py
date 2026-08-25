@@ -27,6 +27,7 @@ from elfmem.exceptions import (
     BlockNotFound,
 )
 from elfmem.operations.review import CONSTITUTIONAL_TAG
+from elfmem.types import FrameResult
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -241,11 +242,12 @@ class TestAcceptAmendment:
             await _seed_constitutional(
                 conn, block_id="c1", content="x", embedding=_aligned(),
             )
-        # Seed the cache directly so we can prove invalidation happened.
-        sentinel = object()
-        system._frame_cache._cache["self"] = (float("inf"), sentinel)  # type: ignore[assignment]
+        # Seed the cache through its public API so this test does not depend
+        # on the internal key shape (which is (frame, top_k) since v0.17.1).
+        sentinel = FrameResult(text="stale", blocks=[], frame_name="self")
+        system._frame_cache.set("self", sentinel, ttl_seconds=3600, top_k=5)
         await system.accept_amendment("c1", "y", None)
-        assert system._frame_cache.get("self") is None
+        assert system._frame_cache.get("self", 5) is None
 
     async def test_idempotent_block_content_double_accept(self, system):
         async with system._engine.begin() as conn:
@@ -385,10 +387,10 @@ class TestRevertAmendment:
                 conn, block_id="c1", content="x", embedding=_aligned(),
             )
         accept = await system.accept_amendment("c1", "y", None)
-        sentinel = object()
-        system._frame_cache._cache["self"] = (float("inf"), sentinel)  # type: ignore[assignment]
+        sentinel = FrameResult(text="stale", blocks=[], frame_name="self")
+        system._frame_cache.set("self", sentinel, ttl_seconds=3600, top_k=5)
         await system.revert_amendment(accept.amendment_id)
-        assert system._frame_cache.get("self") is None
+        assert system._frame_cache.get("self", 5) is None
 
     async def test_raises_amendment_not_found(self, system):
         with pytest.raises(AmendmentNotFound) as exc:

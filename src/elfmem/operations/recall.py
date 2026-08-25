@@ -27,6 +27,7 @@ async def recall(
     """Execute full retrieval with reinforcement side effects.
 
     Pipeline:
+    0. Drop the query if the frame is queryless
     1. Check cache (if frame has caching enabled)
     2. Determine effective weights (renormalize if no query)
     3. Run hybrid retrieval pipeline (pure)
@@ -38,9 +39,19 @@ async def recall(
     9. Reinforce co-retrieved edges (side effect)
     10. Cache result (if applicable)
     """
+    # 0. A queryless frame discards the query before anything reads it.
+    # frame() has always documented SELF as queryless; until now the code
+    # took the query anyway, embedded it, let it move 10% of the ranking,
+    # and then cached the outcome under a key that ignored it -- so the
+    # first question of a session silently set the identity for the next
+    # hour. Dropping it here restores the documented contract and makes
+    # the cache sound: no query in, nothing query-shaped to cache.
+    if frame_def.queryless:
+        query = None
+
     # 1. Check cache
     if cache is not None and frame_def.cache is not None:
-        cached = cache.get(frame_def.name)
+        cached = cache.get(frame_def.name, top_k)
         if cached is not None:
             return FrameResult(
                 text=cached.text,
@@ -78,6 +89,7 @@ async def recall(
         conn,
         candidates=candidates,
         guarantee_tag_patterns=frame_def.guarantees,
+        exclude_tag_patterns=frame_def.guarantee_excludes,
         top_k=top_k,
     )
 
@@ -105,7 +117,7 @@ async def recall(
 
     # 10. Cache
     if cache is not None and frame_def.cache is not None:
-        cache.set(frame_def.name, result, frame_def.cache.ttl_seconds)
+        cache.set(frame_def.name, result, frame_def.cache.ttl_seconds, top_k)
 
     return result
 
@@ -115,11 +127,14 @@ async def _enforce_guarantees(
     candidates: list[ScoredBlock],
     guarantee_tag_patterns: list[str],
     top_k: int,
+    exclude_tag_patterns: list[str] | None = None,
 ) -> list[ScoredBlock]:
     """Ensure guaranteed blocks are always in the result.
 
     Pre-allocates slots for guaranteed blocks before filling remaining slots
-    with highest-scoring non-guaranteed candidates.
+    with highest-scoring non-guaranteed candidates. Blocks matching
+    ``exclude_tag_patterns`` forfeit the guarantee -- they still compete for
+    the remaining slots on score, they just cannot pre-empt.
     """
     if not guarantee_tag_patterns:
         return candidates
@@ -129,6 +144,10 @@ async def _enforce_guarantees(
     for pattern in guarantee_tag_patterns:
         ids = await queries.get_blocks_by_tag_pattern(conn, pattern)
         guaranteed_ids.update(ids)
+
+    for pattern in exclude_tag_patterns or []:
+        excluded = await queries.get_blocks_by_tag_pattern(conn, pattern)
+        guaranteed_ids.difference_update(excluded)
 
     # Guaranteed blocks that are in the current candidates
     guaranteed_blocks = [b for b in candidates if b.id in guaranteed_ids]
