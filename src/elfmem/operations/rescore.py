@@ -31,12 +31,14 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from elfmem.memory import ledger as _ledger
 from elfmem.memory.dedup import cosine_similarity
 from elfmem.types import GoalDirectedEdgeProposal, MetabolismDryRunResult
 
@@ -217,6 +219,7 @@ async def rescore_blocks(
     llm: object,         # LLMService — typed as object to avoid circular import
     embedding_svc: object,  # EmbeddingService
     evidence_weight: float = 0.5,
+    ledger_dir: Path | None = None,
 ) -> dict[str, int]:
     """Re-run the LLM analysis on each block id and update its scoring.
 
@@ -301,7 +304,22 @@ async def rescore_blocks(
                 success_count=new_alpha,
                 failure_count=new_beta,
             )
-            rescored += 1
+        # Recorded after the per-block commit, not inside it: the ledger entry
+        # describes something that has already happened. Emitting before the
+        # commit would let a crash leave history claiming work the index never
+        # took. Without this the whole pass is invisible to a rebuild, which
+        # under file authority means it is simply lost.
+        if ledger_dir is not None:
+            _ledger.append(
+                ledger_dir,
+                _ledger.KIND_RESCORE,
+                active_hours=float(block["last_reinforced_at"] or 0.0),
+                id=block_id,
+                sig=analysis.alignment_score,
+                w=evidence_weight,
+                **({"sum": analysis.summary} if analysis.summary else {}),
+            )
+        rescored += 1
 
     return {"rescored": rescored, "failed": failed, "attempted": rescored + failed}
 

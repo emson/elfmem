@@ -78,6 +78,18 @@ KIND_SEED = "seed"
 # activity clock. Every block's `recency` is measured against it, so an index
 # rebuilt without it computes recency from zero and inverts the scale.
 KIND_INSTANCE = "instance"
+# A deep-sleep pass re-evaluated an existing block against the current SELF.
+# It folds a weighted alignment observation into the Beta posterior and
+# rewrites the block's summary -- both derived state that lives only in the
+# index, which under file authority is the disposable layer. Without this
+# event a rebuild silently discards every rescore ever run.
+KIND_RESCORE = "rescore"
+# A block was promoted out of the inbox. Consolidation decides its opening
+# Beta posterior, decay class, alignment and summary at that moment -- all
+# derived state that lives only in the index. Under file authority the index
+# is disposable, so without this the block rebuilds as if it had never been
+# scored: neutral confidence, default decay tier, no summary.
+KIND_PROMOTE = "promote"
 
 _JEFFREYS = 0.5
 
@@ -334,6 +346,33 @@ def replay(ledger_dir: Path) -> ReplayResult:
                 for b in ids[i + 1:]:
                     pair = _canonical(a, b)
                     result.co_retrieval[pair] = result.co_retrieval.get(pair, 0) + 1
+
+        elif kind == KIND_PROMOTE:
+            block_id = event.get("id")
+            if isinstance(block_id, str):
+                state = result.blocks.setdefault(block_id, BlockState())
+                # Absolute, not additive: promotion *creates* the posterior
+                # (alpha = confidence, beta = 1 - confidence, total mass 1.0),
+                # which is what later outcome and rescore events accumulate on.
+                conf = float(event.get("conf", 0.5))
+                state.alpha = conf
+                state.beta = 1.0 - conf
+                lam = event.get("lam")
+                if lam is not None:
+                    state.decay_lambda = float(lam)
+                if event.get("sum") is not None:
+                    state.summary = event["sum"]
+
+        elif kind == KIND_RESCORE:
+            block_id = event.get("id")
+            if isinstance(block_id, str):
+                state = result.blocks.setdefault(block_id, BlockState())
+                signal = float(event.get("sig", 0.0) or 0.0)
+                weight = float(event.get("w", 0.0) or 0.0)
+                state.alpha += signal * weight
+                state.beta += (1.0 - signal) * weight
+                if event.get("sum") is not None:
+                    state.summary = event["sum"]
 
         elif kind == KIND_OUTCOME:
             block_id = event.get("id")

@@ -270,6 +270,34 @@ def promote_block(memory_dir: Path, block_id: str, to_notes_file: str) -> Block:
     return block
 
 
+def sync_tags(memory_dir: Path, tags_by_id: dict[str, list[str]]) -> int:
+    """Write inferred tags back into block frontmatter. Returns files changed.
+
+    Tags are *declared* state -- they live in the file, not the ledger -- but
+    consolidation infers them with an LLM and writes them to the index. Under
+    file authority that inference has to reach the file, or a rebuild drops
+    every tag the agent ever derived, taking `frame('self')`'s tag filter and
+    the decay tier with it.
+    """
+    changed = 0
+    for path in _block_files(memory_dir):
+        with _locked(path):
+            blocks = parse_blocks(path.read_text(encoding="utf-8")).blocks
+            dirty = False
+            for block in blocks:
+                if block.id is None:
+                    continue
+                wanted = tags_by_id.get(block.id)
+                if wanted is None or sorted(wanted) == sorted(block.tags):
+                    continue
+                block.tags = sorted(wanted)
+                dirty = True
+            if dirty:
+                _atomic_write(path, write_blocks(blocks))
+                changed += 1
+    return changed
+
+
 def reconcile_status(
     memory_dir: Path, *, active_categories: dict[str, str],
 ) -> int:

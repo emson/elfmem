@@ -1041,6 +1041,7 @@ class MemorySystem:
                 skip_llm=skip_llm,
                 max_inbox_per_run=budget,
                 host_analyses=parsed_host_analyses,
+                ledger_dir=self._ledger_dir,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
@@ -1057,6 +1058,13 @@ class MemorySystem:
                 self._memory_dir,
                 active_categories={r["id"]: r["category"] for r in rows},
             )
+            # Tags are declared state, so LLM-inferred ones have to reach the
+            # file. Left in the index alone, a rebuild would drop every tag
+            # the agent derived, taking frame('self')'s tag filter and the
+            # decay tier with it.
+            async with self._engine.connect() as conn:
+                tags_by_id = await get_tags_batch(conn, [r["id"] for r in rows])
+            _file_mutation.sync_tags(self._memory_dir, tags_by_id)
         self._frame_cache.clear()
 
         async with self._engine.connect() as conn:
@@ -1498,6 +1506,7 @@ class MemorySystem:
             self._engine, block_ids=candidates,
             llm=self._llm, embedding_svc=self._embedding,
             evidence_weight=self._config.memory.rescore_evidence_weight,
+            ledger_dir=self._ledger_dir,
         )
 
     async def metabolism_dry_run(

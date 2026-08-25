@@ -158,3 +158,69 @@ class TestEditAndForgetKeepIdentity:
         append_block(memory_dir, Block(title="A", content="First.", id="aaa11111"))
         assert forget_block(memory_dir, "aaa11111") is True
         assert forget_block(memory_dir, "aaa11111") is False
+
+
+class TestDerivedStateReachesTheLedger:
+    """The flip made the index disposable, which means anything written only
+    to the index is written to something that gets deleted. These are the
+    three paths that produce derived state."""
+
+    def test_promotion_creates_the_posterior_absolutely(self, tmp_path: Path):
+        """Promotion is where the Beta posterior comes into being
+        (alpha = confidence, beta = 1 - confidence). Later outcome and rescore
+        events accumulate on top of it, so it must set, not add."""
+        from elfmem.memory.ledger import KIND_PROMOTE, append, replay
+
+        d = tmp_path / "ledger"
+        append(d, KIND_PROMOTE, active_hours=1.0, id="aaa11111",
+               conf=0.8, sig=0.8, lam=0.001, sum="A distillation.")
+        state = replay(d).blocks["aaa11111"]
+        assert state.alpha == pytest.approx(0.8)
+        assert state.beta == pytest.approx(0.2)
+        assert state.decay_lambda == pytest.approx(0.001)
+        assert state.summary == "A distillation."
+
+    def test_rescore_accumulates_on_top_of_promotion(self, tmp_path: Path):
+        from elfmem.memory.ledger import (
+            KIND_PROMOTE,
+            KIND_RESCORE,
+            append,
+            replay,
+        )
+
+        d = tmp_path / "ledger"
+        append(d, KIND_PROMOTE, active_hours=1.0, id="aaa11111", conf=0.8)
+        append(d, KIND_RESCORE, active_hours=2.0, id="aaa11111",
+               sig=1.0, w=0.5, sum="Refreshed.")
+        state = replay(d).blocks["aaa11111"]
+        assert state.alpha == pytest.approx(1.3)   # 0.8 + 1.0*0.5
+        assert state.beta == pytest.approx(0.2)    # 0.2 + 0.0*0.5
+        assert state.summary == "Refreshed."
+
+    def test_inferred_tags_are_written_back_into_the_file(self, memory_dir: Path):
+        """Tags are declared state, so an LLM-inferred tag has to reach the
+        file. Left in the index alone, a rebuild drops every derived tag,
+        taking frame('self')'s tag filter and the decay tier with it."""
+        from elfmem.memory.file_mutation import sync_tags
+
+        append_block(
+            memory_dir,
+            Block(title="A", content="Something.", id="aaa11111", tags=["manual"]),
+        )
+        changed = sync_tags(memory_dir, {"aaa11111": ["manual", "self/value"]})
+        assert changed == 1
+        blocks = parse_blocks(
+            (memory_dir / "log" / "knowledge.md").read_text(encoding="utf-8")
+        ).blocks
+        assert blocks[0].tags == ["manual", "self/value"]
+
+    def test_sync_tags_rewrites_nothing_when_tags_already_match(
+        self, memory_dir: Path
+    ):
+        from elfmem.memory.file_mutation import sync_tags
+
+        append_block(
+            memory_dir,
+            Block(title="A", content="Something.", id="aaa11111", tags=["billing"]),
+        )
+        assert sync_tags(memory_dir, {"aaa11111": ["billing"]}) == 0

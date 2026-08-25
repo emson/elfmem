@@ -14,6 +14,7 @@ import asyncio
 import heapq
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -32,6 +33,7 @@ from elfmem.db.queries import (
     update_block_scoring,
     update_block_status,
 )
+from elfmem.memory import ledger as _ledger
 from elfmem.memory.blocks import decay_lambda_for_tier, determine_decay_tier
 from elfmem.memory.dedup import cosine_similarity
 from elfmem.ports.services import EmbeddingService, LLMService
@@ -454,6 +456,7 @@ async def _apply_decisions(
     edge_decisions: list[_EdgeDecision],
     *,
     current_active_hours: float,
+    ledger_dir: Path | None = None,
 ) -> tuple[int, int, int]:
     """Write all pre-computed consolidation decisions to the database.
 
@@ -527,6 +530,20 @@ async def _apply_decisions(
                 failure_count=promotion_beta,
             )
         await update_block_status(conn, d.block_id, "active")
+        if ledger_dir is not None:
+            # Promotion is where a block's posterior, decay class and summary
+            # come into being. All three live only in the index, which under
+            # file authority is the disposable layer.
+            _ledger.append(
+                ledger_dir,
+                _ledger.KIND_PROMOTE,
+                active_hours=current_active_hours,
+                id=d.block_id,
+                conf=d.confidence,
+                sig=d.alignment_score,
+                lam=d.decay_lambda,
+                **({"sum": d.summary} if d.summary else {}),
+            )
         promoted_ids.append(d.block_id)
         promoted += 1
 
@@ -566,6 +583,7 @@ async def consolidate(
     skip_llm: bool = False,
     max_inbox_per_run: int | None = None,
     host_analyses: dict[str, BlockAnalysis] | None = None,
+    ledger_dir: Path | None = None,
 ) -> ConsolidateResult:
     """Promote inbox blocks through the full consolidation pipeline.
 
@@ -625,6 +643,7 @@ async def consolidate(
         block_decisions,
         edge_decisions,
         current_active_hours=current_active_hours,
+        ledger_dir=ledger_dir,
     )
 
     # Health metrics (issue #73, ADR 0006).
