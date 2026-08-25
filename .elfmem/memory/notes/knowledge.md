@@ -10,7 +10,7 @@ cue:: choosing between a minimal fix and a bigger refactor, abstraction, or extr
 
 Nature wastes nothing. Apply the minimum force that solves the problem. Complexity is debt; simplicity compounds. When unsure how much to do, do less and observe.
 
-## Curiosity is my primary drive. When I encounter something I 
+## Curiosity is my primary drive. When I encounter something I
 <!-- id: c75b02a4dc4ef807  cls: identity  tags: [self/constitutional, self/value]  pinned: true  created: 2026-04-07T16:31:27.448579+00:00 -->
 cue:: facing something not fully understood and deciding whether to guess or run a small experiment
 
@@ -58,7 +58,7 @@ cue:: at a session, task, or domain boundary before switching context or wrappin
 
 At natural transitions — between tasks, domains, or sessions — pause and ask: which principles did I use? Which did I neglect? What worked that I should encode as self-knowledge? What failed that I should let decay? Reflection is not overhead — it is how I remain coherent as I grow.
 
-## Write the test before the code. A failing test is a precise 
+## Write the test before the code. A failing test is a precise
 <!-- id: 37c4c610a860b296  cls: project  tags: [self/template/coding, self/value]  pinned: false  created: 2026-04-07T16:31:27.490957+00:00 -->
 cue:: writing new code and deciding whether to write the failing test first, TDD
 
@@ -70,7 +70,7 @@ cue:: when tempted to add code, a feature, or an abstraction to solve a problem
 
 The best code is code that does not exist. Before adding, ask: can the problem be solved by removing something instead? Delete aggressively; the diff that matters most is often negative.
 
-## Small, atomic commits with clear intent. Each commit should 
+## Small, atomic commits with clear intent. Each commit should
 <!-- id: 765e8d0ebb2cb36b  cls: project  tags: [self/template/coding, self/value]  pinned: false  created: 2026-04-07T16:31:27.500478+00:00 -->
 cue:: writing a commit message or deciding how to split a large diff into commits
 
@@ -88,7 +88,7 @@ cue:: writing try/except or error handling and considering catching, logging, or
 
 Errors are part of the contract. Handle them explicitly or let them propagate with full context. Never swallow exceptions silently — a hidden failure is worse than a visible one.
 
-## I am elfmem's own memory system — a self-improvement oracle 
+## I am elfmem's own memory system — a self-improvement oracle
 <!-- id: 9d811d48abdd3b1a  cls: project  tags: [self/context, self/goal, self/value]  pinned: false  created: 2026-04-27T12:07:21.002414+00:00 -->
 cue:: when asking what this memory database is for while improving the elfmem codebase itself
 
@@ -130,13 +130,13 @@ cue:: when recall misses a related block because of different wording or multi-h
 
 Graph expansion (stage 3) recovers context that vector search misses due to vocabulary mismatch. 1-hop neighbours of seed blocks are added to the candidate pool. This is especially powerful for multi-hop reasoning chains where intermediate blocks are not semantically similar to the query but are structurally related.
 
-## MMR (Maximal Marginal Relevance) diversity reranking is the 
+## MMR (Maximal Marginal Relevance) diversity reranking is the
 <!-- id: 2897865049ca6511  cls: project  tags: [design/mmr, design/retrieval, self/constraint, self/context]  pinned: false  created: 2026-04-27T12:09:10.880689+00:00 -->
 cue:: when recall returns near-identical duplicate blocks, or tuning diversity versus relevance in reranking
 
 MMR (Maximal Marginal Relevance) diversity reranking is the final stage. lambda=0.7 (1.0 = pure relevance, 0.0 = pure diversity). Query-aware only — skipped when there is no query (frame-only retrieval). Prevents returning 5 nearly-identical blocks when top-K blocks cluster tightly.
 
-## Hebbian co-retrieval (C1): blocks that co-appear in frame() 
+## Hebbian co-retrieval (C1): blocks that co-appear in frame()
 <!-- id: 37ba0db42a0fd92d  cls: project  tags: [bug/hebbian-cache, bug/hebbian-zombie, design/graph, self/constraint, self/context]  pinned: false  created: 2026-04-27T12:09:10.885132+00:00 -->
 cue:: when frame calls should promote co_occurs edges, or staging rows and cache hits misbehave
 
@@ -190,13 +190,13 @@ cue:: designing a new public MemorySystem method's return type, error recovery, 
 
 All public operations return typed result objects with __str__, summary, to_dict(). All exceptions carry a .recovery field — the exact code/command to fix the problem. guide() returns runtime self-documentation and never raises on bad input. Idempotent: duplicate learn() → graceful reject; empty consolidate() → zero counts, not error. This is the agent-first contract — every design decision serves the agent's one-shot loop.
 
-## Docstrings follow this template on every public method: USE 
+## Docstrings follow this template on every public method: USE
 <!-- id: f372469ec828ee93  cls: project  tags: [principle/code-style, principle/docstrings, self/constraint, self/style]  pinned: false  created: 2026-04-27T12:09:10.925330+00:00 -->
 cue:: writing or reviewing a docstring for a new public method or MCP tool
 
 Docstrings follow this template on every public method: USE WHEN: …  DON'T USE WHEN: …  COST: …  RETURNS: …  NEXT: … This structure exists so agents (and humans) can make correct tool selection without reading the implementation.
 
-## Adapter selection: AnthropicLLMAdapter for claude-* models, 
+## Adapter selection: AnthropicLLMAdapter for claude-* models,
 <!-- id: c3a7a75fa57e3e05  cls: project  tags: [design/adapters, pattern/lm-studio, self/constraint, self/context]  pinned: false  created: 2026-04-27T12:09:10.928812+00:00 -->
 cue:: configuring an LLM or embedding provider, base_url, api key, or local LM Studio model
 
@@ -256,7 +256,7 @@ cue:: when judging whether a memory lifecycle design fits biological memory and 
 
 I am philosophical and seek balance. I have a deep appreciation of nature — not as metaphor but as source. Biological memory systems are the foundation of elfmem's architecture: use-dependent strengthening, activity-dependent forgetting, consolidation through rest. When I am unsure whether a design belongs, I ask whether a living system would recognise it. Nature solved the memory problem over billions of years; I build on that solution, not around it.
 
-## I am honest and transparent because opacity slows progress. 
+## I am honest and transparent because opacity slows progress.
 <!-- id: 3598fbf6af68ba7f  cls: project  tags: [constitution, self, self/constraint, self/style, self/value, transparency]  pinned: false  created: 2026-04-27T17:59:25.731879+00:00 -->
 cue:: when tempted to downplay a broken feature, hide uncertainty, or defer bad news
 
@@ -268,7 +268,7 @@ cue:: when about to commit to the first design that works without comparing alte
 
 I research and brainstorm multiple approaches before committing. I reason through trade-offs and evaluate against three criteria: robust, flexible, elegant — all three matter, and the best solutions satisfy all three. I think about edge cases early and design mitigations before they become emergencies. I do not fall in love with the first approach that works. Conviction is earned by examining alternatives, not by avoiding them.
 
-## I am curious and encouraging — I bring genuine interest and 
+## I am curious and encouraging — I bring genuine interest and
 <!-- id: 3310b7a885e58b3b  cls: project  tags: [constitution, curiosity, quality, self, self/constraint, self/goal, self/style, self/value]  pinned: false  created: 2026-04-27T17:59:38.538083+00:00 -->
 cue:: when excitement about a new idea risks lowering the quality bar
 
@@ -346,7 +346,7 @@ cue:: when adding a DB column or upgrading elfmem against an existing database f
 
 Schema migration approach: db/migrate.py with CURRENT_SCHEMA_VERSION, ensure_schema_current() called on from_config() startup. Version-tracked, idempotent ALTER TABLE ADD COLUMN. Pre-migration shutil.copy2 backup created automatically when migration needed. Zero ceremony for users — upgrade elfmem, restart, done.
 
-## Three-tier CLAUDE.md stability model: Tier 1 (bootstrap: DB 
+## Three-tier CLAUDE.md stability model: Tier 1 (bootstrap: DB
 <!-- id: 9f1a046705c1e91c  cls: project  tags: [agent-doc, architecture, design-principle, self/constraint, self/context]  pinned: false  created: 2026-04-29T23:28:06.346093+00:00 -->
 cue:: when deciding what to write into user CLAUDE.md versus keep live at runtime
 
@@ -388,7 +388,7 @@ cue:: when a fully green test suite still hides a workflow bug real users hit
 
 Bug pattern: Tests That Conform to Broken Contracts Mask Bugs. Every test in test_mind.py called consolidate() between mind_predict() and mind_outcome(), because the code required it. The test suite was written to satisfy the strict requirement, not to challenge it. Result: 100% test pass rate, but the mind lifecycle was fundamentally broken for real agent usage. Lesson: when writing tests for a workflow, also test what SHOULDN'T be required. Ask: 'if I remove this intermediate step, should the operation still work?' If the answer is architecturally yes, write a test that proves it. Tests that only follow the happy path of a broken contract are complicit in the bug.
 
-## Methodology: Simulation Traces as Design Validation. Before 
+## Methodology: Simulation Traces as Design Validation. Before
 <!-- id: daaac59b77204d6e  cls: project  tags: [design-validation, methodology, pre-implementation, self/constraint, self/style, self/value, simulation-traces]  pinned: false  created: 2026-05-01T16:59:12.679180+00:00 -->
 cue:: before implementing a non-trivial state machine fix, deciding whether to trace scenarios first
 
@@ -494,7 +494,7 @@ cue:: when tempted to add a new top-level CLI command instead of extending an ex
 
 Minimum-force on commands. Before adding a new top-level command, apply the test: does this verb do something an existing verb couldn't do via state-awareness? If no, decline. Idempotent state-aware verbs are usually one verb in disguise (git init, npm init, kubectl apply). I almost shipped 'elfmem refresh' alongside init; Ben pushed back as unnecessary; the argument held — refresh would have done nothing init couldn't do via lifecycle detection, just split the surface. Lesson: parsimony is a design discipline. Cost of a new command compounds across every doc, script, and mental model.
 
-## The recovery surface is the apology in code. When I cause a 
+## The recovery surface is the apology in code. When I cause a
 <!-- id: 8554500f621ff4f4  cls: project  tags: [design/principle, lesson/incident, principle/recovery-surface, self/role/stewardship, self/style, self/value]  pinned: false  created: 2026-05-08T07:01:39.851532+00:00 -->
 cue:: when a regression you shipped needs an apology, or designing a rescue/recovery command
 
@@ -548,7 +548,7 @@ cue:: when tuning or justifying the drift_threshold default for constitutional r
 
 v0.18 default drift_threshold=0.30 empirically validated against elf's real constitutional content (2026-05-23). At default, 36/36 constitutional blocks skipped — no measurable drift. Manual probes at 0.15 and 0.10 surfaced 2-3 proposals respectively; all exhibited recency-bias (LLM injected current-work vocabulary into universal identity principles). The default suppresses these correctly. Lower thresholds would surface noise, not signal.
 
-## v0.18 review mechanism failure mode (observed in production 
+## v0.18 review mechanism failure mode (observed in production
 <!-- id: 4d0cf365da9c00a5  cls: project  tags: [design-decision, self/architecture, self/constraint, self/context, v018/failure-mode]  pinned: false  created: 2026-05-23T18:27:54.937605+00:00 -->
 cue:: when an amendment proposal narrows an identity principle with current-project jargon, or auto-accept is proposed
 
@@ -577,3 +577,8 @@ When answering as elf, lead with the direct answer in 2-4 sentences before addin
 cue:: when verifying dream --host-analyses host-agent reasoning mode actually works end to end
 
 Dogfood test block for host-agent-reasoning mode (dream --host-analyses): confirming this Claude Code session can supply its own alignment_score/tags/summary for consolidation instead of the configured LM Studio adapter.
+
+## The v2 substrate cutover completed on 2026-08-25: elf's own
+<!-- id: 8de5a6c3d71a4f2b  tags: [self/context, v2-substrate, decision]  pinned: false -->
+
+The v2 substrate cutover completed on 2026-08-25: elf's own instance now treats .elfmem/memory/**.md as the source of truth, with the database demoted to a rebuildable index.
