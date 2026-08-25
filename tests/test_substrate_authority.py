@@ -224,3 +224,50 @@ class TestDerivedStateReachesTheLedger:
             Block(title="A", content="Something.", id="aaa11111", tags=["billing"]),
         )
         assert sync_tags(memory_dir, {"aaa11111": ["billing"]}) == 0
+
+
+class TestEditWritesBothDeclaredFields:
+    """Content and cue are both declared state. A cue written only to the
+    index is a cue the next rebuild drops — which is exactly what happened
+    the first time edit() was wired to the substrate."""
+
+    def test_cue_only_edit_reaches_the_file(self, memory_dir: Path):
+        from elfmem.memory.file_mutation import edit_block
+
+        append_block(
+            memory_dir, Block(title="A", content="Body.", id="aaa11111")
+        )
+        edit_block(memory_dir, "aaa11111", cue="when choosing a sync strategy")
+        block = parse_blocks(
+            (memory_dir / "log" / "knowledge.md").read_text(encoding="utf-8")
+        ).blocks[0]
+        assert block.cue == "when choosing a sync strategy"
+        assert block.content == "Body."
+
+    def test_content_only_edit_leaves_an_existing_cue_alone(
+        self, memory_dir: Path
+    ):
+        from elfmem.memory.file_mutation import edit_block
+
+        append_block(
+            memory_dir,
+            Block(title="A", content="Old.", id="aaa11111", cue="when X happens"),
+        )
+        edit_block(memory_dir, "aaa11111", "New body.")
+        block = parse_blocks(
+            (memory_dir / "log" / "knowledge.md").read_text(encoding="utf-8")
+        ).blocks[0]
+        assert block.content == "New body."
+        assert block.cue == "when X happens"
+
+    def test_both_can_change_at_once(self, memory_dir: Path):
+        from elfmem.memory.file_mutation import edit_block
+
+        append_block(
+            memory_dir, Block(title="A", content="Old.", id="aaa11111", cue="old cue")
+        )
+        edit_block(memory_dir, "aaa11111", "New body.", cue="new cue")
+        block = parse_blocks(
+            (memory_dir / "log" / "knowledge.md").read_text(encoding="utf-8")
+        ).blocks[0]
+        assert (block.content, block.cue) == ("New body.", "new cue")

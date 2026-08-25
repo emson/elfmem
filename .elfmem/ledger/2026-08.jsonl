@@ -670,3 +670,9 @@
 {"t":"2026-08-25T14:49:46.093452+00:00","s":96,"ah":3.463054,"k":"rescore","id":"e30535ef2105d92a","sig":0.7,"w":0.5,"sum":"The system uses a default drift_threshold of 0.30 to suppress noise and recency-bias in constitutional content validation. Manual probes at 0.15 and 0.10 surfaced 2-3 proposals that exhibited vocabulary injection from current work into universal identity principles."}
 {"t":"2026-08-25T14:50:00.898029+00:00","s":97,"ah":3.463054,"k":"rescore","id":"4d0cf365da9c00a5","sig":0.7,"w":0.5,"sum":"A failure mode in the v0.18 review mechanism (observed 2026-05-23) shows that at drift_threshold < 0.30, the LLM injects specific jargon into universal identity principles; the two-step accept process is confirmed as a necessary design choice to prevent auto-application of these amendments."}
 {"t":"2026-08-25T14:50:15.212510+00:00","s":98,"ah":3.684931,"k":"rescore","id":"a7cc83ee5d20ee0b","sig":0.7,"w":0.5,"sum":"As of 2026-05-23, the agent's constitutional content is stable with a mean drift between 0.13–0.17, which is below the v0.18 review threshold of 0.30. Identity remains sound with drift limited to vocabulary rather than values; re-evaluation is scheduled for approximately 2026-08-23."}
+{"t":"2026-08-25T15:16:51.202354+00:00","s":0,"ah":4.133604,"k":"birth","id":"fa99bc29abf09645"}
+{"t":"2026-08-25T15:18:06.837193+00:00","s":0,"ah":2e-06,"k":"birth","id":"c39966d3b011992b"}
+{"t":"2026-08-25T15:20:15.230421+00:00","s":0,"ah":4.133603,"k":"promote","id":"fa99bc29abf09645","conf":0.5,"sig":0.5,"lam":0.001}
+{"t":"2026-08-25T15:20:17.467215+00:00","s":0,"ah":4.143569,"k":"edit","id":"fa99bc29abf09645"}
+{"t":"2026-08-25T15:21:09.157960+00:00","s":0,"ah":4.143577,"k":"edit","id":"fa99bc29abf09645"}
+{"t":"2026-08-25T15:22:32.159138+00:00","s":0,"ah":4.143586,"k":"edit","id":"8de5a6c3d71a4f2b"}

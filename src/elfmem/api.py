@@ -1260,11 +1260,13 @@ class MemorySystem:
             block = await get_block(conn, block_id)
             if block is None or block["status"] != "active":
                 raise BlockNotFound(block_id)
+            if self._files_authoritative:
+                # Content and cue are both declared state: both belong in the
+                # file, which is the truth a rebuild reads.
+                _file_mutation.edit_block(
+                    self._memory_dir, block_id, content, cue=cue
+                )
             if content is not None:
-                if self._files_authoritative:
-                    _file_mutation.edit_block(
-                        self._memory_dir, block_id, content
-                    )
                 embedding = await self._embedding.embed(content.strip().lower())
                 await update_block_content(
                     conn,

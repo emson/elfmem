@@ -446,7 +446,7 @@ async def elfmem_remember(
     If should_dream is True, consolidation (embedding, alignment, contradictions)
     will benefit from running soon via elfmem_dream.
     """
-    return await _tool_remember(content, tags=tags)
+    return await _tool_remember(content, tags=tags, cue=cue)
 
 
 @mcp.tool()

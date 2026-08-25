@@ -143,15 +143,24 @@ def find_block(memory_dir: Path, block_id: str) -> tuple[Path, Block] | None:
     return None
 
 
-def edit_block(memory_dir: Path, block_id: str, new_content: str) -> Block:
-    """Replace a block's content in place. Its `id` never changes (Invariant 3).
+def edit_block(
+    memory_dir: Path,
+    block_id: str,
+    new_content: str | None = None,
+    *,
+    cue: str | None = None,
+) -> Block:
+    """Change a block's content and/or cue in place. Its `id` never changes.
 
-    USE WHEN: the content of an existing block needs to change.
+    USE WHEN: the content or cue of an existing block needs to change.
     DON'T USE WHEN: the block doesn't exist yet — that's a fresh `learn()`
         append, not an edit.
-    COST: one file read + one file write.
+    COST: one locked file read + one atomic file write.
     RETURNS: the updated `Block`.
     NEXT: `elfmem index` picks up the change on its next rebuild.
+
+    Both fields are *declared* state, so both have to land in the file. A cue
+    written only to the index is a cue a rebuild drops.
     """
     found = find_block(memory_dir, block_id)
     if found is None:
@@ -163,7 +172,10 @@ def edit_block(memory_dir: Path, block_id: str, new_content: str) -> Block:
         updated: Block | None = None
         for block in result.blocks:
             if block.id == block_id:
-                block.content = new_content
+                if new_content is not None:
+                    block.content = new_content
+                if cue is not None:
+                    block.cue = cue
                 updated = block
         if updated is None:
             # Another writer removed it between find_block and the lock.

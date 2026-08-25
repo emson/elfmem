@@ -580,5 +580,12 @@ Dogfood test block for host-agent-reasoning mode (dream --host-analyses): confir
 
 ## The v2 substrate cutover completed on 2026-08-25: elf's own
 <!-- id: 8de5a6c3d71a4f2b  tags: [self/context, v2-substrate, decision]  pinned: false -->
+cue:: when asked when elfmem stopped being database-primary, or which layer is authoritative for memory content
 
 The v2 substrate cutover completed on 2026-08-25: elf's own instance now treats .elfmem/memory/**.md as the source of truth, with the database demoted to a rebuildable index.
+
+## Anything the system accumulates is history, not derivation —
+<!-- id: fa99bc29abf09645  tags: [self/value, v2-substrate, architecture, bug-pattern, decision]  pinned: false -->
+cue:: when deciding whether some piece of state should be stored or recomputed, or when a rebuild silently loses scores, summaries or graph edges
+
+Anything the system accumulates is history, not derivation — even when it looks recomputable. This surfaced three times during the v2 substrate cutover, each time as silent data loss on rebuild: (1) decay_lambda looks like a pure function of tags, but outcome() with a negative signal multiplies it, so a penalised block carries a lambda no tag lookup can reproduce; (2) block summaries look like a cache of content, but regenerating one costs an LLM call, so discarding them leaves the whole corpus unscored; (3) similarity edges look derivable from embeddings, but consolidation scores them against *summary* embeddings and temporal proximity at promotion time, so recomputing builds a different graph rather than restoring this one. The test that catches all three: if a value was ever mutated by an event after it was first computed, it is history and belongs in the ledger.
