@@ -183,6 +183,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   ```
 
 ### Changed
+- **ADR 0012 — use-aware archival rejected.** Tested against real data before
+  building: 148 active blocks scored against 161 real assistant responses. The
+  rule "archive high-assembly, low-use blocks" inverts — its top 15 candidates
+  are 10 constitutional blocks, including the two most-reinforced blocks in the
+  corpus, because SELF-frame guarantees inflate constitutional reinforcement
+  5× while dispositional wording is never quoted back. `curate()` stays
+  decay-and-graph based, `record_use()` stays reward-only, and the asymmetry is
+  now a documented constraint rather than a conservative default.
 - **Adapter SDKs import lazily.** `make_llm_adapter`/`make_embedding_adapter`
   import the `anthropic` and `openai` packages inside the branch that uses
   them rather than at module scope. `import elfmem` drops from ~800ms to

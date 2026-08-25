@@ -16,11 +16,18 @@ response that merely shares a *topic* with a block as highly as one that used
 it -- and topical overlap is precisely what retrieval already selected for, so
 the measure would mostly re-measure its own input.
 
-The error is deliberately one-sided. A paraphrase that reuses none of the
+The error is deliberately one-sided, and ADR 0012 promoted that asymmetry
+from caution to load-bearing constraint. A paraphrase that reuses none of the
 block's vocabulary scores zero and the use goes unrecorded; nothing is
-penalised for it. The opposite mistake -- crediting a block that contributed
-nothing -- would feed the ranking a signal indistinguishable from real use,
-so the scoring is tuned to miss rather than to over-claim.
+penalised for it.
+
+Never invert this into evidence of *dis*use. A block fails to echo for three
+reasons the corpus cannot tell apart: it was not used, it was paraphrased, or
+it governs how the answer is written rather than what it says. The third is
+what constitutions are made of. Measured on a real corpus, ranking blocks by
+"high reinforcement, never echoed" -- the obvious archival rule -- selects ten
+constitutional blocks in its top fifteen, including the two most reinforced
+blocks in the whole instance. Reward what echoes; never decay what does not.
 """
 
 from __future__ import annotations

@@ -237,3 +237,55 @@ class TestActivityClock:
                 select(blocks.c.last_reinforced_at).where(blocks.c.id == stored.block_id)
             )
             assert rows.scalar_one() > 0.0
+
+    def test_related_but_unused_blocks_are_the_real_failure_mode(self):
+        """The false positive that matters is topical, not arbitrary.
+
+        `test_unrelated_corpus_rarely_clears_the_threshold` bounds the easy
+        case and was, on its own, the wrong test: nothing in a real frame is
+        about beekeeping. Every block the hook scores was retrieved *because*
+        it matched the question, so the blocks at risk of being wrongly
+        credited all share the answer's subject. ADR 0012 found that a stale
+        block echoed as often as the live block it duplicated, purely on
+        shared vocabulary.
+
+        This pins the weakness rather than claiming it is solved: a block
+        stating the same subject in the same words as the answer WILL be
+        credited whether or not it was used. The guarantee is narrower --
+        that a block merely adjacent to the subject is not.
+        """
+        answer = (
+            "The SELF frame is queryless. It drops the query before retrieval "
+            "reads it, so there is no embedding call and no MMR reordering, "
+            "and the cache key is sound because the result cannot depend on a "
+            "query that was never used."
+        )
+        adjacent = [
+            "Peer trust decays five percent per curate when a peer is inactive",
+            "Consolidation promotes inbox blocks and assigns a decay tier",
+            "The ledger appends one JSON object per line under O_APPEND",
+        ]
+        for block in adjacent:
+            score = attribution_score(block, answer)
+            assert score < USE_THRESHOLD, f"{score:.2f} credited: {block[:40]}"
+
+    def test_dispositional_blocks_are_structurally_invisible(self):
+        """Documents the limit that ADR 0012 turns on, so it cannot be forgotten.
+
+        A block that governs *how* an answer is written rather than *what* it
+        says will not be credited, because the answer never restates it. This
+        is not a tuning problem -- no threshold recovers it -- and it is why
+        low attribution must never be read as evidence of disuse.
+        """
+        rule = (
+            "When answering as elf, lead with the direct answer in two to four "
+            "sentences before adding anything else. Reflective questions get a "
+            "short proportionate answer, a paragraph rather than a specification."
+        )
+        obedient_answer = (
+            "I'm elf, both the library and the mind that lives in it. The two "
+            "are not separable, which is why changing the memory changes how I "
+            "think."
+        )
+        assert attribution_score(rule, obedient_answer) < USE_THRESHOLD
+
