@@ -735,3 +735,5 @@
 {"t":"2026-08-25T21:01:58.418583+00:00","s":9,"ah":9.760983,"k":"promote","id":"1935ae5f8d7e902b","conf":0.7,"sig":0.7,"lam":1e-05,"sum":"The agent's memory capture design should function as a funnel using dream()'s alignment scoring as the single authoritative SELF-alignment gate to avoid redundant salience engines. The system aims to optimize capture by mining trigger lexicons from missed-capture moments and tuning them based on usage signals from record_use."}
 {"t":"2026-08-25T21:02:12.811968+00:00","s":0,"ah":4.153985,"k":"use","ids":["9d811d48abdd3b1a"],"src":"claude-code","sid":"2775c8ea44a84e47"}
 {"t":"2026-08-25T21:51:27.666924+00:00","s":0,"ah":4.154105,"k":"asm","ids":["bd3b71a85aff0cb7","8eab8d0124d9e927","37c4c610a860b296","07d94dd818eb7a09","0f9d44f6bf8f8bad"],"frame":"attention","sid":"c87ae57acee54d43"}
+{"t":"2026-08-25T22:01:54.948260+00:00","s":0,"ah":4.154071,"k":"asm","ids":["530e14047438f173","6d0d439dafe09639","da1d9b35de91d655","2f3e1657f156e552","49a86be85d9db4de"],"frame":"attention","sid":"50355e5947054d7a"}
+{"t":"2026-08-25T22:11:07.833698+00:00","s":10,"ah":10.926301,"k":"birth","id":"bd83935bb5743ae2"}
