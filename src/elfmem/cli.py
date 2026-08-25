@@ -963,23 +963,41 @@ def doctor(
 
         # ── MCP config ─────────────────────────────────────────────────────
 
-        mcp_file = _project.detect_mcp_config(proj_root)
-        if mcp_file is None:
+        # Checks where each entry POINTS, not merely that one exists. An entry
+        # naming a different project's config starts a server that reads
+        # another instance's memory while every other surface still reports
+        # healthy — that drift has now hidden in plain sight twice.
+        reports = _project.check_mcp_entries(
+            proj_root,
+            expected_config=Path(config_path) if config_path else proj_root / ".elfmem" / "config.yaml",
+            expected_db=db_path,
+        )
+        if not reports:
             _check(
                 "MCP config",
                 False,
-                ".claude.json / claude-code.yaml not found",
+                ".claude.json / claude-code.yaml has no elfmem entry",
                 "Add MCP entry (shown at end of elfmem init output)",
             )
-        elif _project.has_mcp_entry(mcp_file):
-            _check("MCP config", True, f"{mcp_file.name} has elfmem entry")
         else:
-            _check(
-                "MCP config",
-                False,
-                f"{mcp_file.name} exists but has no elfmem entry",
-                "Add elfmem MCP server (shown at end of elfmem init output)",
-            )
+            broken = [r for r in reports if not r.ok]
+            if not broken:
+                noun = "entry" if len(reports) == 1 else "entries"
+                _check(
+                    "MCP config",
+                    True,
+                    f"{len(reports)} elfmem {noun}, all pointed at this project",
+                )
+            else:
+                for report in broken:
+                    _check(
+                        "MCP config",
+                        False,
+                        f"{report.path.name} → {report.server}: {report.issues[0]}",
+                        "Run: elfmem migrate   (proposes the corrected entry)",
+                    )
+                    for extra in report.issues[1:]:
+                        _check("MCP config", False, f"{report.path.name} → {extra}")
 
     # ── Backups ────────────────────────────────────────────────────────────
 
