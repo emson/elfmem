@@ -96,24 +96,59 @@ class TestIndexCheck:
             tmp_path / "notes" / "principles.md",
             "## A block\n<!-- id: abc123 -->\n\nSome content.\n",
         )
-        blocks, errors = _index_check(tmp_path)
-        assert blocks == 1
-        assert errors == []
+        report = _index_check(tmp_path)
+        assert report["indexed_blocks"] == 1
+        assert report["errors"] == []
 
     def test_reports_frontmatter_errors_without_dropping_the_block(self, tmp_path):
         _write(
             tmp_path / "log" / "2026-08.md",
             "## Broken\n<!-- id: bad  tags: [unterminated -->\n\nStill here.\n",
         )
-        blocks, errors = _index_check(tmp_path)
-        assert blocks == 1
-        assert len(errors) == 1
-        assert errors[0][1].title == "Broken"
+        report = _index_check(tmp_path)
+        assert report["indexed_blocks"] == 1
+        assert len(report["errors"]) == 1
+        assert report["errors"][0][1].title == "Broken"
 
     def test_empty_memory_dir_reports_zero(self, tmp_path):
-        blocks, errors = _index_check(tmp_path)
-        assert blocks == 0
-        assert errors == []
+        report = _index_check(tmp_path)
+        assert report["indexed_blocks"] == 0
+        assert report["errors"] == []
+
+    def test_archive_counted_separately_from_what_rebuild_reads(self, tmp_path):
+        """`index rebuild` reads notes/ and log/ but never archive/. A single
+        conflated total made the two commands look like they disagreed."""
+        _write(
+            tmp_path / "notes" / "knowledge.md",
+            "## Live\n<!-- id: aaa111 -->\n\nActive content.\n",
+        )
+        _write(
+            tmp_path / "archive" / "knowledge.md",
+            "## Gone\n<!-- id: bbb222 -->\n\nArchived content.\n",
+        )
+        report = _index_check(tmp_path)
+        assert report["indexed_blocks"] == 1
+        assert report["total_blocks"] == 2
+        assert report["per_dir"] == {"notes": 1, "archive": 1}
+
+    def test_hand_appended_bare_block_is_reported_not_silently_swallowed(
+        self, tmp_path
+    ):
+        """The boundary heuristic absorbs a frontmatter-less `##` into the
+        preceding block. That is right for a Theory-of-Mind block's own
+        `## Goals` sub-heading and wrong for a hand-appended note; the
+        parser cannot tell them apart, so it must at least say so."""
+        _write(
+            tmp_path / "notes" / "knowledge.md",
+            "## Exported\n<!-- id: ccc333 -->\n\nBody.\n\n"
+            "## Hand appended\n\nTyped straight into the file.\n",
+        )
+        report = _index_check(tmp_path)
+        assert report["indexed_blocks"] == 1
+        assert len(report["absorbed"]) == 1
+        _path, absorbed = report["absorbed"][0]
+        assert absorbed.title == "Hand appended"
+        assert absorbed.absorbed_into == "Exported"
 
 
 # ── _export_markdown_async ──────────────────────────────────────────────────

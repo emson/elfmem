@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.context.frames import FrameDefinition
@@ -45,6 +46,16 @@ class ParityGateResult:
     block_count_before: int
     block_count_after: int
     query_checks: list[QueryParityCheck] = field(default_factory=list)
+    # Edges in the LIVE database whose endpoint is not an active block.
+    # `update_block_status` deletes a block's edges when it archives it, so
+    # these should not exist; they survive from before that behaviour, or
+    # from hand-archiving via SQL. They matter here because centrality is
+    # normalised against the busiest block in the candidate set, so a stale
+    # edge inflates one block's degree and reshuffles everyone else's rank.
+    # A rebuild cannot reproduce them (archive/ is never re-read), so the
+    # gate fails against a source that is not internally consistent -- which
+    # is the source being wrong, not the rebuild.
+    stale_edges_in_source: int = 0
 
     @property
     def block_count_matches(self) -> bool:
@@ -58,6 +69,31 @@ class ParityGateResult:
 
     def diverging_queries(self) -> list[QueryParityCheck]:
         return [c for c in self.query_checks if not c.matches]
+
+    @property
+    def diagnosis(self) -> str | None:
+        """Why the gate failed, when the cause is known. None if it passed."""
+        if self.passed:
+            return None
+        if not self.block_count_matches:
+            return (
+                f"Block count differs: {self.block_count_before} -> "
+                f"{self.block_count_after}. Check index check for parse errors."
+            )
+        if self.stale_edges_in_source:
+            return (
+                f"{self.stale_edges_in_source} edge(s) in the live database "
+                "point at a non-active block. Those inflate centrality on the "
+                "'before' side and a rebuild cannot reproduce them, so ranking "
+                "diverges. This is a pre-existing inconsistency in the source "
+                "(archiving is supposed to delete a block's edges). Verified "
+                "cause on one real corpus: removing them made the gate pass. "
+                "Repair with:\n"
+                "    DELETE FROM edges WHERE EXISTS (SELECT 1 FROM blocks b "
+                "WHERE b.id IN (edges.from_id, edges.to_id) "
+                "AND b.status != 'active');"
+            )
+        return None
 
 
 async def check_retrieval_parity(
@@ -129,8 +165,17 @@ async def check_retrieval_parity(
             )
         )
 
+    stale_edges = (await conn_before.execute(
+        text(
+            "SELECT COUNT(*) FROM edges WHERE EXISTS ("
+            "  SELECT 1 FROM blocks b "
+            "  WHERE b.id IN (edges.from_id, edges.to_id) AND b.status != 'active')"
+        )
+    )).scalar() or 0
+
     return ParityGateResult(
         block_count_before=before_count,
         block_count_after=after_count,
         query_checks=checks,
+        stale_edges_in_source=int(stale_edges),
     )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import time
@@ -36,11 +37,22 @@ from elfmem.db.queries import (
     seed_builtin_data,
     set_config,
     update_block_content,
+    update_block_cue,
     update_block_status,
 )
-from elfmem.exceptions import BlockNotFound, ElfmemError, FrameError, ProjectNotFound
+from elfmem.exceptions import (
+    BlockNotFound,
+    ConfigError,
+    ElfmemError,
+    FrameError,
+    ProjectNotFound,
+    SubstrateWriteError,
+)
 from elfmem.guide import get_guide
 from elfmem.logging_config import configure_logging
+from elfmem.memory import file_mutation as _file_mutation
+from elfmem.memory import ledger as _ledger
+from elfmem.memory.blockfile import Block as _BlockFile
 from elfmem.memory.graph import stage_and_promote_co_retrievals
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.operations.connect import do_connect, do_disconnect
@@ -94,6 +106,8 @@ from elfmem.types import (
     SystemStatus,
     TokenUsage,
 )
+
+logger = logging.getLogger(__name__)
 
 # ── Document chunking helpers ────────────────────────────────────────────────
 
@@ -166,6 +180,21 @@ def _parse_host_analyses(
     return result
 
 
+def _db_matches_project(cfg: ElfmemConfig, db_path: str) -> bool:
+    """Is *db_path* the database this project's config declares?
+
+    Used to decide whether ledger events belong to the project's history.
+    A config with no project section declares nothing, so nothing conflicts.
+    """
+    declared = getattr(getattr(cfg, "project", None), "db", None)
+    if not declared:
+        return True
+    return (
+        Path(declared).expanduser().resolve()
+        == Path(db_path).expanduser().resolve()
+    )
+
+
 class MemorySystem:
     """Adaptive memory system for LLM agents.
 
@@ -207,6 +236,24 @@ class MemorySystem:
         # no project was discovered; peer ops then fail fast with ProjectNotFound
         # unless the config explicitly overrides inbox_dir/outbox_dir.
         self._frame_cache = FrameCache()
+        # Append-only event ledger. Holds the history the markdown substrate
+        # structurally cannot: reinforcement, recency, and the α/β posterior.
+        # None when no project was discovered — the ledger is a project-local
+        # file, and a global/ephemeral instance simply has nowhere to put it,
+        # which degrades to exactly the pre-ledger behaviour.
+        self._ledger_dir: Path | None = (
+            Path(project_root) / ".elfmem" / _ledger.LEDGER_DIRNAME
+            if project_root is not None
+            else None
+        )
+        # File substrate. `memory_dir` is where blocks live when files are
+        # authoritative; None when no project was discovered, in which case
+        # file authority is impossible and the flag is ignored.
+        self._memory_dir: Path | None = (
+            Path(project_root) / ".elfmem" / "memory"
+            if project_root is not None
+            else None
+        )
         self._session_id: str | None = None
         self._session_started_at: float | None = None  # monotonic seconds
         self._session_base_hours: float = 0.0  # total_active_hours at session start
@@ -233,6 +280,36 @@ class MemorySystem:
         # contributes at most 1 count per session. Makes threshold semantically
         # mean "N distinct sessions" not "N calls in one session."
         self._co_retrieval_session_seen: set[tuple[str, str]] = set()
+
+    @property
+    def _files_authoritative(self) -> bool:
+        """Is the file substrate the source of truth for writes?
+
+        Requires both the opt-in and a discoverable project: a global instance
+        has nowhere to put `.elfmem/memory/`, so it stays database-primary
+        regardless of the flag rather than failing at the first write.
+        """
+        return (
+            self._config.substrate.files_authoritative
+            and self._memory_dir is not None
+        )
+
+    def _log(self, kind: str, **payload: object) -> None:
+        """Append one ledger event. Silently a no-op with no project root.
+
+        Never raises: a memory operation that succeeded must not be reported
+        as failed because its history line could not be written. A lost line
+        costs some replayable history; a raised exception costs the write.
+        """
+        if self._ledger_dir is None:
+            return
+        try:
+            _ledger.append(
+                self._ledger_dir, kind,
+                active_hours=self._current_active_hours(), **payload,
+            )
+        except OSError as e:
+            logger.warning("Ledger append failed (%s): %s", kind, e)
 
     # ── Factory methods ──────────────────────────────────────────────────────
 
@@ -354,6 +431,18 @@ class MemorySystem:
         embedding_svc = LockedEmbeddingService(embedding_svc, engine)
 
         project_root = _discover_project_root(config)
+
+        # The ledger describes the memory that pairs with the project's own
+        # database. When `--db` points somewhere else -- a copy, a scratch
+        # index, a migration rehearsal -- events from that database must not
+        # land in the project's real ledger, so the ledger is switched off
+        # rather than pointed at a history it does not describe.
+        if project_root is not None and not _db_matches_project(cfg, db_path):
+            logger.debug(
+                "Ledger disabled: db_path %s is not this project's configured "
+                "database.", db_path,
+            )
+            project_root = None
 
         return cls(
             engine=engine,
@@ -807,7 +896,32 @@ class MemorySystem:
             self._pending += 1
         # Breadcrumbs: only created blocks get a usable ID for connect()
         if result.status == "created":
+            if self._files_authoritative:
+                # The file is the commit. The index insert above is a derived
+                # consequence -- if this raises, that row is orphaned, so it
+                # is rolled back rather than left claiming a block the
+                # substrate never accepted.
+                try:
+                    _file_mutation.append_block(
+                        self._memory_dir,
+                        _BlockFile(
+                            title=content.strip().splitlines()[0][:60] or "Untitled",
+                            content=content,
+                            id=result.block_id,
+                            tags=list(tags or []),
+                        ),
+                        subdir="log",
+                        category=category,
+                    )
+                except Exception as exc:
+                    async with self._engine.begin() as conn:
+                        await update_block_status(
+                            conn, result.block_id, "archived",
+                            archive_reason=ArchiveReason.FORGOTTEN.value,
+                        )
+                    raise SubstrateWriteError(result.block_id, cause=exc) from exc
             self._last_learned_block_id = result.block_id
+            self._log(_ledger.KIND_BIRTH, id=result.block_id)
             if result.block_id not in self._session_block_ids:
                 self._session_block_ids.append(result.block_id)
         self._record_op("learn", result.summary)
@@ -934,6 +1048,15 @@ class MemorySystem:
         # _pending tracks what's actually left rather than assuming a full
         # drain. should_dream/status() stay accurate across repeated calls.
         self._pending = result.inbox_remaining
+        if self._files_authoritative:
+            # Promotion happened in the index; the substrate has to follow, or
+            # the block stays in log/ and every rebuild returns it to inbox.
+            async with self._engine.connect() as conn:
+                rows = await list_active_blocks(conn)
+            _file_mutation.reconcile_status(
+                self._memory_dir,
+                active_categories={r["id"]: r["category"] for r in rows},
+            )
         self._frame_cache.clear()
 
         async with self._engine.connect() as conn:
@@ -1083,7 +1206,10 @@ class MemorySystem:
         self._record_op("learn_document", doc_result.summary)
         return doc_result
 
-    async def edit(self, block_id: str, content: str) -> EditResult:
+    async def edit(
+        self, block_id: str, content: str | None = None, *,
+        cue: str | None = None,
+    ) -> EditResult:
         """Replace an active block's content directly — no LLM mediation.
 
         USE WHEN: A stored memory is wrong, stale, or needs rewording, and
@@ -1112,19 +1238,36 @@ class MemorySystem:
 
             result = await system.edit(block_id, "Corrected: prefers tabs, not spaces.")
         """
+        if content is None and cue is None:
+            raise ConfigError(
+                "edit() needs content, cue, or both — nothing to change.",
+                recovery="Pass content='...' to rewrite the block, or "
+                        "cue='...' to set when it should be recalled.",
+            )
         async with self._engine.begin() as conn:
             block = await get_block(conn, block_id)
             if block is None or block["status"] != "active":
                 raise BlockNotFound(block_id)
-            embedding = await self._embedding.embed(content.strip().lower())
-            await update_block_content(
-                conn,
-                block_id=block_id,
-                content=content,
-                embedding=embedding,
-                embedding_model=self._embedding.model_name,
-            )
+            if content is not None:
+                if self._files_authoritative:
+                    _file_mutation.edit_block(
+                        self._memory_dir, block_id, content
+                    )
+                embedding = await self._embedding.embed(content.strip().lower())
+                await update_block_content(
+                    conn,
+                    block_id=block_id,
+                    content=content,
+                    embedding=embedding,
+                    embedding_model=self._embedding.model_name,
+                )
+            if cue is not None:
+                # No re-embed: a cue says when to recall the block, not what
+                # it claims, so it neither invalidates the embedding nor
+                # belongs in the rescore queue.
+                await update_block_cue(conn, block_id=block_id, cue=cue)
         self._frame_cache.clear()
+        self._log(_ledger.KIND_EDIT, id=block_id)
         result = EditResult(block_id=block_id)
         self._record_op("edit", result.summary)
         return result
@@ -1177,11 +1320,18 @@ class MemorySystem:
                 result = ForgetResult(block_id=block_id, status="already_archived")
                 self._record_op("forget", result.summary)
                 return result
+            if self._files_authoritative:
+                # Removing it from the file is the real forget; the index row
+                # is only marked archived so retrieval stops returning it.
+                # Git history is the undo, which is why .elfmem/memory must
+                # be committed.
+                _file_mutation.forget_block(self._memory_dir, block_id)
             await update_block_status(
                 conn, block_id, "archived",
                 archive_reason=reason.value,
             )
         self._frame_cache.clear()
+        self._log(_ledger.KIND_REMOVE, id=block_id, why=reason.value)
         result = ForgetResult(block_id=block_id, status="forgotten")
         self._record_op("forget", result.summary)
         return result
@@ -1710,6 +1860,16 @@ class MemorySystem:
                 )
             result.edges_promoted = promoted_count
         self._last_recall_block_ids = recalled_ids
+        # The free label tier: recorded by the system, needing nothing from
+        # the calling agent. Across three real instances the *voluntary*
+        # feedback verb has been called nine times in total, so a history
+        # that depends on agent discipline is a history that stays empty.
+        if recalled_ids and not result.cached:
+            _ledger.record_assembly(
+                self._ledger_dir, recalled_ids,
+                active_hours=self._current_active_hours(),
+                frame=name, session_id=self._session_id,
+            )
         for bid in recalled_ids:
             if bid not in self._session_block_ids:
                 self._session_block_ids.append(bid)
@@ -1876,6 +2036,8 @@ class MemorySystem:
                 penalty_factor=mem.penalty_factor,
                 lambda_ceiling=mem.lambda_ceiling,
             )
+        for bid in block_ids:
+            self._log(_ledger.KIND_OUTCOME, id=bid, sig=signal, w=weight, src=source)
         self._record_op("outcome", result.summary)
         return result
 

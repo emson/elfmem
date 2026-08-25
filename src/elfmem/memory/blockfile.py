@@ -32,7 +32,29 @@ _FRONTMATTER_RE = re.compile(r"^<!--(?P<body>.*)-->[ \t]*$", re.DOTALL)
 _FIELD_RE = re.compile(
     r"(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(?P<value>\[[^\]]*\]|\S+)"
 )
-_KNOWN_FIELDS = {"id", "tags", "pinned", "created"}
+_KNOWN_FIELDS = {"id", "tags", "pinned", "created", "cls"}
+
+# Dataview inline-field syntax (`key:: value`) — renders natively in Obsidian
+# with no plugin, and costs an agent nothing to learn.
+_INLINE_FIELD_RE = re.compile(r"^(?P<key>[a-zA-Z][a-zA-Z0-9_-]*)::[ \t]*(?P<value>.*)$")
+_WIKILINK_RE = re.compile(r"\[\[(?P<target>[^\]]+)\]\]")
+
+# The agent-authored relation vocabulary. Six words, closed on purpose: a
+# vocabulary nobody can remember is a vocabulary nobody applies consistently.
+# `supersedes` does the most work — it is belief revision as an edge, so the
+# write carries its own resolution and most contradictions never arise.
+LINK_RELATIONS: tuple[str, ...] = (
+    "supports", "contradicts", "refines", "derived-from", "requires", "supersedes",
+)
+
+# Relations elfmem's own subsystems create (peer messaging, Theory of Mind).
+# Accepted for round-trip fidelity, but not part of what an agent should be
+# reaching for — the lint guides toward LINK_RELATIONS.
+SYSTEM_RELATIONS: tuple[str, ...] = ("replies_to", "predicts")
+
+ALL_RELATIONS: frozenset[str] = frozenset(LINK_RELATIONS + SYSTEM_RELATIONS)
+
+CUE_FIELD = "cue"
 
 
 class BlockFileError(ElfmemError):
@@ -45,9 +67,28 @@ class BlockFileError(ElfmemError):
     """
 
 
+@dataclass(frozen=True)
+class Link:
+    """One typed, directed relation declared by a block.
+
+    Direction is carried here and in the file, not in the index: the index's
+    ``edges`` table canonicalises endpoints, so the declaring side is the only
+    place the arrow survives a round trip.
+    """
+
+    relation: str
+    target: str
+
+
 @dataclass
 class Block:
-    """One ``##``-headed block: title, body content, and frontmatter fields."""
+    """One ``##``-headed block: title, body content, and its declared fields.
+
+    Everything here is *declared* — asserted by a human or an agent. Derived
+    state (confidence, α/β, reinforcement, recency, decay λ, embeddings) is
+    deliberately absent: it lives in the ledger and the index, so that nothing
+    computed is ever hand-edited and nothing hand-written is ever recomputed.
+    """
 
     title: str
     content: str
@@ -55,6 +96,10 @@ class Block:
     tags: list[str] = field(default_factory=list)
     pinned: bool = False
     created: str | None = None
+    cue: str | None = None
+    volatility: str | None = None
+    links: list[Link] = field(default_factory=list)
+    unknown_relations: list[str] = field(default_factory=list)
     extra: dict[str, str] = field(default_factory=dict)
 
 
@@ -69,6 +114,26 @@ class ParseError:
     title: str
     raw_frontmatter: str
     reason: str
+
+
+@dataclass
+class AbsorbedHeading:
+    """A ``##`` line that was treated as content, not as a block boundary.
+
+    The boundary heuristic in ``parse_blocks`` cannot distinguish a markdown
+    sub-heading inside a block's own body (a Theory-of-Mind block genuinely
+    contains ``## Goals``) from a block a human hand-appended without copying
+    the frontmatter comment. It resolves the ambiguity in favour of "content",
+    which is right for the first case and silently swallows the second.
+
+    Recording each one turns that silent loss into a reportable condition
+    (``elfmem index check``). Deciding it properly needs an unambiguous
+    block separator in the file format, which is a format change and belongs
+    with the rest of format v2, not here.
+    """
+
+    title: str
+    absorbed_into: str
 
 
 @dataclass
@@ -87,6 +152,7 @@ class ParseResult:
 
     blocks: list[Block]
     errors: list[ParseError]
+    absorbed: list[AbsorbedHeading] = field(default_factory=list)
 
 
 def read_raw(text: str) -> str:
@@ -134,6 +200,47 @@ def _parse_frontmatter(comment_body: str) -> tuple[dict[str, str], str | None]:
     return fields, None
 
 
+def _split_inline_fields(content: str) -> tuple[str | None, list[Link], list[str], str]:
+    """Peel `key:: value` lines off the front of a block body.
+
+    Only the run of inline fields *immediately* after the frontmatter counts,
+    and only keys in the known vocabulary. Both restrictions exist so that a
+    body legitimately containing `note:: something` stays body text rather
+    than being silently reinterpreted as metadata.
+
+    Returns ``(cue, links, unknown_relations, remaining_content)``.
+    """
+    lines = content.splitlines(keepends=True)
+    cue: str | None = None
+    links: list[Link] = []
+    unknown: list[str] = []
+    idx = 0
+    while idx < len(lines):
+        m = _INLINE_FIELD_RE.match(lines[idx].rstrip("\n"))
+        if m is None:
+            break
+        key = m.group("key")
+        value = m.group("value").strip()
+        if key == CUE_FIELD:
+            cue = value or None
+        elif key in ALL_RELATIONS:
+            targets = _WIKILINK_RE.findall(value)
+            if not targets and value:
+                targets = [t.strip() for t in value.split(",") if t.strip()]
+            links.extend(Link(relation=key, target=t.strip()) for t in targets)
+        elif _WIKILINK_RE.search(value):
+            # An unknown key whose value is a wikilink is almost certainly a
+            # misspelled relation, not prose. Treating it as body would lose a
+            # declared edge silently -- exactly the failure mode the format is
+            # meant to end -- so it is recorded and surfaced by `index check`.
+            unknown.append(key)
+        else:
+            # Not a known field and not link-shaped: stop here, treat as body.
+            break
+        idx += 1
+    return cue, links, unknown, "".join(lines[idx:]).strip()
+
+
 def _build_block(title: str, raw_fields: dict[str, str], content: str) -> Block:
     tags_raw = raw_fields.get("tags", "")
     tags = (
@@ -145,13 +252,18 @@ def _build_block(title: str, raw_fields: dict[str, str], content: str) -> Block:
     extra = {
         k: v for k, v in raw_fields.items() if k not in _KNOWN_FIELDS
     }
+    cue, links, unknown, body = _split_inline_fields(content)
     return Block(
         title=title,
-        content=content,
+        content=body,
         id=raw_fields.get("id"),
         tags=tags,
         pinned=pinned,
         created=raw_fields.get("created"),
+        cue=cue,
+        volatility=raw_fields.get("cls"),
+        links=links,
+        unknown_relations=unknown,
         extra=extra,
     )
 
@@ -172,6 +284,12 @@ def parse_blocks(text: str) -> ParseResult:
     "every ``##`` line is a boundary" reading mis-split 15 blocks in a
     140-block production corpus.
 
+    The reverse case is a real, currently-unfixable gap: a bare ``##`` block
+    hand-appended after a frontmatter-carrying one is absorbed as content.
+    Every such heading is reported in ``ParseResult.absorbed`` so the loss is
+    visible rather than silent; closing it properly needs an explicit block
+    separator in the format.
+
     USE WHEN: reading a ``notes/*.md`` or ``log/*.md`` file.
     DON'T USE WHEN: reading ``self.md`` — use ``read_raw``.
     COST: pure string parsing, no I/O, no LLM calls.
@@ -182,6 +300,7 @@ def parse_blocks(text: str) -> ParseResult:
     all_headings = list(_HEADING_RE.finditer(text))
     blocks: list[Block] = []
     errors: list[ParseError] = []
+    absorbed: list[AbsorbedHeading] = []
 
     i = 0
     while i < len(all_headings):
@@ -222,6 +341,10 @@ def parse_blocks(text: str) -> ParseResult:
 
         content = "".join(lines[idx:]).strip()
         blocks.append(_build_block(title, raw_fields, content))
+        absorbed.extend(
+            AbsorbedHeading(title=h.group("title"), absorbed_into=title)
+            for h in all_headings[i + 1:j]
+        )
         i = j
 
     seen: dict[str, int] = {}
@@ -239,11 +362,13 @@ def parse_blocks(text: str) -> ParseResult:
             ),
         )
 
-    return ParseResult(blocks=blocks, errors=errors)
+    return ParseResult(blocks=blocks, errors=errors, absorbed=absorbed)
 
 
 def _render_frontmatter(b: Block) -> str:
     parts = [f"id: {b.id}"]
+    if b.volatility:
+        parts.append(f"cls: {b.volatility}")
     if b.tags:
         parts.append(f"tags: [{', '.join(b.tags)}]")
     parts.append(f"pinned: {'true' if b.pinned else 'false'}")
@@ -252,6 +377,22 @@ def _render_frontmatter(b: Block) -> str:
     for k, v in b.extra.items():
         parts.append(f"{k}: {v}")
     return f"<!-- {'  '.join(parts)} -->"
+
+
+def _render_inline_fields(b: Block) -> str:
+    """Render `cue::` and typed links, grouped one line per relation."""
+    lines: list[str] = []
+    if b.cue:
+        lines.append(f"{CUE_FIELD}:: {b.cue}")
+    by_relation: dict[str, list[str]] = {}
+    for link in b.links:
+        by_relation.setdefault(link.relation, []).append(link.target)
+    for relation in [*LINK_RELATIONS, *SYSTEM_RELATIONS]:
+        targets = by_relation.get(relation)
+        if targets:
+            rendered = ", ".join(f"[[{t}]]" for t in targets)
+            lines.append(f"{relation}:: {rendered}")
+    return "\n".join(lines)
 
 
 def write_blocks(blocks: list[Block]) -> str:
@@ -273,5 +414,9 @@ def write_blocks(blocks: list[Block]) -> str:
     for b in blocks:
         if b.id is None:
             b.id = compute_content_hash(b.content)[:16]
-        sections.append(f"## {b.title}\n{_render_frontmatter(b)}\n\n{b.content}\n")
+        inline = _render_inline_fields(b)
+        head = f"## {b.title}\n{_render_frontmatter(b)}"
+        if inline:
+            head = f"{head}\n{inline}"
+        sections.append(f"{head}\n\n{b.content}\n")
     return "\n".join(sections)

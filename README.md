@@ -649,8 +649,9 @@ The full command surface, grouped:
 | `elfmem curate` | Prune weak/decayed edges, reinforce top knowledge (no longer auto-archives blocks — see **Constitutional & corpus review** below) |
 | `elfmem backup` | Clean `VACUUM INTO` backup |
 | `elfmem migrate-embeddings [--execute] [--to MODEL] [--from MODEL] [--batch N]` | Re-embed under a different embedding model (estimate-only unless `--execute`) |
-| `elfmem migrate status\|plan` | Config-drift migration: one-line summary, or a full read-only diff per step |
-| `elfmem migrate apply [--id ID] [--dry-run]` | Apply pending config migration steps atomically, with backups |
+| `elfmem migrate status\|plan [--db PATH] [--config PATH]` | Config-drift *and* substrate-export migration: one-line summary, or a full read-only diff per step |
+| `elfmem migrate apply [--id ID] [--dry-run]` | Apply pending migration steps atomically, with backups |
+| `elfmem migrate apply --undo --id ID [--force]` | Roll back an applied substrate-export step — removes generated files, never touches the live database |
 
 **Constitutional & corpus review**
 
@@ -1338,10 +1339,11 @@ embedding = make_mock_embedding(
 
 ## Migrating between versions
 
-elfmem ships a structured migration system for upgrading config drift across
-releases — env var renames, MCP launch-pattern changes, and project config
-updates. The flow is **plan → review → apply**, with backups and atomic
-writes throughout.
+elfmem ships a structured migration system for upgrading across releases —
+config drift (env var renames, MCP launch-pattern changes, project config
+updates) and, since [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md),
+exporting to the v2 file substrate. The flow is **plan → review → apply**,
+with backups and atomic writes throughout.
 
 ```bash
 elfmem migrate status            # one-line summary; exit 0 if clean
@@ -1357,12 +1359,17 @@ Properties of the system:
 
 - **Idempotent** — re-running after success is a no-op. Already-canonical
   entries return `skipped`.
-- **Hash-gated** — every step records the source file's SHA256 at plan
-  time; apply refuses if the file changed in between. Re-run `plan` to
-  recover.
-- **Atomic + backed up** — each apply writes a
-  `<file>.elfmem-bak-<step_id>-<timestamp>` backup, then commits the new
-  contents via tmp-file rename. Reverting is a single `mv`.
+- **Hash-gated** — every step records a fingerprint of its source at plan
+  time (a literal SHA256 for config files; a content-aware fingerprint of
+  the corpus for the substrate step, since a raw database file hash would
+  false-positive on harmless WAL churn) — apply refuses if it changed in
+  between. Re-run `plan` to recover.
+- **Atomic + backed up** — each apply writes a backup before touching
+  anything (`<file>.elfmem-bak-<step_id>-<timestamp>` for config steps, a
+  `VACUUM INTO` snapshot for the substrate step), then commits atomically.
+  Config steps revert with a single `mv`; the substrate step reverts with
+  `elfmem migrate apply --undo` (see below) since it's several new files,
+  not one.
 - **Per-step granularity** — agents can apply migrations one at a time.
   Per-step failure does not block other steps.
 - **Read-only by default** — `status` and `plan` never write. `apply`
@@ -1396,6 +1403,39 @@ Per-version migration notes (env var renames, removed APIs, schema changes)
 live in [CHANGELOG.md](CHANGELOG.md) under each release's `### Migration`
 heading. Database schema migrations run automatically on startup via
 `MemorySystem.from_config()` — no manual step needed for those.
+
+### Substrate migration: exporting to the file substrate
+
+The same `elfmem migrate` command also detects when a project's database has
+content not yet exported to the `.elfmem/memory/` markdown file substrate
+(the v2 file-backed storage — see [Direct memory management](#direct-memory-management-edit-forget-list-inspect-the-inbox)
+above), and migrates it — no separate command to learn:
+
+```bash
+elfmem migrate status                              # reports it alongside any config drift
+elfmem migrate plan                                # full preview: block counts, safety notes
+elfmem migrate apply --dry-run                      # run the whole pipeline against scratch paths, write nothing
+elfmem migrate apply --yes                          # the real thing
+elfmem migrate apply --undo --id <step> --yes        # remove the generated files, reconfirm nothing else changed
+```
+
+`apply` for this step: backs up the database (`VACUUM INTO`, row-count
+validated), exports every block to `.elfmem/memory/**.md`, rebuilds a
+verified derived index at a *new* `.elfmem/index.db`, and checks retrieval
+parity against the original on four frame-level queries. **The live
+database is only ever read from — never written to, overwritten, or
+deleted.** Every write in this step lands in a brand new file, which is what
+makes `--undo` safe by construction rather than something to trust: there is
+nothing destructive to have caused in the first place. `--undo` still
+refuses (unless `--force`) if the exported files look hand-edited since
+migration, so curated changes aren't silently discarded.
+
+**What this does not do**: switch your running agent over to reading and
+writing the file substrate day-to-day. `apply` stops at "exported and
+verified" — your agent keeps operating on the original database regardless
+of the parity result. That's a deliberate scope boundary, not an
+oversight — see [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md)
+for why, and what's left before it can go further.
 
 ---
 

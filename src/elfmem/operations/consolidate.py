@@ -26,6 +26,7 @@ from elfmem.db.queries import (
     get_active_blocks_with_embeddings,
     get_inbox_blocks,
     get_tags_batch,
+    insert_contradiction,
     insert_edge,
     reinforce_blocks,
     update_block_scoring,
@@ -52,6 +53,27 @@ NEAR_DUP_NEAR_THRESHOLD = 0.90    # similarity >= this → supersede existing
 _LLM_PROCESS_TIMEOUT = 30.0    # seconds per block analysis
 
 
+def _cue_similarity(cue_a: str | None, cue_b: str | None) -> float | None:
+    """Lexical overlap of two cue lines, or None when either is missing.
+
+    Jaccard on tokens rather than embedding cosine, for two reasons. It costs
+    nothing, and it measures the same thing retrieval does: a cue earns its
+    place through BM25, so its similarity should be judged on the same terms.
+
+    Measured, not assumed: on the real 145-block corpus, cue *embedding*
+    cosine never exceeds 0.812 across any pair and sits near 0.67 even for
+    blocks whose content matches at 0.977. Short-text embeddings occupy a
+    narrow cone, so a threshold carried over from the content scale would
+    never fire. Nothing thresholds this value today — it is recorded as the
+    evidence a future auto-merge rule would need.
+    """
+    if not cue_a or not cue_b:
+        return None
+    return jaccard_similarity(
+        set(cue_a.lower().split()), set(cue_b.lower().split())
+    )
+
+
 # ── Decision dataclasses ──────────────────────────────────────────────────────
 # Internal to the consolidation pipeline. Not part of the public API.
 
@@ -59,8 +81,13 @@ _LLM_PROCESS_TIMEOUT = 30.0    # seconds per block analysis
 class _BlockDecision:
     """Computed outcome for one inbox block after LLM scoring."""
     block_id: str
-    action: Literal["promote", "reject_exact", "supersede"]
-    supersedes_id: str | None           # existing active block id to archive (supersede only)
+    action: Literal["promote", "reject_exact"]
+    # Existing active block this one closely duplicates, if any. Formerly the
+    # block to archive; now the other half of a pair that is recorded and
+    # kept. Nothing on this path destroys an existing block any more.
+    near_duplicate_of: str | None
+    near_duplicate_score: float = 0.0
+    near_duplicate_cue_similarity: float | None = None
     inferred_tags: list[str] = field(default_factory=list)
     confidence: float = 0.50
     alignment_score: float = 0.0
@@ -215,13 +242,14 @@ async def _collect_decisions(
     The write lock is not acquired until _apply_decisions() issues its first UPDATE.
 
     Returns (block_decisions, edge_decisions, processed_count,
-    inbox_remaining, blocked_supersessions). All counts are 0 if the inbox
-    was empty. ``inbox_remaining`` is the count left unprocessed after
+    inbox_remaining). All counts are 0 if the inbox was empty.
+    ``inbox_remaining`` is the count left unprocessed after
     ``max_inbox_per_run`` truncation — 0 unless the inbox was larger than the
-    budget. ``blocked_supersessions`` (v2 step 1) counts near-duplicate
-    matches that would have silently archived a ``self/constitutional``
-    block; the incoming block is promoted alongside it instead. See
-    docs/plans/plan_v2_substrate_reevaluation.md.
+    budget.
+
+    Near-duplicate matches no longer archive anything here: the pair is
+    carried on the decision and recorded by ``_apply_decisions``, counted as
+    ``ConsolidateResult.near_duplicates_flagged``.
 
     ``host_analyses``: a block id present here is treated as genuinely
     analysed — same as a successful ``llm.process_block()`` call, not a
@@ -234,7 +262,7 @@ async def _collect_decisions(
     """
     inbox = await get_inbox_blocks(conn)
     if not inbox:
-        return [], [], 0, 0, 0
+        return [], [], 0, 0
 
     inbox_remaining = 0
     if max_inbox_per_run is not None and len(inbox) > max_inbox_per_run:
@@ -276,7 +304,6 @@ async def _collect_decisions(
     if inbox_texts_rev:
         await embedding_svc.embed_batch(inbox_texts_rev)
 
-    blocked_supersessions = 0  # v2 step 1: near-dups refused against self/constitutional
 
     # Mutable snapshot: tracks the evolving active set within this batch.
     # Superseded blocks are removed; promoted blocks are added.
@@ -309,26 +336,29 @@ async def _collect_decisions(
 
         if not is_message and best_active is not None and best_sim >= near_dup_exact_threshold:
             block_decisions.append(_BlockDecision(
-                block_id=block_id, action="reject_exact", supersedes_id=None,
+                block_id=block_id, action="reject_exact", near_duplicate_of=None,
             ))
             continue
 
-        supersedes_id: str | None = None
+        near_dup_of: str | None = None
+        near_dup_score = 0.0
+        near_dup_cue_sim: float | None = None
         if not is_message and best_active is not None and best_sim >= near_dup_near_threshold:
-            if "self/constitutional" in tags_map.get(best_active["id"], []):
-                # Pin guard (v2 step 1): never silently supersede a
-                # constitutional block. The incoming block is promoted
-                # alongside it instead of overwriting it — nothing is
-                # destroyed; a human (or a future corpus-level review)
-                # reconciles the near-duplicate pair. This is the fix for
-                # the mechanism documented in
-                # docs/plans/plan_v2_substrate_reevaluation.md §2.3: six of
-                # ten seeded constitutional roles were lost this way on the
-                # live instance with no guard and no audit trail.
-                blocked_supersessions += 1
-            else:
-                supersedes_id = best_active["id"]
-                evolving_vecs.pop(best_active["content"].strip().lower(), None)
+            # Both blocks are kept. Supersession used to archive the existing
+            # one here: 41 of 187 blocks ever created on the maintainer's
+            # instance died this way, six of them constitutional, with no
+            # audit row and no undo. Keeping both costs ~11% more corpus
+            # tokens on that same corpus; recall-time suppression already
+            # stops the pair from occupying two slots in one frame, and
+            # unlike deletion it is reversible.
+            #
+            # The pin guard that used to sit here is not gone, it is
+            # subsumed: no block, pinned or not, is destroyed on this path.
+            near_dup_of = best_active["id"]
+            near_dup_score = best_sim
+            near_dup_cue_sim = _cue_similarity(
+                block.get("cue"), best_active.get("cue")
+            )
 
         # LLM scoring — external I/O with timeout, shared lock only.
         # host_analyses: a host agent session already did this reasoning —
@@ -378,13 +408,12 @@ async def _collect_decisions(
         summary_text = analysis.summary or content
         summary_vec = await embedding_svc.embed(summary_text.strip().lower())
 
-        action: Literal["promote", "reject_exact", "supersede"] = (
-            "supersede" if supersedes_id else "promote"
-        )
         block_decisions.append(_BlockDecision(
             block_id=block_id,
-            action=action,
-            supersedes_id=supersedes_id,
+            action="promote",
+            near_duplicate_of=near_dup_of,
+            near_duplicate_score=near_dup_score,
+            near_duplicate_cue_similarity=near_dup_cue_sim,
             inferred_tags=inferred_tags,
             confidence=confidence,
             alignment_score=analysis.alignment_score,
@@ -414,7 +443,6 @@ async def _collect_decisions(
         edge_decisions,
         len(inbox),
         inbox_remaining,
-        blocked_supersessions,
     )
 
 
@@ -433,10 +461,11 @@ async def _apply_decisions(
     on the first UPDATE and released when the caller's transaction commits.
     All operations are pure data writes — no LLM calls, no embedding calls.
 
-    Returns (promoted, deduplicated, edges_created).
+    Returns (promoted, deduplicated, edges_created, near_duplicates).
     """
     promoted = 0
     deduplicated = 0
+    near_duplicates = 0
     promoted_ids: list[str] = []
 
     for d in block_decisions:
@@ -445,12 +474,18 @@ async def _apply_decisions(
             deduplicated += 1
             continue
 
-        if d.action == "supersede" and d.supersedes_id:
-            await update_block_status(
-                conn, d.supersedes_id, "archived",
-                archive_reason="superseded", superseded_by=d.block_id,
+        if d.near_duplicate_of:
+            # Record the pair; destroy nothing. Recall-time suppression
+            # (context/contradiction.py, deliberately kept by ADR 0010) stops
+            # both halves occupying slots in the same frame, and `elfmem
+            # review` surfaces the pair for a deliberate decision.
+            a, b = sorted((d.block_id, d.near_duplicate_of))
+            await insert_contradiction(
+                conn, block_a_id=a, block_b_id=b,
+                score=d.near_duplicate_score, kind="near_duplicate",
+                cue_similarity=d.near_duplicate_cue_similarity,
             )
-            deduplicated += 1
+            near_duplicates += 1
 
         if d.inferred_tags:
             await add_tags(conn, d.block_id, d.inferred_tags)
@@ -512,7 +547,7 @@ async def _apply_decisions(
         )
         edges_created += 1
 
-    return promoted, deduplicated, edges_created
+    return promoted, deduplicated, edges_created, near_duplicates
 
 
 # ── Public entry point ────────────────────────────────────────────────────────
@@ -562,7 +597,6 @@ async def consolidate(
         edge_decisions,
         processed,
         inbox_remaining,
-        blocked_supersessions,
     ) = await _collect_decisions(
         conn,
         llm=llm,
@@ -584,10 +618,9 @@ async def consolidate(
         return ConsolidateResult(
             processed=0, promoted=0, deduplicated=0, edges_created=0,
             inbox_remaining=inbox_remaining,
-            blocked_supersessions=blocked_supersessions,
         )
 
-    promoted, deduplicated, edges_created = await _apply_decisions(
+    promoted, deduplicated, edges_created, near_duplicates = await _apply_decisions(
         conn,
         block_decisions,
         edge_decisions,
@@ -607,6 +640,6 @@ async def consolidate(
         deduplicated=deduplicated,
         edges_created=edges_created,
         inbox_remaining=inbox_remaining,
-        blocked_supersessions=blocked_supersessions,
+        near_duplicates_flagged=near_duplicates,
         health=health,
     )

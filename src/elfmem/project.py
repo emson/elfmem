@@ -777,6 +777,92 @@ def mcp_json_snippet(config_path: str, project_root: Path | str | None = None) -
 # ── Convenience ───────────────────────────────────────────────────────────────
 
 
+_MEMORY_SUBDIRS: tuple[str, ...] = ("notes", "log", "archive")
+
+_ELFMEM_GITIGNORE = """\
+# elfmem local state — derived, machine-specific, or private. Not versioned.
+*.db
+*.db-shm
+*.db-wal
+inbox/
+outbox/
+.agent-docs.lock
+.substrate-migration.json
+ledger/.checkpoint.json
+
+# memory/ and ledger/ are deliberately NOT ignored. They are the
+# authoritative substrate: git history is the undo path for forget() and
+# edit(), and the ledger is what makes the derived index rebuildable.
+"""
+
+_SELF_MD_TEMPLATE = """\
+# {agent_name}
+
+<!--
+This file is the constitution. It is read whole as the `self` frame's
+preamble and never becomes a block, so nothing here can be superseded,
+decayed, or silently rewritten by any automatic mechanism.
+
+Edit it directly. Everything below the line is a placeholder — replace it.
+-->
+
+---
+
+_No constitution written yet._
+"""
+
+
+def ensure_memory_scaffold(
+    config_dir: Path, *, agent_name: str = "elf"
+) -> dict[str, str]:
+    """Create the file substrate `.elfmem/memory/` and its local .gitignore.
+
+    USE WHEN: `elfmem init` runs, on fresh and established instances alike.
+    DON'T USE WHEN: you want to seed memory *content* — this writes no
+        blocks. `self.md` lands as an explicit placeholder, not as opinions.
+    COST: a few mkdir/write calls. No DB, no LLM, no embedding.
+    RETURNS: {path: action} where action is "created" or "exists (skipped)",
+        so `init` can report what it actually did.
+    NEXT: `git add .elfmem/memory && git commit` — without that commit,
+        `forget()` still has no recovery path.
+
+    Idempotent: an existing `self.md` or `.gitignore` is never overwritten,
+    because either may be hand-edited and both are cheap to lose accidentally.
+    """
+    actions: dict[str, str] = {}
+    memory_dir = config_dir / "memory"
+
+    for subdir in _MEMORY_SUBDIRS:
+        target = memory_dir / subdir
+        target.mkdir(parents=True, exist_ok=True)
+        # Git does not track empty directories, and an unversioned notes/
+        # defeats the point of creating it at all.
+        keep = target / ".gitkeep"
+        if keep.exists():
+            actions[str(keep)] = "exists (skipped)"
+        else:
+            keep.write_text("", encoding="utf-8")
+            actions[str(keep)] = "created"
+
+    self_md = memory_dir / "self.md"
+    if self_md.exists():
+        actions[str(self_md)] = "exists (skipped)"
+    else:
+        self_md.write_text(
+            _SELF_MD_TEMPLATE.format(agent_name=agent_name), encoding="utf-8"
+        )
+        actions[str(self_md)] = "created"
+
+    gitignore = config_dir / ".gitignore"
+    if gitignore.exists():
+        actions[str(gitignore)] = "exists (skipped)"
+    else:
+        gitignore.write_text(_ELFMEM_GITIGNORE, encoding="utf-8")
+        actions[str(gitignore)] = "created"
+
+    return actions
+
+
 def get_project_info(cwd: Path | None = None) -> ProjectInfo | None:
     """Return ProjectInfo for the project rooted at or above *cwd*, or None.
 

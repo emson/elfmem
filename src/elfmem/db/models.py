@@ -30,6 +30,12 @@ blocks = Table(
     Column("created_at", Text, nullable=False),
     Column("status", Text, nullable=False, default="inbox"),
     Column("archive_reason", Text),
+    # Pin (v2 Phase 0, schema v7) — a pinned block is never proposed for
+    # removal by an automatic mechanism. Previously `pinned:` existed only
+    # in the markdown frontmatter with no DB column and no reader anywhere,
+    # so Invariant 5 was declared but unimplemented. Backfilled from the
+    # self/constitutional tag, which is what the pin guard checked before.
+    Column("pinned", Integer, nullable=False, default=0, server_default="0"),
     # Supersession audit trail (v2 step 1) — id of the block that replaced
     # this one when archive_reason='superseded'. NULL for decay/forgotten
     # archivals and for any block that isn't archived.
@@ -59,6 +65,15 @@ blocks = Table(
     Column("envelope_json", Text),         # JSON envelope for message blocks
     # Deep-sleep rescoring (v0.13.3)
     Column("last_scored_at", Text),        # ISO ts of last LLM pass; NULL = unscored
+    # Block format v2 (schema v8) — both DECLARED, written by whoever authored
+    # the block, never computed. `cue` states when a future agent should recall
+    # this block: the highest-leverage thing a writer can add, because it is a
+    # lexical index of retrieval *situations*, which is precisely what
+    # vocabulary-mismatch queries fail on. `volatility_class` records how fast
+    # the claim stops being true (distinct from decay_lambda, which is how fast
+    # it stops being used).
+    Column("cue", Text),
+    Column("volatility_class", Text),
 )
 
 block_tags = Table(
@@ -81,6 +96,10 @@ edges = Table(
     Column("origin", Text, nullable=False, server_default="similarity"),
     Column("last_active_hours", Float),          # None until first reinforcement
     Column("note", Text),                        # optional agent/LLM description
+    # Which block declared this edge (schema v8). Endpoints are canonicalised
+    # to (min, max), so this is the only place a typed link's arrow survives a
+    # round trip through the index and back out to the file substrate.
+    Column("declared_by", Text),
     UniqueConstraint("from_id", "to_id", name="uq_edge"),
 )
 
@@ -92,6 +111,15 @@ contradictions = Table(
     Column("score", Float, nullable=False),
     Column("resolved", Integer, nullable=False, default=0),
     Column("created_at", Text, nullable=False),
+    # What kind of pair this is (schema v9). 'contradiction' = two claims that
+    # cannot both be true. 'near_duplicate' = two blocks whose content matched
+    # closely enough that one used to be silently destroyed; both are now kept
+    # and the pair is recorded here instead.
+    Column("kind", Text, nullable=False, server_default="contradiction"),
+    # Lexical overlap of the two blocks' cue lines, when both have one.
+    # Recorded, never acted on: it is the evidence a future auto-merge rule
+    # would need, gathered before any rule is written rather than after.
+    Column("cue_similarity", Float),
     UniqueConstraint("block_a_id", "block_b_id", name="uq_contradiction"),
 )
 

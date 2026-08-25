@@ -31,7 +31,10 @@ from elfmem.scoring import (
 )
 from elfmem.types import ScoredBlock
 
-# Soft dependency — retrieval works without it.
+# Core dependency since v2 Phase 2. The import stays guarded only so an
+# environment that predates the dependency change degrades to vector-only
+# retrieval instead of failing to import -- but it now says so, loudly and
+# once, rather than silently halving hybrid retrieval the way it did before.
 try:
     from rank_bm25 import BM25Okapi
 
@@ -206,9 +209,28 @@ def _stage_2b_bm25_search(
     (vocabulary mismatch, exact entity names, etc.). Requires the optional
     ``rank_bm25`` package — returns ``[]`` when not installed.
     """
-    if not _HAS_BM25 or not candidates:
+    if not _HAS_BM25:
+        log.warning(
+            "rank_bm25 is not installed — lexical retrieval is disabled and "
+            "cue lines are inert. Reinstall elfmem to pick up the dependency."
+        )
         return []
-    contents = [b.get("summary") or b.get("content", "") for b in candidates]
+    if not candidates:
+        return []
+    # The cue line joins the lexical document. A cue states the *situation*
+    # in which a block should be recalled, in the words a future agent would
+    # plausibly type -- which is exactly what vocabulary-mismatch queries
+    # need and what the block's own phrasing routinely fails to supply.
+    # Included unweighted for now: whether it deserves its own weighted field
+    # is an open measurement (E1), and a made-up multiplier would be a magic
+    # number standing in for that evidence.
+    contents = [
+        " ".join(
+            part for part in (b.get("cue"), b.get("summary") or b.get("content", ""))
+            if part
+        )
+        for b in candidates
+    ]
     tokenized = [c.lower().split() for c in contents]
     bm25 = BM25Okapi(tokenized)
     scores = bm25.get_scores(query.lower().split())

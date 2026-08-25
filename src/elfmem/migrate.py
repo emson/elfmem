@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from elfmem.config import ElfmemConfig
 from elfmem.project import get_project_info
 
 # Env var aliases that have been renamed. Map deprecated → canonical.
@@ -810,6 +811,473 @@ def apply_plan(
             ))
 
     return ApplyResult(results=results)
+
+
+# ── Substrate migration (v2 file substrate) ────────────────────────────────
+#
+# One more step `kind` on the same MigrationStep/status/plan/apply model
+# used above for Claude MCP config drift — not a parallel command surface.
+# `elfmem migrate status/plan/apply` already knows how to run this; users
+# don't learn anything new.
+#
+# The whole thing is additive and read-only against the live database: it
+# is only ever read from, never written to or deleted. Every write goes to
+# a *new* file (a timestamped backup, `.elfmem/memory/**.md`, a fresh
+# `.elfmem/index.db`). That is also what makes rollback (`undo_substrate_step`)
+# safe by construction — nothing destructive ever happened to undo.
+#
+# Deliberately NOT built here: switching a live MemorySystem over to read
+# from the file substrate ("cutover" / "flip authority", plan doc Phases
+# 5-6). That needs real re-wiring of learn()/edit()/forget()/etc. at the
+# API level, not a migration step — see docs/plans/v2_substrate/plan/
+# build-plan.md units U-006/U-007. This step stops at "exported and
+# verified," clearly labelled as such.
+
+SUBSTRATE_MARKER_NAME = ".substrate-migration.json"
+
+
+@dataclass(frozen=True)
+class SubstrateMarker:
+    """Recorded state of the last successful substrate export/rebuild/verify
+    cycle for one project's `.elfmem/` directory.
+
+    Read by ``scan_substrate`` to decide whether a new step is pending (the
+    database's current fingerprint no longer matches ``fingerprint``), and
+    by ``undo_substrate_step`` to refuse removing files that were hand-edited
+    since export (``files_fingerprint`` no longer matches what's on disk).
+    """
+
+    fingerprint: str
+    files_fingerprint: str
+    applied_at: str
+    backup_path: str
+    memory_dir: str
+    index_db_path: str
+    blocks_exported: int
+    blocks_written: int
+    parity_passed: bool
+    diverging_query_count: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fingerprint": self.fingerprint,
+            "files_fingerprint": self.files_fingerprint,
+            "applied_at": self.applied_at,
+            "backup_path": self.backup_path,
+            "memory_dir": self.memory_dir,
+            "index_db_path": self.index_db_path,
+            "blocks_exported": self.blocks_exported,
+            "blocks_written": self.blocks_written,
+            "parity_passed": self.parity_passed,
+            "diverging_query_count": self.diverging_query_count,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SubstrateMarker:
+        fields = (
+            "fingerprint", "files_fingerprint", "applied_at", "backup_path",
+            "memory_dir", "index_db_path", "blocks_exported", "blocks_written",
+            "parity_passed", "diverging_query_count",
+        )
+        return cls(**{k: data[k] for k in fields})
+
+
+def _substrate_paths(memory_dir: Path) -> tuple[Path, Path]:
+    """(index_db_path, marker_dir) derived from --memory-dir, so a custom
+    --memory-dir override moves the derived index and marker with it."""
+    return memory_dir.parent / "index.db", memory_dir.parent
+
+
+def _marker_path(marker_dir: Path) -> Path:
+    return marker_dir / SUBSTRATE_MARKER_NAME
+
+
+def _read_marker(marker_dir: Path) -> SubstrateMarker | None:
+    path = _marker_path(marker_dir)
+    if not path.exists():
+        return None
+    try:
+        return SubstrateMarker.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        # A corrupted marker is treated as "no record" — the next scan
+        # re-detects the migration as pending rather than raising, since
+        # nothing about this file being unreadable makes the DB unsafe.
+        return None
+
+
+def _write_marker_atomic(marker_dir: Path, marker: SubstrateMarker) -> None:
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    target = _marker_path(marker_dir)
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(marker.to_dict(), indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, target)
+
+
+def _remove_marker(marker_dir: Path) -> None:
+    with contextlib.suppress(OSError):
+        _marker_path(marker_dir).unlink()
+
+
+async def _corpus_snapshot(conn: Any) -> tuple[dict[str, int], str]:
+    """Read-only. Returns (block counts by status, content fingerprint).
+
+    Deliberately mirrors exactly what ``export_to_markdown`` reads (same
+    fetchers, same tag batching) so the fingerprint changes precisely when
+    a re-export would actually produce different files — not a raw file
+    hash, which would false-positive on SQLite's own WAL/page-cache churn
+    the way a JSON config file never does.
+    """
+    from elfmem.db.queries import (
+        get_active_blocks,
+        get_archived_blocks,
+        get_inbox_blocks,
+        get_tags_batch,
+    )
+
+    counts: dict[str, int] = {}
+    fp_parts: list[str] = []
+    fetchers = {
+        "active": get_active_blocks,
+        "inbox": get_inbox_blocks,
+        "archived": get_archived_blocks,
+    }
+    for status, fetcher in fetchers.items():
+        rows = await fetcher(conn)
+        counts[status] = len(rows)
+        if not rows:
+            continue
+        tags_by_id = await get_tags_batch(conn, [r["id"] for r in rows])
+        for row in sorted(rows, key=lambda r: r["id"]):
+            tags = ",".join(sorted(tags_by_id.get(row["id"], [])))
+            digest = hashlib.sha256(row["content"].encode("utf-8")).hexdigest()[:16]
+            fp_parts.append(f"{row['id']}|{status}|{row['category']}|{tags}|{digest}")
+
+    fingerprint = hashlib.sha256("\n".join(fp_parts).encode("utf-8")).hexdigest()
+    return counts, fingerprint
+
+
+def _compute_files_fingerprint(memory_dir: Path) -> str:
+    """Hash of every exported .md file's contents, used solely to detect
+    hand-edits between apply and undo — not a staleness gate against the DB."""
+    parts: list[str] = []
+    if memory_dir.is_dir():
+        for path in sorted(memory_dir.glob("**/*.md")):
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+            parts.append(f"{path.relative_to(memory_dir)}|{digest}")
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def substrate_step_id(db_path: Path) -> str:
+    h = hashlib.sha256(str(db_path).encode()).hexdigest()[:8]
+    stem = db_path.stem.replace(".", "-")
+    return f"substrate-export@{stem}-{h}"
+
+
+async def scan_substrate(db_path: Path, memory_dir: Path) -> MigrationStep | None:
+    """Read-only. Detect whether this project's database has content not
+    yet reflected in a verified `.elfmem/memory/` export.
+
+    Pending when the database has any blocks and either no export has ever
+    been recorded, or the database's content fingerprint has changed since
+    the last recorded export. Returns None — nothing pending — otherwise.
+    """
+    from elfmem.db.engine import create_engine
+
+    if not db_path.exists():
+        return None
+
+    engine = await create_engine(str(db_path))
+    try:
+        async with engine.connect() as conn:
+            counts, fingerprint = await _corpus_snapshot(conn)
+    finally:
+        await engine.dispose()
+
+    total = sum(counts.values())
+    if total == 0:
+        return None
+
+    index_db_path, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+    if marker is not None and marker.fingerprint == fingerprint:
+        return None
+
+    issues = [
+        f"{total} block(s) ({', '.join(f'{v} {k}' for k, v in counts.items() if v)}) "
+        "not yet reflected in a verified .elfmem/memory/ export",
+        "graph edges and reinforcement count/recency do not carry through "
+        "export/rebuild — a known, disclosed limitation, not a defect",
+    ]
+    if marker is not None:
+        issues.insert(0, "database content changed since the last export")
+
+    return MigrationStep(
+        id=substrate_step_id(db_path),
+        kind="substrate_export",
+        summary=(
+            f"Export {total} block(s) to the .elfmem/memory/ file substrate "
+            "and build a verified derived index (does not change how your "
+            "agent operates today)"
+        ),
+        file=db_path,
+        file_sha256=fingerprint,
+        issues=issues,
+        before=counts,
+        after={
+            "description": (
+                f"All blocks written to {memory_dir}/**.md; a derived index "
+                f"built at {index_db_path}; retrieval parity checked against "
+                "4 frame-level queries. Your live database and agent "
+                "behaviour are unchanged by this step."
+            ),
+        },
+        json_pointer="",
+        reversible=True,
+        post_apply_step=(
+            "Nothing to restart — your agent keeps reading the original "
+            "database. Check the parity result in the apply output (or "
+            "re-run 'elfmem index parity'); a failed gate is informational, "
+            "not a rollback trigger."
+        ),
+    )
+
+
+async def apply_substrate_step(
+    step: MigrationStep,
+    *,
+    memory_dir: Path,
+    cfg: ElfmemConfig,
+    dry_run: bool = False,
+) -> StepApplyResult:
+    """Apply a `substrate_export` step: backup, export, rebuild, verify.
+
+    Never modifies, deletes, or overwrites the live database — it is only
+    ever read from. Every write lands in a new file: the backup, the
+    `.elfmem/memory/` export, and a fresh derived `index.db`. Re-running
+    after a prior successful apply fully re-derives the index from
+    whatever's currently on disk (safe to re-run; not incremental).
+    """
+    import tempfile
+    from datetime import UTC, datetime
+
+    from sqlalchemy import text as sa_text
+
+    from elfmem.adapters.factory import make_embedding_adapter
+    from elfmem.context.frames import ATTENTION_FRAME, SELF_FRAME, SIMULATE_FRAME, TASK_FRAME
+    from elfmem.db.engine import create_engine
+    from elfmem.db.migrate import vacuum_backup
+    from elfmem.db.models import metadata
+    from elfmem.memory.index_rebuild import rebuild_index
+    from elfmem.memory.ledger import ledger_dir_for
+    from elfmem.migration.export import export_to_markdown
+    from elfmem.migration.parity import check_retrieval_parity
+    from elfmem.token_counter import TokenCounter
+
+    db_path = step.file
+    index_db_path, marker_dir = _substrate_paths(memory_dir)
+    queries: list[tuple[str | None, Any]] = [
+        (None, ATTENTION_FRAME), (None, SELF_FRAME),
+        (None, TASK_FRAME), (None, SIMULATE_FRAME),
+    ]
+
+    live_engine = await create_engine(str(db_path))
+    try:
+        async with live_engine.connect() as conn:
+            counts, current_fp = await _corpus_snapshot(conn)
+        if current_fp != step.file_sha256:
+            return StepApplyResult(
+                step.id, "stale",
+                "database content changed since 'elfmem migrate plan' was "
+                "run. Re-run 'elfmem migrate plan' and try again.",
+            )
+
+        embedding_svc = make_embedding_adapter(cfg, TokenCounter())
+
+        if dry_run:
+            with tempfile.TemporaryDirectory() as tmp:
+                scratch_memory = Path(tmp) / "memory"
+                async with live_engine.connect() as conn:
+                    export_result = await export_to_markdown(
+                        conn, scratch_memory,
+                        ledger_dir=ledger_dir_for(scratch_memory),
+                    )
+                rebuild_engine = await create_engine(str(Path(tmp) / "index.db"))
+                try:
+                    async with rebuild_engine.begin() as conn:
+                        await conn.run_sync(metadata.create_all)
+                        rebuild_result = await rebuild_index(
+                            conn, scratch_memory, embedding_svc, cfg.embeddings.model,
+                            ledger_dir=ledger_dir_for(scratch_memory),
+                        )
+                    async with (
+                        live_engine.connect() as conn_before,
+                        rebuild_engine.connect() as conn_after,
+                    ):
+                        parity = await check_retrieval_parity(
+                            conn_before, conn_after, embedding_svc, queries,
+                        )
+                finally:
+                    await rebuild_engine.dispose()
+            gate = (
+                "PASS" if parity.passed
+                else f"FAIL ({len(parity.diverging_queries())} quer(ies) diverge)"
+            )
+            return StepApplyResult(
+                step.id, "applied",
+                f"[dry-run] would export {export_result.blocks_exported} "
+                f"block(s), rebuild {rebuild_result.blocks_written} block(s), "
+                f"parity gate: {gate}. Nothing written.",
+            )
+
+        # ── Real run ──────────────────────────────────────────────────
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        backup_path = db_path.with_suffix(f".before-substrate.{timestamp}.bak")
+        async with live_engine.begin() as conn:
+            await vacuum_backup(conn, str(backup_path))
+
+        backup_engine = await create_engine(str(backup_path))
+        try:
+            async with backup_engine.connect() as conn:
+                backup_counts, _ = await _corpus_snapshot(conn)
+        finally:
+            await backup_engine.dispose()
+        if backup_counts != counts:
+            return StepApplyResult(
+                step.id, "failed",
+                f"backup validation failed — counts diverge (live={counts}, "
+                f"backup={backup_counts}). No export was written; your "
+                f"database is untouched. Backup left at {backup_path} for "
+                "inspection.",
+            )
+
+        async with live_engine.connect() as conn:
+            export_result = await export_to_markdown(
+                conn, memory_dir, ledger_dir=ledger_dir_for(memory_dir)
+            )
+
+        rebuild_engine = await create_engine(str(index_db_path))
+        try:
+            async with rebuild_engine.begin() as conn:
+                await conn.run_sync(metadata.create_all)
+                existing = (
+                    await conn.execute(sa_text("SELECT COUNT(*) FROM blocks"))
+                ).scalar_one()
+                if existing:
+                    await conn.execute(sa_text("DELETE FROM edges"))
+                    await conn.execute(sa_text("DELETE FROM block_tags"))
+                    await conn.execute(sa_text("DELETE FROM blocks"))
+                rebuild_result = await rebuild_index(
+                    conn, memory_dir, embedding_svc, cfg.embeddings.model,
+                    ledger_dir=ledger_dir_for(memory_dir),
+                )
+            async with (
+                live_engine.connect() as conn_before,
+                rebuild_engine.connect() as conn_after,
+            ):
+                parity = await check_retrieval_parity(
+                    conn_before, conn_after, embedding_svc, queries,
+                )
+        finally:
+            await rebuild_engine.dispose()
+
+        marker = SubstrateMarker(
+            fingerprint=current_fp,
+            files_fingerprint=_compute_files_fingerprint(memory_dir),
+            applied_at=datetime.now(UTC).isoformat(),
+            backup_path=str(backup_path),
+            memory_dir=str(memory_dir),
+            index_db_path=str(index_db_path),
+            blocks_exported=export_result.blocks_exported,
+            blocks_written=rebuild_result.blocks_written,
+            parity_passed=parity.passed,
+            diverging_query_count=len(parity.diverging_queries()),
+        )
+        _write_marker_atomic(marker_dir, marker)
+
+        gate = (
+            "PASSED" if parity.passed
+            else f"FAILED — {len(parity.diverging_queries())} quer(ies) "
+                 "diverge, see 'elfmem index parity' for detail"
+        )
+        detail = (
+            f"Exported {export_result.blocks_exported} block(s) to "
+            f"{memory_dir}; verified index built at {index_db_path} "
+            f"({rebuild_result.blocks_written} block(s)); parity gate {gate}. "
+            f"Your agent is unchanged — still reading {db_path}."
+        )
+        return StepApplyResult(step.id, "applied", detail, backup=backup_path)
+    finally:
+        await live_engine.dispose()
+
+
+async def undo_substrate_step(
+    step: MigrationStep,
+    *,
+    memory_dir: Path,
+    force: bool = False,
+) -> StepApplyResult:
+    """Remove the artifacts a prior ``apply_substrate_step`` created.
+
+    Never touches the live database — nothing here can lose data that
+    isn't already a byproduct of this migration step. Refuses (unless
+    ``force=True``) if ``.elfmem/memory/`` has changed since it was
+    written, protecting hand-edits made to the exported files.
+    """
+    import shutil
+
+    _, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+    if marker is None:
+        return StepApplyResult(
+            step.id, "skipped",
+            "no recorded substrate migration to undo (already clean, or never applied)",
+        )
+
+    if not force:
+        current_files_fp = _compute_files_fingerprint(memory_dir)
+        if current_files_fp != marker.files_fingerprint:
+            return StepApplyResult(
+                step.id, "failed",
+                f"{memory_dir} has changed since this migration was applied "
+                "(hand-edited?) — refusing to delete possibly-unsaved work. "
+                "Pass --force to remove anyway, or back up your edits first.",
+            )
+
+    if memory_dir.exists():
+        shutil.rmtree(memory_dir)
+    with contextlib.suppress(OSError):
+        Path(marker.index_db_path).unlink()
+    _remove_marker(marker_dir)
+
+    return StepApplyResult(
+        step.id, "applied",
+        f"Removed {memory_dir} and {marker.index_db_path}. Your original "
+        f"database was never modified; its backup remains at "
+        f"{marker.backup_path}.",
+    )
+
+
+async def build_full_plan(
+    *,
+    db_path: Path | None = None,
+    memory_dir: Path | None = None,
+    scan_paths: tuple[Path, ...] = DEFAULT_SCAN_PATHS,
+) -> MigrationPlan:
+    """``build_plan()`` (Claude MCP config drift) plus ``scan_substrate()``
+    (the v2 file-substrate export), combined into the one plan
+    ``elfmem migrate status/plan/apply`` operate on.
+
+    ``db_path``/``memory_dir`` are None when the caller has no resolved
+    project (global mode, before ``elfmem init``) — the substrate check is
+    skipped in that case, not an error.
+    """
+    plan = build_plan(scan_paths)
+    if db_path is None or memory_dir is None:
+        return plan
+    substrate_step = await scan_substrate(db_path, memory_dir)
+    if substrate_step is None:
+        return plan
+    return MigrationPlan(steps=[*plan.steps, substrate_step], warnings=plan.warnings)
 
 
 # ── Formatting ────────────────────────────────────────────────────────────────

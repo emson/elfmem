@@ -8,7 +8,11 @@ from elfmem.adapters.mock import make_mock_embedding
 from elfmem.context.frames import ATTENTION_FRAME
 from elfmem.db.engine import create_test_engine
 from elfmem.db.queries import add_tags, insert_block, seed_builtin_data, update_block_scoring
-from elfmem.migration.parity import check_retrieval_parity
+from elfmem.migration.parity import (
+    ParityGateResult,
+    QueryParityCheck,
+    check_retrieval_parity,
+)
 
 
 @pytest.fixture
@@ -135,3 +139,52 @@ class TestNoQueryFrame:
 
         assert result.passed
         assert result.query_checks[0].query is None
+
+
+class TestStaleEdgeDiagnosis:
+    """A gate failure has to say why. The verified cause on a real corpus was
+    edges in the source pointing at non-active blocks: they inflate centrality
+    on the 'before' side, and a rebuild cannot reproduce them because
+    `archive/` is deliberately never re-read."""
+
+    def test_diagnosis_is_none_when_the_gate_passes(self):
+        result = ParityGateResult(
+            block_count_before=10, block_count_after=10,
+            query_checks=[
+                QueryParityCheck(None, "attention", ["a", "b"], ["a", "b"])
+            ],
+        )
+        assert result.passed is True
+        assert result.diagnosis is None
+
+    def test_block_count_mismatch_is_diagnosed_first(self):
+        result = ParityGateResult(
+            block_count_before=10, block_count_after=9, stale_edges_in_source=5,
+        )
+        assert "Block count differs" in result.diagnosis
+
+    def test_stale_edges_are_named_with_a_repair(self):
+        result = ParityGateResult(
+            block_count_before=10, block_count_after=10,
+            query_checks=[
+                QueryParityCheck(None, "attention", ["a", "b"], ["a", "c"])
+            ],
+            stale_edges_in_source=67,
+        )
+        assert result.passed is False
+        diagnosis = result.diagnosis
+        assert "67 edge(s)" in diagnosis
+        assert "DELETE FROM edges" in diagnosis
+
+    def test_divergence_with_no_known_cause_reports_nothing_rather_than_guessing(
+        self,
+    ):
+        result = ParityGateResult(
+            block_count_before=10, block_count_after=10,
+            query_checks=[
+                QueryParityCheck(None, "attention", ["a", "b"], ["a", "c"])
+            ],
+            stale_edges_in_source=0,
+        )
+        assert result.passed is False
+        assert result.diagnosis is None

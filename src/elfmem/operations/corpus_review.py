@@ -15,8 +15,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from elfmem.db.queries import get_active_blocks
-from elfmem.types import CorpusProposal, CorpusReviewResult
+from elfmem.db.queries import get_active_blocks, get_unresolved_pairs
+from elfmem.types import CorpusProposal, CorpusReviewResult, NearDuplicatePair
 
 
 def _stale_candidates(
@@ -80,4 +80,23 @@ async def review_corpus(
         max_reinforcement_count=max_reinforcement_count,
         max_proposals=max_proposals,
     )
-    return CorpusReviewResult(reviewed_count=len(blocks), proposals=proposals)
+    # Near-duplicate pairs consolidation kept instead of destroying. They are
+    # surfaced here rather than acted on: this function proposes, the caller
+    # decides, exactly as it does for staleness.
+    pairs = await get_unresolved_pairs(conn, kind="near_duplicate")
+    return CorpusReviewResult(
+        reviewed_count=len(blocks),
+        proposals=proposals,
+        near_duplicate_pairs=[
+            NearDuplicatePair(
+                block_a_id=p["block_a_id"],
+                block_b_id=p["block_b_id"],
+                similarity=float(p["score"]),
+                cue_similarity=(
+                    None if p["cue_similarity"] is None
+                    else float(p["cue_similarity"])
+                ),
+            )
+            for p in pairs
+        ],
+    )

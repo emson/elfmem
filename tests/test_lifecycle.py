@@ -1,6 +1,7 @@
 """Lifecycle operations test suite — learn(), consolidate(), end_session()."""
 
 import pytest
+from sqlalchemy import text as sa_text
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.db.engine import create_test_engine
@@ -173,7 +174,7 @@ class TestConsolidateOperation:
             block = await get_block(conn, result.block_id)
             assert block["self_alignment"] is not None
 
-    async def test_consolidate_near_duplicate_supersedes(self, system_setup) -> None:
+    async def test_consolidate_near_duplicate_is_recorded_not_destroyed(self, system_setup) -> None:
         """TC-L-005: Near-duplicate resolution (forget + create + inherit)."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
@@ -216,8 +217,12 @@ class TestConsolidateOperation:
                 current_active_hours=10.0,
             )
 
-            # First block should be archived, second should be promoted
-            assert consolidate_result.deduplicated >= 1
+            # Both survive; the pair is recorded rather than resolved by
+            # deleting one half. `deduplicated` counts only the non-destructive
+            # exact-duplicate path (>=0.95), where the *incoming* block is
+            # dropped and nothing already stored is lost.
+            assert consolidate_result.near_duplicates_flagged >= 1
+            assert consolidate_result.deduplicated == 0
 
     async def test_consolidate_very_high_similarity_rejected(self, system_setup) -> None:
         """TC-L-006: Very high similarity (>0.95) block rejected silently."""
@@ -607,7 +612,11 @@ class TestConstitutionalSupersessionGuard:
             assert len(active) == 2  # both survive — nothing was destroyed
 
     async def test_ordinary_block_still_superseded_with_audit_trail(self, system_setup) -> None:
-        """Non-constitutional near-duplicates still supersede, now with superseded_by recorded."""
+        """Near-duplicates are recorded as a pair, not resolved by deletion.
+
+        Nothing on the automatic path destroys an existing block any more, so
+        the pin guard is subsumed rather than merely widened: an unpinned
+        block is now as safe as a pinned one."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
             first = await learn(
@@ -640,10 +649,27 @@ class TestConstitutionalSupersessionGuard:
                 current_active_hours=10.0,
             )
 
-            assert result.deduplicated == 1
-            assert result.blocked_supersessions == 0
-            archived = await get_block(conn, first.block_id)
-            assert archived is not None
-            assert archived["status"] == "archived"
-            assert archived["superseded_by"] == second.block_id
+            # Both blocks survive. Automatic supersession used to archive
+            # `first` here; 41 of 187 blocks ever created on the maintainer's
+            # instance died that way, six of them constitutional, with no
+            # audit row and no undo.
+            assert result.near_duplicates_flagged == 1
+            assert result.deduplicated == 0
+
+            kept = await get_block(conn, first.block_id)
+            assert kept is not None
+            assert kept["status"] == "active"
+            assert kept["superseded_by"] is None
+            assert (await get_block(conn, second.block_id))["status"] == "active"
+
+            # The pair is recorded for deliberate review instead.
+            rows = (await conn.execute(sa_text(
+                "SELECT block_a_id, block_b_id, kind, score FROM contradictions"
+            ))).mappings().all()
+            assert len(rows) == 1
+            assert rows[0]["kind"] == "near_duplicate"
+            assert {rows[0]["block_a_id"], rows[0]["block_b_id"]} == {
+                first.block_id, second.block_id
+            }
+            assert rows[0]["score"] == pytest.approx(0.92)
 

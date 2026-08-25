@@ -436,6 +436,23 @@ def init(
     # Also create the database directory if needed.
     Path(resolved_db).parent.mkdir(parents=True, exist_ok=True)
 
+    # ── Create the file substrate ──────────────────────────────────────────
+    # `.elfmem/memory/` plus a local .gitignore. This writes no blocks (see
+    # the seed section below, which defaults to off); it creates the place
+    # memory lives and makes it versionable. Until v2 Phase 0 `init` created
+    # neither, so "git is the audit trail" -- the whole answer to RC3 -- had
+    # nothing behind it and forget() destroyed text unrecoverably.
+    scaffold_agent_name = (
+        _project.read_agent_name_from_config(resolved_config)
+        if config_file.exists()
+        else (agent_name or "elf")
+    )
+    scaffold_actions = _project.ensure_memory_scaffold(
+        config_file.parent, agent_name=scaffold_agent_name
+    )
+    memory_dir_path = config_file.parent / "memory"
+    memory_created = sum(1 for a in scaffold_actions.values() if a == "created")
+
     # ── Seed constitutional blocks ─────────────────────────────────────────
 
     seed_results: list[dict[str, str]] = []
@@ -500,6 +517,8 @@ def init(
             "mode_banner": mode_banner,
             "config_path": resolved_config,
             "config_action": config_action,
+            "memory_dir": str(memory_dir_path),
+            "memory_scaffold": scaffold_actions,
             "db_path": resolved_db,
         }
         if in_project:
@@ -523,6 +542,17 @@ def init(
             typer.echo(f"✓  Project:   {proj_name} (detected)")
         typer.echo(f"✓  Config:    {resolved_config} ({config_action})")
         typer.echo(f"✓  Database:  {resolved_db} (ready)")
+        if memory_created:
+            typer.echo(
+                f"✓  Memory:    {memory_dir_path} "
+                f"({memory_created} path(s) created)"
+            )
+            typer.echo(
+                "   Commit it: git add .elfmem/memory && git commit "
+                "— git history is the undo path for forget()/edit()."
+            )
+        else:
+            typer.echo(f"✓  Memory:    {memory_dir_path} (exists)")
         if seed_results:
             created = sum(1 for r in seed_results if r["status"] == "created")
             skipped = len(seed_results) - created
@@ -1094,17 +1124,75 @@ def recall(
 
 @app.command()
 def edit(
-    block_id: str,
-    content: str,
+    block_id: Annotated[str | None, typer.Argument()] = None,
+    content: Annotated[str | None, typer.Argument()] = None,
+    cue: Annotated[
+        str | None,
+        typer.Option("--cue", help="When a future agent should recall this block"),
+    ] = None,
+    cues_from: Annotated[
+        str | None,
+        typer.Option(
+            "--cues-from",
+            help='Batch-apply cues from a JSON file: {"block_id": "cue", ...}',
+        ),
+    ] = None,
+    missing_cues: Annotated[
+        bool,
+        typer.Option("--missing-cues", help="List active blocks with no cue line"),
+    ] = False,
     db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
     config: Annotated[
         str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")
     ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Replace an active block's content directly. No LLM mediation."""
+    """Edit an active block's content and/or its cue line. No LLM mediation.
+
+    A cue says *when* a future agent should recall the block, which is what
+    lexical search matches against when the query's wording differs from the
+    block's. Setting one does not re-embed or re-queue the block.
+
+    Examples:
+
+        elfmem edit a1b2c3d4 "Corrected content."
+        elfmem edit a1b2c3d4 --cue "choosing a sync strategy"
+        elfmem edit --missing-cues --json
+        elfmem edit --cues-from cues.json
+    """
     db_path, config_path = _resolve_paths(db, config)
-    result = _run(_edit(db_path, config_path, block_id, content))
+
+    if missing_cues:
+        rows = _run(_list_missing_cues(db_path, config_path))
+        if json_output:
+            _json([
+                {"id": r["id"], "category": r["category"], "content": r["content"]}
+                for r in rows
+            ])
+        else:
+            typer.echo(f"{len(rows)} active block(s) with no cue line")
+            for r in rows:
+                first = r["content"].strip().splitlines()[0][:70]
+                typer.echo(f"  {r['id']}  [{r['category']}]  {first}")
+        return
+
+    if cues_from is not None:
+        cues = json.loads(Path(cues_from).expanduser().read_text(encoding="utf-8"))
+        applied, skipped = _run(_edit_cues_batch(db_path, config_path, cues))
+        if json_output:
+            _json({"applied": applied, "skipped": skipped})
+        else:
+            typer.echo(f"Applied {applied} cue(s); {len(skipped)} block(s) not found.")
+        return
+
+    if block_id is None:
+        typer.echo(
+            "Error: provide a block id, or use --missing-cues / --cues-from.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    result = _run(_edit(db_path, config_path, block_id, content, cue))
     _json(result.to_dict()) if json_output else typer.echo(str(result))
 
 
@@ -1703,7 +1791,8 @@ def _rewrite_project_db_in_config(config_path: Path, new_db_path: str) -> Path:
 migrate_app = typer.Typer(
     name="migrate",
     help=(
-        "Migrate config files between elfmem versions.\n\n"
+        "Migrate elfmem between versions: Claude MCP config drift, and (if "
+        "pending) the v2 file-substrate export.\n\n"
         "Plan-and-apply model: 'plan' shows what would change (read-only), "
         "'apply' performs the changes atomically with backups. Designed for "
         "agent invocation — every subcommand supports --json."
@@ -1810,6 +1899,40 @@ def _resolve_migrate_paths(config_path: str | None, db: str | None) -> tuple[str
         resolved_config = config_path or str(Path("~/.elfmem/config.yaml").expanduser())
         resolved_db = db or str(Path("~/.elfmem/agent.db").expanduser())
     return str(Path(resolved_config).expanduser()), str(Path(resolved_db).expanduser())
+
+
+def _resolve_migrate_memory_dir(
+    db: str | None, config_path: str | None,
+) -> tuple[str, str, Path]:
+    """(resolved_db, resolved_config, memory_dir) for the substrate_export
+    step — same resolution chain as every other project-aware command."""
+    resolved_config, resolved_db = _resolve_migrate_paths(config_path, db)
+    memory_dir = _resolve_memory_dir(None, resolved_config)
+    return resolved_db, resolved_config, memory_dir
+
+
+async def _build_full_plan_for_project(db: str | None, config_path: str | None) -> Any:
+    """The plan 'elfmem migrate status/plan/apply' operate on: Claude MCP
+    config drift plus (if this project's database has content not yet
+    exported) the v2 substrate migration step."""
+    from elfmem.migrate import build_full_plan
+
+    resolved_db, _, memory_dir = _resolve_migrate_memory_dir(db, config_path)
+    return await build_full_plan(db_path=Path(resolved_db), memory_dir=memory_dir)
+
+
+async def _apply_substrate_async(
+    step: Any, memory_dir: Path, cfg: ElfmemConfig, dry_run: bool,
+) -> Any:
+    from elfmem.migrate import apply_substrate_step
+
+    return await apply_substrate_step(step, memory_dir=memory_dir, cfg=cfg, dry_run=dry_run)
+
+
+async def _undo_substrate_async(step: Any, memory_dir: Path, force: bool) -> Any:
+    from elfmem.migrate import undo_substrate_step
+
+    return await undo_substrate_step(step, memory_dir=memory_dir, force=force)
 
 
 async def _migrate_embeddings_estimate(
@@ -1981,15 +2104,17 @@ def _migrate_default(ctx: typer.Context) -> None:
 
 @migrate_app.command("status")
 def migrate_status(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config_path: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """One-line summary per pending migration; exit 0 if nothing to do.
 
     Cheap to call repeatedly. Use this in scripts and pre-flight checks.
+    Covers both Claude MCP config drift and (if this project's database has
+    content not yet exported) the v2 file-substrate migration.
     """
-    from elfmem.migrate import build_plan
-
-    plan = build_plan()
+    plan = _run(_build_full_plan_for_project(db, config_path))
     if json_output:
         _json({
             "pending_count": plan.pending_count,
@@ -2024,16 +2149,17 @@ def migrate_status(
 
 @migrate_app.command("plan")
 def migrate_plan(
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config_path: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Full structured plan: per-step diffs, file hashes, apply commands.
 
     Read-only. The JSON output is the contract for agents — every step
-    includes an 'apply_command' string ready to invoke.
+    includes an 'apply_command' string ready to invoke. Covers both Claude
+    MCP config drift and the v2 file-substrate migration.
     """
-    from elfmem.migrate import build_plan
-
-    plan = build_plan()
+    plan = _run(_build_full_plan_for_project(db, config_path))
     if json_output:
         _json(plan.to_dict())
         if plan.pending_count:
@@ -2049,7 +2175,8 @@ def migrate_plan(
         typer.echo(f"━━━ {step.id} ━━━")
         typer.echo(f"Summary: {step.summary}")
         typer.echo(f"File:    {step.file}")
-        typer.echo(f"SHA256:  {step.file_sha256[:16]}…")
+        hash_label = "Fingerprint:" if step.kind == "substrate_export" else "SHA256:     "
+        typer.echo(f"{hash_label} {step.file_sha256[:16]}…")
         typer.echo("Issues:")
         for issue in step.issues:
             typer.echo(f"  - {issue}")
@@ -2086,27 +2213,87 @@ def migrate_apply(
         bool,
         typer.Option("--yes", "-y", help="Skip interactive confirmation prompt."),
     ] = False,
+    undo: Annotated[
+        bool,
+        typer.Option(
+            "--undo",
+            help=(
+                "Roll back an already-applied substrate_export step: removes "
+                "the generated .elfmem/memory/ and index.db. Never touches "
+                "the live database. Requires --id."
+            ),
+        ),
+    ] = False,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            help="With --undo: remove generated files even if they look hand-edited since export.",
+        ),
+    ] = False,
+    db: Annotated[str | None, typer.Option("--db", envvar="ELFMEM_DB")] = None,
+    config_path: Annotated[str | None, typer.Option("--config", envvar="ELFMEM_CONFIG")] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Apply pending migrations atomically, with backups.
 
-    Each step writes a ``<file>.elfmem-bak-<step_id>-<timestamp>`` backup
-    before modifying the original. Atomic: writes go through a tmp-file
-    rename so readers never see a partial state.
+    Each step writes a backup before making any change — a
+    ``<file>.elfmem-bak-<step_id>-<timestamp>`` for Claude MCP config steps,
+    a ``VACUUM INTO`` snapshot for the substrate-export step. Atomic: config
+    writes go through a tmp-file rename; the substrate step never writes to
+    your live database at all, only to new files alongside it.
 
-    If a file's content has drifted since the plan was built, that step is
-    marked 'stale' and skipped. Re-run 'elfmem migrate plan' first.
+    If a target has drifted since the plan was built, it's marked 'stale'
+    and skipped. Re-run 'elfmem migrate plan' first.
 
     Without --yes, prompts for confirmation. Always safe to re-run — already-
-    applied steps return 'skipped'.
+    applied steps return 'skipped'. Use --undo --id <step> to roll back an
+    applied substrate_export step.
     """
-    from elfmem.migrate import apply_plan, build_plan
+    from elfmem.migrate import ApplyResult, MigrationStep, StepApplyResult, apply_plan
 
-    plan = build_plan()
+    if undo:
+        # Undo doesn't operate on the *pending* plan -- an already-applied
+        # migration is by definition no longer pending, so it would never
+        # appear in plan.steps. undo_substrate_step only needs a step id
+        # (it reads everything else from the recorded marker), and that id
+        # is a deterministic function of the db path, so it's reconstructed
+        # directly rather than looked up in a plan that wouldn't have it.
+        from elfmem.migrate import substrate_step_id
+
+        if not step_ids:
+            typer.echo("--undo requires --id <step>.", err=True)
+            raise typer.Exit(1)
+        resolved_db, _, memory_dir = _resolve_migrate_memory_dir(db, config_path)
+        expected_id = substrate_step_id(Path(resolved_db))
+        undo_results = [
+            _run(_undo_substrate_async(
+                MigrationStep(
+                    id=sid, kind="substrate_export", summary="", file=Path(resolved_db),
+                    file_sha256="", issues=[], before={}, after={}, json_pointer="",
+                ),
+                memory_dir, force,
+            ))
+            if sid == expected_id
+            else StepApplyResult(sid, "failed", f"no such migration for this project: {sid}")
+            for sid in step_ids
+        ]
+        result = ApplyResult(results=undo_results)
+        if json_output:
+            _json(result.to_dict())
+            if not result.all_ok:
+                raise typer.Exit(1)
+            return
+        for r in result.results:
+            symbol = {"applied": "✓", "skipped": "·", "failed": "✗"}.get(r.status, "?")
+            typer.echo(f"{symbol}  {r.step_id}: {r.detail}")
+        if not result.all_ok:
+            raise typer.Exit(1)
+        return
+
+    plan = _run(_build_full_plan_for_project(db, config_path))
     targets = tuple(step_ids) if step_ids else None
-    target_steps = (
-        [s for s in plan.steps if targets is None or s.id in targets]
-    )
+    target_steps = [s for s in plan.steps if targets is None or s.id in targets]
 
     if not target_steps:
         msg = (
@@ -2130,7 +2317,36 @@ def migrate_apply(
             typer.echo("Aborted.")
             raise typer.Exit(1)
 
-    result = apply_plan(plan, only=targets, dry_run=dry_run)
+    # Config-drift steps go through the existing JSON-patch machinery;
+    # substrate_export dispatches to its own async apply (backup, export,
+    # rebuild, verify) — same MigrationStep/StepApplyResult vocabulary,
+    # different mechanics because there's no single JSON pointer to patch.
+    config_steps = [s for s in target_steps if s.kind != "substrate_export"]
+    substrate_steps = [s for s in target_steps if s.kind == "substrate_export"]
+
+    config_results: list[StepApplyResult] = []
+    if config_steps:
+        # NOTE: only=() (empty tuple) is falsy in Python, which apply_plan
+        # treats the same as only=None -- "no filter, apply everything in
+        # the plan." Guarding on `if config_steps` keeps that fallback from
+        # ever reprocessing the substrate step through the JSON-patch path
+        # when there happen to be zero config steps to apply.
+        config_results = apply_plan(
+            plan, only=tuple(s.id for s in config_steps), dry_run=dry_run,
+        ).results
+    substrate_results: list[StepApplyResult] = []
+    if substrate_steps:
+        _, resolved_config, memory_dir = _resolve_migrate_memory_dir(db, config_path)
+        cfg = (
+            ElfmemConfig.from_yaml(resolved_config)
+            if Path(resolved_config).exists()
+            else ElfmemConfig()
+        )
+        substrate_results = [
+            _run(_apply_substrate_async(step, memory_dir, cfg, dry_run))
+            for step in substrate_steps
+        ]
+    result = ApplyResult(results=[*config_results, *substrate_results])
 
     if json_output:
         _json(result.to_dict())
@@ -2151,7 +2367,7 @@ def migrate_apply(
     typer.echo("")
     if result.all_ok:
         typer.echo(f"Done. Applied: {len(result.applied)}, skipped: {len(result.skipped)}.")
-        if result.applied and not dry_run:
+        if any(s.kind != "substrate_export" for s in config_steps) and result.applied and not dry_run:
             typer.echo("Restart Claude Code so MCP servers reload.")
     else:
         typer.echo(f"{len(result.failed)} step(s) need attention.")
@@ -2444,22 +2660,78 @@ def index_check_cmd(
     """
     config_path = _resolve_config_only(config)
     resolved_dir = _resolve_memory_dir(memory_dir, config_path)
-    blocks, errors = _index_check(resolved_dir)
+    report = _index_check(resolved_dir)
+    errors = report["errors"]
+    absorbed = report["absorbed"]
     if json_output:
         _json(
             {
                 "memory_dir": str(resolved_dir),
-                "blocks": blocks,
+                "blocks": report["indexed_blocks"],
+                "indexed_blocks": report["indexed_blocks"],
+                "total_blocks": report["total_blocks"],
+                "per_dir": report["per_dir"],
                 "errors": [
                     {"file": str(path), "title": e.title, "reason": e.reason}
                     for path, e in errors
                 ],
+                "absorbed_headings": [
+                    {"file": str(path), "title": a.title,
+                     "absorbed_into": a.absorbed_into}
+                    for path, a in absorbed
+                ],
+                "unknown_relations": [
+                    {"file": str(f), "title": t, "relation": r}
+                    for f, t, r in report["unknown_relations"]
+                ],
+                "links": len(report["links"]),
+                "dangling_links": [
+                    {"file": str(f), "source": s_, "relation": r, "target": t}
+                    for f, s_, r, t in report["dangling_links"]
+                ],
+                "missing_cue": len(report["missing_cue"]),
             }
         )
         return
-    typer.echo(f"{resolved_dir}: {blocks} block(s), {len(errors)} error(s)")
+    breakdown = ", ".join(
+        f"{name}={count}" for name, count in report["per_dir"].items()
+    )
+    typer.echo(
+        f"{resolved_dir}: {report['indexed_blocks']} indexable block(s) "
+        f"[{breakdown or 'no block files'}], {len(errors)} error(s)"
+    )
+    typer.echo("  (archive/ is parsed here but not read by 'index rebuild')")
     for path, e in errors:
         typer.echo(f"  {path} — {e.title!r}: {e.reason}")
+    if absorbed:
+        typer.echo(
+            f"  {len(absorbed)} '##' heading(s) absorbed as content, not "
+            f"treated as block boundaries:"
+        )
+        for path, a in absorbed:
+            typer.echo(f"    {path} — {a.title!r} → inside {a.absorbed_into!r}")
+
+    from elfmem.memory.blockfile import LINK_RELATIONS
+
+    unknown = report["unknown_relations"]
+    if unknown:
+        typer.echo(
+            f"  {len(unknown)} unrecognised relation(s) — link-shaped but not "
+            f"in the vocabulary ({', '.join(LINK_RELATIONS)}):"
+        )
+        for path, title, relation in unknown:
+            typer.echo(f"    {path} — {title!r}: {relation}::")
+
+    dangling = report["dangling_links"]
+    if dangling:
+        typer.echo(f"  {len(dangling)} link(s) point at an unknown block:")
+        for path, source, relation, target in dangling:
+            typer.echo(f"    {path} — {source} {relation}:: [[{target}]]")
+
+    typer.echo(
+        f"  {len(report['links'])} typed link(s); "
+        f"{len(report['missing_cue'])} block(s) with no cue:: line"
+    )
 
 
 @index_app.command("rebuild")
@@ -2548,6 +2820,8 @@ def index_parity_cmd(
                     {"query": c.query, "frame": c.frame_name, "before": c.before_ids, "after": c.after_ids}
                     for c in result.diverging_queries()
                 ],
+                "stale_edges_in_source": result.stale_edges_in_source,
+                "diagnosis": result.diagnosis,
             }
         )
         return
@@ -2562,7 +2836,14 @@ def index_parity_cmd(
         typer.echo(f"      before: {c.before_ids}")
         typer.echo(f"      after:  {c.after_ids}")
     if not result.passed:
-        typer.echo("\nDo not treat a diverging ranking as probably fine — diagnose before proceeding.")
+        diagnosis = result.diagnosis
+        if diagnosis:
+            typer.echo(f"\nDiagnosis:\n  {diagnosis}")
+        else:
+            typer.echo(
+                "\nDo not treat a diverging ranking as probably fine — "
+                "diagnose before proceeding."
+            )
 
 
 # ── Mind (Theory of Mind) subcommands ────────────────────────────────────────
@@ -3166,9 +3447,47 @@ async def _recall(
         return await mem.frame(frame, query=query or None, top_k=top_k)
 
 
-async def _edit(db_path: str, config: str | None, block_id: str, content: str) -> EditResult:
+async def _edit(
+    db_path: str, config: str | None, block_id: str,
+    content: str | None, cue: str | None,
+) -> EditResult:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
-        return await mem.edit(block_id, content)
+        return await mem.edit(block_id, content, cue=cue)
+
+
+async def _edit_cues_batch(
+    db_path: str, config: str | None, cues: dict[str, str]
+) -> tuple[int, list[str]]:
+    """Apply many cue lines in one session. Returns (applied, skipped ids)."""
+    from elfmem.exceptions import BlockNotFound
+
+    applied = 0
+    skipped: list[str] = []
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        for block_id, cue in cues.items():
+            try:
+                await mem.edit(block_id, cue=cue)
+                applied += 1
+            except BlockNotFound:
+                # A backfill file outlives the corpus it was generated from;
+                # a since-archived block is expected, not an error.
+                skipped.append(block_id)
+    return applied, skipped
+
+
+async def _list_missing_cues(db_path: str, config: str | None) -> list[dict[str, Any]]:
+    from elfmem.db.engine import create_engine
+    from elfmem.db.migrate import ensure_schema_current
+    from elfmem.db.queries import get_blocks_missing_cue
+
+    engine = await create_engine(db_path)
+    try:
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn, db_path=db_path)
+        async with engine.connect() as conn:
+            return await get_blocks_missing_cue(conn)
+    finally:
+        await engine.dispose()
 
 
 async def _forget(
@@ -3453,34 +3772,98 @@ async def _import_async(
 
 async def _export_markdown_async(db_path: str, memory_dir: Path) -> Any:
     """Export every DB-native block to `.elfmem/memory/` files. Read-only
-    against the database — see `migration.export.export_to_markdown`."""
+    against the database — see `migration.export.export_to_markdown`.
+
+    Also seeds the ledger beside the memory directory, carrying across the
+    accumulated history (reinforcement, recency, α/β) that the block format
+    deliberately does not encode."""
     from elfmem.db.engine import create_engine
+    from elfmem.db.migrate import ensure_schema_current
+    from elfmem.memory.ledger import ledger_dir_for
     from elfmem.migration.export import export_to_markdown
 
     engine = await create_engine(db_path)
     try:
+        # Bring the schema current first, exactly as `from_config()` does on
+        # every other entry point. Without this, exporting a database that
+        # predates the running version fails on the columns the ORM selects.
+        # Migrations are additive and take their own backup, so this does not
+        # weaken the "export never mutates memory content" guarantee.
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn, db_path=db_path)
         async with engine.connect() as conn:
-            return await export_to_markdown(conn, memory_dir)
+            return await export_to_markdown(
+                conn, memory_dir, ledger_dir=ledger_dir_for(memory_dir)
+            )
     finally:
         await engine.dispose()
 
 
-def _index_check(memory_dir: Path) -> tuple[int, list[tuple[Path, Any]]]:
-    """Parse every block file under *memory_dir* and collect frontmatter
-    errors. Pure file I/O — no DB, no LLM, no embedding calls."""
-    from elfmem.memory.blockfile import parse_blocks
+def _index_check(memory_dir: Path) -> dict[str, Any]:
+    """Parse every block file under *memory_dir* and report what it found.
 
-    total_blocks = 0
+    Pure file I/O — no DB, no LLM, no embedding calls.
+
+    Counts are reported per source directory rather than as one total,
+    because ``index rebuild`` reads ``notes/`` and ``log/`` but deliberately
+    does *not* read ``archive/`` (archived content stays recoverable in git,
+    not re-entered into the index — see ``migration/export.py``). A single
+    conflated total made ``check`` and ``rebuild`` look like they disagreed
+    on any corpus with archived blocks, when they were answering different
+    questions.
+    """
+    from elfmem.memory.blockfile import parse_blocks
+    from elfmem.memory.index_rebuild import _BLOCK_SOURCES
+
+    indexed_subdirs = {name for name, _ in _BLOCK_SOURCES}
+    per_dir: dict[str, int] = {}
     all_errors: list[tuple[Path, Any]] = []
+    all_absorbed: list[tuple[Path, Any]] = []
+    unknown_relations: list[tuple[Path, str, str]] = []
+    missing_cue: list[tuple[Path, str]] = []
+    all_links: list[tuple[Path, str, str, str]] = []
+    known_ids: set[str] = set()
     for subdir_name in ("notes", "log", "archive"):
         subdir = memory_dir / subdir_name
         if not subdir.is_dir():
             continue
+        count = 0
         for path in sorted(subdir.glob("**/*.md")):
             result = parse_blocks(path.read_text(encoding="utf-8"))
-            total_blocks += len(result.blocks)
+            count += len(result.blocks)
             all_errors.extend((path, e) for e in result.errors)
-    return total_blocks, all_errors
+            all_absorbed.extend((path, a) for a in result.absorbed)
+            for block in result.blocks:
+                if block.id:
+                    known_ids.add(block.id)
+                unknown_relations.extend(
+                    (path, block.title, key) for key in block.unknown_relations
+                )
+                if not block.cue and subdir_name in indexed_subdirs:
+                    missing_cue.append((path, block.title))
+                all_links.extend(
+                    (path, block.id or block.title, ln.relation, ln.target)
+                    for ln in block.links
+                )
+        per_dir[subdir_name] = count
+    dangling = [
+        (path, src, rel, tgt)
+        for path, src, rel, tgt in all_links
+        if tgt not in known_ids
+    ]
+    return {
+        "per_dir": per_dir,
+        "indexed_blocks": sum(
+            n for name, n in per_dir.items() if name in indexed_subdirs
+        ),
+        "total_blocks": sum(per_dir.values()),
+        "errors": all_errors,
+        "absorbed": all_absorbed,
+        "unknown_relations": unknown_relations,
+        "missing_cue": missing_cue,
+        "links": all_links,
+        "dangling_links": dangling,
+    }
 
 
 async def _fresh_index_engine(target_db_path: str, *, force: bool) -> Any:
@@ -3525,7 +3908,11 @@ async def _index_rebuild_async(
     try:
         embedding_svc = make_embedding_adapter(cfg, TokenCounter())
         async with engine.begin() as conn:
-            return await rebuild_index(conn, memory_dir, embedding_svc, cfg.embeddings.model)
+            from elfmem.memory.ledger import ledger_dir_for
+            return await rebuild_index(
+                conn, memory_dir, embedding_svc, cfg.embeddings.model,
+                ledger_dir=ledger_dir_for(memory_dir),
+            )
     finally:
         await engine.dispose()
 
@@ -3548,7 +3935,11 @@ async def _index_parity_async(
         rebuild_engine = await _fresh_index_engine(str(Path(tmp) / "index-rebuilt.db"), force=True)
         try:
             async with rebuild_engine.begin() as conn:
-                await rebuild_index(conn, memory_dir, embedding_svc, cfg.embeddings.model)
+                from elfmem.memory.ledger import ledger_dir_for
+                await rebuild_index(
+                    conn, memory_dir, embedding_svc, cfg.embeddings.model,
+                    ledger_dir=ledger_dir_for(memory_dir),
+                )
 
             live_engine = await create_engine(live_db_path)
             try:

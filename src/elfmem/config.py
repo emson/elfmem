@@ -426,6 +426,22 @@ class PeerConfig(BaseModel):
     trust_decay_factor: float = 0.95
 
 
+class SubstrateConfig(BaseModel):
+    """Which layer is the source of truth for memory content.
+
+    Default off. With it off the database is authoritative and the file
+    substrate is produced by migration tooling only, which is where every
+    instance sits until someone deliberately cuts over. With it on, writes
+    land in ``.elfmem/memory/**.md`` first and the database becomes a derived
+    index that `elfmem index rebuild` can reproduce from files plus ledger.
+
+    Flipping this is the irreversible half of the v2 migration and should
+    follow a passing `elfmem index parity`, not precede it.
+    """
+
+    files_authoritative: bool = False
+
+
 class ElfmemConfig(BaseModel):
     """Top-level configuration for the elfmem memory system.
 
@@ -441,6 +457,7 @@ class ElfmemConfig(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     embeddings: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
+    substrate: SubstrateConfig = Field(default_factory=SubstrateConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     peer: PeerConfig = Field(default_factory=PeerConfig)

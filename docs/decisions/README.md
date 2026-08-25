@@ -43,3 +43,4 @@ Links to plans, research, issues, simulation results.
 | [0008](0008-mcp-entry-default.md) | MCP entry generation default, drift detection, and migration | Accepted |
 | [0009](0009-retire-decay-driven-archival.md) | Retire decay-driven block archival trigger | Accepted |
 | [0010](0010-retire-pairwise-contradiction-detection.md) | Retire pairwise LLM contradiction detection at consolidate-time | Accepted |
+| [0011](0011-substrate-migration-as-a-migrate-step.md) | Substrate migration folded into `elfmem migrate`, cutover deferred | Accepted |

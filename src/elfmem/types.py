@@ -361,7 +361,25 @@ class ConsolidateResult:
     # supersede normally. A nonzero value is not an error; it means a
     # near-duplicate pair is now sitting in active memory for a human (or a
     # future corpus-level review) to reconcile.
-    blocked_supersessions: int = 0
+
+    @property
+    def blocked_supersessions(self) -> int:
+        """Deprecated alias for ``near_duplicates_flagged``.
+
+        Named for the v2 step 1 pin guard, which refused to supersede a
+        ``self/constitutional`` block while every other block was still
+        destroyed. Nothing on this path destroys anything now, so "blocked"
+        no longer distinguishes anything: the count is every near-duplicate.
+        Kept as an alias so existing readers do not break; read
+        ``near_duplicates_flagged`` instead.
+        """
+        return self.near_duplicates_flagged
+    # Near-duplicate pairs recorded this cycle. Automatic supersession used to
+    # archive the older block outright; both are now kept and the pair is
+    # written to the `contradictions` table with kind='near_duplicate' for
+    # `elfmem review` to reconcile deliberately. A nonzero value is normal,
+    # not an error — it is the count of destructions that did not happen.
+    near_duplicates_flagged: int = 0
 
     @property
     def summary(self) -> str:
@@ -378,8 +396,10 @@ class ConsolidateResult:
             if self.deduplicated:
                 parts.append(f"{self.deduplicated} deduped")
             parts.append(f"{self.edges_created} edges")
-            if self.blocked_supersessions:
-                parts.append(f"{self.blocked_supersessions} constitutional supersessions blocked")
+            if self.near_duplicates_flagged:
+                n = self.near_duplicates_flagged
+                noun = "pair" if n == 1 else "pairs"
+                parts.append(f"{n} near-duplicate {noun} kept and flagged")
         if self.rescored or self.rescore_failed:
             rs = f"{self.rescored} rescored"
             if self.rescore_failed:
@@ -1536,6 +1556,45 @@ class CorpusProposal:
 
 
 @dataclass(frozen=True)
+class NearDuplicatePair:
+    """Two active blocks whose content matched closely enough that one of them
+    used to be silently archived.
+
+    ``cue_similarity`` is lexical overlap of the two cue lines, or None when
+    either block has none. It is reported so a reviewer can see whether the
+    pair answers the same retrieval situation (likely a true duplicate) or
+    different ones (likely both worth keeping). Nothing thresholds it.
+    """
+
+    block_a_id: str
+    block_b_id: str
+    similarity: float
+    cue_similarity: float | None = None
+
+    @property
+    def summary(self) -> str:
+        cue = (
+            "cue n/a" if self.cue_similarity is None
+            else f"cue {self.cue_similarity:.2f}"
+        )
+        return (
+            f"{self.block_a_id[:8]} ~ {self.block_b_id[:8]} "
+            f"(content {self.similarity:.2f}, {cue})"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_a_id": self.block_a_id,
+            "block_b_id": self.block_b_id,
+            "similarity": self.similarity,
+            "cue_similarity": self.cue_similarity,
+        }
+
+
+@dataclass(frozen=True)
 class CorpusReviewResult:
     """Result of ``review_corpus()`` — proposed archivals + counts.
 
@@ -1548,14 +1607,24 @@ class CorpusReviewResult:
 
     reviewed_count: int
     proposals: list[CorpusProposal] = field(default_factory=list)
+    near_duplicate_pairs: list[NearDuplicatePair] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
         n = len(self.proposals)
-        if n == 0:
-            return f"Corpus review: {self.reviewed_count} reviewed, no proposals."
-        noun = "proposal" if n == 1 else "proposals"
-        return f"Corpus review: {n} {noun} ({self.reviewed_count} reviewed)."
+        pairs = len(self.near_duplicate_pairs)
+        parts: list[str] = []
+        if n:
+            parts.append(f"{n} stale {'proposal' if n == 1 else 'proposals'}")
+        if pairs:
+            parts.append(
+                f"{pairs} near-duplicate {'pair' if pairs == 1 else 'pairs'}"
+            )
+        if not parts:
+            return f"Corpus review: {self.reviewed_count} reviewed, nothing to review."
+        return (
+            f"Corpus review: {', '.join(parts)} ({self.reviewed_count} reviewed)."
+        )
 
     def __str__(self) -> str:
         return self.summary
@@ -1564,6 +1633,9 @@ class CorpusReviewResult:
         return {
             "reviewed_count": self.reviewed_count,
             "proposals": [p.to_dict() for p in self.proposals],
+            "near_duplicate_pairs": [
+                p.to_dict() for p in self.near_duplicate_pairs
+            ],
         }
 
 

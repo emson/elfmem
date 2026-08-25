@@ -10,6 +10,28 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Substrate migration** as a new `substrate_export` step recognized by the
+  existing `elfmem migrate status`/`plan`/`apply` — the same plan-then-apply
+  command already used for Claude MCP config drift now also detects when a
+  project's database has content not yet exported to the `.elfmem/memory/`
+  file substrate, and migrates it: `VACUUM INTO` backup (row-count validated)
+  → `export_to_markdown()` → `rebuild_index()` into a fresh `.elfmem/index.db`
+  → retrieval-parity check against the original, on the four frame-level
+  queries. The live database is only ever read, never written to or deleted —
+  every write lands in a new file — so `elfmem migrate apply --undo --id
+  <step>` can always safely remove the generated files and reconfirm nothing
+  about the original changed. `apply` stops at "exported and verified": it
+  does not switch a running agent over to the file substrate (that requires
+  further engineering, not yet built — see ADR 0011). `--db`/`--config`
+  options added to `migrate status`/`plan`/`apply` for per-project targeting.
+  Fixes two real defects in `index_rebuild.py` found via a production-corpus
+  dry run and required as prerequisites: rebuilt blocks previously all
+  landed under `category="knowledge"` regardless of source file (silently
+  breaking `mind_list()`/`mind_show()`/`ls(category=...)` for every
+  Theory-of-Mind block after a rebuild); `confidence`/`alpha`/`beta` were
+  exported to frontmatter but never read back on rebuild, resetting every
+  block's evidence to the neutral default. See
+  [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md).
 - `MemorySystem.inbox()` / `elfmem inbox` / `elfmem_inbox` — list pending
   blocks not yet consolidated (FIFO, read-only, no LLM calls). Paired with
   a new `host_analyses` parameter on `consolidate()`/`dream()` (CLI:

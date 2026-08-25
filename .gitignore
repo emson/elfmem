@@ -14,7 +14,15 @@ uv.lock
 .claude/
 tmp/
 .env
-.elfmem
+
+# .elfmem: everything is local state EXCEPT the memory substrate and its
+# ledger, which are the authoritative record and must be versioned. Git is
+# the undo for forget()/edit() -- ignoring the whole directory (as this file
+# did until v2 Phase 0) left those operations with no recovery path at all.
+.elfmem/*
+!.elfmem/memory/
+!.elfmem/ledger/
+.elfmem/ledger/.checkpoint.json
 
 # Benchmark results (generated, large)
 benchmarks/*/results/*.json
