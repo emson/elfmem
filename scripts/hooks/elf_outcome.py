@@ -42,23 +42,21 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from elf_context import _load_env, _log, pending_file  # noqa: E402
+from elf_context import _load_env, _log, is_addressed, pending_file  # noqa: E402
+
+ELFMEM_TOOL_PREFIX = "mcp__elfmem__"
 
 
-def turn_response(transcript_path: Path) -> str:
-    """The assistant's prose for the turn that just ended.
+def _turn_rows(transcript_path: Path) -> list[dict]:
+    """Transcript rows for the turn that just ended.
 
     A genuine user prompt is the only transcript entry whose message content
     is a bare string -- tool results arrive as lists, and so does injected
     skill text. That makes the last string-content `user` entry an exact turn
     boundary, with no need to interpret what any of the entries mean.
-
-    Returns assistant `text` blocks only. Tool calls and their results are
-    excluded on purpose: a block quoted back inside a grep result is not the
-    same event as a block that shaped the answer.
     """
     if not transcript_path.exists():
-        return ""
+        return []
     rows: list[dict] = []
     for line in transcript_path.read_text().splitlines():
         if not line.strip():
@@ -72,9 +70,18 @@ def turn_response(transcript_path: Path) -> str:
             row.get("message", {}).get("content"), str
         ):
             start = i
+    return rows[start:]
 
+
+def turn_response(rows: list[dict]) -> str:
+    """The assistant's prose for the turn.
+
+    Returns assistant `text` blocks only. Tool calls and their results are
+    excluded on purpose: a block quoted back inside a grep result is not the
+    same event as a block that shaped the answer.
+    """
     parts: list[str] = []
-    for row in rows[start:]:
+    for row in rows:
         if row.get("type") != "assistant":
             continue
         content = row.get("message", {}).get("content")
@@ -85,6 +92,28 @@ def turn_response(transcript_path: Path) -> str:
             if isinstance(block, dict) and block.get("type") == "text"
         )
     return "\n".join(parts)
+
+
+def turn_tool_names(rows: list[dict]) -> list[str]:
+    """Tool names invoked during the turn.
+
+    The counterpart `turn_response` deliberately can't see this: a block that
+    shaped an active elfmem_recall call was engaged with even if the final
+    prose never quotes it back. Attribution on the answer alone would score
+    that turn as a miss; this is the other half of the evidence.
+    """
+    names: list[str] = []
+    for row in rows:
+        if row.get("type") != "assistant":
+            continue
+        content = row.get("message", {}).get("content")
+        if not isinstance(content, list):
+            continue
+        names.extend(
+            block.get("name", "") for block in content
+            if isinstance(block, dict) and block.get("type") == "tool_use"
+        )
+    return names
 
 
 async def _record(project_root: Path, used: list[str]) -> str:
@@ -119,7 +148,8 @@ def main() -> int:
     if not injected:
         return 0
 
-    response = turn_response(Path(payload.get("transcript_path", "")))
+    rows = _turn_rows(Path(payload.get("transcript_path", "")))
+    response = turn_response(rows)
     if not response:
         _log(project_root, {"decision": "no-response", "injected": len(injected)})
         return 0
@@ -128,6 +158,30 @@ def main() -> int:
     from elfmem.memory.attribution import attributed_ids
 
     used = attributed_ids(injected, response)
+    active_elfmem = any(
+        name.startswith(ELFMEM_TOOL_PREFIX) for name in turn_tool_names(rows)
+    )
+
+    # Passive injection already ran unconditionally -- that's elf_context.py's
+    # job. What it can't guarantee is engagement: a session that named elf
+    # directly got memory handed to it and drew on none of it, actively or in
+    # the prose. One nudge back, not a hard loop -- `pending` is already
+    # unlinked, so a second Stop event this turn finds nothing to re-check and
+    # lets the turn end regardless of whether the retry actually engaged.
+    if not used and not active_elfmem and is_addressed(project_root, session_id):
+        _log(project_root, {"decision": "engagement-gap", "injected": len(injected)})
+        print(json.dumps({
+            "decision": "block",
+            "reason": (
+                "This session addressed elf directly, and this turn drew on "
+                "none of the memory elf_context.py injected -- no active "
+                "mcp__elfmem__* call, and the answer's prose didn't reflect it "
+                "either. Call elfmem_recall or elfmem_status before finishing, "
+                "and let the answer actually show what came back."
+            ),
+        }))
+        return 0
+
     summary = asyncio.run(_record(project_root, used)) if used else "nothing drawn on"
 
     _log(project_root, {

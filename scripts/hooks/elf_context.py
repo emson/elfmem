@@ -29,6 +29,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -38,6 +39,20 @@ from pathlib import Path
 # returns whatever the last substantive turn already covered.
 MIN_PROMPT_CHARS = 25
 TOP_K = 5
+
+# A real conversation names "elf" once, not on every turn -- these match the
+# vocative opener, not the topic. "elf's confidence scoring" should not trip
+# this; "as elf, ..." or "hey elf" should. Once matched, the whole session is
+# addressed: elf_outcome.py's engagement gate stays armed without the user
+# re-stating the name on every follow-up.
+_ADDRESS_PATTERNS = (
+    re.compile(r"(?i)\bas elf\b"),
+    re.compile(r"(?i)^\s*(hey|hi|ok(ay)?)?\s*elf\s*[,:]"),
+)
+
+
+def _addresses_elf(prompt: str) -> bool:
+    return any(p.search(prompt) for p in _ADDRESS_PATTERNS)
 
 
 def _load_env(project_root: Path) -> None:
@@ -80,6 +95,22 @@ def pending_file(project_root: Path, session_id: str) -> Path:
     hook_dir = project_root / ".elfmem" / ".hook"
     hook_dir.mkdir(parents=True, exist_ok=True)
     return hook_dir / f"{session_id or 'nosession'}.pending.json"
+
+
+def _addressed_file(project_root: Path, session_id: str) -> Path:
+    hook_dir = project_root / ".elfmem" / ".hook"
+    hook_dir.mkdir(parents=True, exist_ok=True)
+    return hook_dir / f"{session_id or 'nosession'}.addressed"
+
+
+def mark_addressed(project_root: Path, session_id: str) -> None:
+    """Record that this session addressed elf directly. Sticky for the session."""
+    _addressed_file(project_root, session_id).touch()
+
+
+def is_addressed(project_root: Path, session_id: str) -> bool:
+    """True once `mark_addressed` has fired anywhere earlier in this session."""
+    return _addressed_file(project_root, session_id).exists()
 
 
 def _log(project_root: Path, payload: dict[str, object]) -> None:
@@ -125,6 +156,9 @@ def main() -> int:
     prompt = str(payload.get("prompt", ""))
     session_id = str(payload.get("session_id", ""))
     project_root = Path(payload.get("cwd") or os.getcwd())
+
+    if _addresses_elf(prompt):
+        mark_addressed(project_root, session_id)
 
     if not _should_retrieve(prompt):
         _log(project_root, {"decision": "skipped", "chars": len(prompt)})
