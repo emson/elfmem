@@ -37,6 +37,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -45,6 +46,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from elf_context import _load_env, _log, pending_file  # noqa: E402
 
 ELFMEM_TOOL_PREFIX = "mcp__elfmem__"
+
+# A turn can invoke elfmem two ways in this project: the MCP tool, or a
+# shell-out via Bash to the CLI. The MCP-prefix check alone was blind to the
+# second -- discovered live, reviewing this hook's own gate, when a genuine
+# `Bash: uv run elfmem recall ...` call didn't register as engagement. Match
+# "elfmem" followed later on the same command by one of the verbs; no
+# pipe/semicolon boundary, so a chained unrelated command can't false-match.
+_ELFMEM_CLI_VERB_RE = re.compile(
+    r"(?i)\belfmem\b[^\n;&|]*?\b(recall|status|remember|learn|outcome)\b"
+)
 
 # The engagement gate below is per-turn: only a prompt that itself addressed
 # elf (the pending file carries the flag) is held to it. A sticky per-session
@@ -58,16 +69,22 @@ ELFMEM_TOOL_PREFIX = "mcp__elfmem__"
 # follow-up turn.
 
 
-def read_pending(path: Path) -> tuple[dict[str, str], bool]:
-    """The blocks the prompt hook injected this turn, and the addressed flag.
+def read_pending(path: Path) -> tuple[dict[str, str], bool, bool]:
+    """The blocks the prompt hook injected this turn, the addressed flag, and
+    the capture_worthy flag.
 
-    Tolerates the pre-flag flat layout ({id: content}) so one stale pending
-    file from an older hook can never break a turn.
+    Tolerates two older layouts so one stale pending file can never break a
+    turn: the pre-addressed flat layout ({id: content}), and the
+    pre-capture_worthy layout ({"addressed": ..., "blocks": ...}).
     """
     raw = json.loads(path.read_text())
     if isinstance(raw, dict) and "blocks" in raw:
-        return dict(raw.get("blocks") or {}), bool(raw.get("addressed"))
-    return raw, False
+        return (
+            dict(raw.get("blocks") or {}),
+            bool(raw.get("addressed")),
+            bool(raw.get("capture_worthy")),
+        )
+    return raw, False, False
 
 
 def _turn_rows(transcript_path: Path) -> list[dict]:
@@ -139,6 +156,41 @@ def turn_tool_names(rows: list[dict]) -> list[str]:
     return names
 
 
+def turn_bash_commands(rows: list[dict]) -> list[str]:
+    """Bash commands run during the turn -- the CLI-invocation counterpart to
+    the MCP tool_use names `turn_tool_names` already sees."""
+    commands: list[str] = []
+    for row in rows:
+        if row.get("type") != "assistant":
+            continue
+        content = row.get("message", {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not (isinstance(block, dict) and block.get("type") == "tool_use"):
+                continue
+            if block.get("name") != "Bash":
+                continue
+            cmd = block.get("input", {}).get("command")
+            if isinstance(cmd, str):
+                commands.append(cmd)
+    return commands
+
+
+def turn_active_verbs(rows: list[dict]) -> set[str]:
+    """Which elfmem verbs (recall, remember, ...) were actively invoked this
+    turn, whether through the MCP tool or a Bash-invoked CLI call."""
+    verbs: set[str] = set()
+    for name in turn_tool_names(rows):
+        if name.startswith(ELFMEM_TOOL_PREFIX):
+            verbs.add(name[len(ELFMEM_TOOL_PREFIX):].removeprefix("elfmem_"))
+    for cmd in turn_bash_commands(rows):
+        match = _ELFMEM_CLI_VERB_RE.search(cmd)
+        if match:
+            verbs.add(match.group(1).lower())
+    return verbs
+
+
 async def _record(project_root: Path, used: list[str]) -> str:
     from elfmem.api import MemorySystem
     from elfmem.project import find_local_config, resolve_db
@@ -166,10 +218,10 @@ def main() -> int:
     if not pending.exists():
         return 0  # nothing was injected this turn; nothing to judge
 
-    injected, addressed = read_pending(pending)
+    injected, addressed, capture_worthy = read_pending(pending)
     pending.unlink()  # one turn, one judgement -- never carried forward
-    if not injected:
-        return 0
+    if not injected and not capture_worthy:
+        return 0  # nothing retrieved and nothing worth capturing -- no verdict to reach
 
     rows = _turn_rows(Path(payload.get("transcript_path", "")))
     response = turn_response(rows)
@@ -177,37 +229,64 @@ def main() -> int:
         _log(project_root, {"decision": "no-response", "injected": len(injected)})
         return 0
 
-    _load_env(project_root)
-    from elfmem.memory.attribution import attributed_ids
+    active_verbs = turn_active_verbs(rows)
 
-    used = attributed_ids(injected, response)
-    active_elfmem = any(
-        name.startswith(ELFMEM_TOOL_PREFIX) for name in turn_tool_names(rows)
-    )
+    used: list[str] = []
+    if injected:
+        _load_env(project_root)
+        from elfmem.memory.attribution import attributed_ids
+
+        used = attributed_ids(injected, response)
+
+    reasons: list[tuple[str, str]] = []
 
     # Passive injection already ran unconditionally -- that's elf_context.py's
     # job. What it can't guarantee is engagement: a turn that named elf
     # directly got memory handed to it and drew on none of it, actively or in
-    # the prose. One nudge back, not a hard loop -- `pending` is already
-    # unlinked, so a second Stop event this turn finds nothing to re-check and
-    # lets the turn end regardless of whether the retry actually engaged. The
-    # remedy points at context already present, never at making more calls:
-    # a retrieval performed to satisfy a gate would land in the use ledger
-    # looking exactly like genuine engagement.
-    if addressed and not used and not active_elfmem:
-        _log(project_root, {"decision": "engagement-gap", "injected": len(injected)})
+    # the prose. The remedy points at context already present, never at
+    # making more calls: a retrieval performed to satisfy a gate would land
+    # in the use ledger looking exactly like genuine engagement.
+    if addressed and injected and not used and not active_verbs:
+        reasons.append(("engagement-gap", (
+            "This turn addressed elf directly, but the answer engaged with "
+            "none of the memory retrieved for it -- no active mcp__elfmem__* "
+            "call, and nothing from the injected <elfmem> context shows "
+            "through in the prose. That context is already in this "
+            "conversation: read it, and either ground the answer in what "
+            "applies or state plainly that none of it does. Retrieve more "
+            "(elfmem_recall) only if the question needs memory the injection "
+            "did not surface."
+        )))
+
+    # The write-side counterpart: a correction, a stated rule, or an explicit
+    # memory request happened this turn and nothing was written. Never
+    # requires writing as the only way through -- an agent that decides,
+    # explicitly, that the trigger doesn't warrant a block is a correct
+    # outcome this check cannot verify, same asymmetry as the read-side gate
+    # above. Requiring a write regardless would just trade one Goodhart loop
+    # (ritual recalls) for another (junk memories written to dodge a block).
+    if capture_worthy and not ({"remember", "learn"} & active_verbs):
+        reasons.append(("capture-gap", (
+            "This turn looked like something worth keeping in memory -- a "
+            "correction, an explicit memory request, or a stated rule -- but "
+            "no elfmem_remember or elfmem learn call happened. If it still "
+            "holds, store it now with a real cue. If it doesn't belong in "
+            "memory, say so explicitly in your next message -- this check "
+            "can't verify that reasoning, but the decision should be "
+            "deliberate, not silent."
+        )))
+
+    # One nudge back per gate, not a hard loop -- `pending` is already
+    # unlinked, so a second Stop event this turn finds nothing to re-check
+    # and lets the turn end regardless of whether the retry actually engaged.
+    if reasons:
+        _log(project_root, {
+            "decision": "block", "reasons": [label for label, _ in reasons],
+            "injected": len(injected),
+        })
         print(json.dumps({
             "decision": "block",
-            "reason": (
-                "This turn addressed elf directly, but the answer engaged "
-                "with none of the memory retrieved for it -- no active "
-                "mcp__elfmem__* call, and nothing from the injected <elfmem> "
-                "context shows through in the prose. That context is already "
-                "in this conversation: read it, and either ground the answer "
-                "in what applies or state plainly that none of it does. "
-                "Retrieve more (elfmem_recall) only if the question needs "
-                "memory the injection did not surface."
-            ),
+            "reason": "\n\n".join(text for _, text in reasons),
         }))
         return 0
 

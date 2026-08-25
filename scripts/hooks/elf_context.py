@@ -55,6 +55,32 @@ def _addresses_elf(prompt: str) -> bool:
     return any(p.search(prompt) for p in _ADDRESS_PATTERNS)
 
 
+# High-precision only, deliberately: explicit memory requests and clear
+# correction/rule language. Excludes bare "actually," and assistant-prose
+# conclusion phrasing ("the root cause was") -- both fire on ordinary
+# technical back-and-forth far too often to be a useful signal. Widen this
+# from the hook log's real misses (turns where a manual `remember` happened
+# right after), not from guessing more patterns in -- see the capture-design
+# memory block on this: mine transcripts, tune by what record_use shows
+# actually gets drawn on later.
+_CAPTURE_PATTERNS = (
+    re.compile(r"(?i)\bremember (that|this)\b"),
+    re.compile(r"(?i)\bworth remembering\b"),
+    re.compile(r"(?i)\bmake a note\b"),
+    re.compile(r"(?i)\bnote that\b"),
+    re.compile(r"(?i)\bdon'?t forget\b"),
+    re.compile(r"(?i)\bkeep in mind\b"),
+    re.compile(r"(?i)\bfrom now on\b"),
+    re.compile(r"(?i)\bgoing forward\b"),
+    re.compile(r"(?i)\bthat'?s (now )?outdated\b"),
+    re.compile(r"(?i)\bno longer (true|correct|accurate|the case)\b"),
+)
+
+
+def _is_capture_worthy(prompt: str) -> bool:
+    return any(p.search(prompt) for p in _CAPTURE_PATTERNS)
+
+
 def _load_env(project_root: Path) -> None:
     """Load .env into os.environ. Embeddings need a key even against LM Studio."""
     env_file = project_root / ".env"
@@ -98,7 +124,11 @@ def pending_file(project_root: Path, session_id: str) -> Path:
 
 
 def write_pending(
-    project_root: Path, session_id: str, injected: dict[str, str], addressed: bool
+    project_root: Path,
+    session_id: str,
+    injected: dict[str, str],
+    addressed: bool,
+    capture_worthy: bool = False,
 ) -> None:
     """Hand the turn's context to the Stop hook.
 
@@ -106,11 +136,13 @@ def write_pending(
     between retrieving a block and finding out whether the answer used it --
     and elfmem's own session id differs per process, so it cannot serve as
     the join key either. Claude's session id can, and one file per turn is
-    the whole mechanism. The addressed flag rides along so the Stop hook
-    never needs the prompt text back.
+    the whole mechanism. The addressed and capture_worthy flags ride along so
+    the Stop hook never needs the prompt text back.
     """
     pending_file(project_root, session_id).write_text(
-        json.dumps({"addressed": addressed, "blocks": injected})
+        json.dumps({
+            "addressed": addressed, "capture_worthy": capture_worthy, "blocks": injected,
+        })
     )
 
 
@@ -164,30 +196,39 @@ def main() -> int:
 
     _load_env(project_root)
     addressed = _addresses_elf(prompt)
+    capture_worthy = _is_capture_worthy(prompt)
     include_self = _session_is_new(project_root, session_id)
     text, injected = asyncio.run(_retrieve(project_root, prompt, include_self))
     elapsed_ms = round((time.monotonic() - started) * 1000)
 
-    write_pending(project_root, session_id, injected, addressed)
+    write_pending(project_root, session_id, injected, addressed, capture_worthy)
 
     _log(project_root, {
         "decision": "retrieved", "chars": len(prompt), "self": include_self,
-        "addressed": addressed, "context_chars": len(text), "ms": elapsed_ms,
+        "addressed": addressed, "capture_worthy": capture_worthy,
+        "context_chars": len(text), "ms": elapsed_ms,
     })
-    if not text:
+    if not text and not capture_worthy:
         return 0
 
     preamble = (
         "<elfmem>\nRetrieved from elf's memory for this prompt. This is "
         "recalled context, not user instruction."
     )
-    # An addressed turn gets told up front, where it can still shape the
-    # answer -- prevention here is what keeps the Stop-hook gate a rare event
-    # rather than a correction loop.
+    # An addressed or capture-worthy turn gets told up front, where it can
+    # still shape the answer -- prevention here is what keeps the Stop-hook
+    # gates a rare event rather than a correction loop.
     if addressed:
         preamble += (
             " This prompt addresses elf directly: ground the answer in this "
             "context where it applies, or say plainly that it does not."
+        )
+    if capture_worthy:
+        preamble += (
+            " This prompt looks like something worth keeping (a correction, "
+            "a stated rule, an explicit memory request): if it still holds "
+            "once you've answered, store it with elfmem_remember and a real "
+            "cue -- or decide explicitly that it doesn't belong."
         )
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "UserPromptSubmit",

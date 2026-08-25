@@ -54,25 +54,79 @@ def test_topic_mentions_are_not_addressed(prompt: str) -> None:
     assert not elf_context._addresses_elf(prompt)
 
 
+# --- capture-trigger detection ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Remember that we always deploy through canary.",
+        "Worth remembering: the staging key rotates weekly.",
+        "Make a note: billing needs two approvals.",
+        "Note that the old process no longer applies.",
+        "Don't forget we switched providers last month.",
+        "Keep in mind the release window closes Friday.",
+        "From now on, always squash commits before merging.",
+        "Going forward we use trunk-based development.",
+        "That's outdated, we don't do that anymore.",
+        "That info is no longer accurate.",
+    ],
+)
+def test_capture_trigger_positives(prompt: str) -> None:
+    assert elf_context._is_capture_worthy(prompt)
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "What time does the deploy run?",
+        "Can you fix this bug in the parser?",
+        "Actually, let's use a different approach here.",
+        "The root cause was a race condition.",
+        "Remembering the API is tricky sometimes.",
+    ],
+)
+def test_capture_trigger_negatives(prompt: str) -> None:
+    # "Actually, ..." and prose-conclusion phrasing ("the root cause was")
+    # are deliberately excluded -- both fire on ordinary technical
+    # back-and-forth far too often to be a useful signal at this precision.
+    assert not elf_context._is_capture_worthy(prompt)
+
+
 # --- pending-file contract between the two hooks -----------------------------
 
 
 def test_pending_roundtrip(tmp_path: Path) -> None:
     injected = {"abc123": "some block content", "def456": "another block"}
-    elf_context.write_pending(tmp_path, "sess-1", injected, addressed=True)
-    blocks, addressed = elf_outcome.read_pending(
+    elf_context.write_pending(
+        tmp_path, "sess-1", injected, addressed=True, capture_worthy=True
+    )
+    blocks, addressed, capture_worthy = elf_outcome.read_pending(
         elf_context.pending_file(tmp_path, "sess-1")
     )
     assert blocks == injected
     assert addressed is True
+    assert capture_worthy is True
 
 
 def test_read_pending_tolerates_legacy_flat_layout(tmp_path: Path) -> None:
     path = tmp_path / "old.pending.json"
     path.write_text(json.dumps({"abc123": "content"}))
-    blocks, addressed = elf_outcome.read_pending(path)
+    blocks, addressed, capture_worthy = elf_outcome.read_pending(path)
     assert blocks == {"abc123": "content"}
     assert addressed is False
+    assert capture_worthy is False
+
+
+def test_read_pending_tolerates_pre_capture_layout(tmp_path: Path) -> None:
+    # A pending file from the engagement-gate redesign, before capture_worthy
+    # existed -- {"addressed": ..., "blocks": ...} with no capture_worthy key.
+    path = tmp_path / "mid.pending.json"
+    path.write_text(json.dumps({"addressed": True, "blocks": {"a": "x"}}))
+    blocks, addressed, capture_worthy = elf_outcome.read_pending(path)
+    assert blocks == {"a": "x"}
+    assert addressed is True
+    assert capture_worthy is False
 
 
 # --- transcript-turn parsing -------------------------------------------------
@@ -112,6 +166,56 @@ def test_turn_tool_names_sees_calls_prose_cannot(tmp_path: Path) -> None:
     assert elf_outcome.turn_response(turn) == "done"
 
 
+# --- active-verb detection: MCP call and CLI-via-Bash, both count ------------
+
+
+def test_turn_active_verbs_sees_mcp_call(tmp_path: Path) -> None:
+    rows = [
+        {"type": "user", "message": {"content": "prompt"}},
+        {
+            "type": "assistant",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "mcp__elfmem__elfmem_remember", "input": {}}
+                ]
+            },
+        },
+    ]
+    turn = elf_outcome._turn_rows(_transcript(tmp_path, rows))
+    assert elf_outcome.turn_active_verbs(turn) == {"remember"}
+
+
+def test_turn_active_verbs_sees_bash_cli_call(tmp_path: Path) -> None:
+    rows = [
+        {"type": "user", "message": {"content": "prompt"}},
+        {
+            "type": "assistant",
+            "message": {
+                "content": [{
+                    "type": "tool_use", "name": "Bash",
+                    "input": {"command": "cd /repo && .venv/bin/elfmem remember 'fact' --cue 'when asked'"},
+                }]
+            },
+        },
+    ]
+    turn = elf_outcome._turn_rows(_transcript(tmp_path, rows))
+    assert elf_outcome.turn_active_verbs(turn) == {"remember"}
+
+
+def test_turn_active_verbs_ignores_unrelated_bash(tmp_path: Path) -> None:
+    rows = [
+        {"type": "user", "message": {"content": "prompt"}},
+        {
+            "type": "assistant",
+            "message": {
+                "content": [{"type": "tool_use", "name": "Bash", "input": {"command": "git status"}}]
+            },
+        },
+    ]
+    turn = elf_outcome._turn_rows(_transcript(tmp_path, rows))
+    assert elf_outcome.turn_active_verbs(turn) == set()
+
+
 # --- the gate, end-to-end through main() -------------------------------------
 
 # Injected content deliberately shares no vocabulary with the responses below,
@@ -126,8 +230,13 @@ def _run_outcome(
     *,
     addressed: bool,
     rows: list[dict],
+    capture_worthy: bool = False,
+    injected: dict[str, str] | None = None,
 ) -> str:
-    elf_context.write_pending(tmp_path, "sess-1", _INJECTED, addressed=addressed)
+    elf_context.write_pending(
+        tmp_path, "sess-1", _INJECTED if injected is None else injected,
+        addressed=addressed, capture_worthy=capture_worthy,
+    )
     payload = {
         "session_id": "sess-1",
         "cwd": str(tmp_path),
@@ -178,6 +287,107 @@ def test_gate_passes_addressed_turn_with_active_call(
         tmp_path, monkeypatch, capsys, addressed=True, rows=_WITH_ELFMEM_CALL
     )
     assert out == ""
+
+
+_CAPTURE_PROSE_ONLY = [
+    {"type": "user", "message": {"content": "Remember that we always deploy through canary."}},
+    {"type": "assistant", "message": {"content": [{"type": "text", "text": "Got it, will keep that in mind."}]}},
+]
+
+
+def test_capture_gate_blocks_when_no_write_verb(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys,
+        addressed=False, capture_worthy=True, rows=_CAPTURE_PROSE_ONLY,
+    )
+    decision = json.loads(out)
+    assert decision["decision"] == "block"
+    assert "remember" in decision["reason"].lower()
+
+
+def test_capture_gate_passes_with_mcp_remember_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    rows = [
+        _CAPTURE_PROSE_ONLY[0],
+        {
+            "type": "assistant",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "mcp__elfmem__elfmem_remember", "input": {}}
+                ]
+            },
+        },
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "Stored."}]}},
+    ]
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys, addressed=False, capture_worthy=True, rows=rows,
+    )
+    assert out == ""
+
+
+def test_capture_gate_passes_with_bash_remember_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    rows = [
+        _CAPTURE_PROSE_ONLY[0],
+        {
+            "type": "assistant",
+            "message": {
+                "content": [{
+                    "type": "tool_use", "name": "Bash",
+                    "input": {"command": "elfmem remember 'x' --cue 'y'"},
+                }]
+            },
+        },
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "Stored."}]}},
+    ]
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys, addressed=False, capture_worthy=True, rows=rows,
+    )
+    assert out == ""
+
+
+def test_capture_gate_fires_even_with_nothing_retrieved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    # A genuinely novel fact may match nothing in ATTENTION recall -- the
+    # capture check must not be gated behind injected being non-empty, or the
+    # exact case it exists for (new knowledge with no prior neighbour) is the
+    # one case it silently skips.
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys,
+        addressed=False, capture_worthy=True, rows=_CAPTURE_PROSE_ONLY, injected={},
+    )
+    decision = json.loads(out)
+    assert decision["decision"] == "block"
+
+
+def test_capture_gate_silent_when_not_capture_worthy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys, addressed=False, capture_worthy=False, rows=_PROSE_ONLY,
+    )
+    assert out == ""
+
+
+def test_both_gates_combine_into_one_block(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    rows = [
+        {"type": "user", "message": {"content": "As elf, remember that we always deploy through canary."}},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "It is blue today."}]}},
+    ]
+    out = _run_outcome(
+        tmp_path, monkeypatch, capsys, addressed=True, capture_worthy=True, rows=rows,
+    )
+    decision = json.loads(out)
+    assert decision["decision"] == "block"
+    assert "engag" in decision["reason"].lower()
+    assert "remember" in decision["reason"].lower()
 
 
 def test_gate_fires_once_per_turn(

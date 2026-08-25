@@ -30,11 +30,19 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   called nine times across three real instances, so reinforcement counted
   retrievals and a block retrieved constantly without being drawn on rose
   exactly like one doing the work. Opt-in alongside the prompt hook. Also
-  carries a per-turn engagement gate: a prompt that addresses elf by name
+  carries two per-turn gates. Read-side: a prompt that addresses elf by name
   ("as elf, …", "hey elf,") whose answer shows neither prose attribution nor
-  an active `mcp__elfmem__*` call is blocked once with a nudge pointing at
-  the already-injected context — never at making more retrieval calls, which
-  the use ledger could not tell apart from genuine engagement.
+  an active elfmem call is blocked once with a nudge pointing at the
+  already-injected context — never at making more retrieval calls, which the
+  use ledger could not tell apart from genuine engagement. Write-side: a
+  capture-worthy prompt (correction, stated rule, explicit memory request)
+  with no `remember`/`learn` call is blocked once, without requiring a write
+  as the only way through — an explicit decision not to store is a valid
+  outcome the check can't verify but shouldn't have to. Active-call detection
+  now covers both invocation styles this project actually uses interchangeably
+  — an MCP tool call or a Bash-invoked CLI command — after a live gap where
+  only the MCP name was recognized and a genuine `elfmem recall` run via Bash
+  didn't count as engagement.
 - **`FrameResult.compose(query)`** — combines the rendered frame and a question
   into one complete prompt. For library callers and agent loops building the
   prompt for a separate model call. Not for MCP tool calls from a chat client:
@@ -48,8 +56,12 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   substantive prompt, SELF once per session. Detects when a prompt addresses
   elf by name and, on those turns, adds an engage-or-dismiss line to the
   injected context so attention is primed before the answer is written
-  rather than corrected after. Opt-in: wire it up in
-  `.claude/settings.local.json`; see the module docstring.
+  rather than corrected after. Also detects capture-worthy prompts —
+  explicit memory requests and clear correction/rule language ("remember
+  that", "note that", "that's outdated", "from now on") — and primes the
+  same way: store it with a cue if it holds, or decide explicitly that it
+  doesn't belong. Opt-in: wire it up in `.claude/settings.local.json`; see
+  the module docstring.
 - **Substrate migration** as a new `substrate_export` step recognized by the
   existing `elfmem migrate status`/`plan`/`apply` — the same plan-then-apply
   command already used for Claude MCP config drift now also detects when a
