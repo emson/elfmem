@@ -42,9 +42,32 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from elf_context import _load_env, _log, is_addressed, pending_file  # noqa: E402
+from elf_context import _load_env, _log, pending_file  # noqa: E402
 
 ELFMEM_TOOL_PREFIX = "mcp__elfmem__"
+
+# The engagement gate below is per-turn: only a prompt that itself addressed
+# elf (the pending file carries the flag) is held to it. A sticky per-session
+# variant was built first and removed in review, for two reasons. In long
+# mechanical stretches it would have nudged every turn -- unbounded cost on a
+# measurement whose misses are by design unpunishable (attribution cannot see
+# paraphrase). And its remedy message said "call elfmem_recall", manufacturing
+# ritual retrievals the use ledger would count as genuine -- the exact
+# retrieval-counting pathology record_use() exists to correct. Reintroduce
+# stickiness only on evidence: a real engagement miss on a non-vocative
+# follow-up turn.
+
+
+def read_pending(path: Path) -> tuple[dict[str, str], bool]:
+    """The blocks the prompt hook injected this turn, and the addressed flag.
+
+    Tolerates the pre-flag flat layout ({id: content}) so one stale pending
+    file from an older hook can never break a turn.
+    """
+    raw = json.loads(path.read_text())
+    if isinstance(raw, dict) and "blocks" in raw:
+        return dict(raw.get("blocks") or {}), bool(raw.get("addressed"))
+    return raw, False
 
 
 def _turn_rows(transcript_path: Path) -> list[dict]:
@@ -143,7 +166,7 @@ def main() -> int:
     if not pending.exists():
         return 0  # nothing was injected this turn; nothing to judge
 
-    injected: dict[str, str] = json.loads(pending.read_text())
+    injected, addressed = read_pending(pending)
     pending.unlink()  # one turn, one judgement -- never carried forward
     if not injected:
         return 0
@@ -163,21 +186,27 @@ def main() -> int:
     )
 
     # Passive injection already ran unconditionally -- that's elf_context.py's
-    # job. What it can't guarantee is engagement: a session that named elf
+    # job. What it can't guarantee is engagement: a turn that named elf
     # directly got memory handed to it and drew on none of it, actively or in
     # the prose. One nudge back, not a hard loop -- `pending` is already
     # unlinked, so a second Stop event this turn finds nothing to re-check and
-    # lets the turn end regardless of whether the retry actually engaged.
-    if not used and not active_elfmem and is_addressed(project_root, session_id):
+    # lets the turn end regardless of whether the retry actually engaged. The
+    # remedy points at context already present, never at making more calls:
+    # a retrieval performed to satisfy a gate would land in the use ledger
+    # looking exactly like genuine engagement.
+    if addressed and not used and not active_elfmem:
         _log(project_root, {"decision": "engagement-gap", "injected": len(injected)})
         print(json.dumps({
             "decision": "block",
             "reason": (
-                "This session addressed elf directly, and this turn drew on "
-                "none of the memory elf_context.py injected -- no active "
-                "mcp__elfmem__* call, and the answer's prose didn't reflect it "
-                "either. Call elfmem_recall or elfmem_status before finishing, "
-                "and let the answer actually show what came back."
+                "This turn addressed elf directly, but the answer engaged "
+                "with none of the memory retrieved for it -- no active "
+                "mcp__elfmem__* call, and nothing from the injected <elfmem> "
+                "context shows through in the prose. That context is already "
+                "in this conversation: read it, and either ground the answer "
+                "in what applies or state plainly that none of it does. "
+                "Retrieve more (elfmem_recall) only if the question needs "
+                "memory the injection did not surface."
             ),
         }))
         return 0

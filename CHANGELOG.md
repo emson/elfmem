@@ -29,7 +29,12 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   `record_assembly` docstring names: the voluntary feedback verb has been
   called nine times across three real instances, so reinforcement counted
   retrievals and a block retrieved constantly without being drawn on rose
-  exactly like one doing the work. Opt-in alongside the prompt hook.
+  exactly like one doing the work. Opt-in alongside the prompt hook. Also
+  carries a per-turn engagement gate: a prompt that addresses elf by name
+  ("as elf, …", "hey elf,") whose answer shows neither prose attribution nor
+  an active `mcp__elfmem__*` call is blocked once with a nudge pointing at
+  the already-injected context — never at making more retrieval calls, which
+  the use ledger could not tell apart from genuine engagement.
 - **`FrameResult.compose(query)`** — combines the rendered frame and a question
   into one complete prompt. For library callers and agent loops building the
   prompt for a separate model call. Not for MCP tool calls from a chat client:
@@ -40,7 +45,10 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`scripts/hooks/elf_context.py`** — a `UserPromptSubmit` hook for Claude
   Code that retrieves before the model reads the prompt, so recall stops
   depending on the assistant choosing to call it. ATTENTION on every
-  substantive prompt, SELF once per session. Opt-in: wire it up in
+  substantive prompt, SELF once per session. Detects when a prompt addresses
+  elf by name and, on those turns, adds an engage-or-dismiss line to the
+  injected context so attention is primed before the answer is written
+  rather than corrected after. Opt-in: wire it up in
   `.claude/settings.local.json`; see the module docstring.
 - **Substrate migration** as a new `substrate_export` step recognized by the
   existing `elfmem migrate status`/`plan`/`apply` — the same plan-then-apply
