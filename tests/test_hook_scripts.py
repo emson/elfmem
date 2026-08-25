@@ -93,6 +93,19 @@ def test_capture_trigger_negatives(prompt: str) -> None:
     assert not elf_context._is_capture_worthy(prompt)
 
 
+# A novelty filter reusing ATTENTION's own top score (skip the capture nudge
+# when the top match already looks like a near-duplicate) was built and live
+# -tested against the sandbox here, then reverted: the retrieval `score` is a
+# blended ranking value (reinforcement, recency, alignment, exploration bonus
+# all factor in), not the raw cosine similarity `near_dup_near_threshold` is
+# calibrated against. A control probe with zero relation to any stored fact
+# still scored 0.93-0.94 against every block in a 4-block sandbox corpus --
+# the two quantities share a [0, 1] range and a name, nothing else. A correct
+# version needs a real embedding call against the active corpus (dedup.py's
+# actual near-dup path), which is real cost this session chose not to add
+# speculatively. See the capture-design memory block for the finding.
+
+
 # --- pending-file contract between the two hooks -----------------------------
 
 
