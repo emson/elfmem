@@ -404,6 +404,41 @@ GUIDES: dict[str, AgentGuide] = {
             "prompt = ctx.compose('how do I handle errors?')"
         ),
     ),
+    "record_use": AgentGuide(
+        name="record_use",
+        what="Record that retrieved blocks actually informed an answer.",
+        when=(
+            "A turn finished and you know which retrieved blocks were drawn "
+            "on — normally from a host hook comparing the response against "
+            "what was assembled (elfmem.memory.attribution does the scoring). "
+            "The evidence tier above frame()'s automatic assembly record and "
+            "below outcome()."
+        ),
+        when_not=(
+            "You know whether the knowledge was RIGHT — that is outcome(), "
+            "which moves the Beta posterior. Use is relevance, not truth: a "
+            "block can be drawn on and be wrong, and folding usage into "
+            "confidence would redefine it from 'has proven right' to 'gets "
+            "talked about'."
+        ),
+        cost="Instant. One indexed UPDATE and one ledger append. No LLM calls.",
+        returns=(
+            "UseResult with blocks_reinforced. Empty block_ids returns zero "
+            "counts rather than raising — a turn that used none of its "
+            "context is a normal and informative outcome."
+        ),
+        next=(
+            "Nothing. The reinforcement is the effect: a used block now "
+            "outranks one retrieved beside it that contributed nothing."
+        ),
+        example=(
+            "from elfmem.memory.attribution import attributed_ids\n"
+            "ctx = await system.frame('attention', query=prompt)\n"
+            "# ... model answers ...\n"
+            "used = attributed_ids({b.id: b.content for b in ctx.blocks}, answer)\n"
+            "await system.record_use(used, source='claude-code')"
+        ),
+    ),
     "recall": AgentGuide(
         name="recall",
         what="Raw retrieval returning scored blocks without rendering or side effects.",

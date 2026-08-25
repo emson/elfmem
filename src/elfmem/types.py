@@ -135,6 +135,38 @@ class FrameResult:
 
 
 @dataclass
+class UseResult:
+    """Result of record_use() — blocks confirmed to have informed an answer.
+
+    Agent-friendly surface
+    ----------------------
+    - ``__str__`` → one-line summary optimised for agent context windows
+    - ``summary`` → property; same as ``__str__``
+    - ``to_dict()`` → JSON-serialisable dict for programmatic access
+    """
+
+    blocks_reinforced: int
+    source: str = ""
+
+    @property
+    def summary(self) -> str:
+        if self.blocks_reinforced == 0:
+            return "Use recorded: no blocks were drawn on."
+        noun = "block" if self.blocks_reinforced == 1 else "blocks"
+        via = f" (via {self.source})" if self.source else ""
+        return f"Use recorded: {self.blocks_reinforced} {noun} reinforced{via}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_reinforced": self.blocks_reinforced,
+            "source": self.source,
+        }
+
+
+@dataclass
 class LearnResult:
     block_id: str
     status: str  # "created" | "duplicate_rejected" | "near_duplicate_superseded"

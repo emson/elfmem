@@ -10,6 +10,26 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`MemorySystem.record_use(block_ids)`** — records that retrieved blocks
+  actually informed an answer, reinforcing them and writing the ledger's
+  `use` event. The evidence tier above `frame()`'s automatic assembly record
+  and below `outcome()`. Deliberately does *not* touch confidence: use is
+  evidence of relevance, never of truth, and folding it into the Beta
+  posterior would redefine confidence from "has proven right" to "gets talked
+  about" in a term carrying 15-30% of every frame's ranking.
+- **`elfmem.memory.attribution`** — pure, LLM-free scoring of which retrieved
+  blocks show through in a response, by containment of their distinctive
+  terms. `USE_THRESHOLD` is calibrated against a real corpus (148 blocks
+  scored against a real 9,746-character answer), not chosen: it admits 4.1%
+  of an unrelated corpus, where 0.30 would admit 33%. The error is one-sided
+  by design — a paraphrase that reuses no vocabulary is missed and nothing is
+  penalised for it, because crediting a block that contributed nothing feeds
+  the ranking a signal indistinguishable from real evidence.
+- **`scripts/hooks/elf_outcome.py`** — a `Stop` hook closing the loop the
+  `record_assembly` docstring names: the voluntary feedback verb has been
+  called nine times across three real instances, so reinforcement counted
+  retrievals and a block retrieved constantly without being drawn on rose
+  exactly like one doing the work. Opt-in alongside the prompt hook.
 - **`FrameResult.compose(query)`** — combines the rendered frame and a question
   into one complete prompt. For library callers and agent loops building the
   prompt for a separate model call. Not for MCP tool calls from a chat client:
@@ -185,6 +205,20 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   no-op refresh it always was.
 
 ### Fixed
+- **`frame()` no longer zeroes the decay clock of the blocks it returns.**
+  `_current_active_hours()` falls back to a 0.0 baseline until
+  `begin_session()` reads the real total, and `frame()` reinforces what it
+  returns — so calling it without an open session stamped every retrieved
+  block as maximally aged, destroying the recency of exactly the blocks just
+  judged most relevant. `remember()` has always guarded this with an
+  idempotent `begin_session()`; `frame()` and the new `record_use()` now do
+  the same. Latent until now because every caller reaching `frame()` through
+  the MCP server or `managed()` happened to open a session first.
+- **Ledger replay no longer double-counts co-retrieval on `use` events.** A
+  `use` event names a subset of an assembly that already formed those pairs,
+  so counting it again inflated the association of precisely the pairs
+  already strongest. Reinforcement still counts both events. No stored ledger
+  contained a `use` event before this release, so no history changes meaning.
 - **`frame("self", query=...)` no longer lets the query shape identity.** SELF
   has always been documented as queryless; the code embedded the query anyway,
   let it move 10% of the ranking, then cached the result under a key that

@@ -80,6 +80,7 @@ from elfmem.types import (
     SetupResult,
     SystemStatus,
     TokenUsage,
+    UseResult,
 )
 
 __version__ = _version("elfmem")
@@ -109,6 +110,7 @@ __all__ = [
     "SystemStatus",
     "OperationRecord",
     "TokenUsage",
+    "UseResult",
     "ConnectResult",
     "ConnectByQueryResult",
     "ConnectsResult",

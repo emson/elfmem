@@ -34,6 +34,7 @@ from elfmem.db.queries import (
     list_active_blocks,
     load_co_retrieval_staging,
     prune_stale_co_retrieval_staging,
+    reinforce_blocks,
     seed_builtin_data,
     set_config,
     update_block_content,
@@ -105,6 +106,7 @@ from elfmem.types import (
     SetupResult,
     SystemStatus,
     TokenUsage,
+    UseResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -1840,6 +1842,16 @@ class MemorySystem:
                 recovery="Valid frames: 'self', 'attention', 'task', 'simulate'.",
             ) from exc
 
+        # Idempotent session start: no-op if a session is already active.
+        # Not optional. frame() reinforces what it returns, and reinforcement
+        # writes `last_reinforced_at` from the activity clock -- which, with
+        # no session open, has a 0.0 baseline. Retrieval would then stamp
+        # every block it touched as maximally aged, destroying the recency of
+        # the blocks it just judged most relevant. remember() has always
+        # guarded this; frame() did not, and every caller that reached it via
+        # the MCP server or managed() happened to open a session first.
+        await self.begin_session()
+
         k = top_k if top_k is not None else self._config.memory.top_k
         current_hours = self._current_active_hours()
         mem = self._config.memory
@@ -2054,6 +2066,58 @@ class MemorySystem:
         for bid in block_ids:
             self._log(_ledger.KIND_OUTCOME, id=bid, sig=signal, w=weight, src=source)
         self._record_op("outcome", result.summary)
+        return result
+
+    async def record_use(
+        self,
+        block_ids: list[str],
+        *,
+        source: str = "",
+    ) -> UseResult:
+        """Record that these blocks actually informed an answer, not just appeared.
+
+        USE WHEN: A turn has finished and you know which of the retrieved
+        blocks were drawn on -- typically from a host hook comparing the
+        response against what was assembled (see
+        ``elfmem.memory.attribution``). This is the evidence tier above
+        ``frame()``'s automatic assembly record and below ``outcome()``.
+
+        DON'T USE WHEN: You know whether the knowledge was *right*. That is
+        ``outcome()``, which moves the Beta posterior. Use is relevance, not
+        truth: a block can be drawn on and be wrong, and folding usage into
+        confidence would quietly redefine it from "has proven right" to "gets
+        talked about" -- in a term carrying 15-30% of every frame's ranking.
+
+        COST: Instant. One indexed UPDATE and one ledger append. No LLM, no
+        embedding.
+
+        RETURNS: UseResult with the number of blocks reinforced.
+
+        NEXT: Nothing. The reinforcement is the effect -- a used block now
+        outranks one that was retrieved beside it and contributed nothing,
+        and its decay clock resets a second time.
+
+        Args:
+            block_ids: Blocks that demonstrably contributed. Empty is a no-op
+                returning zero counts, not an error -- a turn that used none
+                of its context is a normal, and informative, outcome.
+            source: Audit label for the ledger (e.g. "claude-code").
+        """
+        if not block_ids:
+            return UseResult(blocks_reinforced=0, source=source)
+
+        # See frame(): reinforcement on a 0.0 clock ages what it rewards.
+        await self.begin_session()
+        current_hours = self._current_active_hours()
+        async with self._engine.begin() as conn:
+            await reinforce_blocks(conn, block_ids, current_hours)
+        _ledger.record_use(
+            self._ledger_dir, block_ids,
+            active_hours=current_hours, source=source or None,
+            session_id=self._session_id,
+        )
+        result = UseResult(blocks_reinforced=len(block_ids), source=source)
+        self._record_op("record_use", result.summary)
         return result
 
     async def connect(

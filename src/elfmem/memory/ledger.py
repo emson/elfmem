@@ -342,10 +342,15 @@ def replay(ledger_dir: Path) -> ReplayResult:
                 state.last_reinforced_at = max(state.last_reinforced_at, ah)
             # Co-retrieval: blocks assembled together associate. This is the
             # learned half of the graph; the declared half lives in the files.
-            for i, a in enumerate(ids):
-                for b in ids[i + 1:]:
-                    pair = _canonical(a, b)
-                    result.co_retrieval[pair] = result.co_retrieval.get(pair, 0) + 1
+            # Only `asm` forms it. A `use` event names a subset of an assembly
+            # that already fired this pass, so counting it again would inflate
+            # the association of every pair that survived into the answer --
+            # and inflate it most for exactly the pairs already strongest.
+            if kind == KIND_ASSEMBLE:
+                for i, a in enumerate(ids):
+                    for b in ids[i + 1:]:
+                        pair = _canonical(a, b)
+                        result.co_retrieval[pair] = result.co_retrieval.get(pair, 0) + 1
 
         elif kind == KIND_PROMOTE:
             block_id = event.get("id")
@@ -428,3 +433,29 @@ def record_assembly(
     if session_id:
         payload["sid"] = session_id
     append(ledger_dir, KIND_ASSEMBLE, active_hours=active_hours, **payload)
+
+
+def record_use(
+    ledger_dir: Path | None,
+    block_ids: Sequence[str],
+    *,
+    active_hours: float,
+    source: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    """Record that these blocks were not merely assembled but actually used.
+
+    The tier above ``record_assembly``, and still free: it needs the answer
+    that was produced, not the agent's cooperation in describing it. The
+    difference between a block's `asm` count and its `use` count is the
+    measurement that neither event provides alone -- how often being retrieved
+    amounts to nothing.
+    """
+    if ledger_dir is None or not block_ids:
+        return
+    payload: dict[str, object] = {"ids": list(block_ids)}
+    if source:
+        payload["src"] = source
+    if session_id:
+        payload["sid"] = session_id
+    append(ledger_dir, KIND_USE, active_hours=active_hours, **payload)

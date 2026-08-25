@@ -75,6 +75,13 @@ def _session_is_new(project_root: Path, session_id: str) -> bool:
     return True
 
 
+def pending_file(project_root: Path, session_id: str) -> Path:
+    """Where this turn's injected blocks wait for the Stop hook to judge them."""
+    hook_dir = project_root / ".elfmem" / ".hook"
+    hook_dir.mkdir(parents=True, exist_ok=True)
+    return hook_dir / f"{session_id or 'nosession'}.pending.json"
+
+
 def _log(project_root: Path, payload: dict[str, object]) -> None:
     """Append one line per invocation. The hook is invisible; the log is not."""
     log_dir = project_root / ".elfmem" / ".hook"
@@ -83,7 +90,9 @@ def _log(project_root: Path, payload: dict[str, object]) -> None:
         fh.write(json.dumps(payload) + "\n")
 
 
-async def _retrieve(project_root: Path, prompt: str, include_self: bool) -> str:
+async def _retrieve(
+    project_root: Path, prompt: str, include_self: bool
+) -> tuple[str, dict[str, str]]:
     from elfmem.api import MemorySystem
     from elfmem.project import find_local_config, resolve_db
 
@@ -94,14 +103,17 @@ async def _retrieve(project_root: Path, prompt: str, include_self: bool) -> str:
     )
     try:
         sections: list[str] = []
+        injected: dict[str, str] = {}
         if include_self:
             identity = await mem.frame("self", top_k=TOP_K)
             if identity.text:
                 sections.append(identity.text)
+            injected.update({b.id: b.content for b in identity.blocks})
         knowledge = await mem.frame("attention", query=prompt, top_k=TOP_K)
         if knowledge.text:
             sections.append(knowledge.text)
-        return "\n\n".join(sections)
+        injected.update({b.id: b.content for b in knowledge.blocks})
+        return "\n\n".join(sections), injected
     finally:
         await mem.close()
 
@@ -120,8 +132,15 @@ def main() -> int:
 
     _load_env(project_root)
     include_self = _session_is_new(project_root, session_id)
-    text = asyncio.run(_retrieve(project_root, prompt, include_self))
+    text, injected = asyncio.run(_retrieve(project_root, prompt, include_self))
     elapsed_ms = round((time.monotonic() - started) * 1000)
+
+    # Hand the turn's context to the Stop hook. Each hook invocation is a
+    # fresh process, so nothing survives in memory between retrieving a block
+    # and finding out whether the answer used it -- and elfmem's own session
+    # id differs per process, so it cannot serve as the join key either.
+    # Claude's session id can, and one file per session is the whole mechanism.
+    pending_file(project_root, session_id).write_text(json.dumps(injected))
 
     _log(project_root, {
         "decision": "retrieved", "chars": len(prompt), "self": include_self,
