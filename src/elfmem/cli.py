@@ -1084,12 +1084,16 @@ def remember(
         str | None, typer.Option("--config", envvar="ELFMEM_CONFIG", help="Config YAML")
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON")] = False,
+    cue: Annotated[
+        str | None,
+        typer.Option("--cue", help="When a future agent should recall this"),
+    ] = None,
 ) -> None:
     """Store knowledge for future retrieval."""
     db_path, config_path = _resolve_paths(db, config)
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
     result, should_dream = _run(
-        _remember(db_path, config_path, content, tag_list, category)
+        _remember(db_path, config_path, content, tag_list, category, cue)
     )
     if json_output:
         data = result.to_dict()
@@ -3430,9 +3434,12 @@ async def _remember(
     content: str,
     tags: list[str] | None,
     category: str,
+    cue: str | None = None,
 ) -> tuple[LearnResult, bool]:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
-        result = await mem.remember(content, tags=tags, category=category)
+        result = await mem.remember(
+            content, tags=tags, category=category, cue=cue
+        )
         return result, mem.should_dream
 
 

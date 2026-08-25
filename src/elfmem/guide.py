@@ -53,7 +53,10 @@ class AgentGuide:
 GUIDES: dict[str, AgentGuide] = {
     "remember": AgentGuide(
         name="remember",
-        what="Store knowledge and auto-start a session. Agent-friendly variant of learn().",
+        what=(
+            "Store knowledge and auto-start a session. Agent-friendly variant "
+            "of learn(). Always pass cue= — see below."
+        ),
         when=(
             "Building always-on agents, MCP tools, or any context where you don't want "
             "to manage session lifecycle explicitly. Prefer this over learn() for agent code."
@@ -62,7 +65,19 @@ GUIDES: dict[str, AgentGuide] = {
             "You're using the session() context manager — either works, but session() is "
             "cleaner for scripted use. Never call in a tight loop; one call per new observation."
         ),
-        cost="Instant. No LLM calls. Auto-starts session if none active (idempotent).",
+        cost=(
+            "Instant. No LLM calls. Auto-starts session if none active "
+            "(idempotent).\n\n"
+            "ALWAYS pass cue=: one line saying WHEN a future agent should "
+            "recall this block — the situation, not a summary. Retrieval "
+            "matches it lexically against the query, so the cue is what "
+            "rescues a memory whose wording differs from how the question "
+            "later gets asked. Write it as someone would type it in that "
+            "moment:\n"
+            "    cue='deciding whether to add a command or extend an existing one'\n"
+            "    cue='when a dream run is killed partway through consolidation'\n"
+            "Not 'when relevant'; not a restatement of the block's conclusion."
+        ),
         returns=(
             "LearnResult. Same status values as learn(): "
             "'created' — new block stored; "
@@ -214,7 +229,7 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "edit": AgentGuide(
         name="edit",
-        what="Replace an active block's content directly — no LLM mediation.",
+        what="Content and/or cue. Replace an active block's content directly — no LLM mediation.",
         when=(
             "A stored memory is wrong, stale, or needs rewording, and you know "
             "which block_id. The direct write path — previously the only way to "

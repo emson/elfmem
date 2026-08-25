@@ -131,7 +131,7 @@ class TestMcpTools:
         mock_mem.edit.return_value = EditResult(block_id="abc123")
         result = await _tool_edit(block_id="abc123", content="new content")
         assert result["block_id"] == "abc123"
-        mock_mem.edit.assert_awaited_once_with("abc123", "new content")
+        mock_mem.edit.assert_awaited_once_with("abc123", "new content", cue=None)
 
     async def test_forget_returns_dict_with_status(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import _tool_forget
@@ -368,3 +368,29 @@ class TestMemGuard:
         monkeypatch.setattr(mcp_module, "_memory", None)
         with pytest.raises(RuntimeError, match="not initialised"):
             await _tool_status()
+
+
+class TestCueReachesTheAgentSurface:
+    """A cue can only be written by whoever had the context at write time.
+    If the MCP surface cannot carry one, every memory a Claude Code session
+    stores is cue-less, and lexical retrieval regresses for all new content."""
+
+    async def test_remember_forwards_a_cue(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_remember
+
+        mock_mem.remember.return_value = LearnResult(
+            block_id="abc123", status="created"
+        )
+        await _tool_remember("Some fact.", ["billing"], "when chasing invoices")
+        mock_mem.remember.assert_awaited_once_with(
+            "Some fact.", tags=["billing"], cue="when chasing invoices"
+        )
+
+    async def test_edit_can_set_only_a_cue(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_edit
+
+        mock_mem.edit.return_value = EditResult(block_id="abc123")
+        await _tool_edit("abc123", None, "when choosing a sync strategy")
+        mock_mem.edit.assert_awaited_once_with(
+            "abc123", None, cue="when choosing a sync strategy"
+        )

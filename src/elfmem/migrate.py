@@ -980,11 +980,24 @@ async def scan_substrate(db_path: Path, memory_dir: Path) -> MigrationStep | Non
     Pending when the database has any blocks and either no export has ever
     been recorded, or the database's content fingerprint has changed since
     the last recorded export. Returns None — nothing pending — otherwise.
+
+    Never pending once the project has already cut over: with
+    ``substrate.files_authoritative`` on, the files are the source of truth
+    and the database is the derived copy, so "export the database to files"
+    is backwards. Proposing it there would offer to overwrite the authority
+    with its own index.
     """
     from elfmem.db.engine import create_engine
 
     if not db_path.exists():
         return None
+
+    config_path = memory_dir.parent / "config.yaml"
+    if config_path.is_file():
+        from elfmem.config import ElfmemConfig
+
+        if ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+            return None
 
     engine = await create_engine(str(db_path))
     try:

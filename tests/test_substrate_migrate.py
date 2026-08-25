@@ -296,3 +296,38 @@ class TestBuildFullPlan:
     async def test_no_db_path_skips_substrate_check(self):
         plan = await build_full_plan(db_path=None, memory_dir=None)
         assert all(s.kind != "substrate_export" for s in plan.steps)
+
+
+class TestFlippedProjectsAreNotOfferedAnExport:
+    """With files_authoritative on, the files are the source of truth and the
+    database is the derived copy. Proposing "export the database to files"
+    there would offer to overwrite the authority with its own index."""
+
+    async def test_no_step_proposed_once_files_are_authoritative(
+        self, tmp_path: Path
+    ):
+        from elfmem.db.engine import create_engine
+        from elfmem.db.models import metadata
+        from elfmem.db.queries import insert_block
+        from elfmem.migrate import scan_substrate
+
+        db_path = tmp_path / "index.db"
+        engine = await create_engine(str(db_path))
+        async with engine.begin() as conn:
+            await conn.run_sync(metadata.create_all)
+            await insert_block(
+                conn, block_id="aaa11111", content="Something.",
+                category="knowledge", source="agent", status="active",
+            )
+        await engine.dispose()
+
+        memory_dir = tmp_path / ".elfmem" / "memory"
+        memory_dir.mkdir(parents=True)
+
+        # Not yet flipped: the export is pending.
+        assert await scan_substrate(db_path, memory_dir) is not None
+
+        (memory_dir.parent / "config.yaml").write_text(
+            "substrate:\n  files_authoritative: true\n", encoding="utf-8"
+        )
+        assert await scan_substrate(db_path, memory_dir) is None

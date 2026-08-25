@@ -857,6 +857,7 @@ class MemorySystem:
         *,
         category: str = "knowledge",
         source: str = "api",
+            cue: str | None = None,
     ) -> LearnResult:
         """Store a knowledge block for future retrieval.
 
@@ -888,7 +889,8 @@ class MemorySystem:
         """
         async with self._engine.begin() as conn:
             result = await _learn(
-                conn, content=content, tags=tags, category=category, source=source
+                conn, content=content, tags=tags, category=category,
+                source=source, cue=cue,
             )
         # Track pending count for should_dream advisory.
         # Both "created" and "near_duplicate_superseded" add a block to inbox.
@@ -909,6 +911,7 @@ class MemorySystem:
                             content=content,
                             id=result.block_id,
                             tags=list(tags or []),
+                            cue=cue,
                         ),
                         subdir="log",
                         category=category,
@@ -1099,6 +1102,7 @@ class MemorySystem:
         *,
         category: str = "knowledge",
         source: str = "api",
+            cue: str | None = None,
     ) -> LearnResult:
         """Store knowledge and auto-start a session. Agent-friendly variant of learn().
 
@@ -1131,7 +1135,7 @@ class MemorySystem:
         """
         # Idempotent session start: no-op if session already active.
         await self.begin_session()
-        return await self.learn(content, tags=tags, category=category, source=source)
+        return await self.learn(content, tags=tags, category=category, source=source, cue=cue)
 
     async def learn_document(
         self,

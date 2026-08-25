@@ -99,9 +99,10 @@ def _mem() -> MemorySystem:
 async def _tool_remember(
     content: str,
     tags: list[str] | None = None,
+    cue: str | None = None,
 ) -> dict[str, Any]:
     mem = _mem()
-    result = await mem.remember(content, tags=tags)
+    result = await mem.remember(content, tags=tags, cue=cue)
     response = result.to_dict()
     response["should_dream"] = mem.should_dream
     return response
@@ -118,9 +119,11 @@ async def _tool_recall(
     return format_recall_response(result)
 
 
-async def _tool_edit(block_id: str, content: str) -> dict[str, Any]:
+async def _tool_edit(
+    block_id: str, content: str | None = None, cue: str | None = None,
+) -> dict[str, Any]:
     mem = _mem()
-    result = await mem.edit(block_id, content)
+    result = await mem.edit(block_id, content, cue=cue)
     return result.to_dict()
 
 
@@ -421,11 +424,23 @@ async def _tool_list_amendments(
 async def elfmem_remember(
     content: str,
     tags: list[str] | None = None,
+    cue: str | None = None,
 ) -> dict[str, Any]:
     """Store knowledge for future retrieval.
 
     Call when the agent discovers a fact, preference, decision, or observation
     worth keeping across sessions. Pure learn, no blocking.
+
+    ALWAYS pass a `cue`. It states *when a future agent should recall this
+    block* — the situation, not a summary. Retrieval matches it lexically
+    against the query, so it is what rescues a memory whose wording differs
+    from how the question gets asked. Write it the way someone would type it
+    in that moment:
+
+        cue="deciding whether to add a new command or extend an existing one"
+        cue="when a dream run is killed partway through consolidation"
+
+    Not "when relevant", and not a restatement of the block's conclusion.
 
     Returns: block_id, status, and should_dream advisory.
     If should_dream is True, consolidation (embedding, alignment, contradictions)
@@ -451,14 +466,20 @@ async def elfmem_recall(
 
 
 @mcp.tool()
-async def elfmem_edit(block_id: str, content: str) -> dict[str, Any]:
-    """Replace an active block's content directly. No LLM mediation.
+async def elfmem_edit(
+    block_id: str, content: str | None = None, cue: str | None = None,
+) -> dict[str, Any]:
+    """Edit an active block's content and/or its cue line. No LLM mediation.
 
     Use when a stored memory is wrong, stale, or needs rewording and you
-    know its block_id (e.g. from elfmem_ls). No LLM call — only an
-    embedding re-computation. Confidence and reinforcement are untouched.
+    know its block_id (e.g. from elfmem_ls). Pass `content` to rewrite it,
+    `cue` to change when it should be recalled, or both.
+
+    Setting only a cue is cheap: no re-embedding, and confidence,
+    reinforcement and the rescore queue are all untouched — a cue says when
+    to recall a block, not what it claims.
     """
-    return await _tool_edit(block_id, content)
+    return await _tool_edit(block_id, content, cue)
 
 
 @mcp.tool()

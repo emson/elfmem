@@ -18,6 +18,7 @@ async def learn(
     tags: list[str] | None = None,
     category: str = "knowledge",
     source: str = "api",
+    cue: str | None = None,
 ) -> LearnResult:
     """Ingest a block into the inbox (fast path — no LLM calls).
 
@@ -45,6 +46,7 @@ async def learn(
         category=category,
         source=source,
         status="inbox",
+        cue=cue,
     )
 
     if tags:

@@ -148,8 +148,24 @@ Run `elfmem doctor --modules` for the live module map (always current — mainta
 
 **Invocation:** `uv run --env-file .env elfmem ...` (needs `OPENAI_API_KEY` for embeddings; `ANTHROPIC_API_KEY` optional)
 
+**Source of truth (changed 2026-08-25):** this project runs
+`substrate.files_authoritative: true`. Memory lives in `.elfmem/memory/**.md`
+and the database is a **derived index** — `elfmem index rebuild` reproduces it
+from files plus `.elfmem/ledger/`. Two consequences that matter day to day:
+
+- **Commit `.elfmem/memory/` and `.elfmem/ledger/`.** Git history is the undo
+  path for `forget()` and `edit()`; without the commit there isn't one.
+- **Deleting the database is safe**, and `elfmem index parity` is how you check
+  a rebuild still ranks identically before trusting it.
+
+**Always write a cue when storing memory.** `remember(content, cue=...)` — one
+line saying *when a future agent should recall this block*, phrased the way
+someone would type it in that moment. Retrieval matches it lexically, so it is
+what rescues a memory whose wording differs from how the question gets asked.
+A block with no cue is findable only by its own vocabulary.
+
 **Infrastructure:**
-- **Database:** `~/.elfmem/databases/elfmem.db` (project name inferred)
+- **Database:** `~/.elfmem/databases/elfmem.db` (derived index; project name inferred)
 - **Config:** `.elfmem/config.yaml` (auto-discovered from project root)
 - **LLM:** `google/gemma-4-26b-a4b` via LM Studio (`http://localhost:1234/v1`)
 - **Embeddings:** `text-embedding-nomic-embed-text-v1.5` via LM Studio
