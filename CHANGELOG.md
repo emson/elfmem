@@ -10,6 +10,20 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`scripts/hooks/elf_distill.py`** — a `PreCompact`/`SessionEnd` hook,
+  increment 2 of automatic memory capture: catches capture-worthy content
+  the per-turn regex gate (`elf_context.py`) can't, because it's judgement
+  rather than a trigger phrase — a fact stated in passing, a decision that
+  emerges across turns. Unlike the other two hooks, this one makes its own
+  LLM call (the configured `llm.base_url`/`model`, same as `dream()` uses)
+  rather than staying zero-cost: sends the new transcript slice since the
+  last distillation plus the SELF frame, asks for durable facts/decisions/
+  preferences as a JSON array, writes each via `remember()`. A per-session
+  marker (`{session_id}.distilled`) tracks how many transcript lines have
+  been processed so repeated firings in one long session never resend the
+  same content; the marker only advances after a slice is successfully
+  distilled, so a network failure gets retried next time rather than losing
+  that slice. Opt-in, same as the other two hooks.
 - **`MemorySystem.record_use(block_ids)`** — records that retrieved blocks
   actually informed an answer, reinforcing them and writing the ledger's
   `use` event. The evidence tier above `frame()`'s automatic assembly record
