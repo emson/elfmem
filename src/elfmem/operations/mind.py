@@ -115,26 +115,23 @@ async def create_mind(
     The block is stored with category="mind" and tagged ``mind/<subject-slug>``.
     Decay tier is DURABLE (λ=0.001, ~6 month half-life).
 
-    Returns LearnResult — reuses the standard learn pathway for the write,
-    but not for dedup (see below).
-
-    Dedup is checked here, not left to learn(): learn()'s exact-hash check
-    only recognises a duplicate while the existing block is status='inbox'
-    -- correct for its own job (an active knowledge block is deliberately
-    re-entered as fresh content, letting consolidate()'s embedding-based
-    near-dup detection reconcile it). But predict() legitimately promotes a
-    mind block to active inline, well before any dream() cycle -- "the
-    deliberate act of predicting validates the model" (see predict() below).
-    Once promoted, every later identical mind_create() call for the same
-    subject would fall through learn()'s "already active — re-learn with a
-    fresh id" branch and silently mint a new mind, not just once but on
-    every subsequent call. mind_create()'s own contract ("instant, no LLM,
-    dedup guaranteed") is what's broken here, not learn()'s -- so the check
-    belongs at this layer, against both inbox and active, not by widening
-    learn() for every other caller to fix a promise only this one makes.
-    Archived is deliberately excluded: a forgotten mind was a decision to
-    remove it, and re-creating the same subject should mint fresh, not
-    resurrect it -- matching learn()'s own archived-block semantics.
+    Dedup is checked here against a fresh lookup, not left to learn():
+    learn()'s exact-hash check only recognises a duplicate while the
+    existing block is status='inbox' -- correct for its own job, since an
+    active knowledge block is deliberately allowed to re-enter as fresh
+    content so consolidate()'s embedding-based near-dup pass can reconcile
+    it. But predict() legitimately promotes a mind block to active inline,
+    well before any dream() cycle ("the deliberate act of predicting
+    validates the model" -- see predict() below), and mind_create()'s own
+    contract ("instant, no LLM, dedup guaranteed") never accounted for
+    that: every call after the first predict() would fall through learn()'s
+    "already active -- re-learn with a fresh id" branch and mint a new
+    mind, not just once but on every subsequent call. The fix belongs at
+    this layer, not by widening learn()'s scope for every other caller to
+    fix a promise only mind_create() makes. Archived is deliberately
+    excluded: a forgotten mind was a decision to remove it, and re-creating
+    the same subject should mint fresh -- matching learn()'s own
+    archived-block semantics.
     """
     if not subject.strip():
         raise ValueError("subject must be non-empty")

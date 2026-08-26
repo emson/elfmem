@@ -296,6 +296,13 @@ class MemorySystem:
             and self._memory_dir is not None
         )
 
+    def _require_memory_dir(self) -> Path:
+        """`_memory_dir`, narrowed to non-None. Call only guarded by `_files_authoritative`,
+        which already proved this; the assert documents the invariant for mypy rather
+        than defending against a case that can actually occur here."""
+        assert self._memory_dir is not None  # guaranteed by _files_authoritative
+        return self._memory_dir
+
     def _log(self, kind: str, **payload: object) -> None:
         """Append one ledger event. Silently a no-op with no project root.
 
@@ -905,8 +912,7 @@ class MemorySystem:
                 # consequence -- if this raises, that row is orphaned, so it
                 # is rolled back rather than left claiming a block the
                 # substrate never accepted.
-                memory_dir = self._memory_dir
-                assert memory_dir is not None  # guaranteed by _files_authoritative
+                memory_dir = self._require_memory_dir()
                 try:
                     _file_mutation.append_block(
                         memory_dir,
@@ -1057,8 +1063,7 @@ class MemorySystem:
         # drain. should_dream/status() stay accurate across repeated calls.
         self._pending = result.inbox_remaining
         if self._files_authoritative:
-            memory_dir = self._memory_dir
-            assert memory_dir is not None  # guaranteed by _files_authoritative
+            memory_dir = self._require_memory_dir()
             # Promotion happened in the index; the substrate has to follow, or
             # the block stays in log/ and every rebuild returns it to inbox.
             async with self._engine.connect() as conn:
@@ -1267,8 +1272,7 @@ class MemorySystem:
             if block is None or block["status"] != "active":
                 raise BlockNotFound(block_id)
             if self._files_authoritative:
-                memory_dir = self._memory_dir
-                assert memory_dir is not None  # guaranteed by _files_authoritative
+                memory_dir = self._require_memory_dir()
                 # Content and cue are both declared state: both belong in the
                 # file, which is the truth a rebuild reads.
                 _file_mutation.edit_block(
@@ -1343,8 +1347,7 @@ class MemorySystem:
                 self._record_op("forget", result.summary)
                 return result
             if self._files_authoritative:
-                memory_dir = self._memory_dir
-                assert memory_dir is not None  # guaranteed by _files_authoritative
+                memory_dir = self._require_memory_dir()
                 # Removing it from the file is the real forget; the index row
                 # is only marked archived so retrieval stops returning it.
                 # Git history is the undo, which is why .elfmem/memory must
