@@ -343,6 +343,25 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   `docs/elfmem_tool.md`, and `ROADMAP.md` (added the "In Progress" v2
   substrate entry this whole wave was otherwise undocumented under) to
   match; `mkdocs.yml` nav updated for the retired file.
+- **`mind_create()` no longer silently mints duplicate minds once the subject
+  has been promoted to active.** `predict()` deliberately promotes an inbox
+  mind block to active inline ("the act of predicting validates the model"),
+  well before any `dream()` cycle — but `learn()`'s exact-hash dedup only
+  recognises a duplicate while the existing block is `status='inbox'`, a
+  correct scope for its own job (an active knowledge block is meant to
+  re-enter as fresh content for consolidation's embedding-based near-dup
+  pass to reconcile). `mind_create()` never accounted for its own sibling
+  operation legitimately promoting it out of that window: every identical
+  call after the first `predict()` minted a fresh duplicate, not just once
+  but on every subsequent call. `create_mind()` now checks for an existing
+  block by content-hash against both `inbox` and `active` status itself,
+  before ever calling `learn()` — archived is deliberately excluded, so a
+  deliberately forgotten mind still mints fresh rather than being
+  resurrected. Found via live verification in a real downstream consumer
+  (trdrbot_hack, recorded there as D-024) reproduced with full DB-state
+  dumps at each step before diagnosing; two theories involving `session()`/
+  `remember()` auto-consolidation were tested directly against the source
+  and ruled out before finding the actual mechanism.
 
 ### Removed
 - **Breaking**: decay-driven block archival (v2 step 7a, ADR 0009).

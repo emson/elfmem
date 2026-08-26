@@ -16,9 +16,13 @@ import re
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db import queries
-from elfmem.db.queries import insert_agent_edge
+from elfmem.db.queries import get_block, insert_agent_edge
 from elfmem.exceptions import BlockNotActiveError, ElfmemError
-from elfmem.memory.blocks import decay_lambda_for_tier, determine_decay_tier
+from elfmem.memory.blocks import (
+    compute_content_hash,
+    decay_lambda_for_tier,
+    determine_decay_tier,
+)
 from elfmem.operations.connect import do_connect
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome
@@ -111,7 +115,26 @@ async def create_mind(
     The block is stored with category="mind" and tagged ``mind/<subject-slug>``.
     Decay tier is DURABLE (λ=0.001, ~6 month half-life).
 
-    Returns LearnResult — reuses the standard learn pathway.
+    Returns LearnResult — reuses the standard learn pathway for the write,
+    but not for dedup (see below).
+
+    Dedup is checked here, not left to learn(): learn()'s exact-hash check
+    only recognises a duplicate while the existing block is status='inbox'
+    -- correct for its own job (an active knowledge block is deliberately
+    re-entered as fresh content, letting consolidate()'s embedding-based
+    near-dup detection reconcile it). But predict() legitimately promotes a
+    mind block to active inline, well before any dream() cycle -- "the
+    deliberate act of predicting validates the model" (see predict() below).
+    Once promoted, every later identical mind_create() call for the same
+    subject would fall through learn()'s "already active — re-learn with a
+    fresh id" branch and silently mint a new mind, not just once but on
+    every subsequent call. mind_create()'s own contract ("instant, no LLM,
+    dedup guaranteed") is what's broken here, not learn()'s -- so the check
+    belongs at this layer, against both inbox and active, not by widening
+    learn() for every other caller to fix a promise only this one makes.
+    Archived is deliberately excluded: a forgotten mind was a decision to
+    remove it, and re-creating the same subject should mint fresh, not
+    resurrect it -- matching learn()'s own archived-block semantics.
     """
     if not subject.strip():
         raise ValueError("subject must be non-empty")
@@ -120,6 +143,11 @@ async def create_mind(
     content = _build_mind_content(
         subject, goals=goals, beliefs=beliefs, fears=fears, motivations=motivations,
     )
+    content_id = compute_content_hash(content)
+    existing = await get_block(conn, content_id)
+    if existing is not None and existing["status"] in ("inbox", "active"):
+        return LearnResult(block_id=content_id, status="duplicate_rejected")
+
     tags = [f"mind/{slug}"]
 
     return await _learn(

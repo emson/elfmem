@@ -162,6 +162,40 @@ class TestMindCreate:
         result = await system.mind_create("customer", goals=["Ship fast"])
         assert result.status == "duplicate_rejected"
 
+    async def test_create_mind_duplicate_rejected_after_inline_promotion(
+        self, system: MemorySystem
+    ):
+        """Regression (trdrbot_hack D-024): predict() promotes the mind to
+        active inline -- deliberate, see TestInlinePromotion -- which used to
+        blind mind_create()'s dedup. learn()'s exact-hash check only
+        recognised a duplicate while the existing block was status='inbox';
+        once active, every subsequent identical mind_create() call minted a
+        fresh duplicate rather than just the second one."""
+        first = await system.mind_create("customer", goals=["Ship fast"])
+        await system.mind_predict(first.block_id, "Will pay 49/mo", verify_at="2026-06-30")
+
+        # The mind is now active, not inbox -- dedup must still hold.
+        second = await system.mind_create("customer", goals=["Ship fast"])
+        assert second.status == "duplicate_rejected"
+        assert second.block_id == first.block_id
+
+        # And keep holding on a third call, not just recover for one retry.
+        third = await system.mind_create("customer", goals=["Ship fast"])
+        assert third.status == "duplicate_rejected"
+        assert third.block_id == first.block_id
+
+    async def test_create_mind_not_deduped_against_archived(self, system: MemorySystem):
+        """An archived mind was deliberately forgotten -- re-creating the same
+        subject should mint fresh, not resurrect it. Matches learn()'s existing
+        archived-block semantics; the dedup widening must not swallow this."""
+        first = await system.mind_create("customer", goals=["Ship fast"])
+        await system.mind_predict(first.block_id, "Will pay 49/mo", verify_at="2026-06-30")
+        await system.forget(first.block_id)
+
+        second = await system.mind_create("customer", goals=["Ship fast"])
+        assert second.status == "created"
+        assert second.block_id != first.block_id
+
     async def test_create_mind_empty_subject_raises(self, system: MemorySystem):
         with pytest.raises(ValueError, match="non-empty"):
             await system.mind_create("", goals=["Something"])
