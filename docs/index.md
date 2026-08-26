@@ -49,7 +49,7 @@ async with system.session():
 
 -   **MCP Server**
 
-    Give Claude persistent memory across sessions.
+    Give Claude persistent memory across sessions — automatically, via hooks.
 
     [Claude Code Integration &rarr;](CLAUDE_CODE_INTEGRATION.md)
 

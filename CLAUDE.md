@@ -177,6 +177,32 @@ A block with no cue is findable only by its own vocabulary.
 - `task` — active priorities, current goals, next steps
 - For complete docs: `elfmem guide` or read `.elfmem/AGENT.md`
 
+### Automatic memory hooks (this project's own instance)
+
+Three personal Claude Code hooks make retrieval, use-tracking, and capture
+automatic rather than dependent on the agent remembering to call a tool —
+wired in `.claude/settings.local.json` (personal, gitignored) and running on
+this very session right now:
+
+- `scripts/hooks/elf_context.py` (`UserPromptSubmit`) — injects memory
+  before every substantive prompt; detects when a prompt addresses elf
+  directly or looks capture-worthy (explicit memory request, correction,
+  stated rule) and primes the injected context accordingly.
+- `scripts/hooks/elf_outcome.py` (`Stop`) — records which injected blocks
+  the answer actually used; blocks once (per-turn, never a loop) if an
+  addressed turn shows no engagement, or a capture-worthy turn wrote
+  nothing to memory.
+- `scripts/hooks/elf_distill.py` (`PreCompact`/`SessionEnd`) — the one hook
+  that makes its own LLM call, catching capture-worthy content no per-turn
+  trigger fires on. Also runnable manually (`--session-id`/`--cwd`/
+  `--transcript-path` flags) or with a live session supplying its own
+  judgement directly (`--host`, candidates via stdin, no LLM call — mirrors
+  `dream()`'s `host_analyses` pattern).
+
+Full reference, including exact trigger patterns and the anti-Goodhart
+reasoning behind each gate: [`docs/CLAUDE_CODE_INTEGRATION.md`
+→ Automatic Memory: Hooks](docs/CLAUDE_CODE_INTEGRATION.md#automatic-memory-hooks-recommended).
+
 ### Memory routing — elfmem vs. Claude harness memory
 
 The vendor-neutral routing rule (verb-level shibboleth, survival test,

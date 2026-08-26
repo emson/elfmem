@@ -596,6 +596,8 @@ Add to your MCP config (e.g. `~/.claude.json`):
 |------|---------|
 | `elfmem_guide` | Runtime documentation for any operation |
 
+**Claude Code: automatic, not just available.** The MCP tools above work whenever the agent chooses to call them — reliable most of the time, silently skipped some of the time. Three optional hook scripts in `scripts/hooks/` make retrieval, use-tracking, and capture automatic instead: inject memory before every prompt, record what the answer actually used, catch capture-worthy content a prompt never explicitly asked to be remembered. See [Claude Code Integration → Automatic Memory: Hooks](docs/CLAUDE_CODE_INTEGRATION.md#automatic-memory-hooks-recommended) for the full reference.
+
 ### CLI: for shell access
 
 Quick start:
