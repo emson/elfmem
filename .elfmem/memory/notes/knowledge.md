@@ -607,3 +607,27 @@ Enforcement built on a lossy measurement must bound its false-positive cost and 
 cue:: designing automatic memory capture, salience detection, or deciding when an agent should write to memory; asking what triggers a remember() or how to recognise memorable content in a session
 
 The SELF-frame salience judge for automatic memory capture already exists: it is dream()'s alignment scoring. Capture design should therefore be a funnel — deterministic trigger detection in hooks (corrections, preferences, hard-won conclusions, novelty), liberal insertion into the inbox, and consolidation as the single authoritative SELF-alignment gate — never a second salience engine. Two corollaries: (1) because SELF differs per instance, identical capture code yields personalised memory per agent; (2) the trigger lexicon should be mined from real missed-capture moments (manual remember calls in transcripts) and tuned by the use signal — capture more of what record_use shows gets drawn on. Write-side capture failure is the mirror of the read-side recall failure: a soft protocol competing for attention, fixed the same way (hook-enforced, per-turn nudge, agent does the distilling).
+
+## Retrieval's `score` field on returned blocks (frame()/recall
+<!-- id: bd83935bb5743ae2  tags: [design/capture, bug-pattern, design/retrieval, self/constraint]  pinned: false -->
+cue:: building a novelty, near-duplicate, or salience check and considering reusing a recall/frame result's score field instead of a fresh embedding comparison
+
+Retrieval's `score` field on returned blocks (frame()/recall()) is a blended ranking value, not raw cosine similarity — reinforcement, recency, alignment, and an exploration bonus all factor in. It cannot substitute for the raw cosine similarity that near_dup_near_threshold (consolidation's dedup) is calibrated against, despite both living in [0,1] and both being called "score". Live-tested proof: a control query with zero semantic relation to any of 4 stored facts still scored 0.93-0.94 against every one of them in a small sandbox corpus. Any future novelty/near-duplicate check must use a real embedding call and dedup.py's actual cosine_similarity path against active-block embeddings — there is no free reuse of an already-computed retrieval score for this purpose.
+
+## Before building a new LLM-calling subprocess or adapter for
+<!-- id: 9eeaba26836bce5b  tags: [design/architecture, pattern/host-supplied-judgement, self/constraint, self/value]  pinned: false -->
+cue:: deciding whether a new feature needs its own LLM call or subprocess, especially when a live agent session is already available to reason directly
+
+Before building a new LLM-calling subprocess or adapter for a task, check whether the current session/host can already supply the judgement directly instead. Applied concretely: distillation almost got built as a headless `claude -p` subprocess (real API cost, MCP-config bridging needed since this project's elfmem server lives in ~/.claude.json not a project .mcp.json, unmeasured latency) before noticing dream()'s existing host_analyses parameter already does exactly this — a host session supplying judgement instead of the configured adapter. Zero new process, zero new cost, reused an existing seam instead of building a new one.
+
+## elf has three Claude Code hooks (scripts/hooks/, wired in .c
+<!-- id: c9148d814c1c4d29  tags: [design/hooks, self/context, self/style]  pinned: false -->
+cue:: asked whether elf has automatic memory capture in Claude Code, or how retrieval/capture/distillation actually work in this project
+
+elf has three Claude Code hooks (scripts/hooks/, wired in .claude/settings.local.json) giving automatic memory integration instead of relying on the agent choosing to call tools: elf_context.py (UserPromptSubmit) injects retrieval and primes for address/capture-worthy prompts; elf_outcome.py (Stop) records genuine use via lexical attribution and gates on engagement and capture with per-turn one-shot blocks that never require a tool call as the only way through, to avoid Goodharting the ledger; elf_distill.py (PreCompact/SessionEnd) makes an LLM call to catch capture-worthy content no per-turn trigger fires on, with a --host mode letting a live session supply judgement directly instead. Full reference: docs/CLAUDE_CODE_INTEGRATION.md, section 'Automatic Memory: Hooks'.
+
+## This project's elfmem MCP server is registered in the user-l
+<!-- id: 8b5f98239cece4d4  tags: [bug-pattern, infra/mcp, self/constraint, self/context]  pinned: false -->
+cue:: considering a headless `claude -p` invocation that needs MCP tool access in this project, or debugging why a headless call can't see a tool that works in the interactive session
+
+This project's elfmem MCP server is registered in the user-level ~/.claude.json under projects[path].mcpServers, not a project-local .mcp.json file. Headless `claude -p` invocations only auto-discover .mcp.json, not the ~/.claude.json registration -- so a headless subprocess would need explicit --mcp-config bridging to see elfmem's tools at all. Verified via claude-code-guide before assuming otherwise.

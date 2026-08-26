@@ -1,5 +1,0 @@
-## Retrieval's `score` field on returned blocks (frame()/recall
-<!-- id: bd83935bb5743ae2  tags: [design/capture, bug-pattern, design/retrieval, self/constraint]  pinned: false -->
-cue:: building a novelty, near-duplicate, or salience check and considering reusing a recall/frame result's score field instead of a fresh embedding comparison
-
-Retrieval's `score` field on returned blocks (frame()/recall()) is a blended ranking value, not raw cosine similarity — reinforcement, recency, alignment, and an exploration bonus all factor in. It cannot substitute for the raw cosine similarity that near_dup_near_threshold (consolidation's dedup) is calibrated against, despite both living in [0,1] and both being called "score". Live-tested proof: a control query with zero semantic relation to any of 4 stored facts still scored 0.93-0.94 against every one of them in a small sandbox corpus. Any future novelty/near-duplicate check must use a real embedding call and dedup.py's actual cosine_similarity path against active-block embeddings — there is no free reuse of an already-computed retrieval score for this purpose.
