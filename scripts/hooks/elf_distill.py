@@ -39,10 +39,42 @@ Wiring (personal, `.claude/` is gitignored) -- in `.claude/settings.local.json`:
       "SessionEnd": [{"hooks": [{"type": "command", "command": "<venv>/bin/python",
         "args": ["<project>/scripts/hooks/elf_distill.py"], "timeout": 45}]}]
     }
+
+Three invocation modes, same script, same write path:
+
+  Hook mode (above): a Claude Code hook payload on stdin. LM Studio (the
+    configured llm.base_url/model) does the judgement.
+
+  Manual-CLI mode: run it by hand with explicit flags instead of waiting
+    for a hook -- same LM Studio judgement, triggered on demand:
+
+        elf_distill.py --session-id <id> --cwd <project> \
+          --transcript-path <path/to/transcript.jsonl>
+
+  Host mode: skip the LLM call. Whoever's already doing the reasoning --
+    a live Claude Code session, most naturally -- supplies its own
+    conclusions as a JSON array on stdin, same shape parse_candidates
+    validates, and this just writes them through the same remember() path.
+    Mirrors dream()'s existing host_analyses pattern (a host session
+    supplying judgement instead of the configured LLM adapter) rather than
+    shelling out to a second Claude Code process for it -- no MCP-config
+    bridging, no subprocess, no extra API cost, because there's no new
+    process at all:
+
+        echo '[{"content": "...", "cue": "...", "tags": [...]}]' \
+          | elf_distill.py --host --cwd <project> \
+              [--session-id <id> --transcript-path <path>]
+
+    session-id/transcript-path are optional in host mode -- without them
+    the write still happens, just without advancing the marker (a later
+    automatic pass might redundantly re-surface similar content, which
+    dream()'s dedup absorbs -- the same acceptable cost already accepted
+    elsewhere in this design).
 """
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import json
 import os
@@ -197,7 +229,28 @@ async def _call_llm(
     return response.choices[0].message.content or ""
 
 
+async def _write_candidates(project_root: Path, candidates: list[dict]) -> list[str]:
+    """Write validated candidates via remember() -- the one path every mode
+    shares, whether the candidates came from the configured LLM or from a
+    host session's own reasoning."""
+    from elfmem.api import MemorySystem
+    from elfmem.project import find_local_config, resolve_db
+
+    config_path = find_local_config(project_root)
+    db_path, _ = resolve_db(None, str(config_path) if config_path else None, project_root)
+    mem = await MemorySystem.from_config(db_path, config=str(config_path) if config_path else None)
+    try:
+        stored: list[str] = []
+        for c in candidates:
+            result = await mem.remember(c["content"], cue=c["cue"], tags=c["tags"] or None)
+            stored.append(result.block_id)
+        return stored
+    finally:
+        await mem.close()
+
+
 async def _distill(project_root: Path, conversation_text: str) -> dict:
+    """The LLM-backed path: judge, then write via the shared _write_candidates."""
     from elfmem.api import MemorySystem
     from elfmem.config import ElfmemConfig
     from elfmem.project import find_local_config, resolve_db
@@ -215,24 +268,86 @@ async def _distill(project_root: Path, conversation_text: str) -> dict:
             api_key=os.environ.get("OPENAI_API_KEY"), prompt=prompt,
         )
         candidates = parse_candidates(raw)
-        stored: list[str] = []
-        for c in candidates:
-            result = await mem.remember(c["content"], cue=c["cue"], tags=c["tags"] or None)
-            stored.append(result.block_id)
-        return {"candidates": len(candidates), "stored": stored}
     finally:
         await mem.close()
+    stored = await _write_candidates(project_root, candidates)
+    return {"candidates": len(candidates), "stored": stored}
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Distill a session's transcript into candidate memories."
+    )
+    parser.add_argument("--session-id", default=None)
+    parser.add_argument("--cwd", default=None)
+    parser.add_argument("--transcript-path", default=None)
+    parser.add_argument(
+        "--host", action="store_true",
+        help=(
+            "Skip the configured LLM call. Read a pre-reasoned JSON array of "
+            "candidates from stdin instead -- for a Claude Code session (or "
+            "anyone) that's already done the judgement to hand its "
+            "conclusions to the same validated write path the LLM-backed "
+            "mode uses, without a second LLM call."
+        ),
+    )
+    # parse_known_args, not parse_args: a hook invocation's real argv carries
+    # nothing of ours, and in tests it's pytest's own flags -- an
+    # unrecognized flag must never crash a hook.
+    args, _ = parser.parse_known_args(argv)
+    return args
+
+
+def _run_host_mode(project_root: Path, session_id: str, transcript_path: Path | None) -> int:
+    import asyncio
+
+    raw = sys.stdin.read()
+    candidates = parse_candidates(raw)
+    if not candidates:
+        _log(project_root, {"decision": "host-empty", "hook": "distill"})
+        return 0
+
+    _load_env(project_root)
+    stored = asyncio.run(_write_candidates(project_root, candidates))
+
+    # Marker advancement is a courtesy, not a correctness requirement here:
+    # without a transcript_path there's nothing to mark, and a later
+    # automatic pass might redundantly re-surface similar content -- which
+    # dream()'s existing dedup absorbs, the same acceptable cost already
+    # accepted elsewhere in this design.
+    if transcript_path is not None and transcript_path.exists():
+        write_processed(marker_file(project_root, session_id), len(_all_rows(transcript_path)))
+
+    _log(project_root, {
+        "decision": "distilled", "hook": "distill", "source": "host",
+        "candidates": len(candidates), "stored": stored,
+    })
+    return 0
 
 
 def main() -> int:
     import asyncio
 
     started = time.monotonic()
-    raw = sys.stdin.read()
-    payload = json.loads(raw) if raw.strip() else {}
-    session_id = str(payload.get("session_id", ""))
-    project_root = Path(payload.get("cwd") or os.getcwd())
-    transcript_path = Path(payload.get("transcript_path", ""))
+    args = _parse_args()
+
+    if args.host:
+        project_root = Path(args.cwd or os.getcwd())
+        session_id = args.session_id or ""
+        transcript_path = Path(args.transcript_path) if args.transcript_path else None
+        return _run_host_mode(project_root, session_id, transcript_path)
+
+    if args.session_id and args.cwd and args.transcript_path:
+        # Manual-CLI mode: explicit flags, not a hook-JSON stdin payload.
+        session_id = args.session_id
+        project_root = Path(args.cwd)
+        transcript_path = Path(args.transcript_path)
+    else:
+        raw = sys.stdin.read()
+        payload = json.loads(raw) if raw.strip() else {}
+        session_id = str(payload.get("session_id", ""))
+        project_root = Path(payload.get("cwd") or os.getcwd())
+        transcript_path = Path(payload.get("transcript_path", ""))
 
     marker = marker_file(project_root, session_id)
     processed = read_processed(marker)
@@ -254,7 +369,8 @@ def main() -> int:
     write_processed(marker, processed + len(rows))  # only on success
 
     _log(project_root, {
-        "decision": "distilled", "candidates": result["candidates"], "stored": result["stored"],
+        "decision": "distilled", "hook": "distill", "source": "llm",
+        "candidates": result["candidates"], "stored": result["stored"],
         "ms": round((time.monotonic() - started) * 1000),
     })
     return 0

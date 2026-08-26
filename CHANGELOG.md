@@ -23,7 +23,14 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   been processed so repeated firings in one long session never resend the
   same content; the marker only advances after a slice is successfully
   distilled, so a network failure gets retried next time rather than losing
-  that slice. Opt-in, same as the other two hooks.
+  that slice. Three invocation modes on one script: the hook itself, a
+  manual-CLI mode (`--session-id`/`--cwd`/`--transcript-path` flags, same
+  LM Studio judgement, triggered by hand), and a host mode (`--host`,
+  pre-reasoned candidates supplied on stdin, no LLM call at all) — mirrors
+  `dream()`'s existing `host_analyses` pattern, letting a live Claude Code
+  session supply its own judgement instead of shelling out to a second one.
+  Opt-in, same as the other two hooks; wired to both `PreCompact` and
+  `SessionEnd` in this project's `.claude/settings.local.json`.
 - **`MemorySystem.record_use(block_ids)`** — records that retrieved blocks
   actually informed an answer, reinforcing them and writing the ledger's
   `use` event. The evidence tier above `frame()`'s automatic assembly record

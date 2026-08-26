@@ -195,3 +195,126 @@ def test_main_skips_and_does_not_advance_marker_when_too_little_new_content(
     # Marker must NOT advance -- this thin slice should accumulate with
     # whatever comes next, not be silently dropped.
     assert elf_distill.read_processed(marker) == 0
+
+
+# --- CLI arg parsing: pytest's own argv must never leak into these flags -----
+
+
+def test_parse_args_defaults_to_none_ignoring_unrelated_argv() -> None:
+    # parse_known_args, not parse_args: a hook invocation's real argv is
+    # whatever Claude Code passes (nothing relevant), and in tests it's
+    # pytest's own flags -- unrecognized args must never crash this.
+    args = elf_distill._parse_args(["--some-pytest-flag", "value"])
+    assert args.session_id is None
+    assert args.cwd is None
+    assert args.transcript_path is None
+    assert args.host is False
+
+
+def test_parse_args_reads_explicit_flags() -> None:
+    args = elf_distill._parse_args([
+        "--session-id", "abc", "--cwd", "/tmp/x", "--transcript-path", "/tmp/x/t.jsonl", "--host",
+    ])
+    assert args.session_id == "abc"
+    assert args.cwd == "/tmp/x"
+    assert args.transcript_path == "/tmp/x/t.jsonl"
+    assert args.host is True
+
+
+# --- manual-CLI mode: explicit flags instead of a hook-JSON stdin payload ----
+
+
+def test_main_manual_cli_mode_uses_flags_not_stdin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+
+    rows = [{"type": "user", "message": {"content": "x" * 300}}]
+    transcript = _write_transcript(tmp_path, rows)
+    marker = elf_distill.marker_file(tmp_path, "sess-cli")
+
+    called: dict = {}
+
+    async def fake_distill(project_root, conversation_text):
+        called["project_root"] = project_root
+        called["conversation_text"] = conversation_text
+        return {"candidates": 0, "stored": []}
+
+    monkeypatch.setattr(elf_distill, "_distill", fake_distill)
+    # stdin deliberately left as something that would fail json.loads if the
+    # manual-CLI branch ever mistakenly tried to read it as a hook payload.
+    monkeypatch.setattr("sys.stdin", io.StringIO("not valid json"))
+    monkeypatch.setattr("sys.argv", [
+        "elf_distill.py", "--session-id", "sess-cli",
+        "--cwd", str(tmp_path), "--transcript-path", str(transcript),
+    ])
+    assert elf_distill.main() == 0
+    assert called["project_root"] == tmp_path
+    assert "x" * 300 in called["conversation_text"]
+    assert elf_distill.read_processed(marker) == 1
+
+
+# --- host mode: pre-reasoned candidates supplied directly, no LLM call ------
+
+
+def test_main_host_mode_writes_supplied_candidates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+
+    written: list = []
+
+    async def fake_write(project_root, candidates):
+        written.extend(candidates)
+        return [f"id-{i}" for i in range(len(candidates))]
+
+    monkeypatch.setattr(elf_distill, "_write_candidates", fake_write)
+    candidates_json = json.dumps([
+        {"content": "Host-supplied fact.", "cue": "when it matters", "tags": ["x"]},
+    ])
+    monkeypatch.setattr("sys.stdin", io.StringIO(candidates_json))
+    monkeypatch.setattr("sys.argv", ["elf_distill.py", "--host", "--cwd", str(tmp_path)])
+    assert elf_distill.main() == 0
+    assert len(written) == 1
+    assert written[0]["content"] == "Host-supplied fact."
+
+
+def test_main_host_mode_advances_marker_when_transcript_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+
+    rows = [{"type": "user", "message": {"content": "a"}}, {"type": "user", "message": {"content": "b"}}]
+    transcript = _write_transcript(tmp_path, rows)
+    marker = elf_distill.marker_file(tmp_path, "sess-host")
+
+    async def fake_write(project_root, candidates):
+        return ["id-0"]
+
+    monkeypatch.setattr(elf_distill, "_write_candidates", fake_write)
+    candidates_json = json.dumps([{"content": "Fact.", "cue": "cue"}])
+    monkeypatch.setattr("sys.stdin", io.StringIO(candidates_json))
+    monkeypatch.setattr("sys.argv", [
+        "elf_distill.py", "--host", "--cwd", str(tmp_path),
+        "--session-id", "sess-host", "--transcript-path", str(transcript),
+    ])
+    assert elf_distill.main() == 0
+    assert elf_distill.read_processed(marker) == 2
+
+
+def test_main_host_mode_skips_write_when_no_valid_candidates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+
+    called = {"write": False}
+
+    async def fake_write(project_root, candidates):
+        called["write"] = True
+        return []
+
+    monkeypatch.setattr(elf_distill, "_write_candidates", fake_write)
+    monkeypatch.setattr("sys.stdin", io.StringIO("[]"))
+    monkeypatch.setattr("sys.argv", ["elf_distill.py", "--host", "--cwd", str(tmp_path)])
+    assert elf_distill.main() == 0
+    assert called["write"] is False
