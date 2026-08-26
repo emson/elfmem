@@ -47,6 +47,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from itertools import count
 from pathlib import Path
+from typing import Any
 
 # One write(2) below this stays atomic on every POSIX platform we target.
 _MAX_LINE_BYTES = 4000
@@ -247,16 +248,24 @@ def _chunk_payload(payload: dict[str, object]) -> Iterator[dict[str, object]]:
         yield {**rest, "ids": list(ids[i:i + _MAX_IDS_PER_EVENT])}
 
 
-def _read_events(ledger_dir: Path) -> tuple[list[dict], int]:
+def _read_events(ledger_dir: Path) -> tuple[list[dict[str, Any]], int]:
     """Read every event from every monthly file, ordered deterministically.
 
     Order is ``(t, s)`` — the wall-clock stamp with a per-process sequence
     number breaking ties. Determinism matters because the parity gate compares
     rankings that depend on replayed state.
+
+    Typed ``dict[str, Any]``, not ``dict[str, object]``: unlike this file's
+    outbound payload dicts (only ever written to, e.g. `_chunk_payload`'s
+    ``dict[str, object]``), an event is read back throughout `replay()` with
+    many different implicit-scalar assumptions (`float()`, `int()`,
+    `isinstance` narrowing) -- `object` would force every one of those sites
+    to narrow explicitly, which is real churn for no actual safety gain over
+    the isinstance checks already guarding each use.
     """
     if not ledger_dir.is_dir():
         return [], 0
-    events: list[dict] = []
+    events: list[dict[str, Any]] = []
     skipped = 0
     for path in sorted(ledger_dir.glob("*.jsonl")):
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -389,10 +398,15 @@ def replay(ledger_dir: Path) -> ReplayResult:
                 state.beta += (1.0 - signal) * weight
 
         elif kind == KIND_LINK:
-            a, b = event.get("from"), event.get("to")
-            if isinstance(a, str) and isinstance(b, str) and a != b:
+            # Distinct names from the `a` bound above by `for i, a in
+            # enumerate(ids)` -- reusing `a`/`b` here pins mypy's inferred
+            # type for `a` to that loop's `str`, and event.get() returns
+            # `Any | None`, so the name collision reads as a real type
+            # conflict across two branches that never share a value.
+            src_id, tgt_id = event.get("from"), event.get("to")
+            if isinstance(src_id, str) and isinstance(tgt_id, str) and src_id != tgt_id:
                 lah = event.get("lah")
-                result.links[_canonical(a, b)] = EdgeState(
+                result.links[_canonical(src_id, tgt_id)] = EdgeState(
                     relation=str(event.get("rel", "similar")),
                     origin=str(event.get("o", "similarity")),
                     weight=float(event.get("w", 0.65)),
@@ -403,9 +417,9 @@ def replay(ledger_dir: Path) -> ReplayResult:
                 )
 
         elif kind == KIND_UNLINK:
-            a, b = event.get("from"), event.get("to")
-            if isinstance(a, str) and isinstance(b, str):
-                result.links.pop(_canonical(a, b), None)
+            src_id, tgt_id = event.get("from"), event.get("to")
+            if isinstance(src_id, str) and isinstance(tgt_id, str):
+                result.links.pop(_canonical(src_id, tgt_id), None)
 
     return result
 

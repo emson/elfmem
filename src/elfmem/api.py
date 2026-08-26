@@ -905,9 +905,11 @@ class MemorySystem:
                 # consequence -- if this raises, that row is orphaned, so it
                 # is rolled back rather than left claiming a block the
                 # substrate never accepted.
+                memory_dir = self._memory_dir
+                assert memory_dir is not None  # guaranteed by _files_authoritative
                 try:
                     _file_mutation.append_block(
-                        self._memory_dir,
+                        memory_dir,
                         _BlockFile(
                             title=content.strip().splitlines()[0][:60] or "Untitled",
                             content=content,
@@ -1055,12 +1057,14 @@ class MemorySystem:
         # drain. should_dream/status() stay accurate across repeated calls.
         self._pending = result.inbox_remaining
         if self._files_authoritative:
+            memory_dir = self._memory_dir
+            assert memory_dir is not None  # guaranteed by _files_authoritative
             # Promotion happened in the index; the substrate has to follow, or
             # the block stays in log/ and every rebuild returns it to inbox.
             async with self._engine.connect() as conn:
                 rows = await list_active_blocks(conn)
             _file_mutation.reconcile_status(
-                self._memory_dir,
+                memory_dir,
                 active_categories={r["id"]: r["category"] for r in rows},
             )
             # Tags are declared state, so LLM-inferred ones have to reach the
@@ -1069,7 +1073,7 @@ class MemorySystem:
             # decay tier with it.
             async with self._engine.connect() as conn:
                 tags_by_id = await get_tags_batch(conn, [r["id"] for r in rows])
-            _file_mutation.sync_tags(self._memory_dir, tags_by_id)
+            _file_mutation.sync_tags(memory_dir, tags_by_id)
         self._frame_cache.clear()
 
         async with self._engine.connect() as conn:
@@ -1263,10 +1267,12 @@ class MemorySystem:
             if block is None or block["status"] != "active":
                 raise BlockNotFound(block_id)
             if self._files_authoritative:
+                memory_dir = self._memory_dir
+                assert memory_dir is not None  # guaranteed by _files_authoritative
                 # Content and cue are both declared state: both belong in the
                 # file, which is the truth a rebuild reads.
                 _file_mutation.edit_block(
-                    self._memory_dir, block_id, content, cue=cue
+                    memory_dir, block_id, content, cue=cue
                 )
             if content is not None:
                 embedding = await self._embedding.embed(content.strip().lower())
@@ -1337,11 +1343,13 @@ class MemorySystem:
                 self._record_op("forget", result.summary)
                 return result
             if self._files_authoritative:
+                memory_dir = self._memory_dir
+                assert memory_dir is not None  # guaranteed by _files_authoritative
                 # Removing it from the file is the real forget; the index row
                 # is only marked archived so retrieval stops returning it.
                 # Git history is the undo, which is why .elfmem/memory must
                 # be committed.
-                _file_mutation.forget_block(self._memory_dir, block_id)
+                _file_mutation.forget_block(memory_dir, block_id)
             await update_block_status(
                 conn, block_id, "archived",
                 archive_reason=reason.value,

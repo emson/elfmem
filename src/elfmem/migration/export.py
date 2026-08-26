@@ -123,7 +123,7 @@ def _seed_ledger(ledger_dir: Path, rows: list[dict[str, Any]]) -> int:
     `sig = (a-0.5)/w` inverts it precisely. A block with no accumulated
     evidence (a = b = 0.5, so w = 0) needs no event at all.
     """
-    def _num(value: object, default: float) -> float:
+    def _num(value: Any, default: float) -> float:
         # Explicit None check, never `value or default`: beta is legitimately
         # 0.0 for any block promoted at confidence 1.0, and `0.0 or 0.5` is
         # 0.5. That silently invented evidence for 27 of 145 real blocks.

@@ -71,8 +71,10 @@ def _cue_similarity(cue_a: str | None, cue_b: str | None) -> float | None:
     """
     if not cue_a or not cue_b:
         return None
+    # jaccard_similarity takes lists and sets them internally -- wrapping in
+    # set() here was redundant and violated its declared list[str] signature.
     return jaccard_similarity(
-        set(cue_a.lower().split()), set(cue_b.lower().split())
+        cue_a.lower().split(), cue_b.lower().split()
     )
 
 
@@ -234,7 +236,6 @@ async def _collect_decisions(
 ) -> tuple[
     list[_BlockDecision],
     list[_EdgeDecision],
-    int,
     int,
     int,
 ]:
@@ -457,7 +458,7 @@ async def _apply_decisions(
     *,
     current_active_hours: float,
     ledger_dir: Path | None = None,
-) -> tuple[int, int, int]:
+) -> tuple[int, int, int, int]:
     """Write all pre-computed consolidation decisions to the database.
 
     This is the only function that writes. The WAL write lock is acquired here
