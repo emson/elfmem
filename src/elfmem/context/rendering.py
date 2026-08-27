@@ -3,15 +3,31 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from elfmem.types import ScoredBlock
+
+
+@dataclass
+class RenderResult:
+    """What the renderer produced, and what it could not fit.
+
+    `dropped` is the half that did not exist before: the renderer has always
+    known which blocks it left out and discarded that knowledge, so a caller
+    could not tell "five blocks is all there is" from "five of ten fit".
+    """
+
+    text: str
+    selected: list[ScoredBlock] = field(default_factory=list)
+    dropped: list[ScoredBlock] = field(default_factory=list)
+    budget_used: int = 0
 
 
 def render_blocks(
     blocks: list[ScoredBlock],
     template: str,
     token_budget: int,
-) -> str:
+) -> RenderResult:
     """Render scored blocks into text using the specified template.
 
     Enforces token budget by greedily including blocks from highest to lowest
@@ -23,39 +39,59 @@ def render_blocks(
         token_budget: Approximate character budget.
 
     Returns:
-        Rendered text string.
+        RenderResult — the text, what was rendered, and what would not fit.
     """
     if not blocks:
-        return ""
+        return RenderResult(text="")
 
-    if template == "self":
-        return _render_with_budget(blocks, token_budget, _render_self_template)
-    elif template == "task":
-        return _render_with_budget(blocks, token_budget, _render_task_template)
-    elif template == "simulate":
-        return _render_with_budget(blocks, token_budget, _render_simulate_template)
-    else:
-        return _render_with_budget(blocks, token_budget, _render_attention_template)
+    templates: dict[str, Callable[[list[ScoredBlock]], str]] = {
+        "self": _render_self_template,
+        "task": _render_task_template,
+        "simulate": _render_simulate_template,
+    }
+    render_fn = templates.get(template, _render_attention_template)
+    return _render_with_budget(blocks, token_budget, render_fn)
 
 
 def _render_with_budget(
     blocks: list[ScoredBlock],
     token_budget: int,
     render_fn: Callable[[list[ScoredBlock]], str],
-) -> str:
+) -> RenderResult:
     """Greedily include blocks until token budget is reached."""
     fn = render_fn
     selected: list[ScoredBlock] = []
-    for block in blocks:
+    dropped: list[ScoredBlock] = []
+    for i, block in enumerate(blocks):
         candidate = selected + [block]
         text = fn(candidate)
         if _estimate_tokens(text) <= token_budget:
             selected = candidate
         else:
+            # Stop at the first block that does not fit rather than skipping
+            # ahead to smaller ones: the blocks arrive score-ordered, and
+            # letting a low-scoring short block leapfrog a high-scoring long
+            # one would quietly reorder the agent's identity by length.
+            # Everything from here down is dropped, and now says so.
+            dropped = blocks[i:]
             break
     if not selected:
-        return ""
-    return fn(selected)
+        # Nothing fits: one block is larger than the entire frame budget.
+        # Render it anyway rather than returning "" -- an empty identity is
+        # the worst outcome this function can produce, and it used to be the
+        # silent one. Deliberately NOT truncated: cutting a principle
+        # mid-sentence can invert its meaning ("never do X" -> "never do"),
+        # so the budget is overrun visibly (budget_used > budget_total in the
+        # FrameResult) instead of the content being corrupted quietly.
+        selected = blocks[:1]
+        dropped = blocks[1:]
+    text = fn(selected)
+    return RenderResult(
+        text=text,
+        selected=selected,
+        dropped=dropped,
+        budget_used=_estimate_tokens(text),
+    )
 
 
 # Blocks carrying either tag were written by another agent and arrived through

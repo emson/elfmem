@@ -325,7 +325,7 @@ class MemorySystem:
     @classmethod
     async def from_config(
         cls,
-        db_path: str,
+        db_path: str | os.PathLike[str],
         config: ElfmemConfig | str | dict[str, Any] | None = None,
         *,
         policy: ConsolidationPolicy | None = None,
@@ -367,7 +367,22 @@ class MemorySystem:
             # With adaptive consolidation policy:
             from elfmem import ConsolidationPolicy
             system = await MemorySystem.from_config("agent.db", policy=ConsolidationPolicy())
+
+        Raises:
+            TypeError: If ``db_path`` is not a str or PathLike. Checked here
+                rather than left to SQLite, which reports a config object
+                passed by mistake as ``OSError: [Errno 63] File name too
+                long: "Config(raw={...``.
         """
+        if not isinstance(db_path, str | os.PathLike):
+            raise TypeError(
+                f"db_path must be str or os.PathLike, got "
+                f"{type(db_path).__module__}.{type(db_path).__qualname__}. "
+                "The first argument is the database file path; pass config as "
+                "the second argument: from_config(db_path, config)."
+            )
+        # Normalise Path -> str once, so everything downstream sees one type.
+        db_path = os.fspath(db_path)
         cfg = _resolve_config(config)
 
         # Configure logging (zero overhead if disabled)
@@ -1819,6 +1834,7 @@ class MemorySystem:
         query: str | None = None,
         *,
         top_k: int | None = None,
+        reinforce: bool = True,
     ) -> FrameResult:
         """Retrieve and render context for the named frame, ready for prompt injection.
 
@@ -1840,7 +1856,18 @@ class MemorySystem:
             name: Frame name — 'self', 'attention', or 'task'.
             query: Query text. Required for ATTENTION; optional for TASK;
                    not used for SELF (identity context is queryless).
-            top_k: Number of blocks to return. Defaults to config.memory.top_k.
+            top_k: Hard ceiling on blocks returned. Defaults to
+                   ``max(config.memory.top_k, number of guaranteed blocks)``,
+                   so a frame guaranteeing ten constitutional blocks does not
+                   render five of them by default. An explicit value always
+                   binds, and whatever it excludes is listed in
+                   ``result.dropped``.
+            reinforce: Whether retrieval strengthens what it returns (the
+                   normal behaviour, and how memory learns what gets used).
+                   Pass False to preview a frame without changing any
+                   scoring — what ``elfmem doctor --frames`` uses, since a
+                   diagnostic that reinforced on every run would inflate the
+                   scores of exactly the blocks it reports on.
 
         Raises:
             FrameError: If name is not a valid frame. Recovery hint included.
@@ -1863,7 +1890,10 @@ class MemorySystem:
         # the MCP server or managed() happened to open a session first.
         await self.begin_session()
 
-        k = top_k if top_k is not None else self._config.memory.top_k
+        # `top_k` is deliberately forwarded unresolved. recall() needs to know
+        # whether the caller actually asked for a ceiling: an explicit value
+        # always binds, while the default becomes max(config, n_guaranteed) so
+        # a frame guaranteeing ten blocks stops rendering five by default.
         current_hours = self._current_active_hours()
         mem = self._config.memory
 
@@ -1874,8 +1904,10 @@ class MemorySystem:
                 frame_def=frame_def,
                 query=query,
                 current_active_hours=current_hours,
-                top_k=k,
+                top_k=top_k,
+                default_top_k=mem.top_k,
                 cache=self._frame_cache,
+                reinforce=reinforce,
             )
             # Hebbian staging — fires on genuine frame() retrievals only.
             # Skipped on cache hits: a cached result carries no new retrieval signal.
@@ -1885,7 +1917,7 @@ class MemorySystem:
             # begin_session() cycle so threshold means "N distinct sessions."
             recalled_ids = [b.id for b in result.blocks]
             promoted_count = 0
-            if recalled_ids and not result.cached:
+            if recalled_ids and not result.cached and reinforce:
                 promoted_count = await stage_and_promote_co_retrievals(
                     conn,
                     recalled_ids,
@@ -1902,7 +1934,7 @@ class MemorySystem:
         # the calling agent. Across three real instances the *voluntary*
         # feedback verb has been called nine times in total, so a history
         # that depends on agent discipline is a history that stays empty.
-        if recalled_ids and not result.cached:
+        if recalled_ids and not result.cached and reinforce:
             _ledger.record_assembly(
                 self._ledger_dir, recalled_ids,
                 active_hours=self._current_active_hours(),

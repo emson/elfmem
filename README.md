@@ -66,22 +66,27 @@ async def main():
         print(result)  # "Setup complete: 2/2 new blocks created."
 
         # 2. Learn from experience (fast, no API calls)
+        # Stored is NOT yet visible: the block sits in the inbox until step 3.
         result = await system.learn("Redis connection pooling: set max to 20 in production.")
-        print(result)  # "Stored block a1b2c3d4. Status: created."
+        print(result)  # "Stored block a1b2c3d4. Status: created. Pending consolidation…"
+        print(result.visible)  # False
 
         result = await system.learn("Deploy failed when pool size was left at default (10).")
-        print(result)  # "Stored block e5f6g7h8. Status: created."
+        print(result)  # "Stored block e5f6g7h8. Status: created. Pending consolidation…"
 
-        # 3. Consolidate: embed, deduplicate, build graph
+        # 3. Consolidate — THIS is what makes it retrievable
         result = await system.dream()
         print(result)  # "Consolidated 2: 2 promoted, 0 deduped, 3 edges."
 
-        # 4. Recall through the right frame
+        # 4. Recall through the right frame — and check what it dropped.
+        # `dropped` empty means "this is everything"; non-empty means the agent
+        # is seeing part of what you stored, with .reason saying which limit bit.
         identity = await system.frame("self")
-        print(identity)  # "self frame: 2 blocks returned."
+        print(identity)  # "self frame: 2 blocks returned, 84/600 tokens."
+        print(identity.dropped)  # [] — nothing withheld
 
         context = await system.frame("attention", query="Redis production config")
-        print(context)   # "attention frame: 2 blocks returned."
+        print(context)   # "attention frame: 2 blocks returned, 61/2000 tokens."
 
         for block in context.blocks:
             print(f"  [{block.score:.2f}] {block.content}")
@@ -102,6 +107,23 @@ async def main():
 
 asyncio.run(main())
 ```
+
+Then, from the shell, see exactly what the agent receives in every frame —
+rendered, dropped, and why:
+
+```bash
+elfmem doctor --frames
+# SELF        10 rendered |   0 dropped | 231/600 tokens
+# ATTENTION    5 rendered |   3 dropped | 412/2000 tokens
+#     dropped: 3f2a1b…  (top_k) Events to the journal, evolving patterns…
+#
+# Inbox: 4 block(s) pending consolidation — stored but invisible to every
+# frame above. Run: elfmem dream
+```
+
+Exits non-zero if a *guaranteed* block was dropped — the one case a frame's
+guarantee exists to prevent, and the reason a partial identity can otherwise
+look complete.
 
 ---
 
@@ -1063,9 +1085,10 @@ system.session_block_ids         # list[str] — every block touched this sessio
 
 # Write
 result = await system.learn(content, tags=None, category="knowledge")
-#   → LearnResult(block_id="a1b2...", status="created")
+#   → LearnResult(block_id="a1b2...", status="created", pending_consolidation=True)
+#     `.visible` is False until dream() runs — stored is not yet retrievable
 result = await system.remember(content, tags=None)   # alias; also checks should_dream
-#   → LearnResult(block_id="c3d4...", status="created")
+#   → LearnResult(block_id="c3d4...", status="created", pending_consolidation=True)
 result = await system.learn_document(text, chunk_size=256, tags=None)
 #   → LearnDocumentResult(chunks_total=8, chunks_created=7, chunks_duplicate=1)
 result = await system.edit(block_id, content)         # replace content directly, no LLM
@@ -1074,8 +1097,12 @@ result = await system.forget(block_id)                # archive by explicit requ
 #   → ForgetResult(block_id="a1b2...", status="forgotten")
 
 # Read
-frame_result = await system.frame(name, query=None, top_k=5)
-#   → FrameResult(text="...", blocks=[ScoredBlock, ...], frame_name="attention")
+frame_result = await system.frame(name, query=None, top_k=None, reinforce=True)
+#   → FrameResult(text="...", blocks=[ScoredBlock, ...], frame_name="attention",
+#                 dropped=[DroppedBlock, ...], budget_used=412, budget_total=2000)
+#     `dropped` empty = this is everything; non-empty = the agent sees part of
+#     what you stored. top_k defaults to max(memory.top_k, n_guaranteed).
+#     reinforce=False previews a frame without affecting scoring.
 blocks = await system.recall(query=None, top_k=5, frame="attention")
 #   → list[ScoredBlock]  (raw, no rendering, no side effects)
 rows = await system.ls(tag=None, category=None, limit=50)
@@ -1195,14 +1222,18 @@ EditResult(block_id)
 ForgetResult(block_id, status)
 # status: "forgotten" | "already_archived" (idempotent, not an error)
 
-FrameResult(text, blocks, frame_name, cached, edges_promoted)
-# text: rendered prompt-ready string; blocks: list[ScoredBlock]
+FrameResult(text, blocks, frame_name, cached, edges_promoted, dropped, budget_used, budget_total)
+# text: rendered prompt-ready string; blocks: what actually reached the text
+# dropped: eligible blocks that did NOT render; .dropped_reasons summarises why
+DroppedBlock(id, content, tags, reason)
+# reason: "top_k" | "token_budget" | "contradiction" (near-duplicate suppressed)
 
 ScoredBlock(id, content, score, confidence, similarity, recency, centrality, reinforcement, tags, was_expanded)
 BlockSummary(id, content, category, tags, created_at, reinforcement_count)      # ls()
 InboxBlockSummary(id, content, category, tags, created_at)                     # inbox()
 
-ConsolidateResult(processed, promoted, deduplicated, edges_created, rescored, rescore_failed, inbox_remaining, health)
+ConsolidateResult(processed, promoted, deduplicated, edges_created, rescored, rescore_failed, inbox_remaining, health, analyses_unused)
+# analyses_unused: host_analyses ids NOT applied this run (outside max_inbox_per_run)
 CurateResult(edges_pruned, reinforced, constitutional_reinforced, edges_decayed, total_edges_after)
 # no `archived` field — curate() no longer auto-archives blocks (ADR 0009); see review_corpus()
 MetabolismDryRunResult(blocks_considered, self_goals, candidates, proposals, llm_failures)

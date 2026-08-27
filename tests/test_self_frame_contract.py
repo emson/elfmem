@@ -12,7 +12,7 @@ from elfmem import ElfmemConfig, MemorySystem
 from elfmem.config import MemoryConfig
 from elfmem.context.frames import SELF_FRAME, FrameCache
 from elfmem.context.rendering import _render_self_template, render_blocks
-from elfmem.operations.recall import _enforce_guarantees
+from elfmem.operations.recall import _enforce_guarantees, _resolve_guaranteed_ids
 from elfmem.types import FrameResult, ScoredBlock
 
 
@@ -130,12 +130,14 @@ class TestGuarantee:
             _block(own.block_id, "principle", ["self/constitutional"], 0.10),
         ]
         async with system._engine.begin() as conn:
-            kept = await _enforce_guarantees(
-                conn, candidates=candidates,
+            guaranteed_ids = await _resolve_guaranteed_ids(
+                conn,
                 guarantee_tag_patterns=["self/constitutional"],
                 exclude_tag_patterns=["peer/%"],
-                top_k=1,
             )
+        kept = _enforce_guarantees(
+            candidates=candidates, guaranteed_ids=guaranteed_ids, top_k=1,
+        )
         assert [b.id for b in kept] == [own.block_id]
 
 
@@ -182,8 +184,11 @@ class TestSelfTemplate:
 
     def test_budget_still_enforced(self):
         blocks = [_block(str(i), "x" * 400, ["self/constitutional"]) for i in range(10)]
-        text = render_blocks(blocks, "self", token_budget=200)
-        assert len(text) // 4 <= 200
+        result = render_blocks(blocks, "self", token_budget=200)
+        assert len(result.text) // 4 <= 200
+        # What did not fit is now reported rather than silently discarded.
+        assert result.dropped
+        assert len(result.selected) + len(result.dropped) == len(blocks)
 
 
 class TestCompose:

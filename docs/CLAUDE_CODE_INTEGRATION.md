@@ -45,6 +45,21 @@ elfmem status
 elfmem remember "New principle: X" --tags self/principle
 ```
 
+**Before trusting any of it, check what the agent actually receives:**
+
+```bash
+elfmem doctor --frames
+```
+
+This renders every frame and prints rendered-vs-dropped counts, the reason for
+each drop (`top_k`, `token_budget`, or `contradiction`), the token budget used,
+and how many blocks are still in the inbox invisible to all of them. It is the
+one-command answer to "is the identity I stored the identity the agent sees" —
+a partial identity the agent believes is whole is the most damaging thing this
+library can produce. Read-only (it previews with `reinforce=False`, so it never
+inflates the scores it reports), and it exits non-zero if a *guaranteed* block
+was dropped, so it is safe to put in CI.
+
 Everything above depends on the agent choosing to call a tool — reliable most of the time, silently skipped some of the time. That gap is real: it was found and fixed in this project's own usage (an agent answered a direct question about its own memory without ever consulting it). The hooks below close it structurally instead of relying on discipline.
 
 ## Automatic Memory: Hooks (recommended)

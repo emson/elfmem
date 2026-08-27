@@ -83,18 +83,33 @@ GUIDES: dict[str, AgentGuide] = {
             "'created' — new block stored; "
             "'duplicate_rejected' — exact content already exists; "
             "'near_duplicate_superseded' — similar block replaced. "
-            "Check system.should_dream after this call."
+            "STORED IS NOT VISIBLE: 'created' means the block is in the inbox, "
+            "where frame() and recall() cannot see it. result.visible is False "
+            "and result.pending_consolidation is True until dream() runs. "
+            "Seed ten principles, get ten successes, and the agent sees none "
+            "of them until you consolidate. Check system.should_dream."
         ),
         next=(
             "After calling remember(), check system.should_dream. "
-            "When True, call dream() at the next natural pause (not in a tight loop)."
+            "When True, call dream() at the next natural pause (not in a tight loop). "
+            "Then verify what the agent will actually receive — "
+            "`print((await system.frame('self')).summary)` or "
+            "`elfmem doctor --frames`. "
+            "CONSOLIDATION MAY REWRITE THIS TEXT, and the rewrite is what "
+            "renders: the LLM's summary replaces your wording in the frame. "
+            "For text that must survive verbatim — a ratified constitution, a "
+            "quote, legal or safety wording — supply your own analysis via "
+            "dream(host_analyses={block_id: {...}}) and check "
+            "result.analyses_unused, which lists ids that were NOT applied."
         ),
         example=(
             "result = await system.remember('EUR/USD breaks 1.10 resistance')\n"
+            "print(result.visible)  # False — stored, not yet retrievable\n"
             "if system.should_dream:\n"
             "    dream_result = await system.dream()\n"
             "    if dream_result:\n"
-            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.\n"
+            "print((await system.frame('self')).summary)  # what the agent sees"
         ),
     ),
     "dream": AgentGuide(
@@ -391,13 +406,26 @@ GUIDES: dict[str, AgentGuide] = {
             "FrameResult. Use result.text for direct prompt injection, or "
             "result.compose(query) to get text and question as one prompt when "
             "the receiving model does not already have the question. "
-            "result.blocks contains the scored ScoredBlock candidates. "
+            "result.blocks contains what actually reached the text. "
             "result.cached indicates whether this was served from the TTL cache "
-            "(only queryless frames are cacheable)."
+            "(only queryless frames are cacheable). "
+            "CHECK result.dropped: eligible blocks that did NOT reach the text, "
+            "each with .reason — 'top_k', 'token_budget', or 'contradiction' "
+            "(one half of a near-duplicate pair, suppressed at retrieval). "
+            "Empty means 'this is everything'; non-empty means the agent is "
+            "seeing part of what you stored. result.budget_used / "
+            "result.budget_total show the token spend. The limits that decide "
+            "all this: SELF renders within a 600-token budget (ATTENTION 2000, "
+            "TASK 800, SIMULATE 2000), tokens are ESTIMATED as len(text)//4, "
+            "and top_k defaults to max(memory.top_k, number of guaranteed "
+            "blocks) — an explicit top_k is always a hard ceiling."
         ),
         next=(
             "Inject result.text into your LLM prompt. "
-            "Reinforce is a side effect of retrieval — no separate call needed."
+            "Reinforce is a side effect of retrieval — no separate call needed. "
+            "Run `elfmem doctor --frames` to see rendered-vs-dropped for every "
+            "frame at once, which is the fastest answer to 'what does my agent "
+            "actually see'."
         ),
         example=(
             "ctx = await system.frame('attention', query='error handling')\n"

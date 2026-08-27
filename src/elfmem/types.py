@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 
 class BlockStatus(StrEnum):
@@ -78,21 +78,85 @@ class ScoredBlock:
 
 
 @dataclass
+class DroppedBlock:
+    """A block that was eligible for a frame but did not reach the rendered text.
+
+    The reason is carried per block, not once per frame, because a single
+    call can drop for several reasons at once: one half of a near-duplicate
+    pair is suppressed, blocks past ``top_k`` never reach the renderer, and
+    blocks the renderer could not fit are dropped again on budget. A single
+    frame-level reason would have to pick one and misreport the others.
+
+    ``contradiction`` is the least obvious and the most consequential for a
+    constitution: consolidation flags near-duplicate pairs rather than
+    destroying either half (ADR 0010), and retrieval then shows only the
+    higher-confidence one. Seed eight similarly-worded principles and the
+    agent can legitimately receive three, which used to look identical to
+    having only ever stored three.
+    """
+
+    id: str
+    content: str
+    tags: list[str]
+    reason: Literal["top_k", "token_budget", "contradiction"]
+
+    @property
+    def summary(self) -> str:
+        preview = self.content[:60] + ("…" if len(self.content) > 60 else "")
+        return f"{self.id[:8]}… ({self.reason}) {preview}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "tags": self.tags,
+            "reason": self.reason,
+        }
+
+
+@dataclass
 class FrameResult:
     text: str
     blocks: list[ScoredBlock]
     frame_name: str
     cached: bool = False
     edges_promoted: int = 0  # co_retrieval edges promoted during this frame() call
+    # Blocks that were eligible but never reached `text`. Empty is the
+    # normal case and means "this is everything", which is precisely what a
+    # caller could not previously distinguish from "this is the first five
+    # of ten". A partial identity the agent believes is whole is the worst
+    # failure this library can produce; these three fields are what make it
+    # visible without reading the renderer's source.
+    dropped: list[DroppedBlock] = field(default_factory=list)
+    budget_used: int = 0
+    budget_total: int = 0
+
+    @property
+    def dropped_reasons(self) -> set[str]:
+        """Which limits actually bit this call — ``{"top_k"}``, ``{"token_budget"}``,
+        both, or empty when nothing was dropped."""
+        return {d.reason for d in self.dropped}
 
     @property
     def summary(self) -> str:
         count = len(self.blocks)
         cached_note = " (cached)" if self.cached else ""
-        if count == 0:
+        if count == 0 and not self.dropped:
             return f"{self.frame_name} frame: no blocks found."
         noun = "block" if count == 1 else "blocks"
-        return f"{self.frame_name} frame: {count} {noun} returned{cached_note}."
+        base = f"{self.frame_name} frame: {count} {noun} returned{cached_note}"
+        if self.budget_total:
+            base += f", {self.budget_used}/{self.budget_total} tokens"
+        if self.dropped:
+            by_reason = ", ".join(
+                f"{sum(1 for d in self.dropped if d.reason == r)} {r}"
+                for r in sorted(self.dropped_reasons)
+            )
+            base += f" — {len(self.dropped)} dropped ({by_reason})"
+        return base + "."
 
     def __str__(self) -> str:
         return self.summary
@@ -170,24 +234,47 @@ class UseResult:
 class LearnResult:
     block_id: str
     status: str  # "created" | "duplicate_rejected" | "near_duplicate_superseded"
+    # True while the block is in the inbox: stored, but NOT yet retrievable by
+    # frame()/recall(). `status="created"` is true and, on its own, misleading
+    # -- a caller who seeds ten principles gets ten successes and an empty
+    # frame, because consolidation has not run. This field is what makes that
+    # gap visible at the call site instead of at debugging time.
+    pending_consolidation: bool = False
+
+    @property
+    def visible(self) -> bool:
+        """Can frame()/recall() return this block right now? The inverse of
+        ``pending_consolidation`` -- named positively because "is it visible
+        to the agent" is the question callers actually ask."""
+        return not self.pending_consolidation
 
     @property
     def summary(self) -> str:
         short_id = self.block_id[:8]
+        pending = (
+            " Pending consolidation — not yet retrievable; run dream()."
+            if self.pending_consolidation
+            else ""
+        )
         if self.status == "created":
-            return f"Stored block {short_id}. Status: created."
+            return f"Stored block {short_id}. Status: created.{pending}"
         if self.status == "duplicate_rejected":
-            return f"Duplicate — block {short_id} already exists."
+            return f"Duplicate — block {short_id} already exists.{pending}"
         if self.status == "near_duplicate_superseded":
-            return f"Updated block {short_id} (superseded near-duplicate)."
+            return f"Updated block {short_id} (superseded near-duplicate).{pending}"
         # Fallback for future status values
-        return f"Block {short_id}. Status: {self.status}."
+        return f"Block {short_id}. Status: {self.status}.{pending}"
 
     def __str__(self) -> str:
         return self.summary
 
     def to_dict(self) -> dict[str, Any]:
-        return {"block_id": self.block_id, "status": self.status}
+        return {
+            "block_id": self.block_id,
+            "status": self.status,
+            "pending_consolidation": self.pending_consolidation,
+            "visible": self.visible,
+        }
 
 
 @dataclass
@@ -439,6 +526,15 @@ class ConsolidateResult:
     # `elfmem review` to reconcile deliberately. A nonzero value is normal,
     # not an error — it is the count of destructions that did not happen.
     near_duplicates_flagged: int = 0
+    # Block ids whose caller-supplied `host_analyses` entry this run did NOT
+    # apply, because the block fell outside `consolidation.max_inbox_per_run`
+    # (ADR 0007). This is not cosmetic: an unapplied analysis means the block
+    # is left for a later pass that will analyse it with the configured LLM
+    # instead -- silently substituting generated wording for wording the
+    # caller supplied precisely to prevent that, inverting an explicit
+    # instruction. Re-submit these ids on the next call, or raise
+    # `consolidation.max_inbox_per_run`.
+    analyses_unused: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
@@ -472,6 +568,13 @@ class ConsolidateResult:
         suffix = "."
         if self.inbox_remaining:
             suffix = f" — {self.inbox_remaining} remaining, run dream() again to continue."
+        if self.analyses_unused:
+            n = len(self.analyses_unused)
+            noun = "analysis" if n == 1 else "analyses"
+            suffix = (
+                f" — {n} supplied {noun} NOT applied (outside max_inbox_per_run); "
+                "re-submit on the next call or they will be LLM-analysed instead."
+            )
         return prefix + ", ".join(parts) + suffix
 
     def __str__(self) -> str:
@@ -488,6 +591,7 @@ class ConsolidateResult:
             "health": self.health.to_dict() if self.health is not None else None,
             "inbox_remaining": self.inbox_remaining,
             "blocked_supersessions": self.blocked_supersessions,
+            "analyses_unused": self.analyses_unused,
         }
 
 

@@ -80,6 +80,7 @@ Currently `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md); no version number cut 
 - **`doctor --resolve`**: one real LLM call to confirm a configured key actually works
 - **Host-supplied analysis**: `dream(host_analyses=...)` lets a host agent session (e.g. a Claude Code session) supply its own alignment/tags/summary per block instead of a configured LLM adapter
 - **Edge metabolism, Stage A**: `metabolism_dry_run()` — read-only preview of goal-directed edge proposals judged against the agent's own `self/goal` blocks, never writes
+- **Write-path visibility**: every stage that reduces what the caller asked for now reports it — `FrameResult.dropped` (with a per-block `top_k` / `token_budget` / `contradiction` reason), `ConsolidateResult.analyses_unused`, `LearnResult.pending_consolidation`, and `elfmem doctor --frames` to render every frame and show what the agent actually receives. Driven by a real first-integration report (`docs/integration_friction_report.md`), which found one bug class behind four separate symptoms: stage one returned success while later stages silently delivered less
 
 See CHANGELOG.md's `[Unreleased]` section for the full, itemized list.
 

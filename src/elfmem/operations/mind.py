@@ -143,7 +143,13 @@ async def create_mind(
     content_id = compute_content_hash(content)
     existing = await get_block(conn, content_id)
     if existing is not None and existing["status"] in ("inbox", "active"):
-        return LearnResult(block_id=content_id, status="duplicate_rejected")
+        return LearnResult(
+            block_id=content_id,
+            status="duplicate_rejected",
+            # An active match is already retrievable; only an inbox one is
+            # still waiting on consolidation.
+            pending_consolidation=existing["status"] == "inbox",
+        )
 
     tags = [f"mind/{slug}"]
 

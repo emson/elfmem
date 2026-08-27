@@ -671,6 +671,13 @@ def doctor(
             help="Also make one real LLM call to confirm the configured key works.",
         ),
     ] = False,
+    frames: Annotated[
+        bool,
+        typer.Option(
+            "--frames",
+            help="Render every frame and print exactly what the agent receives.",
+        ),
+    ] = False,
 ) -> None:
     """Diagnose your elfmem setup. Reports what is configured and what is missing.
 
@@ -696,12 +703,20 @@ def doctor(
     that a string is present in the environment — this is the check that
     would have caught a silently-degrading mock/no-op adapter at setup time
     rather than at first real use.
+    Use --frames to render every frame and print what the agent actually
+    receives: rendered vs dropped blocks, the reason for each drop, token
+    budget used, and how many blocks are still sitting in the inbox
+    invisible to all of them. Exits non-zero only when a *guaranteed* block
+    was dropped — the one case a frame's guarantee exists to prevent.
     """
     if modules:
         typer.echo(_project.format_key_modules())
         return
     if migrate_mcp:
         _doctor_migrate_mcp(json_output)
+        return
+    if frames:
+        _doctor_frames(db, config, json_output)
         return
     env_path = _load_project_env()
     checks: list[dict[str, Any]] = []
@@ -3545,6 +3560,89 @@ async def _ls(
 async def _status(db_path: str, config: str | None) -> SystemStatus:
     async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
         return await mem.status()
+
+
+async def _frames_report(db_path: str, config: str | None) -> dict[str, Any]:
+    """Render every frame and report what the agent actually receives.
+
+    Answers the question a caller otherwise has to answer by reading
+    `context/rendering.py`: is what I stored what the agent sees? Renders
+    queryless, so ATTENTION/SIMULATE show what is in reach rather than what
+    a specific question surfaces.
+    """
+    from elfmem.context.frames import BUILTIN_FRAMES
+
+    async with MemorySystem.managed(db_path, config=config, auto_dream=False) as mem:
+        report: dict[str, Any] = {"frames": [], "inbox_pending": 0}
+        report["inbox_pending"] = len(await mem.inbox())
+        for name, frame_def in BUILTIN_FRAMES.items():
+            # reinforce=False keeps doctor's documented read-only contract:
+            # retrieval normally strengthens what it returns, so a diagnostic
+            # rendering all four frames would inflate the scores of exactly
+            # the blocks it is reporting on -- worse on every re-run, and
+            # this command is meant to be safe to put in CI.
+            result = await mem.frame(name, reinforce=False)
+            guaranteed_dropped = [
+                d for d in result.dropped
+                if any(
+                    _tag_matches(tag, pattern)
+                    for tag in d.tags
+                    for pattern in frame_def.guarantees
+                )
+            ]
+            report["frames"].append({
+                "frame": name,
+                "rendered": len(result.blocks),
+                "dropped": [d.to_dict() for d in result.dropped],
+                "guaranteed_dropped": [d.to_dict() for d in guaranteed_dropped],
+                "budget_used": result.budget_used,
+                "budget_total": result.budget_total,
+                "over_budget": result.budget_used > result.budget_total,
+            })
+        return report
+
+
+def _tag_matches(tag: str, pattern: str) -> bool:
+    """SQL-LIKE style match for the `%` suffix used in frame guarantees."""
+    return tag.startswith(pattern[:-1]) if pattern.endswith("%") else tag == pattern
+
+
+def _doctor_frames(db: str | None, config: str | None, json_output: bool) -> None:
+    """`elfmem doctor --frames` — print exactly what each frame renders."""
+    db_path, config_path = _resolve_paths(db, config)
+    report = _run(_frames_report(db_path, config_path))
+
+    if json_output:
+        _json(report)
+    else:
+        for row in report["frames"]:
+            over = " OVER BUDGET" if row["over_budget"] else ""
+            line = (
+                f"{row['frame'].upper():<10} {row['rendered']:>3} rendered | "
+                f"{len(row['dropped']):>3} dropped | "
+                f"{row['budget_used']}/{row['budget_total']} tokens{over}"
+            )
+            typer.echo(line)
+            for d in row["dropped"]:
+                preview = d["content"][:60].replace("\n", " ")
+                flag = " [GUARANTEED]" if d in row["guaranteed_dropped"] else ""
+                typer.echo(f"    dropped: {d['id'][:8]}… ({d['reason']}){flag} {preview}…")
+        if report["inbox_pending"]:
+            typer.echo(
+                f"\nInbox: {report['inbox_pending']} block(s) pending consolidation — "
+                "stored but invisible to every frame above. Run: elfmem dream"
+            )
+        typer.echo(
+            "\nRendered queryless: ATTENTION and SIMULATE vary with the query "
+            "you actually pass."
+        )
+
+    # A dropped *guaranteed* block is the one failure that is never routine:
+    # it is precisely the case the guarantee exists to prevent, and it means
+    # the agent is running on a partial identity it believes is whole.
+    # Ordinary top_k/budget drops on ATTENTION are normal and do not fail.
+    if any(row["guaranteed_dropped"] for row in report["frames"]):
+        raise typer.Exit(1)
 
 
 async def _inbox(

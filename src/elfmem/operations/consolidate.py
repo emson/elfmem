@@ -238,6 +238,7 @@ async def _collect_decisions(
     list[_EdgeDecision],
     int,
     int,
+    list[str],
 ]:
     """Read inbox, embed, score with LLM, and compute all decisions.
 
@@ -245,10 +246,11 @@ async def _collect_decisions(
     The write lock is not acquired until _apply_decisions() issues its first UPDATE.
 
     Returns (block_decisions, edge_decisions, processed_count,
-    inbox_remaining). All counts are 0 if the inbox was empty.
-    ``inbox_remaining`` is the count left unprocessed after
+    inbox_remaining, analyses_unused). All counts are 0 if the inbox was
+    empty. ``inbox_remaining`` is the count left unprocessed after
     ``max_inbox_per_run`` truncation — 0 unless the inbox was larger than the
-    budget.
+    budget. ``analyses_unused`` lists caller-supplied ``host_analyses`` ids
+    this run did not apply.
 
     Near-duplicate matches no longer archive anything here: the pair is
     carried on the decision and recorded by ``_apply_decisions``, counted as
@@ -265,12 +267,21 @@ async def _collect_decisions(
     """
     inbox = await get_inbox_blocks(conn)
     if not inbox:
-        return [], [], 0, 0
+        return [], [], 0, 0, sorted(host_analyses or {})
 
     inbox_remaining = 0
     if max_inbox_per_run is not None and len(inbox) > max_inbox_per_run:
         inbox_remaining = len(inbox) - max_inbox_per_run
         inbox = inbox[:max_inbox_per_run]  # oldest first (ADR 0007 FIFO fairness)
+
+    # Which caller-supplied analyses this run will NOT apply: either the block
+    # fell outside the max_inbox_per_run window, or its id is not pending at
+    # all. Both used to pass silently, and the first is the damaging one --
+    # the block stays in the inbox for a later pass that analyses it with the
+    # configured LLM instead, quietly replacing the wording the caller
+    # supplied host_analyses precisely to preserve.
+    processed_ids = {b["id"] for b in inbox}
+    analyses_unused = sorted(set(host_analyses or {}) - processed_ids)
 
     # Load active blocks and build their embedding vectors.
     #
@@ -446,6 +457,7 @@ async def _collect_decisions(
         edge_decisions,
         len(inbox),
         inbox_remaining,
+        analyses_unused,
     )
 
 
@@ -616,6 +628,7 @@ async def consolidate(
         edge_decisions,
         processed,
         inbox_remaining,
+        analyses_unused,
     ) = await _collect_decisions(
         conn,
         llm=llm,
@@ -637,6 +650,7 @@ async def consolidate(
         return ConsolidateResult(
             processed=0, promoted=0, deduplicated=0, edges_created=0,
             inbox_remaining=inbox_remaining,
+            analyses_unused=analyses_unused,
         )
 
     promoted, deduplicated, edges_created, near_duplicates = await _apply_decisions(
@@ -662,4 +676,5 @@ async def consolidate(
         inbox_remaining=inbox_remaining,
         near_duplicates_flagged=near_duplicates,
         health=health,
+        analyses_unused=analyses_unused,
     )

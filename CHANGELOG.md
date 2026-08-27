@@ -10,6 +10,79 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`FrameResult.dropped` / `.budget_used` / `.budget_total`** — every block
+  that was eligible for a frame but did not reach the rendered text, each
+  carrying its own `.reason`. This closes the bug class behind
+  `docs/integration_friction_report.md`: the write path has four stages and
+  each could silently deliver less than the caller intended while stage one
+  returned success, so "five blocks is all I have" was indistinguishable from
+  "five of ten fit". Empty `dropped` now means *this is everything*. The
+  reason is per block, not per frame, because one call can drop for several
+  reasons at once. Three reasons exist: `top_k`, `token_budget`, and
+  `contradiction` — the last found by running the new `doctor --frames`
+  against a real corpus, not from the report: consolidation flags
+  near-duplicate pairs rather than destroying either half (ADR 0010) and
+  retrieval then renders only the higher-confidence one, so eight seeded
+  principles could legitimately reach the agent as three with *nothing*
+  reported as missing.
+- **`elfmem doctor --frames`** — renders every frame and prints what the agent
+  actually receives: rendered vs dropped counts, the reason and preview for
+  each drop, token budget used, and how many blocks are still in the inbox
+  invisible to all of them. Exits non-zero only when a *guaranteed* block was
+  dropped, which is the one case a frame's guarantee exists to prevent;
+  ordinary `top_k` drops on ATTENTION are normal and do not fail. Folded into
+  the existing `doctor` rather than shipped as a new verb (minimum-force).
+- **`frame(..., reinforce=False)`** — preview what a frame would render without
+  affecting scoring. Retrieval normally strengthens what it returns, which is
+  how memory learns what gets used and exactly wrong for a diagnostic:
+  `doctor --frames` renders all four frames, so reinforcing would inflate the
+  scores of precisely the blocks it reports on, compounding on every run.
+  `doctor` documents itself as read-only and now genuinely is.
+- **`LearnResult.pending_consolidation` / `.visible`** — `status="created"` is
+  true and, on its own, misleading: the block is in the inbox, where `frame()`
+  and `recall()` cannot see it. Seeding ten principles returned ten successes
+  and an empty frame. `summary` now says so at the call site.
+- **`ConsolidateResult.analyses_unused`** — block ids whose caller-supplied
+  `host_analyses` entry a run did not apply, because the block fell outside
+  `consolidation.max_inbox_per_run` (ADR 0007). Silently leaving them for a
+  later pass meant the configured LLM re-analysed and reworded text the caller
+  had supplied `host_analyses` precisely to preserve — substituting generated
+  wording for authored wording inverts an explicit instruction.
+
+### Fixed
+- **A frame's guarantee no longer loses to `top_k`.** `_enforce_guarantees`
+  deliberately allows more than `top_k` blocks through when a frame guarantees
+  more slots than that (its `max(0, …)` clamp exists for exactly that case),
+  and a flat `[:top_k]` in `recall()` silently undid it: a ten-principle
+  constitution rendered five, at a quarter of its token budget, because
+  `memory.top_k` defaults to 5. `top_k` remains a hard ceiling whenever the
+  caller passes one — silently exceeding it would be the same class of bug as
+  ignoring `host_analyses` — but its *default* is now
+  `max(memory.top_k, n_guaranteed)`. Guaranteed ids are resolved before
+  retrieval rather than after, since the candidate pool is sized from `top_k`
+  and a guarantee cannot rescue a block that was never a candidate.
+- **A block larger than the whole frame budget renders instead of vanishing.**
+  `_render_with_budget` returned `""` when nothing fit, producing an empty
+  identity the agent believes is whole — the worst outcome the library can
+  produce, and the silent one. The block is now rendered and the overrun is
+  visible as `budget_used > budget_total`. Deliberately not truncated: cutting
+  a principle mid-sentence can invert its meaning ("never do X" → "never do"),
+  so the budget is overrun rather than the content corrupted.
+- **`MemorySystem.from_config()` rejects a non-path `db_path` with `TypeError`.**
+  Passing a config object first produced `OSError: [Errno 63] File name too
+  long: "Config(raw={'llm'…`. The error now names the received type and the
+  fix. `db_path` also accepts `os.PathLike` and normalises it.
+- **Corrected a load-bearing wrong comment in `context/frames.py`.** It claimed
+  `self/role/%` tags "do not survive: consolidation rewrites a seeded block and
+  re-tags it from the LLM's own vocabulary", and that claim was cited
+  downstream as grounds for adding a new schema column. Measured directly:
+  consolidation *unions* tags (`{*declared, *inferred}` → `add_tags`) and a
+  declared `self/role/x` is still present afterwards, so caller-declared tags
+  are already a stable, LLM-proof key for finding a specific block again. The
+  comment's *observation* was accurate (elf's own instance has 2 of 40
+  constitutional blocks carrying a role tag); only its stated cause was wrong,
+  so the guarantee is left on `self/constitutional` until the real erosion
+  path is identified.
 - **`scripts/hooks/elf_distill.py`** — a `PreCompact`/`SessionEnd` hook,
   increment 2 of automatic memory capture: catches capture-worthy content
   the per-turn regex gate (`elf_context.py`) can't, because it's judgement

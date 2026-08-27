@@ -62,13 +62,30 @@ SELF_FRAME = FrameDefinition(
     weights=SELF_WEIGHTS,
     filters=FrameFilters(tag_patterns=["self/%"]),
     guarantees=["self/constitutional"],
-    # `self/role/%` would be the better guarantee -- it is the authored
-    # vocabulary `init --seed` lays down, one role per principle. It is not
-    # used because it does not survive: consolidation rewrites a seeded block
-    # and re-tags it from the LLM's own vocabulary, so a mature instance has
-    # the ten seeded principles carrying only `self/constitutional`. Excluding
-    # correspondence is the discriminator that *is* structural -- `peer/*`
-    # tags are applied by the peer channel, never inferred.
+    # `self/role/%` is the authored vocabulary `init --seed` lays down, one
+    # role per principle, and would be a tighter guarantee than
+    # `self/constitutional` (which the consolidating LLM also assigns, and
+    # which has spread to 40 blocks in a mature instance).
+    #
+    # An earlier version of this comment claimed role tags "do not survive:
+    # consolidation rewrites a seeded block and re-tags it from the LLM's own
+    # vocabulary." That cause is wrong, and was load-bearing enough to be
+    # cited downstream as grounds for adding a whole new column, so: measured
+    # directly, consolidation UNIONS tags (`{*declared, *inferred}` ->
+    # `add_tags`) and a declared `self/role/x` is still present afterwards.
+    # Caller-declared tags are therefore a stable, LLM-proof key -- use one
+    # when you need to find "the block holding principle 7" again.
+    #
+    # What IS true is the observation: elf's own instance has only 2 of 40
+    # constitutional blocks carrying a role tag, and only 4 distinct role
+    # tags exist at all. That erosion happened somewhere other than
+    # consolidation (blocks predating the current seed vocabulary is the
+    # likeliest), so the guarantee stays on `self/constitutional` until the
+    # real cause is found -- switching it now would silently drop 38 blocks
+    # out of the guarantee on live instances.
+    #
+    # Excluding correspondence is the discriminator that *is* structural --
+    # `peer/*` tags are applied by the peer channel, never inferred.
     guarantee_excludes=["peer/%"],
     template="self",
     token_budget=600,
