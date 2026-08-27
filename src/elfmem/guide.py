@@ -418,7 +418,12 @@ GUIDES: dict[str, AgentGuide] = {
             "all this: SELF renders within a 600-token budget (ATTENTION 2000, "
             "TASK 800, SIMULATE 2000), tokens are ESTIMATED as len(text)//4, "
             "and top_k defaults to max(memory.top_k, number of guaranteed "
-            "blocks) — an explicit top_k is always a hard ceiling."
+            "blocks) — an explicit top_k is always a hard ceiling. "
+            "ATTENTION additionally excludes self/constitutional blocks "
+            "(peer-authored ones exempt): identity is SELF's job, SELF is "
+            "queryless and injected on its own, so a principle here would be "
+            "served twice and take a slot from learned knowledge. "
+            "result.excluded_by_filter counts what that removed."
         ),
         next=(
             "Inject result.text into your LLM prompt. "
@@ -689,8 +694,16 @@ GUIDES: dict[str, AgentGuide] = {
             "OutcomeResult with: blocks_updated (active blocks whose confidence changed), "
             "mean_confidence_delta (average confidence shift, positive or negative), "
             "edges_reinforced (graph edges strengthened for positive signals), "
-            "blocks_penalized (blocks whose decay was accelerated for low signals). "
-            "blocks_updated=0 means all block_ids were non-active (silently skipped)."
+            "blocks_penalized (blocks whose decay was accelerated for low signals), "
+            "skipped_constitutional (ids refused — see below). "
+            "blocks_updated=0 means all block_ids were non-active (silently skipped). "
+            "IDENTITY IS PROTECTED: self/constitutional blocks are NOT scored. A "
+            "decision's recalled ids routinely include the principles that helped "
+            "reason about it, and a task outcome is evidence about the task, never "
+            "about the principle — judging that is review_constitutional(), which is "
+            "deliberately manual. Pass allow_constitutional=True to override. Peer "
+            "trust is unaffected either way: it judges the peer\'s contribution, not "
+            "the block\'s standing as a principle."
         ),
         next=(
             "Signal spectrum (default thresholds): "
@@ -907,7 +920,16 @@ GUIDES: dict[str, AgentGuide] = {
             "A prediction has resolved — the verify_at date passed and you have evidence. "
             "No prior consolidation needed."
         ),
-        when_not="The prediction hasn't resolved yet. Wait for observable evidence.",
+        when_not=(
+            "The prediction hasn't resolved yet. Wait for observable evidence. "
+            "This matters more than it looks: `hit` is BINARY and has no weight, "
+            "so there is no way to say 'interim mark, worth 0.1 of a real "
+            "resolution' the way outcome(weight=...) allows. Scoring an open "
+            "position at low weight on the block path therefore records a FULL "
+            "miss against the mind. A prediction is right or wrong once, at its "
+            "horizon; resolving early makes the mind's confidence wrong in a "
+            "direction that then influences the next decision."
+        ),
         cost="Fast. Promotes decision block if needed, then updates confidence via Bayesian model.",
         returns=(
             "MindOutcomeResult with confidence deltas for both mind and decision blocks. "
@@ -915,7 +937,12 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         next=(
             "The mind model's confidence is now calibrated. Future simulate frame "
-            "retrievals reflect the updated model accuracy."
+            "retrievals reflect the updated model accuracy. "
+            "NOT terminal: calling mind_outcome again on the same decision block "
+            "re-resolves it, and the arithmetic reverses cleanly — an early miss "
+            "later corrected to a hit returns the mind to its prior confidence "
+            "and the count to 1/1. So an early resolution is recoverable; you "
+            "just have to know to correct it."
         ),
         example=(
             "# Prediction hit\n"

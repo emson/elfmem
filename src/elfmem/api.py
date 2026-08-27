@@ -62,6 +62,7 @@ from elfmem.operations.curate import curate as _curate
 from elfmem.operations.curate import should_curate
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome as _record_outcome
+from elfmem.operations.recall import _resolve_tag_set
 from elfmem.operations.recall import recall as _recall
 from elfmem.policy import ConsolidationPolicy
 from elfmem.ports.services import EmbeddingService, LLMService
@@ -1997,6 +1998,21 @@ class MemorySystem:
             tag_filter = frame_def.filters.tag_patterns[0]
 
         async with self._engine.connect() as conn:
+            # Same exclusions frame() applies. recall() is documented as
+            # "raw block data without rendering" -- raw means unrendered, not
+            # a different retrieval, so a frame's declared filters have to
+            # hold here too or `recall(frame="attention")` quietly disagrees
+            # with `frame("attention")` about what the frame contains.
+            excluded_ids = await _resolve_tag_set(
+                conn,
+                include_patterns=frame_def.filters.exclude_tag_patterns,
+                minus_patterns=frame_def.filters.exclude_exempt_patterns,
+            )
+            guaranteed_ids = await _resolve_tag_set(
+                conn,
+                include_patterns=frame_def.guarantees,
+                minus_patterns=frame_def.guarantee_excludes,
+            )
             blocks = await hybrid_retrieve(
                 conn,
                 embedding_svc=self._embedding,
@@ -2005,6 +2021,7 @@ class MemorySystem:
                 current_active_hours=current_hours,
                 top_k=k,
                 tag_filter=tag_filter,
+                exclude_ids=excluded_ids - guaranteed_ids,
                 search_window_hours=frame_def.filters.search_window_hours,
             )
 
@@ -2025,6 +2042,7 @@ class MemorySystem:
         *,
         weight: float = 1.0,
         source: str = "",
+        allow_constitutional: bool = False,
     ) -> OutcomeResult:
         """Update block confidence from a normalised domain outcome signal.
 
@@ -2077,6 +2095,12 @@ class MemorySystem:
             weight: Observation weight (> 0.0). Higher = faster convergence.
                     Use weight > 1.0 for high-stakes outcomes.
             source: Audit label (e.g. "brier", "test_suite", "csat", "engagement").
+            allow_constitutional: Also score `self/constitutional` blocks.
+                Off by default: a task outcome is evidence about the task, not
+                about the principle that helped reason through it, and a
+                decision's recalled block_ids routinely include both. Skipped
+                ids come back on `result.skipped_constitutional`. To revise a
+                principle, use `review_constitutional()` — deliberately manual.
 
         Raises:
             ValueError: If signal is outside [0.0, 1.0] or weight <= 0.0.
@@ -2105,6 +2129,7 @@ class MemorySystem:
                 penalize_threshold=mem.penalize_threshold,
                 penalty_factor=mem.penalty_factor,
                 lambda_ceiling=mem.lambda_ceiling,
+                allow_constitutional=allow_constitutional,
             )
         for bid in block_ids:
             self._log(_ledger.KIND_OUTCOME, id=bid, sig=signal, w=weight, src=source)

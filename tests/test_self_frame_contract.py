@@ -12,7 +12,7 @@ from elfmem import ElfmemConfig, MemorySystem
 from elfmem.config import MemoryConfig
 from elfmem.context.frames import SELF_FRAME, FrameCache
 from elfmem.context.rendering import _render_self_template, render_blocks
-from elfmem.operations.recall import _enforce_guarantees, _resolve_guaranteed_ids
+from elfmem.operations.recall import _enforce_guarantees, _resolve_tag_set
 from elfmem.types import FrameResult, ScoredBlock
 
 
@@ -130,10 +130,10 @@ class TestGuarantee:
             _block(own.block_id, "principle", ["self/constitutional"], 0.10),
         ]
         async with system._engine.begin() as conn:
-            guaranteed_ids = await _resolve_guaranteed_ids(
+            guaranteed_ids = await _resolve_tag_set(
                 conn,
-                guarantee_tag_patterns=["self/constitutional"],
-                exclude_tag_patterns=["peer/%"],
+                include_patterns=["self/constitutional"],
+                minus_patterns=["peer/%"],
             )
         kept = _enforce_guarantees(
             candidates=candidates, guaranteed_ids=guaranteed_ids, top_k=1,

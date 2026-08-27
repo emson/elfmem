@@ -1222,11 +1222,14 @@ EditResult(block_id)
 ForgetResult(block_id, status)
 # status: "forgotten" | "already_archived" (idempotent, not an error)
 
-FrameResult(text, blocks, frame_name, cached, edges_promoted, dropped, budget_used, budget_total)
+FrameResult(text, blocks, frame_name, cached, edges_promoted, dropped, budget_used, budget_total, excluded_by_filter)
 # text: rendered prompt-ready string; blocks: what actually reached the text
 # dropped: eligible blocks that did NOT render; .dropped_reasons summarises why
 DroppedBlock(id, content, tags, reason)
 # reason: "top_k" | "token_budget" | "contradiction" (near-duplicate suppressed)
+# excluded_by_filter: count removed by the frame's own exclude_tag_patterns.
+# ATTENTION excludes self/constitutional (peer-authored exempt) — identity is
+# SELF's job, and SELF is injected on its own, so serving it twice costs a slot.
 
 ScoredBlock(id, content, score, confidence, similarity, recency, centrality, reinforcement, tags, was_expanded)
 BlockSummary(id, content, category, tags, created_at, reinforcement_count)      # ls()
@@ -1237,7 +1240,9 @@ ConsolidateResult(processed, promoted, deduplicated, edges_created, rescored, re
 CurateResult(edges_pruned, reinforced, constitutional_reinforced, edges_decayed, total_edges_after)
 # no `archived` field — curate() no longer auto-archives blocks (ADR 0009); see review_corpus()
 MetabolismDryRunResult(blocks_considered, self_goals, candidates, proposals, llm_failures)
-OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized)
+OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized, skipped_constitutional)
+# self/constitutional blocks are NOT scored by default: a task outcome is
+# evidence about the task, not about the principle. outcome(..., allow_constitutional=True) overrides.
 ConnectResult(action, source_id, target_id, relation, weight)
 DisconnectResult(action, source_id, target_id)
 ConnectByQueryResult(source_query, target_query, source_id, target_id, source_content, target_content, action, connect_result)

@@ -406,6 +406,11 @@ async def mind_outcome(
         current_active_hours=current_active_hours,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
+        # This scores one block the caller named, not everything a task
+        # happened to recall, so the constitutional guard does not apply --
+        # and a mind block CAN accrete `self/constitutional` during
+        # consolidation, which would otherwise silently stop calibrating it.
+        allow_constitutional=True,
     )
 
     # 2. Record attenuated outcome on mind block (signal scaled by 0.5)
@@ -419,6 +424,7 @@ async def mind_outcome(
         current_active_hours=current_active_hours,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
+        allow_constitutional=True,  # same reasoning as the decision block above
     )
 
     # 3. Reinforce the canonical mind↔decision edge on outcome closure.

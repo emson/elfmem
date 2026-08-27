@@ -3598,6 +3598,7 @@ async def _frames_report(db_path: str, config: str | None) -> dict[str, Any]:
                 "budget_used": result.budget_used,
                 "budget_total": result.budget_total,
                 "over_budget": result.budget_used > result.budget_total,
+                "excluded_by_filter": result.excluded_by_filter,
             })
         return report
 
@@ -3617,10 +3618,14 @@ def _doctor_frames(db: str | None, config: str | None, json_output: bool) -> Non
     else:
         for row in report["frames"]:
             over = " OVER BUDGET" if row["over_budget"] else ""
+            excluded = (
+                f" | {row['excluded_by_filter']} excluded by filter"
+                if row["excluded_by_filter"] else ""
+            )
             line = (
                 f"{row['frame'].upper():<10} {row['rendered']:>3} rendered | "
                 f"{len(row['dropped']):>3} dropped | "
-                f"{row['budget_used']}/{row['budget_total']} tokens{over}"
+                f"{row['budget_used']}/{row['budget_total']} tokens{over}{excluded}"
             )
             typer.echo(line)
             for d in row["dropped"]:

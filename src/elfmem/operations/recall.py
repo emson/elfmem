@@ -59,14 +59,24 @@ async def recall(
     if frame_def.queryless:
         query = None
 
-    # 1. Guaranteed ids are resolved before retrieval, not during guarantee
-    # enforcement, because retrieval's candidate pool is sized from top_k --
-    # a guarantee cannot rescue a block that was never a candidate.
-    guaranteed_ids = await _resolve_guaranteed_ids(
+    # 1. Guaranteed and excluded ids are both resolved before retrieval, for
+    # the same reason: the candidate pool is sized from top_k, so neither can
+    # be applied afterwards without distorting what the pool contained.
+    guaranteed_ids = await _resolve_tag_set(
         conn,
-        guarantee_tag_patterns=frame_def.guarantees,
-        exclude_tag_patterns=frame_def.guarantee_excludes,
+        include_patterns=frame_def.guarantees,
+        minus_patterns=frame_def.guarantee_excludes,
     )
+    excluded_ids = await _resolve_tag_set(
+        conn,
+        include_patterns=frame_def.filters.exclude_tag_patterns,
+        minus_patterns=frame_def.filters.exclude_exempt_patterns,
+    )
+    # A block cannot be both guaranteed a slot and denied one. The guarantee
+    # is the more specific, more deliberate declaration, so it wins -- and a
+    # frame declaring both for the same block is a config error worth not
+    # silently resolving in the surprising direction.
+    excluded_ids -= guaranteed_ids
     effective_k = top_k if top_k is not None else max(default_top_k, len(guaranteed_ids))
 
     # 2. Check cache
@@ -85,6 +95,7 @@ async def recall(
                 dropped=cached.dropped,
                 budget_used=cached.budget_used,
                 budget_total=cached.budget_total,
+                excluded_by_filter=cached.excluded_by_filter,
             )
 
     # 3. Determine weights
@@ -107,6 +118,7 @@ async def recall(
         current_active_hours=current_active_hours,
         top_k=effective_k,
         tag_filter=tag_filter,
+        exclude_ids=excluded_ids,
         search_window_hours=frame_def.filters.search_window_hours,
         score_boosts=frame_def.score_boosts,
     )
@@ -156,6 +168,7 @@ async def recall(
         dropped=dropped,
         budget_used=render.budget_used,
         budget_total=frame_def.token_budget,
+        excluded_by_filter=len(excluded_ids),
     )
 
     # 10. Reinforcement side effects. Skipped for a preview: retrieval
@@ -188,31 +201,36 @@ def _as_dropped(block: ScoredBlock, reason: str) -> DroppedBlock:
     )
 
 
-async def _resolve_guaranteed_ids(
+async def _resolve_tag_set(
     conn: AsyncConnection,
-    guarantee_tag_patterns: list[str],
-    exclude_tag_patterns: list[str] | None = None,
+    include_patterns: list[str],
+    minus_patterns: list[str] | None = None,
 ) -> set[str]:
-    """Which active block ids currently hold a guaranteed slot in this frame.
+    """Active block ids matching *include_patterns*, minus *minus_patterns*.
 
-    Hoisted out of ``_enforce_guarantees`` so the count is available before
-    retrieval runs: the candidate pool is sized from top_k, so a guarantee
-    that is only applied afterwards cannot rescue a block that never made
-    the pool in the first place.
+    One helper, two callers, because a frame's guarantee and a frame's
+    exclusion are the same computation pointed in opposite directions:
+    "these tags, except those" describes both `guarantees`/`guarantee_excludes`
+    and `exclude_tag_patterns`/`exclude_exempt_patterns`.
+
+    Resolved before retrieval rather than after, in both cases: the candidate
+    pool is sized from top_k, so a guarantee applied afterwards cannot rescue
+    a block that never made the pool, and an exclusion applied afterwards
+    would let the excluded blocks consume the pool on their way out.
     """
-    if not guarantee_tag_patterns:
+    if not include_patterns:
         return set()
 
-    guaranteed_ids: set[str] = set()
-    for pattern in guarantee_tag_patterns:
+    resolved: set[str] = set()
+    for pattern in include_patterns:
         ids = await queries.get_blocks_by_tag_pattern(conn, pattern)
-        guaranteed_ids.update(ids)
+        resolved.update(ids)
 
-    for pattern in exclude_tag_patterns or []:
-        excluded = await queries.get_blocks_by_tag_pattern(conn, pattern)
-        guaranteed_ids.difference_update(excluded)
+    for pattern in minus_patterns or []:
+        exempt = await queries.get_blocks_by_tag_pattern(conn, pattern)
+        resolved.difference_update(exempt)
 
-    return guaranteed_ids
+    return resolved
 
 
 def _enforce_guarantees(

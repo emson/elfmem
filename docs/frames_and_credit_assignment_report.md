@@ -21,6 +21,24 @@ bugs: **frames have no exclusion mechanism**, and **`outcome()` has no notion of
 should be immune to task outcomes.** I worked around both in my adapter, but every agent that
 seeds a constitution will hit them, and the workaround required bypassing `frame()` entirely.
 
+> **Status (2026-08-27): asks 1, 2 and 4 shipped; 5 shipped previously. Kept as the incident
+> record.** Both issues were reproduced on the post-fix branch before anything was changed, and
+> two of the three stated *mechanisms* turned out to be wrong — worth recording, because the
+> corrected mechanisms changed the fix.
+>
+> | # | Ask | Status |
+> |---|---|---|
+> | 1 | `outcome()` skips `self/constitutional` | **shipped** with `skipped_constitutional` + `allow_constitutional=True`. Mechanism corrected: decay was *already* protected (`accelerate_block_decay` skips PERMANENT), so "the damage never washes out" via decay is not what happens. The harm is entirely through the Beta posterior — measured at 0.50 → 0.275 after one losing trade, 0.114 after six — which feeds ranking, which decides what survives a budget-bound SELF frame. Worse than described for mature instances, not better |
+> | 2 | `FrameFilters.exclude_tag_patterns`, applied to ATTENTION | **shipped**, with a `peer/%` exemption the report did not propose. Measured on elf's own corpus: a bare exclusion removed Alv's letters, which are genuine knowledge that accreted the tag from the consolidating LLM. Result: 36% → 24% constitutional share, double-served blocks 3/25 → **0/25** |
+> | 3 | Cross-frame dedupe in multi-frame assembly | **not built.** Option (a) turned out to subsume it: with ATTENTION excluding what SELF serves, double-serving went to zero without introducing a multi-frame assembly API or hidden cross-call state |
+> | 4 | `mind_outcome(..., weight=)` / `provisional=` | **documentation instead.** Premise corrected: `mind_outcome` is **not terminal** — re-resolving the same decision block reverses cleanly (early miss → later hit restored confidence 0.43 → 0.50 and the count to 1/1). The signal was lost because nothing said so, so `guide("mind_outcome")` now states both that `hit` is binary with no weight and that it is re-resolvable |
+> | 5 | Every reducing operation reports what it reduced | **shipped** in the previous round — and the third silent reducer (contradiction suppression) was found by running the tool that round produced |
+>
+> The report's closing principle — *any operation that can silently reduce, reword, or degrade
+> what the caller intended should say so in its result* — is now recorded in
+> `docs/agent_friendly_principles.md` as an earned principle, with these two issues as its
+> evidence.
+
 ---
 
 ## Issue 1 — constitutional blocks starve the ATTENTION frame

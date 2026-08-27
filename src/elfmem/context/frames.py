@@ -29,6 +29,19 @@ class FrameFilters:
     tag_patterns: list[str] | None = None
     categories: list[str] | None = None
     search_window_hours: float = 200.0
+    # Blocks matching these never become candidates for this frame. The
+    # counterpart to `tag_patterns`: SELF filters *in*, and until now nothing
+    # could filter *out*, so a tag that earns a block a permanent home in one
+    # frame also let it compete in every other frame -- a privilege nobody
+    # granted it. Same pattern syntax (SQL LIKE, `%` suffix).
+    exclude_tag_patterns: list[str] = field(default_factory=list)
+    # ...unless the block also matches one of these, which restores it. Mirrors
+    # `guarantees` / `guarantee_excludes` exactly, and resolves through the
+    # same helper. Needed because `self/constitutional` is assigned by the
+    # consolidating LLM as well as by the author, so on a mature instance it
+    # sits on genuine knowledge too; without an exemption, excluding it from
+    # ATTENTION also deletes that knowledge.
+    exclude_exempt_patterns: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -100,7 +113,34 @@ SELF_FRAME = FrameDefinition(
 ATTENTION_FRAME = FrameDefinition(
     name="attention",
     weights=ATTENTION_WEIGHTS,
-    filters=FrameFilters(),
+    # ATTENTION answers "what have I learned that bears on this question".
+    # Identity is SELF's job, and SELF is queryless and injected on its own,
+    # so a principle appearing here is served twice, costs budget twice, and
+    # takes a slot from the thing ATTENTION exists to surface.
+    #
+    # This is not a theoretical tidy-up. Three properties compound: principles
+    # are written in general epistemic language ("evidence", "premise",
+    # "pattern") so they are semantically close to any reasoning-shaped query;
+    # they carry PERMANENT decay so recency never demotes them; and nothing
+    # filtered them out. Measured on a seeded ten-principle constitution,
+    # ATTENTION returned 4 of 5 slots as principles and dropped every market
+    # fact including the agent's own open position. Measured on elf's own
+    # mature corpus, 36% of ATTENTION slots, rising to 4 of 5 on a debugging
+    # query where the genuinely relevant block ranked third behind "I am elf"
+    # and "the agent is philosophical".
+    #
+    # The `peer/%` exemption is load-bearing and was earned by measurement:
+    # `self/constitutional` is also assigned by the consolidating LLM, and on
+    # a mature instance it has accreted onto 7 peer letters that are real
+    # knowledge. Excluding them too made the peer-trust query strictly worse.
+    # It mirrors SELF's own `guarantee_excludes=["peer/%"]` -- both encode the
+    # same fact from opposite directions: a peer letter is knowledge, not
+    # identity. `peer/*` is applied structurally by the peer channel and never
+    # inferred, which is what makes it a trustworthy discriminator.
+    filters=FrameFilters(
+        exclude_tag_patterns=["self/constitutional"],
+        exclude_exempt_patterns=["peer/%"],
+    ),
     guarantees=[],
     template="attention",
     token_budget=2000,

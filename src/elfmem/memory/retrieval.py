@@ -63,6 +63,7 @@ async def hybrid_retrieve(
     current_active_hours: float,
     top_k: int = 5,
     tag_filter: str | None = None,
+    exclude_ids: set[str] | None = None,
     search_window_hours: float = DEFAULT_SEARCH_WINDOW_HOURS,
     score_boosts: dict[str, float] | None = None,
 ) -> list[ScoredBlock]:
@@ -77,12 +78,18 @@ async def hybrid_retrieve(
     Stage 5  — MMR diversity: reorder for relevance + diversity. (Query-aware only.)
 
     Returns top_k * CONTRADICTION_OVERSAMPLE ScoredBlocks for contradiction headroom.
+
+    ``exclude_ids`` are removed at stage 1 rather than after scoring, so they
+    never occupy a candidate slot. Filtering them later would leave the frame
+    with fewer usable results than the caller asked for -- the excluded blocks
+    would still have consumed the oversample budget on their way out.
     """
     candidates = await _stage_1_prefilter(
         conn,
         current_active_hours=current_active_hours,
         search_window_hours=search_window_hours,
         tag_filter=tag_filter,
+        exclude_ids=exclude_ids,
     )
 
     if not candidates:
@@ -163,16 +170,21 @@ async def _stage_1_prefilter(
     current_active_hours: float,
     search_window_hours: float,
     tag_filter: str | None,
+    exclude_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Stage 1: Pre-filter active blocks within search window."""
     cutoff = current_active_hours - search_window_hours
     if tag_filter is not None:
         tagged_ids = set(await queries.get_blocks_by_tag_pattern(conn, tag_filter))
         all_blocks = await queries.get_active_blocks(conn, min_last_reinforced_at=cutoff)
-        return [b for b in all_blocks if b["id"] in tagged_ids]
-    return await queries.get_active_blocks_with_embeddings(
-        conn, min_last_reinforced_at=cutoff
-    )
+        blocks = [b for b in all_blocks if b["id"] in tagged_ids]
+    else:
+        blocks = await queries.get_active_blocks_with_embeddings(
+            conn, min_last_reinforced_at=cutoff
+        )
+    if exclude_ids:
+        blocks = [b for b in blocks if b["id"] not in exclude_ids]
+    return blocks
 
 
 async def _stage_2_vector_search(

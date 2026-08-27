@@ -133,6 +133,13 @@ class FrameResult:
     dropped: list[DroppedBlock] = field(default_factory=list)
     budget_used: int = 0
     budget_total: int = 0
+    # Blocks the frame's own `exclude_tag_patterns` kept out of the candidate
+    # pool entirely. A count rather than a list, deliberately: unlike top_k,
+    # token_budget and contradiction -- which are emergent, and so cannot be
+    # predicted without being told -- a frame filter is declared, static, and
+    # readable in the frame definition. The number is what a caller cannot
+    # otherwise know.
+    excluded_by_filter: int = 0
 
     @property
     def dropped_reasons(self) -> set[str]:
@@ -145,6 +152,17 @@ class FrameResult:
         count = len(self.blocks)
         cached_note = " (cached)" if self.cached else ""
         if count == 0 and not self.dropped:
+            # An empty frame with an active exclusion is not the same event as
+            # an empty corpus, and the caller cannot tell them apart from the
+            # block list alone -- which is precisely the confusion this whole
+            # reporting effort exists to remove.
+            if self.excluded_by_filter:
+                return (
+                    f"{self.frame_name} frame: no blocks found — "
+                    f"{self.excluded_by_filter} excluded by this frame's tag "
+                    "filter. Identity blocks belong to the self frame; if you "
+                    "expected knowledge here, none matched."
+                )
             return f"{self.frame_name} frame: no blocks found."
         noun = "block" if count == 1 else "blocks"
         base = f"{self.frame_name} frame: {count} {noun} returned{cached_note}"
@@ -726,11 +744,26 @@ class OutcomeResult:
     blocks_penalized: int = 0
     outcome_edges_created: int = 0
     """New edges created by outcome() between non-similar but co-used blocks."""
+    # Blocks refused because they are `self/constitutional`. A task outcome is
+    # evidence about the task, never about the principle that helped reason
+    # through it, and the tier granting permanence should also grant
+    # protection. Pass `allow_constitutional=True` when you really do mean to
+    # score the principle itself.
+    skipped_constitutional: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
+        skipped = ""
+        if self.skipped_constitutional:
+            n = len(self.skipped_constitutional)
+            noun = "block" if n == 1 else "blocks"
+            skipped = (
+                f" {n} constitutional {noun} left unscored (identity is not "
+                "judged by task outcomes; use review_constitutional, or pass "
+                "allow_constitutional=True)."
+            )
         if self.blocks_updated == 0:
-            return "Outcome recorded: nothing to update."
+            return f"Outcome recorded: nothing to update.{skipped}"
         noun = "block" if self.blocks_updated == 1 else "blocks"
         delta_str = f"{self.mean_confidence_delta:+.3f}"
         parts = [f"{self.blocks_updated} {noun} updated ({delta_str} avg confidence)"]
@@ -741,7 +774,7 @@ class OutcomeResult:
         if self.blocks_penalized:
             pen_noun = "block" if self.blocks_penalized == 1 else "blocks"
             parts.append(f"{self.blocks_penalized} {pen_noun} penalized")
-        return f"Outcome recorded: {', '.join(parts)}."
+        return f"Outcome recorded: {', '.join(parts)}.{skipped}"
 
     def __str__(self) -> str:
         return self.summary
@@ -753,6 +786,7 @@ class OutcomeResult:
             "edges_reinforced": self.edges_reinforced,
             "blocks_penalized": self.blocks_penalized,
             "outcome_edges_created": self.outcome_edges_created,
+            "skipped_constitutional": self.skipped_constitutional,
         }
 
 

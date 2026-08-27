@@ -10,6 +10,70 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`FrameFilters.exclude_tag_patterns` / `.exclude_exempt_patterns`** — the
+  counterpart to `tag_patterns`. SELF could filter *in*; nothing could filter
+  *out*, so a tag that earned a block a permanent home in one frame also let
+  it compete in every other frame — a privilege nobody granted it. Patterns
+  resolve through the same helper as `guarantees`/`guarantee_excludes`, and a
+  guarantee beats an exclusion when a frame declares both.
+- **`FrameResult.excluded_by_filter`** — how many blocks the frame's own
+  filter kept out of the candidate pool. A count rather than a list, because
+  unlike `top_k`/`token_budget`/`contradiction` — which are emergent — a frame
+  filter is declared and readable in the frame definition; the number is the
+  part a caller cannot otherwise know. An empty frame now says *why* it is
+  empty rather than "no blocks found".
+- **`OutcomeResult.skipped_constitutional`** and
+  **`outcome(..., allow_constitutional=False)`**.
+
+### Changed
+- **Breaking: ATTENTION no longer returns `self/constitutional` blocks**
+  (exempting peer-authored ones). Identity is SELF's job, and SELF is
+  queryless and injected on its own, so a principle appearing in ATTENTION was
+  served twice, cost budget twice, and took a slot from the knowledge ATTENTION
+  exists to surface. Three properties compounded: principles are written in
+  general epistemic language so they sit close to any reasoning-shaped query;
+  PERMANENT decay means recency never demotes them; and nothing filtered them
+  out. Measured on a seeded ten-principle constitution, ATTENTION gave 4 of 5
+  slots to principles and dropped every market fact including the agent's own
+  open position. Measured on elf's own mature corpus: 36% of ATTENTION slots
+  before, 24% after — and 0 double-served blocks, down from 3 in 25.
+  The `peer/%` exemption is load-bearing, not a nicety: `self/constitutional`
+  is also assigned by the consolidating LLM, and on a mature instance it has
+  accreted onto peer letters that are genuine knowledge. Excluding those too
+  made a peer-trust query measurably worse. It mirrors SELF's existing
+  `guarantee_excludes=["peer/%"]` — both encode *a peer letter is knowledge,
+  not identity*, from opposite directions. **Migration**: to restore the old
+  behaviour, pass a frame definition with empty `exclude_tag_patterns`, or read
+  the excluded blocks from `frame("self")` where they were already being
+  served.
+- **Breaking: `outcome()` no longer scores `self/constitutional` blocks** by
+  default. A decision's recalled block ids routinely include the principles
+  that helped reason about it, so a losing task outcome pushed negative signal
+  onto the agent's own constitution — silently, because the posterior moves and
+  nothing logs. Measured: one losing trade took a principle from confidence
+  0.50 to 0.275, and six took it to 0.114. Decay was already safe
+  (`accelerate_block_decay` skips PERMANENT), so the harm ran entirely through
+  the posterior — which feeds ranking, which decides what survives a
+  budget-bound SELF frame; the end state is an agent whose constitution quietly
+  stops being injected. A task outcome is evidence about the task, never about
+  the principle: judging *that* is `review_constitutional()`, deliberately
+  manual. The same distinction `record_use()` already draws one level down.
+  Skipped ids are returned on `result.skipped_constitutional`.
+  **Migration**: pass `allow_constitutional=True` to score them deliberately.
+  Peer trust is deliberately unaffected — it is computed from the full id list,
+  because trust judges the peer's contribution rather than the block's standing
+  as a principle, and 7 of 40 blocks on a real instance are peer letters
+  carrying this tag.
+- **`recall(frame=...)` applies the frame's exclusions too.** "Raw block data
+  without rendering" means unrendered, not a different retrieval; leaving
+  `recall()` unfiltered would have made it quietly disagree with `frame()`
+  about what a frame contains.
+- **`guide("mind_outcome")`** now states that `hit` is binary with no weight —
+  so scoring an open position at low weight on the block path records a *full*
+  miss against the mind — and that it is **not terminal**: re-resolving the
+  same decision block reverses cleanly (an early miss corrected to a hit
+  returns the mind to its prior confidence and the count to 1/1). Both facts
+  cost a real integration signal because neither was written down.
 - **`FrameResult.dropped` / `.budget_used` / `.budget_total`** — every block
   that was eligible for a frame but did not reach the rendered text, each
   carrying its own `.reason`. This closes the bug class behind
