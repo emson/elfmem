@@ -25,6 +25,31 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 - **`OutcomeResult.skipped_constitutional`** and
   **`outcome(..., allow_constitutional=False)`**.
 
+### Fixed
+- **Frame exclusions leaked back in through graph expansion.** `exclude_ids`
+  was applied at the stage-1 prefilter, which is not the only way into the
+  candidate pool: stage 3 expands the graph by fetching a seed's neighbours
+  from the database by id, so an excluded block that neighboured a seed walked
+  back in behind the filter. Worst case by construction — a constitutional
+  block is both excluded *and* unusually well connected, which is what puts it
+  in reach of expansion in the first place, and although it arrives with
+  `similarity=0.0` it still ranks on confidence, centrality, and a recency that
+  PERMANENT decay never erodes. Reported from production use: ten principles
+  excluded, four still rendered and five more listed in `dropped` with
+  `reason="top_k"` — and a block dropped for `top_k` was by definition still a
+  candidate, which is what made the count and the contents look like they
+  disagreed. Only the query path was affected, since graph expansion does not
+  run for a queryless frame, which is why SELF stayed correct throughout.
+  The filter now also runs once where the candidate set is final, so a future
+  stage that introduces candidates cannot reopen this; the prefilter stays as
+  an optimisation. Verified by mutation: removing the new choke point restores
+  the leak, while removing the prefilter breaks nothing. The invariant a caller
+  can check — *an excluded block appears in neither `blocks` nor `dropped`* —
+  is now a test, and holds across elf's own 162-block corpus.
+  `FrameResult.excluded_by_filter` is documented more precisely as a property
+  of the corpus and the frame, not a count of what this query would otherwise
+  have returned.
+
 ### Changed
 - **Breaking: ATTENTION no longer returns `self/constitutional` blocks**
   (exempting peer-authored ones). Identity is SELF's job, and SELF is

@@ -117,6 +117,40 @@ class TestAttentionExcludesIdentity:
         )
         assert result.excluded_by_filter == 1, "only the plain principle is excluded"
 
+    async def test_excluded_blocks_are_never_candidates(self, system: MemorySystem):
+        """The invariant, stated the way an integrator can check it: an excluded
+        block appears in NEITHER `blocks` NOR `dropped`.
+
+        Regression for a leak found in production use (report addendum,
+        b079660d): the stage-1 prefilter is not the only way into the candidate
+        pool. Stage 3 expands the graph by fetching neighbours from the database
+        by id, so an excluded block that neighboured a seed walked back in
+        behind the filter -- arriving with similarity=0.0 and still ranking,
+        because constitutional blocks carry high confidence, high centrality
+        (they are unusually well connected, which is what put them in reach of
+        expansion), and a recency PERMANENT decay never erodes. A block dropped
+        for `top_k` was by definition still a candidate, which is what made the
+        count and the contents look like they disagreed.
+        """
+        async with system.session():
+            principle = await system.remember(
+                "A pattern learned in one regime is a hypothesis in another.",
+                tags=["self/constitutional"], cue="regimes")
+            fact = await system.remember(
+                "The agent holds a short 755 put on SPY expiring in 14 days.",
+                tags=["market/spy"], cue="spy position")
+            for _ in range(4):
+                await system.consolidate()
+            # Consolidation builds these from similarity and a principle
+            # co-occurs with everything, so an edge here is the normal case,
+            # not a contrivance. Declared explicitly to keep the test
+            # deterministic rather than dependent on the mock embedder.
+            await system.connect(fact.block_id, principle.block_id, relation="similar")
+
+        result = await system.frame("attention", query="SPY short put position")
+        assert principle.block_id not in {b.id for b in result.blocks}
+        assert principle.block_id not in {d.id for d in result.dropped}
+
     async def test_recall_agrees_with_frame(self, system: MemorySystem):
         """`recall(frame=...)` is documented as raw block data *without
         rendering* — raw means unrendered, not a different retrieval."""

@@ -133,12 +133,17 @@ class FrameResult:
     dropped: list[DroppedBlock] = field(default_factory=list)
     budget_used: int = 0
     budget_total: int = 0
-    # Blocks the frame's own `exclude_tag_patterns` kept out of the candidate
-    # pool entirely. A count rather than a list, deliberately: unlike top_k,
-    # token_budget and contradiction -- which are emergent, and so cannot be
-    # predicted without being told -- a frame filter is declared, static, and
-    # readable in the frame definition. The number is what a caller cannot
-    # otherwise know.
+    # How many active blocks this frame's `exclude_tag_patterns` bar from it
+    # entirely -- a property of the corpus and the frame, NOT a count of what
+    # this particular query would otherwise have returned. Reading it as the
+    # latter is what makes it look like it disagrees with `blocks`; the
+    # invariant that ties them together is that an excluded block appears in
+    # neither `blocks` nor `dropped`, because it was never a candidate.
+    #
+    # A count rather than a list, deliberately: unlike top_k, token_budget and
+    # contradiction -- which are emergent, and so cannot be predicted without
+    # being told -- a frame filter is declared, static, and readable in the
+    # frame definition. The number is what a caller cannot otherwise know.
     excluded_by_filter: int = 0
 
     @property

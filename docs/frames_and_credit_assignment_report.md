@@ -227,3 +227,93 @@ becomes self-reporting.
 
 Happy to send diffs for 1, 2 and 4 — they are small and I have the failing cases already
 written as tests.
+
+---
+
+## Addendum (b079660d) — both issues shipped, and one leak remains
+
+Pulled `elfmem_index` @ b079660d and re-ran against it. **Everything asked for in both reports
+is in:**
+
+| ask | shipped as |
+|---|---|
+| Report 1 P1 | `FrameResult.dropped` / `budget_used` / `budget_total` / `excluded_by_filter` |
+| Report 1 P3 | `LearnResult.pending_consolidation` |
+| Report 1 P5 | `ConsolidateResult.analyses_unused` |
+| Report 2 Issue 1 | `ATTENTION_FRAME.filters.exclude_tag_patterns=['self/constitutional']` |
+| Report 2 Issue 2 | `OutcomeResult.skipped_constitutional` |
+
+`FrameResult.dropped` carrying a per-block `DroppedBlock(id, content, tags, reason)` is better
+than the flat list I asked for — it names *which* block and *why*, which is what made the
+finding below visible at all. The report asked for a signal; you shipped a diagnosis.
+
+### The remaining leak: `exclude_tag_patterns` is partially effective
+
+Same query as the original issue, on the new build:
+
+```
+ATTENTION: 5 blocks | 216/2000 tok | excluded_by_filter=10
+  constitutional blocks still rendered: 4
+    "Not finding a memory is not evidence it did not happen…"      (fallible-recall)
+    "I propose amendments to these principles; I never enact them" (amendments)
+    "Recent direction is evidence about the recent past…"          (recency)
+    "A pattern learned in one regime is a hypothesis in another…"  (regimes)
+  dropped: 5 more constitutional blocks, every one reason='top_k'
+```
+
+Two things do not add up. `excluded_by_filter=10` accounts for all ten principles, yet four of
+them are in `blocks` and five more are in `dropped` with `reason='top_k'` — and a block dropped
+for `top_k` was, by definition, still a *candidate*, so the exclusion had not removed it from
+the pool. It reads as though the filter is counted at one stage and applied at another, with
+retrieval (edge promotion? the `edges_promoted` path?) re-introducing blocks downstream of it.
+
+Net effect for an integrator: `exclude_tag_patterns` reduces but does not eliminate the
+crowding, so the hand-rolled ATTENTION workaround in this report's Issue 1 is still required.
+I have kept it rather than reverting to `frame("attention")`.
+
+**Suggested check:** assert `excluded_by_filter` blocks appear in neither `blocks` nor `dropped`
+— they were never candidates. If that invariant fails, the exclusion is being applied after
+candidate selection rather than during it. Worth a test either way, since the count and the
+content currently disagree and only the content is load-bearing.
+
+Everything else behaves as documented: SELF renders 11 blocks at 501/600 tokens with
+`dropped=[]`, and our constitution verification passes 10/10 unchanged.
+
+---
+
+## Resolution of the addendum — the leak was real, and it was graph expansion
+
+Confirmed and fixed. The diagnosis in the addendum was right in shape ("counted at one stage
+and applied at another, with retrieval re-introducing blocks downstream") and right to name
+retrieval as the culprit.
+
+**Mechanism.** `exclude_ids` was applied at the stage-1 prefilter. That is not the only way into
+the candidate pool: stage 3 expands the graph by fetching a seed's 1-hop neighbours from the
+database *by id*, checking only that they are active. An excluded block neighbouring a seed
+therefore walked back in behind the filter. Constitutional blocks are the worst case by
+construction — being unusually well connected is what puts them in reach of expansion at all —
+and although they arrive with `similarity=0.0`, they still rank on confidence, centrality, and a
+recency that PERMANENT decay never erodes. That is how a block could be excluded and rendered at
+the same time, and why five more appeared in `dropped` with `reason="top_k"`: they were genuine
+candidates by then. Only the query path was affected, since graph expansion does not run for a
+queryless frame — which is exactly why SELF behaved correctly throughout.
+
+**Fix.** The exclusion is now enforced once where the candidate set is final, rather than being
+patched into stage 3. Patching stage 3 would have made three enforcement sites for one
+invariant and left the next candidate-introducing stage free to reopen it; one choke point
+cannot be bypassed by a stage that does not exist yet. The stage-1 prefilter stays, as an
+optimisation — excluded blocks are never loaded or scored — and mutation testing confirms the
+split: removing the choke point restores the leak, removing the prefilter breaks nothing.
+
+**The suggested invariant is now a test**, in the form you proposed: an excluded block appears
+in neither `blocks` nor `dropped`. It holds across elf's own 162-block corpus on five different
+queries.
+
+**On the count.** `excluded_by_filter` is a property of the corpus and the frame — how many
+active blocks this frame bars — not a count of what a given query would otherwise have returned.
+You were right that only the content is load-bearing; the field's docstring now says so, and
+with the leak closed the apparent disagreement between count and contents resolves.
+
+**You can drop the hand-rolled ATTENTION workaround.** `frame("attention")` no longer leaks, so
+over-fetch-and-filter is no longer required. Worth re-running your own check first rather than
+taking this on trust — that habit is what produced the addendum.

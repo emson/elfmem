@@ -131,6 +131,20 @@ async def hybrid_retrieve(
         # Queryless — all candidates with similarity=0, no graph expansion
         scored_inputs = [(b, 0.0, False) for b in candidates]
 
+    # The exclusion invariant, enforced once where the candidate set is
+    # final. The stage-1 prefilter above is an optimisation -- it keeps
+    # excluded blocks from being loaded or scored at all -- but it is not
+    # the only way into this list: stage 3 expands the graph by fetching
+    # neighbours straight from the database by id, so an excluded block that
+    # neighbours a seed walked back in behind the filter. Constitutional
+    # blocks are the worst case for that, being both excluded and unusually
+    # well connected, and they arrive with similarity=0.0 yet still rank on
+    # confidence, centrality and a recency that PERMANENT decay never erodes.
+    # Re-filtering here rather than patching stage 3 keeps one enforcement
+    # site, so a future stage that introduces candidates cannot reopen this.
+    if exclude_ids:
+        scored_inputs = [t for t in scored_inputs if t[0]["id"] not in exclude_ids]
+
     if not scored_inputs:
         return []
 
