@@ -30,7 +30,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 try:
     import typer
@@ -1927,14 +1927,23 @@ def migrate_embeddings(
 
 
 def _resolve_migrate_paths(config_path: str | None, db: str | None) -> tuple[str, str]:
-    """Mirror the resolution chain used by other write commands."""
-    info = _project.get_project_info()
-    if info is not None:
-        resolved_config = config_path or str(info.config)
-        resolved_db = db or info.db
-    else:
-        resolved_config = config_path or str(Path("~/.elfmem/config.yaml").expanduser())
-        resolved_db = db or str(Path("~/.elfmem/agent.db").expanduser())
+    """Mirror the resolution chain used by other write commands.
+
+    Delegates to the same `_resolve_paths` that `doctor` uses, rather than
+    reading `ProjectInfo.db`. `get_project_info()` infers the database path
+    from the project *name* (`~/.elfmem/databases/<name>.db`); it does not
+    read `project.db` out of the config. For any project whose config points
+    somewhere else, migration was therefore scanning a database that does not
+    exist, finding no blocks, and reporting "No migrations pending" -- telling
+    users there was nothing to migrate while their real corpus sat untouched.
+    That is the authoritative-state-vs-inferred-default failure ADR-adjacent
+    work has hit before (v0.13.3 path resolution); read the configured value,
+    never re-derive it.
+    """
+    resolved_db, resolved_config_opt = _resolve_paths(db, config_path)
+    resolved_config = resolved_config_opt or str(
+        Path("~/.elfmem/config.yaml").expanduser()
+    )
     return str(Path(resolved_config).expanduser()), str(Path(resolved_db).expanduser())
 
 
@@ -1970,6 +1979,24 @@ async def _undo_substrate_async(step: Any, memory_dir: Path, force: bool) -> Any
     from elfmem.migrate import undo_substrate_step
 
     return await undo_substrate_step(step, memory_dir=memory_dir, force=force)
+
+
+async def _apply_cutover_async(
+    step: Any, db_path: str, memory_dir: Path, config_path: str,
+    dry_run: bool, force: bool,
+) -> Any:
+    from elfmem.migrate import apply_cutover_step
+
+    return await apply_cutover_step(
+        step, db_path=Path(db_path), memory_dir=memory_dir,
+        config_path=Path(config_path), dry_run=dry_run, force=force,
+    )
+
+
+async def _undo_cutover_async(step: Any, config_path: str) -> Any:
+    from elfmem.migrate import undo_cutover_step
+
+    return await undo_cutover_step(step, config_path=Path(config_path))
 
 
 async def _migrate_embeddings_estimate(
@@ -2285,7 +2312,7 @@ def migrate_apply(
 
     Without --yes, prompts for confirmation. Always safe to re-run — already-
     applied steps return 'skipped'. Use --undo --id <step> to roll back an
-    applied substrate_export step.
+    applied substrate_export or substrate_cutover step.
     """
     from elfmem.migrate import ApplyResult, MigrationStep, StepApplyResult, apply_plan
 
@@ -2296,25 +2323,33 @@ def migrate_apply(
         # (it reads everything else from the recorded marker), and that id
         # is a deterministic function of the db path, so it's reconstructed
         # directly rather than looked up in a plan that wouldn't have it.
-        from elfmem.migrate import substrate_step_id
+        from elfmem.migrate import cutover_step_id, substrate_step_id
 
         if not step_ids:
             typer.echo("--undo requires --id <step>.", err=True)
             raise typer.Exit(1)
-        resolved_db, _, memory_dir = _resolve_migrate_memory_dir(db, config_path)
+        resolved_db, resolved_config, memory_dir = _resolve_migrate_memory_dir(
+            db, config_path
+        )
         expected_id = substrate_step_id(Path(resolved_db))
-        undo_results = [
-            _run(_undo_substrate_async(
-                MigrationStep(
-                    id=sid, kind="substrate_export", summary="", file=Path(resolved_db),
-                    file_sha256="", issues=[], before={}, after={}, json_pointer="",
-                ),
-                memory_dir, force,
-            ))
-            if sid == expected_id
-            else StepApplyResult(sid, "failed", f"no such migration for this project: {sid}")
-            for sid in step_ids
-        ]
+        cutover_id = cutover_step_id(Path(resolved_config))
+
+        def _undo_one(sid: str) -> StepApplyResult:
+            blank = MigrationStep(
+                id=sid, kind="", summary="", file=Path(resolved_db),
+                file_sha256="", issues=[], before={}, after={}, json_pointer="",
+            )
+            if sid == cutover_id:
+                return cast(StepApplyResult, _run(_undo_cutover_async(blank, resolved_config)))
+            if sid == expected_id:
+                return cast(
+                    StepApplyResult, _run(_undo_substrate_async(blank, memory_dir, force))
+                )
+            return StepApplyResult(
+                sid, "failed", f"no such migration for this project: {sid}"
+            )
+
+        undo_results = [_undo_one(sid) for sid in step_ids]
         result = ApplyResult(results=undo_results)
         if json_output:
             _json(result.to_dict())
@@ -2358,8 +2393,12 @@ def migrate_apply(
     # substrate_export dispatches to its own async apply (backup, export,
     # rebuild, verify) — same MigrationStep/StepApplyResult vocabulary,
     # different mechanics because there's no single JSON pointer to patch.
-    config_steps = [s for s in target_steps if s.kind != "substrate_export"]
+    config_steps = [
+        s for s in target_steps
+        if s.kind not in ("substrate_export", "substrate_cutover")
+    ]
     substrate_steps = [s for s in target_steps if s.kind == "substrate_export"]
+    cutover_steps = [s for s in target_steps if s.kind == "substrate_cutover"]
 
     config_results: list[StepApplyResult] = []
     if config_steps:
@@ -2383,7 +2422,20 @@ def migrate_apply(
             _run(_apply_substrate_async(step, memory_dir, cfg, dry_run))
             for step in substrate_steps
         ]
-    result = ApplyResult(results=[*config_results, *substrate_results])
+    cutover_results: list[StepApplyResult] = []
+    if cutover_steps:
+        resolved_db, resolved_config, memory_dir = _resolve_migrate_memory_dir(
+            db, config_path
+        )
+        cutover_results = [
+            _run(_apply_cutover_async(
+                step, resolved_db, memory_dir, resolved_config, dry_run, force,
+            ))
+            for step in cutover_steps
+        ]
+    result = ApplyResult(
+        results=[*config_results, *substrate_results, *cutover_results]
+    )
 
     if json_output:
         _json(result.to_dict())
@@ -2404,7 +2456,12 @@ def migrate_apply(
     typer.echo("")
     if result.all_ok:
         typer.echo(f"Done. Applied: {len(result.applied)}, skipped: {len(result.skipped)}.")
-        if any(s.kind != "substrate_export" for s in config_steps) and result.applied and not dry_run:
+        if cutover_steps and result.applied and not dry_run:
+            typer.echo(
+                "Commit .elfmem/memory/ and .elfmem/ledger/ now — from here "
+                "git history is the undo path for forget() and edit()."
+            )
+        if config_steps and result.applied and not dry_run:
             typer.echo("Restart Claude Code so MCP servers reload.")
     else:
         typer.echo(f"{len(result.failed)} step(s) need attention.")

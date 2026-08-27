@@ -213,7 +213,8 @@ class TestOutcomeProtectsIdentity:
         assert await confidence(fact.block_id) < before, "the fact is still scored"
         assert result.skipped_constitutional == [principle.block_id]
         assert result.blocks_updated == 1
-        assert "left unscored" in result.summary
+        assert "Not scored" in result.summary
+        assert "constitutional" in result.summary
 
     async def test_repeated_losses_never_erode_identity(self, system: MemorySystem):
         """The measured pre-fix path: 0.50 -> 0.114 over six losing trades,
@@ -283,3 +284,61 @@ class TestOutcomeProtectsIdentity:
         assert result.mind_confidence_delta != 0.0, (
             'a constitutional-tagged mind must still calibrate'
         )
+
+
+class TestOutcomeNamesEverySkip:
+    """Three different outcomes used to return the same shape: a typo'd id, a
+    block still in the inbox, and a constitutional skip all gave
+    blocks_updated=0 with nothing naming which. The inbox case silently ate
+    real signal — remember() then outcome() before a dream() is ordinary
+    whenever work resolves faster than the consolidation cycle.
+    """
+
+    async def test_inbox_block_is_reported_not_silently_dropped(
+        self, system: MemorySystem
+    ):
+        async with system.session():
+            pending = await system.remember("A thesis, just recorded.", cue="thesis")
+            result = await system.outcome([pending.block_id], 0.9, source="same-day-fill")
+
+        assert result.blocks_updated == 0
+        assert result.skipped_for("pending_inbox") == [pending.block_id]
+        assert "still in the inbox" in result.summary
+        assert "dream()" in result.summary
+
+    async def test_signal_lands_after_consolidation(self, system: MemorySystem):
+        """The documented recovery has to actually work."""
+        async with system.session():
+            block = await system.remember("A thesis, just recorded.", cue="thesis")
+            await system.consolidate()
+            await system.consolidate()
+            result = await system.outcome([block.block_id], 0.9, source="retry")
+        assert result.blocks_updated == 1
+        assert result.skipped == []
+
+    async def test_unknown_id_is_distinguishable_from_pending(
+        self, system: MemorySystem
+    ):
+        async with system.session():
+            pending = await system.remember("A thesis.", cue="thesis")
+            result = await system.outcome(
+                [pending.block_id, "deadbeefdeadbeef"], 0.9, source="mixed")
+        assert result.skipped_for("pending_inbox") == [pending.block_id]
+        assert result.skipped_for("unmatched") == ["deadbeefdeadbeef"]
+
+    async def test_archived_is_its_own_reason(self, system: MemorySystem):
+        async with system.session():
+            block = await system.remember("A fact to forget.", cue="doomed")
+            await system.consolidate()
+            await system.consolidate()
+            await system.forget(block.block_id)
+            result = await system.outcome([block.block_id], 0.9, source="late")
+        assert result.skipped_for("archived") == [block.block_id]
+
+    async def test_to_dict_carries_the_skips(self, system: MemorySystem):
+        async with system.session():
+            pending = await system.remember("A thesis.", cue="thesis")
+            result = await system.outcome([pending.block_id], 0.9)
+        assert result.to_dict()["skipped"] == [
+            {"id": pending.block_id, "reason": "pending_inbox"}
+        ]

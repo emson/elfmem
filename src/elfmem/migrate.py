@@ -28,8 +28,10 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -1287,10 +1289,24 @@ async def build_full_plan(
     plan = build_plan(scan_paths)
     if db_path is None or memory_dir is None:
         return plan
+    extra: list[MigrationStep] = []
     substrate_step = await scan_substrate(db_path, memory_dir)
-    if substrate_step is None:
+    if substrate_step is not None:
+        extra.append(substrate_step)
+    else:
+        # Cutover is only ever offered once the export it depends on has
+        # been applied, so the two steps are mutually exclusive by
+        # construction: `scan_substrate` returns a step while an export is
+        # outstanding, and stops once one is recorded and current. Offering
+        # both at once would invite flipping authority to a stale snapshot.
+        cutover_step = await scan_cutover(
+            db_path, memory_dir, memory_dir.parent / "config.yaml"
+        )
+        if cutover_step is not None:
+            extra.append(cutover_step)
+    if not extra:
         return plan
-    return MigrationPlan(steps=[*plan.steps, substrate_step], warnings=plan.warnings)
+    return MigrationPlan(steps=[*plan.steps, *extra], warnings=plan.warnings)
 
 
 # ── Formatting ────────────────────────────────────────────────────────────────
@@ -1315,3 +1331,369 @@ def format_finding(finding: MigrationFinding) -> str:
     for ln in json.dumps(finding.suggested, indent=2).splitlines():
         lines.append(f"    {ln}")
     return "\n".join(lines)
+
+
+# ── Substrate cutover (plan doc Phase 6: flip authority) ──────────────────────
+#
+# ADR 0011 deferred this step because "cutover needs real re-wiring of
+# learn()/edit()/forget() at the API level, not a migration script". That
+# re-wiring has since landed -- `MemorySystem._files_authoritative` now gates
+# file-native append/edit/forget/reconcile/sync -- so the reason for the
+# deferral no longer holds and the step that completes the migration can
+# exist. See ADR 0013.
+#
+# What makes this safe, and why it is a genuinely small change: under file
+# authority the database is still written on every operation (learn() inserts
+# the row first and only then appends to the file, archiving the row if the
+# file write fails). The database therefore never falls behind the files, so
+# flipping the flag back leaves a complete, current database. Cutover is a
+# config edit with a real undo, not a data movement.
+#
+# The data movement already happened in `substrate_export`, which is why this
+# step refuses to run until that one has been applied AND its parity gate
+# passed AND the corpus fingerprint still matches. Measured round-trip
+# fidelity of that export on a corpus exercising learn/consolidate/outcome/
+# connect/mind/edit/forget/curate: zero field drift, zero tag drift, edges
+# preserved. Archived blocks are exported to `archive/` but deliberately not
+# rebuilt into the active index.
+
+
+_FILES_AUTH_RE = re.compile(
+    r"^(?P<indent>[ \t]*)files_authoritative[ \t]*:[ \t]*(?P<value>\S+)[ \t]*$"
+)
+_SUBSTRATE_RE = re.compile(r"^substrate[ \t]*:[ \t]*$")
+
+
+def _set_files_authoritative(config_path: Path, *, value: bool) -> None:
+    """Set `substrate.files_authoritative` in place, preserving everything else.
+
+    A surgical line edit rather than a yaml load/dump round-trip, because the
+    generated config is mostly comments -- the provider notes, the key-name
+    hints, the reason each threshold is what it is -- and pyyaml would discard
+    every one of them. The MCP-config patcher takes the same view for the same
+    reason.
+
+    Three shapes are handled: the key already present (replace the value, keep
+    its indentation), a `substrate:` block without the key (insert under it),
+    and neither (append a fresh block). Commented-out occurrences are ignored,
+    so a config carrying `# files_authoritative: false` as documentation is not
+    mistaken for the setting itself.
+    """
+    literal = "true" if value else "false"
+    lines = config_path.read_text(encoding="utf-8").splitlines()
+
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue
+        match = _FILES_AUTH_RE.match(line)
+        if match:
+            lines[i] = f"{match.group('indent')}files_authoritative: {literal}"
+            config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    for i, line in enumerate(lines):
+        if not line.lstrip().startswith("#") and _SUBSTRATE_RE.match(line):
+            lines.insert(i + 1, f"  files_authoritative: {literal}")
+            config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    if lines and lines[-1].strip():
+        lines.append("")
+    lines.extend([
+        "# Files are the source of truth: writes land in .elfmem/memory/**.md",
+        "# first, and the database at project.db is a derived index that",
+        "# `elfmem index rebuild` reproduces from files + .elfmem/ledger/.",
+        "# Commit .elfmem/memory/ and .elfmem/ledger/ -- git history is the",
+        "# undo path for forget() and edit().",
+        "substrate:",
+        f"  files_authoritative: {literal}",
+    ])
+    config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+@dataclass(frozen=True)
+class CutoverPreflight:
+    """One safety condition checked before authority is flipped."""
+
+    name: str
+    ok: bool
+    detail: str
+    recovery: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name, "ok": self.ok,
+            "detail": self.detail, "recovery": self.recovery,
+        }
+
+
+def _git_tracks(path: Path) -> tuple[bool, str]:
+    """Is *path* inside a git worktree AND not ignored?
+
+    Both halves matter and the second is the one that bites. `elfmem init`
+    writes an `.elfmem/.gitignore` that deliberately does not ignore
+    `memory/` or `ledger/`, but a repository-root `.gitignore` carrying a
+    blanket `.elfmem/` rule silences those negations entirely -- git does not
+    descend into an excluded directory to read them. The undo path then fails
+    silently, which is the one failure mode this whole check exists to
+    prevent.
+    """
+    import subprocess
+
+    try:
+        inside = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return False, "not inside a git worktree"
+        ignored = subprocess.run(
+            ["git", "check-ignore", "-q", str(path)],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        # check-ignore exits 0 when the path IS ignored.
+        if ignored.returncode == 0:
+            return False, f"{path.name}/ is gitignored"
+        return True, "tracked"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"git unavailable ({type(exc).__name__})"
+
+
+def _git_is_clean(path: Path) -> tuple[bool, str]:
+    """Does *path* have uncommitted changes?
+
+    A dirty substrate at cutover means the pre-cutover state was never
+    captured in history, so the undo path has nothing to return to.
+    """
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(path)],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        if proc.returncode != 0:
+            return False, "git status failed"
+        dirty = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+        if dirty:
+            return False, f"{len(dirty)} uncommitted change(s)"
+        return True, "clean"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"git unavailable ({type(exc).__name__})"
+
+
+async def cutover_preflight(
+    db_path: Path, memory_dir: Path, config_path: Path,
+) -> list[CutoverPreflight]:
+    """Every condition that must hold before authority is flipped. Read-only.
+
+    Ordered cheapest-first so a missing export is reported before a git
+    subprocess runs.
+    """
+    from elfmem.config import ElfmemConfig
+    from elfmem.db.engine import create_engine
+
+    checks: list[CutoverPreflight] = []
+    _, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+
+    checks.append(CutoverPreflight(
+        "export applied", marker is not None,
+        "substrate export recorded" if marker else "no substrate export recorded",
+        recovery="elfmem migrate apply  # runs the export step first",
+    ))
+
+    # Deliberately no early return on a missing marker. The first friction
+    # report's headline complaint was "each fix revealed the next gate" --
+    # a preflight that stops at the first failure reproduces exactly that,
+    # one round trip per problem. Everything checkable is checked, so a
+    # caller sees the whole list of what to fix in one pass. Only the two
+    # checks that read the marker itself are skipped when there is none.
+    if marker is not None:
+        checks.append(CutoverPreflight(
+            "parity passed", marker.parity_passed,
+            "retrieval parity matched the live database" if marker.parity_passed
+            else f"{marker.diverging_query_count} query(ies) diverged at export time",
+            recovery="Investigate with: elfmem index parity  # do not force past this",
+        ))
+
+    # The corpus must not have moved since the export, or the files are a
+    # stale snapshot and cutover would silently adopt the older state.
+    fingerprint_ok, fp_detail = False, "database unreadable"
+    if marker is not None and db_path.exists():
+        engine = await create_engine(str(db_path))
+        try:
+            async with engine.connect() as conn:
+                _, current_fp = await _corpus_snapshot(conn)
+            fingerprint_ok = current_fp == marker.fingerprint
+            fp_detail = (
+                "corpus unchanged since export" if fingerprint_ok
+                else "database changed since export — files are a stale snapshot"
+            )
+        finally:
+            await engine.dispose()
+    elif marker is None:
+        fp_detail = "no export to compare against"
+    if marker is not None:
+        checks.append(CutoverPreflight(
+            "corpus unchanged", fingerprint_ok, fp_detail,
+            recovery="elfmem migrate apply  # re-export, then retry cutover",
+        ))
+
+    checks.append(CutoverPreflight(
+        "project-local config", config_path.is_file(),
+        str(config_path) if config_path.is_file() else "no project-local config.yaml",
+        recovery="elfmem init  # a global instance has nowhere to put .elfmem/memory/",
+    ))
+
+    already = False
+    if config_path.is_file():
+        already = ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative
+    checks.append(CutoverPreflight(
+        "not already cut over", not already,
+        "files_authoritative is off" if not already else "already files-authoritative",
+    ))
+
+    # Git is not a nicety here: under file authority, git history is the ONLY
+    # undo for forget() and edit(). Without it a forget is unrecoverable.
+    ledger_dir = memory_dir.parent / "ledger"
+    for label, path in (("memory", memory_dir), ("ledger", ledger_dir)):
+        tracked, detail = _git_tracks(path)
+        checks.append(CutoverPreflight(
+            f"git tracks {label}/", tracked, detail,
+            recovery=(
+                "git init, and make sure no parent .gitignore excludes .elfmem/ — "
+                "git history is the only undo path for forget() and edit()"
+            ),
+        ))
+        if tracked:
+            clean, cdetail = _git_is_clean(path)
+            checks.append(CutoverPreflight(
+                f"{label}/ committed", clean, cdetail,
+                recovery=f"git add {path} && git commit  # capture the pre-cutover state",
+            ))
+    return checks
+
+
+def cutover_step_id(config_path: Path) -> str:
+    """Deterministic id for this project's cutover step.
+
+    Named for the project directory, not `config_path.parent`, which is
+    always the literal `.elfmem` and would make every project's step id
+    identical. `apply --undo --id` reconstructs this rather than looking it
+    up, since an applied step is no longer pending and so is absent from
+    the plan.
+    """
+    return f"substrate-cutover@{config_path.parent.parent.name}"
+
+
+async def scan_cutover(
+    db_path: Path, memory_dir: Path, config_path: Path,
+) -> MigrationStep | None:
+    """Read-only. Pending once a verified export exists and authority has not
+    yet been flipped. Returns None when there is nothing to offer."""
+    checks = await cutover_preflight(db_path, memory_dir, config_path)
+    by_name = {c.name: c for c in checks}
+    if not by_name.get("export applied", CutoverPreflight("", False, "")).ok:
+        return None
+    if not by_name.get("not already cut over", CutoverPreflight("", False, "")).ok:
+        return None
+
+    blockers = [c for c in checks if not c.ok]
+    return MigrationStep(
+        id=cutover_step_id(config_path),
+        kind="substrate_cutover",
+        summary=(
+            "Flip substrate.files_authoritative to true — the exported "
+            ".elfmem/memory/ files become the source of truth and the "
+            "database becomes the derived index"
+        ),
+        file=config_path,
+        file_sha256=_sha256(config_path) if config_path.is_file() else "",
+        issues=[f"{c.name}: {c.detail}" for c in blockers],
+        before={"files_authoritative": False},
+        after={"files_authoritative": True},
+        json_pointer="/substrate/files_authoritative",
+        reversible=True,
+        post_apply_step=(
+            "Commit .elfmem/memory/ and .elfmem/ledger/. From here git "
+            "history is the undo path for forget() and edit(). Roll back "
+            "with: elfmem migrate apply --undo --id <step>"
+        ),
+    )
+
+
+async def apply_cutover_step(
+    step: MigrationStep,
+    *,
+    db_path: Path,
+    memory_dir: Path,
+    config_path: Path,
+    dry_run: bool = False,
+    force: bool = False,
+) -> StepApplyResult:
+    """Flip `substrate.files_authoritative` on, after preflight.
+
+    The write is a single key in config.yaml, backed up first. Everything
+    that could actually lose data already happened (and was verified) in the
+    export step; this only changes which copy is believed.
+    """
+    import shutil
+
+    checks = await cutover_preflight(db_path, memory_dir, config_path)
+    blockers = [c for c in checks if not c.ok]
+    if blockers and not force:
+        lines = "; ".join(f"{c.name}: {c.detail} → {c.recovery}" for c in blockers)
+        return StepApplyResult(step.id, "failed", f"preflight failed — {lines}")
+
+    if dry_run:
+        return StepApplyResult(
+            step.id, "skipped",
+            f"dry run — would set substrate.files_authoritative: true in {config_path}",
+        )
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-cutover-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
+    _set_files_authoritative(config_path, value=True)
+
+    from elfmem.config import ElfmemConfig
+
+    if not ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "flag did not read back as true after write; config restored from backup",
+            backup=backup,
+        )
+    forced = " (preflight forced)" if blockers else ""
+    return StepApplyResult(
+        step.id, "applied",
+        f"files_authoritative: true — .elfmem/memory/ is now the source of "
+        f"truth{forced}",
+        backup=backup,
+    )
+
+
+async def undo_cutover_step(
+    step: MigrationStep, *, config_path: Path,
+) -> StepApplyResult:
+    """Flip authority back to the database.
+
+    Lossless by construction: file authority never stops writing the database
+    row, so the database is current at the moment of rollback. Anything
+    written since cutover is in both places.
+    """
+    from elfmem.config import ElfmemConfig
+
+    if not config_path.is_file():
+        return StepApplyResult(step.id, "skipped", "no config.yaml to revert")
+    if not ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        return StepApplyResult(step.id, "skipped", "already database-authoritative")
+    _set_files_authoritative(config_path, value=False)
+    return StepApplyResult(
+        step.id, "applied",
+        "files_authoritative: false — the database is authoritative again; "
+        "the exported files are left in place",
+    )

@@ -16,7 +16,7 @@ from elfmem.db.queries import (
     update_peer_trust,
     upsert_outcome_edge,
 )
-from elfmem.types import OutcomeResult
+from elfmem.types import OutcomeResult, SkippedBlock
 
 # The tag that confers PERMANENT decay is exactly the tag that should confer
 # protection from ordinary scoring: `determine_decay_tier` maps
@@ -162,12 +162,27 @@ async def record_outcome(
 
     updated_ids: list[str] = []
     confidence_deltas: list[float] = []
+    skipped: list[SkippedBlock] = []
 
     for block_id in block_ids:
         if block_id in protected:
+            skipped.append(SkippedBlock(block_id, "constitutional"))
             continue
         block = await get_block(conn, block_id)
-        if block is None or block["status"] != "active":
+        # Each of these used to be the same silent `continue`, so a caller
+        # could not tell a typo'd id from a block that simply had not been
+        # consolidated yet. The inbox case is the damaging one: remember()
+        # then outcome() before a dream() is an ordinary sequence whenever
+        # work resolves faster than the consolidation cycle, and the signal
+        # was being dropped with nothing said.
+        if block is None:
+            skipped.append(SkippedBlock(block_id, "unmatched"))
+            continue
+        if block["status"] != "active":
+            skipped.append(SkippedBlock(
+                block_id,
+                "pending_inbox" if block["status"] == "inbox" else "archived",
+            ))
             continue
 
         confidence_before = float(block["confidence"])
@@ -249,7 +264,7 @@ async def record_outcome(
         edges_reinforced=edges_reinforced,
         blocks_penalized=blocks_penalized,
         outcome_edges_created=outcome_edges_created,
-        skipped_constitutional=sorted(protected),
+        skipped=skipped,
     )
 
 

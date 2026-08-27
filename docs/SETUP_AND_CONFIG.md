@@ -351,6 +351,41 @@ llm:
   process_block_model: "gpt-4"     # Override for block analysis
 ```
 
+### Substrate: where memory actually lives
+
+```yaml
+substrate:
+  files_authoritative: false   # default
+```
+
+Two storage modes, and the difference is *which copy is believed* when they
+disagree:
+
+| | `false` (default) | `true` |
+|---|---|---|
+| source of truth | the SQLite database | `.elfmem/memory/**.md` |
+| the database is | everything | a derived index, rebuildable |
+| undo for `forget()`/`edit()` | none | git history |
+| rebuild command | n/a | `elfmem index rebuild` (files + `.elfmem/ledger/`) |
+
+**Do not set this by hand on a database that already has content.** Turning
+it on does not move anything — it only changes which copy is trusted, so a
+project whose files are empty or stale would start believing the wrong one.
+Use the migration, which exports, verifies, and only then offers the flip:
+
+```bash
+elfmem migrate status    # offers the export first, then the cutover
+elfmem migrate apply --yes
+```
+
+See the README's [Substrate migration](../README.md#substrate-migration-exporting-to-the-file-substrate)
+section for the full flow, the preflight checks, and the rollback path.
+
+Editing it by hand is reasonable in exactly one case: a brand-new project
+with no blocks yet, where there is nothing to migrate and nothing to lose.
+Commit `.elfmem/memory/` and `.elfmem/ledger/` either way — under file
+authority they are your data, not build output.
+
 ---
 
 ## MCP Server Setup

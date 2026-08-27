@@ -732,6 +732,37 @@ class MetabolismDryRunResult:
         }
 
 
+_SKIP_LABEL = {
+    "constitutional": (
+        "constitutional (identity is not judged by task outcomes — use "
+        "review_constitutional, or pass allow_constitutional=True)"
+    ),
+    "pending_inbox": (
+        "still in the inbox — NOT recorded; run dream(), then send the signal again"
+    ),
+    "archived": "archived (deliberately forgotten)",
+    "unmatched": "no such block (check the ids)",
+}
+
+
+@dataclass(frozen=True)
+class SkippedBlock:
+    """One block id an outcome() call did not score, and why."""
+
+    id: str
+    reason: Literal["constitutional", "pending_inbox", "archived", "unmatched"]
+
+    @property
+    def summary(self) -> str:
+        return f"{self.id[:8]}… ({self.reason})"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "reason": self.reason}
+
+
 @dataclass(frozen=True)
 class OutcomeResult:
     """Result of an outcome() call — Bayesian confidence updates from domain signals.
@@ -749,24 +780,39 @@ class OutcomeResult:
     blocks_penalized: int = 0
     outcome_edges_created: int = 0
     """New edges created by outcome() between non-similar but co-used blocks."""
-    # Blocks refused because they are `self/constitutional`. A task outcome is
-    # evidence about the task, never about the principle that helped reason
-    # through it, and the tier granting permanence should also grant
-    # protection. Pass `allow_constitutional=True` when you really do mean to
-    # score the principle itself.
-    skipped_constitutional: list[str] = field(default_factory=list)
+    # Every id that did NOT receive the signal, each carrying why. Without
+    # this a caller cannot tell "wrong id" from "not consolidated yet" from
+    # "constitutional skip" -- all three returned blocks_updated=0 and the
+    # same shape. `pending_inbox` is the one that silently ate real signal:
+    # remember() then outcome() before a dream() is an ordinary sequence for
+    # an agent whose work resolves faster than its consolidation cycle.
+    #
+    # Reason-per-item rather than one list per reason, mirroring
+    # FrameResult.dropped: one call can skip for several reasons at once, and
+    # a caller wanting only one of them can filter with skipped_for().
+    skipped: list[SkippedBlock] = field(default_factory=list)
+
+    def skipped_for(self, reason: str) -> list[str]:
+        """Ids skipped for one reason — e.g. ``"pending_inbox"``."""
+        return [s.id for s in self.skipped if s.reason == reason]
+
+    @property
+    def skipped_constitutional(self) -> list[str]:
+        """Ids refused because they are `self/constitutional`. A task outcome
+        is evidence about the task, never about the principle that helped
+        reason through it, and the tier granting permanence should also grant
+        protection. Pass `allow_constitutional=True` to override."""
+        return self.skipped_for("constitutional")
 
     @property
     def summary(self) -> str:
         skipped = ""
-        if self.skipped_constitutional:
-            n = len(self.skipped_constitutional)
-            noun = "block" if n == 1 else "blocks"
-            skipped = (
-                f" {n} constitutional {noun} left unscored (identity is not "
-                "judged by task outcomes; use review_constitutional, or pass "
-                "allow_constitutional=True)."
-            )
+        if self.skipped:
+            counts: dict[str, int] = {}
+            for item in self.skipped:
+                counts[item.reason] = counts.get(item.reason, 0) + 1
+            parts = [f"{n} {_SKIP_LABEL[r]}" for r, n in sorted(counts.items())]
+            skipped = f" Not scored: {'; '.join(parts)}."
         if self.blocks_updated == 0:
             return f"Outcome recorded: nothing to update.{skipped}"
         noun = "block" if self.blocks_updated == 1 else "blocks"
@@ -791,6 +837,7 @@ class OutcomeResult:
             "edges_reinforced": self.edges_reinforced,
             "blocks_penalized": self.blocks_penalized,
             "outcome_edges_created": self.outcome_edges_created,
+            "skipped": [item.to_dict() for item in self.skipped],
             "skipped_constitutional": self.skipped_constitutional,
         }
 

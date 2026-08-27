@@ -10,6 +10,57 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`elfmem migrate` completes the substrate migration** — a second step kind,
+  `substrate_cutover`, sets `substrate.files_authoritative: true` so the
+  exported `.elfmem/memory/` files become the source of truth and the database
+  becomes a rebuildable derived index ([ADR 0013](docs/decisions/0013-substrate-cutover.md)).
+  [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md)
+  deferred this because cutover "needs real re-wiring of learn()/edit()/
+  forget() at the API level"; that re-wiring has since landed, so the reason
+  for the deferral is gone — and its absence was the gap users actually hit,
+  left with verified files, no documented next step, and a config flag
+  documented nowhere. `migrate status` now narrates the whole arc: export
+  pending → cutover pending → nothing pending. The two steps are mutually
+  exclusive by construction, so a flip onto a stale snapshot is not offerable.
+  Preflight gates on export applied, parity passed, corpus fingerprint
+  unchanged, project-local config, not already flipped, and `memory/` +
+  `ledger/` both git-tracked *and* committed — reporting **every** failure at
+  once rather than one per round trip, since "each fix revealed the next gate"
+  was the first friction report's headline complaint. `--force` overrides and
+  says that it did; `--undo` flips back.
+  Rollback is lossless by construction: file authority never stops writing the
+  database row, so the database never falls behind and flipping back leaves it
+  complete. Measured round-trip fidelity over learn/consolidate/outcome/
+  connect/mind/edit/forget/curate: zero field drift, zero tag drift, edges
+  preserved.
+  The git checks catch a genuinely silent failure — `elfmem init` writes an
+  `.elfmem/.gitignore` that deliberately does not ignore `memory/` or
+  `ledger/`, but a repository-root `.gitignore` with a blanket `.elfmem/` rule
+  silences those negations entirely (git never descends into an excluded
+  directory to read them), leaving no undo path for `forget()`/`edit()`.
+
+### Fixed
+- **`outcome()` on an un-consolidated block was a silent zero.** A block still
+  in the inbox cannot be scored, and the call reported `blocks_updated=0` with
+  nothing naming which id or why — indistinguishable from a typo'd id or a
+  constitutional skip. Reported from production: theses are remembered at fill
+  time and consolidation runs at end-of-day housekeeping, so any position
+  resolving the same day it opened fired `outcome()` against an inbox block and
+  the credit vanished. `OutcomeResult.skipped` now lists every unscored id with
+  a reason (`pending_inbox`, `unmatched`, `archived`, `constitutional`), read
+  via `result.skipped_for(reason)`; `skipped_constitutional` is kept as a
+  convenience view. Reason-per-item rather than one list per reason, mirroring
+  `FrameResult.dropped` — one call can skip for several reasons at once.
+  `SkippedBlock` is exported from the package root.
+- **`elfmem migrate` scanned the wrong database.** It resolved the path from
+  `ProjectInfo.db`, which *infers* `~/.elfmem/databases/<project>.db` from the
+  project name rather than reading `project.db` out of the config. Any project
+  whose config pointed elsewhere was scanned at a path that did not exist, so
+  `migrate status` reported "No migrations pending" while the real corpus sat
+  untouched — telling users there was nothing to migrate. It now uses the same
+  resolution chain as `doctor`. Same authoritative-state-vs-inferred-default
+  class as the v0.13.3 path-resolution incident: read the configured value,
+  never re-derive it.
 - **`FrameFilters.exclude_tag_patterns` / `.exclude_exempt_patterns`** — the
   counterpart to `tag_patterns`. SELF could filter *in*; nothing could filter
   *out*, so a tag that earned a block a permanent home in one frame also let

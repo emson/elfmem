@@ -1240,9 +1240,13 @@ ConsolidateResult(processed, promoted, deduplicated, edges_created, rescored, re
 CurateResult(edges_pruned, reinforced, constitutional_reinforced, edges_decayed, total_edges_after)
 # no `archived` field — curate() no longer auto-archives blocks (ADR 0009); see review_corpus()
 MetabolismDryRunResult(blocks_considered, self_goals, candidates, proposals, llm_failures)
-OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized, skipped_constitutional)
+OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized, skipped)
+SkippedBlock(id, reason)
+# reason: "pending_inbox" | "unmatched" | "archived" | "constitutional"
+# pending_inbox means the signal was NOT recorded — dream(), then re-send it.
 # self/constitutional blocks are NOT scored by default: a task outcome is
 # evidence about the task, not about the principle. outcome(..., allow_constitutional=True) overrides.
+# result.skipped_constitutional is kept as a convenience view of skipped.
 ConnectResult(action, source_id, target_id, relation, weight)
 DisconnectResult(action, source_id, target_id)
 ConnectByQueryResult(source_query, target_query, source_id, target_id, source_content, target_content, action, connect_result)
@@ -1468,12 +1472,57 @@ nothing destructive to have caused in the first place. `--undo` still
 refuses (unless `--force`) if the exported files look hand-edited since
 migration, so curated changes aren't silently discarded.
 
-**What this does not do**: switch your running agent over to reading and
-writing the file substrate day-to-day. `apply` stops at "exported and
-verified" — your agent keeps operating on the original database regardless
-of the parity result. That's a deliberate scope boundary, not an
-oversight — see [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md)
-for why, and what's left before it can go further.
+The export changes nothing about how your agent operates — it only produces
+the files and proves they rank identically. Switching over is a **second,
+separate step**.
+
+### Cutover: making the files authoritative
+
+Once the export is applied and its parity gate passed, `elfmem migrate
+status` offers a second step. Running the same `apply` sets
+`substrate.files_authoritative: true`, and from then on writes land in
+`.elfmem/memory/**.md` first, with the database as a derived index that
+`elfmem index rebuild` can reproduce from files plus `.elfmem/ledger/`.
+
+```bash
+elfmem migrate status                                # now offers substrate-cutover@<project>
+git add .elfmem/memory .elfmem/ledger && git commit   # required — see below
+elfmem migrate apply --yes                            # flips authority
+elfmem migrate apply --undo --id substrate-cutover@<project> --yes   # flips back
+```
+
+The two steps are never offered at once: cutover only appears after a
+current, verified export exists, so you cannot flip authority onto a stale
+snapshot.
+
+**Preflight refuses unless all of these hold** (`--force` overrides, and
+prints that it did). All failures are reported together, so you fix them in
+one pass rather than one round trip each:
+
+| check | why |
+|---|---|
+| export applied, parity passed | there must be verified files to cut over *to* |
+| corpus unchanged since export | otherwise the files are a stale snapshot |
+| project-local config | a global instance has nowhere to put `.elfmem/memory/` |
+| git tracks `memory/` and `ledger/` | **git history is the only undo path for `forget()` and `edit()`** |
+| both committed | otherwise the pre-cutover state was never captured |
+
+The git checks catch a genuinely silent failure: `elfmem init` writes an
+`.elfmem/.gitignore` that deliberately does *not* ignore `memory/` or
+`ledger/`, but a repository-root `.gitignore` carrying a blanket `.elfmem/`
+rule silences those negations entirely — git never descends into an excluded
+directory to read them — and your undo path quietly does not exist.
+
+**Rollback is lossless**, and by construction rather than bookkeeping: under
+file authority every operation still writes the database row (a failed file
+write archives the row and raises `SubstrateWriteError`), so the database
+never falls behind the files. Flipping back leaves a complete, current
+database, and the exported files are left in place. Cutover is a config edit
+with a real undo, not a data movement — the data movement already happened,
+and was verified, in the export step.
+
+**After cutover, commit `.elfmem/memory/` and `.elfmem/ledger/`.** That is
+not housekeeping: it is what makes `forget()` and `edit()` recoverable.
 
 ---
 

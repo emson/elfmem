@@ -317,3 +317,37 @@ with the leak closed the apparent disagreement between count and contents resolv
 **You can drop the hand-rolled ATTENTION workaround.** `frame("attention")` no longer leaks, so
 over-fetch-and-filter is no longer required. Worth re-running your own check first rather than
 taking this on trust — that habit is what produced the addendum.
+
+---
+
+## Addendum 2 — `outcome()` on an inbox block is a silent zero
+
+Found by an end-to-end learning-loop simulation, then confirmed by direct measurement on
+d86e6d62:
+
+```python
+r = await system.remember(text, cue=...)     # pending_consolidation=True
+out = await system.outcome([r.block_id], 0.9, weight=1.0)
+# out.blocks_updated == 0, out.blocks_penalized == 0 - no error, no field naming the id
+await system.consolidate()
+out2 = await system.outcome([r.block_id], 0.9, weight=1.0)
+# out2.blocks_updated == 1
+```
+
+**Why this bites real agents:** our theses are remembered at FILL time and consolidation runs at
+end-of-day housekeeping. Any position that resolves the same day it was opened - our first
+profitable trade did exactly this - fires `outcome()` at a block still in the inbox, and the
+credit vanishes with nothing reported. The caller cannot distinguish "wrong id" from "not yet
+consolidated" from "constitutional skip": all three return the same shape.
+
+This is the same pattern as the first report's organising idea - a reducing operation that does
+not say what it reduced. `OutcomeResult` already gained `skipped_constitutional`; the natural
+completion is:
+
+```python
+OutcomeResult(..., pending_inbox=["3f2a1b…"], unmatched=["deadbeef…"])
+```
+
+Our workaround: when `blocks_updated + blocks_penalized < len(ids)`, consolidate and retry once.
+It works, but it makes the caller responsible for knowing WHY a count came up short, which is
+exactly the guessing the result type should remove.
