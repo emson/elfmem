@@ -10,6 +10,28 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`elfmem migrate` offers an `agent_name` step** — a third, independent
+  step kind, pending whenever a project-local config has never set
+  `project.agent_name`. Closes the same gap the SELF-preamble naming fix
+  (below, and `docs/self_preamble_naming_report.md`) left open for every
+  project that upgrades the library without also opting in: the fix's
+  fallback to `"elf"` is deliberately silent, for backward compatibility,
+  which means an unset `agent_name` is still an implicit default nobody
+  chose — exactly the failure mode the substrate migration steps exist to
+  close elsewhere. `elfmem migrate apply` now prompts once, after its usual
+  confirmation, for what to call the agent (default `"elf"`, so pressing
+  enter keeps today's behaviour but makes it an explicit, recorded fact in
+  `config.yaml`); `--yes`, `--dry-run`, and `--json` skip the prompt and
+  write `"elf"` directly, since none of them can read a reply — the same
+  three-way non-interactive gate the existing "Proceed?" confirmation
+  already uses. Idempotent (stops being offered once anything is set,
+  `"elf"` included) and independent of the substrate export/cutover steps
+  (unrelated config field, can appear alongside either). Reuses
+  `set_agent_name_in_config()` — the same surgical, comment-preserving
+  writer `elfmem init --name` already uses — rather than a new one. No
+  undo: unlike substrate cutover, this has an existing, simpler undo already
+  (`elfmem init --name <name>`), so building a second one would duplicate a
+  path that already exists for a change that was never destructive.
 - **`elfmem migrate` completes the substrate migration** — a second step kind,
   `substrate_cutover`, sets `substrate.files_authoritative: true` so the
   exported `.elfmem/memory/` files become the source of truth and the database

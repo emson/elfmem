@@ -2312,9 +2312,15 @@ def migrate_apply(
     If a target has drifted since the plan was built, it's marked 'stale'
     and skipped. Re-run 'elfmem migrate plan' first.
 
-    Without --yes, prompts for confirmation. Always safe to re-run — already-
-    applied steps return 'skipped'. Use --undo --id <step> to roll back an
-    applied substrate_export or substrate_cutover step.
+    Without --yes, prompts for confirmation. If an agent_name step is
+    pending (project.agent_name was never set), one further prompt asks
+    what to call your agent, default "elf" — --yes/--dry-run/--json all
+    skip it and write "elf" directly, since none of them can read a reply.
+
+    Always safe to re-run — already-applied steps return 'skipped'. Use
+    --undo --id <step> to roll back an applied substrate_export or
+    substrate_cutover step (agent_name has no undo — re-run with a new
+    name, or `elfmem init --name <name>`, to change it).
     """
     from elfmem.migrate import ApplyResult, MigrationStep, StepApplyResult, apply_plan
 
@@ -2392,15 +2398,31 @@ def migrate_apply(
             raise typer.Exit(1)
 
     # Config-drift steps go through the existing JSON-patch machinery;
-    # substrate_export dispatches to its own async apply (backup, export,
-    # rebuild, verify) — same MigrationStep/StepApplyResult vocabulary,
-    # different mechanics because there's no single JSON pointer to patch.
+    # substrate_export/cutover and agent_name dispatch to their own apply --
+    # same MigrationStep/StepApplyResult vocabulary, different mechanics
+    # because there's no single JSON pointer to patch.
     config_steps = [
         s for s in target_steps
-        if s.kind not in ("substrate_export", "substrate_cutover")
+        if s.kind not in ("substrate_export", "substrate_cutover", "agent_name")
     ]
     substrate_steps = [s for s in target_steps if s.kind == "substrate_export"]
     cutover_steps = [s for s in target_steps if s.kind == "substrate_cutover"]
+    agent_name_steps = [s for s in target_steps if s.kind == "agent_name"]
+
+    # Ask once, after the blanket "Proceed?" above, not before -- the user
+    # has already agreed to the list of what's about to happen; this is the
+    # one follow-up specific to this step. Skipped (defaults to "elf",
+    # matching what the plan preview already showed) whenever nothing can
+    # read a reply: --yes, --dry-run, and --json all mean non-interactive,
+    # the same three-way gate the "Proceed?" confirm above already used.
+    agent_name_choice = "elf"
+    if agent_name_steps and not (yes or dry_run or json_output):
+        agent_name_choice = typer.prompt(
+            "What would you like to name your agent? "
+            "(used in the SELF frame's own preamble, AGENT.md, and "
+            "elfmem init --name)",
+            default="elf",
+        ).strip() or "elf"
 
     config_results: list[StepApplyResult] = []
     if config_steps:
@@ -2435,8 +2457,23 @@ def migrate_apply(
             ))
             for step in cutover_steps
         ]
+    agent_name_results: list[StepApplyResult] = []
+    if agent_name_steps:
+        from elfmem.migrate import apply_agent_name_step
+
+        resolved_config, _ = _resolve_migrate_paths(config_path, db)
+        agent_name_results = [
+            apply_agent_name_step(
+                step, config_path=Path(resolved_config),
+                name=agent_name_choice, dry_run=dry_run,
+            )
+            for step in agent_name_steps
+        ]
     result = ApplyResult(
-        results=[*config_results, *substrate_results, *cutover_results]
+        results=[
+            *config_results, *substrate_results, *cutover_results,
+            *agent_name_results,
+        ]
     )
 
     if json_output:

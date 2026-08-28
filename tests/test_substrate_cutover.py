@@ -19,9 +19,12 @@ from elfmem.migrate import (
     SubstrateMarker,
     _set_files_authoritative,
     _write_marker_atomic,
+    apply_agent_name_step,
     apply_cutover_step,
+    build_full_plan,
     cutover_preflight,
     cutover_step_id,
+    scan_agent_name,
     scan_cutover,
 )
 
@@ -35,6 +38,21 @@ def _marker(memory_dir: Path, *, fingerprint: str = "fp", parity: bool = True) -
         blocks_exported=3, blocks_written=3,
         parity_passed=parity, diverging_query_count=0,
     ))
+
+
+def _project_with_identity(tmp_path: Path) -> Path:
+    """A config shaped like a real `elfmem init` output: `identity:` present.
+
+    `_project()`'s bare `project:\\n  name: t\\n` has no `agent_name:` OR
+    `identity:` line -- `set_agent_name_in_config` needs one as an insertion
+    anchor when `agent_name:` is absent, and every config `init` actually
+    writes has `identity:` (it's a required ProjectConfig field, always
+    rendered). Applying against the bare fixture is testing a config shape
+    that doesn't occur in practice.
+    """
+    _, _, config = _project(tmp_path)
+    config.write_text(config.read_text() + '  identity: ""\n')
+    return config
 
 
 def _step(config: Path) -> MigrationStep:
@@ -225,3 +243,127 @@ class TestGitPreflight:
         tracked = [c for c in checks if c.name == "git tracks memory/"][0]
         assert not tracked.ok
         assert "gitignored" in tracked.detail
+
+
+# ── Agent naming: make the identity explicit, don't just detect a bug ────────
+#
+# Unlike the two steps above, an unset project.agent_name is not wrong -- "elf"
+# is a perfectly good default identity. This step exists because the fallback
+# to "elf" is silent (context/rendering.py, elfmem_index @ c19dcc5), and this
+# project has spent both migration steps above closing exactly that failure
+# mode elsewhere: an unset value producing behaviour nobody chose. Applying
+# writes SOME value -- "elf" if nothing else is offered -- so the identity
+# becomes a fact recorded in the project's own config, not an implicit default
+# a future reader has to already know about to find.
+
+
+class TestScanAgentName:
+    def test_offered_when_unset(self, tmp_path: Path):
+        _, _, config = _project(tmp_path)
+        step = scan_agent_name(config)
+        assert step is not None
+        assert step.kind == "agent_name"
+        assert step.after == {"agent_name": "elf"}
+
+    def test_not_offered_once_set(self, tmp_path: Path):
+        _, _, config = _project(tmp_path)
+        config.write_text(config.read_text() + '  agent_name: "Theo"\n')
+        assert scan_agent_name(config) is None
+
+    def test_not_offered_when_no_config(self, tmp_path: Path):
+        assert scan_agent_name(tmp_path / "nowhere" / "config.yaml") is None
+
+    def test_step_id_names_the_project(self, tmp_path: Path):
+        _, _, config = _project(tmp_path)
+        step = scan_agent_name(config)
+        assert step.id.endswith(tmp_path.name)
+        assert ".elfmem" not in step.id
+
+
+class TestApplyAgentName:
+    def test_writes_the_chosen_name(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        result = apply_agent_name_step(step, config_path=config, name="Theo")
+        assert result.status == "applied"
+        assert yaml.safe_load(config.read_text())["project"]["agent_name"] == "Theo"
+
+    def test_defaults_to_elf_when_name_is_blank(self, tmp_path: Path):
+        """The exact case a non-interactive run hits: nothing typed, no
+        --yes-supplied override -- must still write something, not skip."""
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        result = apply_agent_name_step(step, config_path=config, name="")
+        assert result.status == "applied"
+        assert yaml.safe_load(config.read_text())["project"]["agent_name"] == "elf"
+
+    def test_defaults_to_elf_when_name_is_whitespace_only(self, tmp_path: Path):
+        """A prompt answered with just spaces must not write an
+        effectively-empty identity back."""
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        apply_agent_name_step(step, config_path=config, name="   ")
+        assert yaml.safe_load(config.read_text())["project"]["agent_name"] == "elf"
+
+    def test_dry_run_writes_nothing(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        before = config.read_text()
+        result = apply_agent_name_step(
+            step, config_path=config, name="Theo", dry_run=True,
+        )
+        assert result.status == "skipped"
+        assert config.read_text() == before
+
+    def test_becomes_idempotent_after_applying(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        apply_agent_name_step(step, config_path=config, name="Theo")
+        assert scan_agent_name(config) is None
+
+    def test_reapplying_an_already_set_name_is_a_noop(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        apply_agent_name_step(step, config_path=config, name="Theo")
+        result = apply_agent_name_step(step, config_path=config, name="Theo")
+        assert result.status == "skipped"
+
+    def test_missing_config_fails_without_raising(self, tmp_path: Path):
+        """set_agent_name_in_config raises ConfigError on a missing file --
+        the step must catch it and report failed, not crash migrate apply."""
+        missing = tmp_path / "gone" / "config.yaml"
+        step = MigrationStep(
+            id="agent-name@x", kind="agent_name", summary="", file=missing,
+            file_sha256="", issues=[], before={}, after={}, json_pointer="",
+        )
+        result = apply_agent_name_step(step, config_path=missing, name="Theo")
+        assert result.status == "failed"
+
+
+class TestAgentNameInThePlan:
+    """Wired into the same plan the other two steps use, independently of
+    both -- agent_name has nothing to do with the file substrate."""
+
+    async def test_appears_alongside_a_pending_export(self, tmp_path: Path):
+        db, memory, config = _project(tmp_path)
+        kinds = {s.kind for s in (await build_full_plan(
+            db_path=db, memory_dir=memory,
+        )).steps}
+        assert "agent_name" in kinds
+
+    async def test_appears_alongside_a_pending_cutover(self, tmp_path: Path):
+        db, memory, config = _project(tmp_path)
+        _marker(memory)
+        kinds = {s.kind for s in (await build_full_plan(
+            db_path=db, memory_dir=memory,
+        )).steps}
+        assert "agent_name" in kinds
+        assert "substrate_cutover" in kinds
+
+    async def test_absent_once_a_name_is_set(self, tmp_path: Path):
+        db, memory, config = _project(tmp_path)
+        config.write_text(config.read_text() + '  agent_name: "Theo"\n')
+        kinds = {s.kind for s in (await build_full_plan(
+            db_path=db, memory_dir=memory,
+        )).steps}
+        assert "agent_name" not in kinds

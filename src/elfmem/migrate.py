@@ -36,7 +36,11 @@ from pathlib import Path
 from typing import Any
 
 from elfmem.config import ElfmemConfig
-from elfmem.project import get_project_info
+from elfmem.project import (
+    get_project_info,
+    read_agent_name_from_config,
+    set_agent_name_in_config,
+)
 
 # Env var aliases that have been renamed. Map deprecated → canonical.
 DEPRECATED_ENV_VARS: dict[str, str] = {
@@ -1289,6 +1293,7 @@ async def build_full_plan(
     plan = build_plan(scan_paths)
     if db_path is None or memory_dir is None:
         return plan
+    config_path = memory_dir.parent / "config.yaml"
     extra: list[MigrationStep] = []
     substrate_step = await scan_substrate(db_path, memory_dir)
     if substrate_step is not None:
@@ -1299,11 +1304,15 @@ async def build_full_plan(
         # construction: `scan_substrate` returns a step while an export is
         # outstanding, and stops once one is recorded and current. Offering
         # both at once would invite flipping authority to a stale snapshot.
-        cutover_step = await scan_cutover(
-            db_path, memory_dir, memory_dir.parent / "config.yaml"
-        )
+        cutover_step = await scan_cutover(db_path, memory_dir, config_path)
         if cutover_step is not None:
             extra.append(cutover_step)
+    # Independent of both: project.agent_name has nothing to do with the file
+    # substrate, so it is offered alongside whichever of the two above is
+    # pending, not gated on either.
+    agent_name_step = scan_agent_name(config_path)
+    if agent_name_step is not None:
+        extra.append(agent_name_step)
     if not extra:
         return plan
     return MigrationPlan(steps=[*plan.steps, *extra], warnings=plan.warnings)
@@ -1696,4 +1705,103 @@ async def undo_cutover_step(
         step.id, "applied",
         "files_authoritative: false — the database is authoritative again; "
         "the exported files are left in place",
+    )
+
+
+# ── Agent naming (docs/self_preamble_naming_report.md) ────────────────────────
+#
+# `project.agent_name` defaults to `""`, and elfmem_index @ c19dcc5 made it
+# load-bearing at runtime: the SELF frame's own preamble now reads
+# "You are {agent_name}", falling back to "elf" only when the field is empty.
+# That fallback is deliberately silent -- it is what kept every pre-existing
+# config rendering byte-for-byte the same text after the fix shipped -- but
+# silent is exactly the failure mode this project has spent this migration
+# closing everywhere else: an unset value producing behaviour nobody chose,
+# discoverable only by reading source. A project that has never set
+# agent_name is one config edit away from an identity it never decided on.
+#
+# The fix here is not "detect a bug", the way substrate_export/cutover detect
+# genuine drift -- an unset agent_name is not wrong, elf is a perfectly good
+# default identity. It is "make the choice explicit": write SOME value,
+# `"elf"` if nothing else is offered, so a project's identity is a fact
+# recorded in its own config.yaml rather than an implicit library default a
+# future reader has to already know about to find.
+
+
+def agent_name_step_id(config_path: Path) -> str:
+    """Deterministic id for this project's agent-naming step."""
+    return f"agent-name@{config_path.parent.parent.name}"
+
+
+def scan_agent_name(config_path: Path) -> MigrationStep | None:
+    """Read-only. Pending when a project-local config exists but has never
+    set `project.agent_name`. Idempotent: once anything is set -- `"elf"`
+    included -- this stops being offered, the same "not already done" shape
+    as `scan_cutover`.
+    """
+    if not config_path.is_file():
+        return None
+    if read_agent_name_from_config(config_path):
+        return None
+
+    return MigrationStep(
+        id=agent_name_step_id(config_path),
+        kind="agent_name",
+        summary=(
+            "Set project.agent_name — unset today, which means the SELF "
+            "frame's preamble silently falls back to \"You are elf\". "
+            "Applying without a chosen name sets it to \"elf\" explicitly, "
+            "same behaviour, now a recorded fact in your own config rather "
+            "than an implicit library default."
+        ),
+        file=config_path,
+        file_sha256=_sha256(config_path),
+        issues=["project.agent_name has never been set"],
+        before={"agent_name": ""},
+        after={"agent_name": "elf"},
+        json_pointer="/project/agent_name",
+        reversible=True,
+        post_apply_step=(
+            "Run `elfmem agent-docs install` to refresh AGENT.md with this "
+            "name."
+        ),
+    )
+
+
+def apply_agent_name_step(
+    step: MigrationStep,
+    *,
+    config_path: Path,
+    name: str = "elf",
+    dry_run: bool = False,
+) -> StepApplyResult:
+    """Set `project.agent_name`, defaulting to `"elf"`.
+
+    `name` is resolved by the caller (interactively prompted, or defaulted
+    for `--yes`/`--dry-run`/`--json`) -- this function does no I/O beyond
+    the config write itself, matching every other step in this module.
+    """
+    chosen = name.strip() or "elf"
+    if dry_run:
+        return StepApplyResult(
+            step.id, "skipped",
+            f'dry run — would set project.agent_name: "{chosen}" in {config_path}',
+        )
+
+    from elfmem.exceptions import ConfigError
+
+    try:
+        action = set_agent_name_in_config(config_path, chosen)
+    except ConfigError as exc:
+        return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}")
+
+    if action == "unchanged":
+        return StepApplyResult(
+            step.id, "skipped", f'project.agent_name is already "{chosen}"',
+        )
+    return StepApplyResult(
+        step.id, "applied",
+        f'project.agent_name: "{chosen}" ({action}) — the SELF frame now '
+        f'reads "You are {chosen}". Run `elfmem agent-docs install` to '
+        f"refresh AGENT.md.",
     )

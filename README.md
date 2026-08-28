@@ -1534,6 +1534,31 @@ and was verified, in the export step.
 **After cutover, commit `.elfmem/memory/` and `.elfmem/ledger/`.** That is
 not housekeeping: it is what makes `forget()` and `edit()` recoverable.
 
+### Naming: `elfmem migrate` makes it explicit, not just discoverable
+
+`project.agent_name` defaults to `""`, and the SELF frame's own preamble
+("You are `{agent_name}`") silently falls back to `"elf"` when it's unset —
+correct, backward-compatible behaviour, but exactly the kind of unset value
+producing a choice nobody made that the migrations above exist to close. A
+project that has never set `agent_name` gets a third, independent step:
+
+```bash
+elfmem migrate status                                # offers agent-name@<project>
+elfmem migrate apply                                 # interactive: asks what to call your agent
+elfmem migrate apply --yes                            # non-interactive: writes "elf" explicitly
+```
+
+Interactively, `apply` prompts once — after the usual "About to apply N
+migration(s) — Proceed?" confirmation — with a default of `"elf"`, so
+pressing enter keeps today's identity, now as a recorded fact in your own
+`config.yaml` rather than an implicit library default. `--yes`, `--dry-run`,
+and `--json` never prompt: none of them can read a reply, so all three write
+(or preview) `"elf"` directly, the same three-way "non-interactive" gate the
+confirmation step already uses. Idempotent — once anything is set, `"elf"`
+included, the step stops being offered. Independent of the two steps above:
+it has nothing to do with the file substrate, and can appear alongside
+either.
+
 ---
 
 ## API stability
