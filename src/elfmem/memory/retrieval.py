@@ -31,7 +31,10 @@ from elfmem.scoring import (
 )
 from elfmem.types import ScoredBlock
 
-# Soft dependency — retrieval works without it.
+# Core dependency since v2 Phase 2. The import stays guarded only so an
+# environment that predates the dependency change degrades to vector-only
+# retrieval instead of failing to import -- but it now says so, loudly and
+# once, rather than silently halving hybrid retrieval the way it did before.
 try:
     from rank_bm25 import BM25Okapi
 
@@ -60,6 +63,7 @@ async def hybrid_retrieve(
     current_active_hours: float,
     top_k: int = 5,
     tag_filter: str | None = None,
+    exclude_ids: set[str] | None = None,
     search_window_hours: float = DEFAULT_SEARCH_WINDOW_HOURS,
     score_boosts: dict[str, float] | None = None,
 ) -> list[ScoredBlock]:
@@ -74,12 +78,18 @@ async def hybrid_retrieve(
     Stage 5  — MMR diversity: reorder for relevance + diversity. (Query-aware only.)
 
     Returns top_k * CONTRADICTION_OVERSAMPLE ScoredBlocks for contradiction headroom.
+
+    ``exclude_ids`` are removed at stage 1 rather than after scoring, so they
+    never occupy a candidate slot. Filtering them later would leave the frame
+    with fewer usable results than the caller asked for -- the excluded blocks
+    would still have consumed the oversample budget on their way out.
     """
     candidates = await _stage_1_prefilter(
         conn,
         current_active_hours=current_active_hours,
         search_window_hours=search_window_hours,
         tag_filter=tag_filter,
+        exclude_ids=exclude_ids,
     )
 
     if not candidates:
@@ -121,6 +131,20 @@ async def hybrid_retrieve(
         # Queryless — all candidates with similarity=0, no graph expansion
         scored_inputs = [(b, 0.0, False) for b in candidates]
 
+    # The exclusion invariant, enforced once where the candidate set is
+    # final. The stage-1 prefilter above is an optimisation -- it keeps
+    # excluded blocks from being loaded or scored at all -- but it is not
+    # the only way into this list: stage 3 expands the graph by fetching
+    # neighbours straight from the database by id, so an excluded block that
+    # neighbours a seed walked back in behind the filter. Constitutional
+    # blocks are the worst case for that, being both excluded and unusually
+    # well connected, and they arrive with similarity=0.0 yet still rank on
+    # confidence, centrality and a recency that PERMANENT decay never erodes.
+    # Re-filtering here rather than patching stage 3 keeps one enforcement
+    # site, so a future stage that introduces candidates cannot reopen this.
+    if exclude_ids:
+        scored_inputs = [t for t in scored_inputs if t[0]["id"] not in exclude_ids]
+
     if not scored_inputs:
         return []
 
@@ -160,16 +184,21 @@ async def _stage_1_prefilter(
     current_active_hours: float,
     search_window_hours: float,
     tag_filter: str | None,
+    exclude_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Stage 1: Pre-filter active blocks within search window."""
     cutoff = current_active_hours - search_window_hours
     if tag_filter is not None:
         tagged_ids = set(await queries.get_blocks_by_tag_pattern(conn, tag_filter))
         all_blocks = await queries.get_active_blocks(conn, min_last_reinforced_at=cutoff)
-        return [b for b in all_blocks if b["id"] in tagged_ids]
-    return await queries.get_active_blocks_with_embeddings(
-        conn, min_last_reinforced_at=cutoff
-    )
+        blocks = [b for b in all_blocks if b["id"] in tagged_ids]
+    else:
+        blocks = await queries.get_active_blocks_with_embeddings(
+            conn, min_last_reinforced_at=cutoff
+        )
+    if exclude_ids:
+        blocks = [b for b in blocks if b["id"] not in exclude_ids]
+    return blocks
 
 
 async def _stage_2_vector_search(
@@ -206,9 +235,28 @@ def _stage_2b_bm25_search(
     (vocabulary mismatch, exact entity names, etc.). Requires the optional
     ``rank_bm25`` package — returns ``[]`` when not installed.
     """
-    if not _HAS_BM25 or not candidates:
+    if not _HAS_BM25:
+        log.warning(
+            "rank_bm25 is not installed — lexical retrieval is disabled and "
+            "cue lines are inert. Reinstall elfmem to pick up the dependency."
+        )
         return []
-    contents = [b.get("summary") or b.get("content", "") for b in candidates]
+    if not candidates:
+        return []
+    # The cue line joins the lexical document. A cue states the *situation*
+    # in which a block should be recalled, in the words a future agent would
+    # plausibly type -- which is exactly what vocabulary-mismatch queries
+    # need and what the block's own phrasing routinely fails to supply.
+    # Included unweighted for now: whether it deserves its own weighted field
+    # is an open measurement (E1), and a made-up multiplier would be a magic
+    # number standing in for that evidence.
+    contents = [
+        " ".join(
+            part for part in (b.get("cue"), b.get("summary") or b.get("content", ""))
+            if part
+        )
+        for b in candidates
+    ]
     tokenized = [c.lower().split() for c in contents]
     bm25 = BM25Okapi(tokenized)
     scores = bm25.get_scores(query.lower().split())

@@ -49,9 +49,9 @@ async with system.session():
 
 -   **MCP Server**
 
-    Give Claude persistent memory across sessions.
+    Give Claude persistent memory across sessions — automatically, via hooks.
 
-    [MCP Server &rarr;](MCP_SERVER_SETUP.md)
+    [Claude Code Integration &rarr;](CLAUDE_CODE_INTEGRATION.md)
 
 -   **Building Agents**
 
@@ -70,7 +70,7 @@ async with system.session():
 | Infrastructure required | None (SQLite) | Postgres/Redis | In-memory | Vector DB server |
 | Adaptive decay | Yes | No | No | No |
 | Knowledge graph | Yes | No | No | No |
-| Contradiction detection | Yes | No | No | No |
+| Constitutional review (drift + staleness) | Yes | No | No | No |
 | Session-aware clock | Yes | No | No | No |
 | MCP native | Yes | No | No | No |
 | Official SDKs only | Yes | No | Varies | No |

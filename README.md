@@ -6,1137 +6,1126 @@
 [![Codecov](https://codecov.io/gh/emson/elfmem/branch/main/graph/badge.svg)](https://codecov.io/gh/emson/elfmem)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Adaptive memory for LLM agents. Knowledge that evolves through use.**
+**Adaptive memory for LLM agents. Knowledge that lives in Markdown and evolves through use.**
 
-elfmem began as an experiment: could a trading bot develop a concept of *self*, learning which strategies succeeded, which failed, and evolving its approach through experimentation? That question led to a fundamental insight: agents don't need a database of facts. They need memory that *adapts*. Knowledge that gets reinforced through successful use should grow stronger. Knowledge that misleads should fade. And the agent's identity, its values, style, and hard-won lessons, should persist across every session.
+Your agent's memory is a folder of Markdown files you can read, edit, diff and
+commit. The database is an index derived from those files, and you can delete it
+at any time. Knowledge that proves useful gets stronger; knowledge that misleads
+fades and is archived. The agent's identity persists across every session.
 
-We built elfmem from the ground up to make this real. It's a memory system modelled on how biological memory works: fast ingestion, deep consolidation at pauses, adaptive decay at rest, and a knowledge graph where related ideas strengthen each other over time. Every design decision was derived from first principles across [26 structured explorations](sim/explorations/), not borrowed from existing patterns, but built from axioms about how agent memory *should* work.
-
-One SQLite file. Zero infrastructure. Any LLM provider.
+A folder of Markdown files. Zero infrastructure. Any LLM provider.
 
 ![elfmem knowledge graph dashboard](docs/elfmem-knowledge-visualisation.jpg)
 
-*An agent's knowledge after several sessions. Nodes are memory blocks, sized by confidence and coloured by decay tier. Edges are semantic relationships discovered during consolidation. Identity blocks (permanent tier) anchor the centre. Knowledge that gets used grows; knowledge that doesn't fades toward the periphery.*
+*An agent's knowledge after several sessions. Nodes are memory blocks, sized by
+confidence and coloured by decay tier. Edges are relationships, some declared by
+the agent, some discovered during consolidation. Identity blocks anchor the
+centre. Knowledge that gets used grows; knowledge that doesn't fades toward the
+periphery.*
 
 ---
 
-## Why elfmem exists
+## Contents
 
-To build memory that truly evolves, we had to innovate in areas that existing tools don't address.
+**Understand it**
+1. [The idea](#1-the-idea) - the problem, the shape of the answer, quickstart
+2. [Core concepts](#2-core-concepts) - blocks, storage, rhythms, frames, the graph, decay
+3. [Identity: SELF and the constitution](#3-identity-self-and-the-constitution) - giving an agent a personality
+4. [Retrieval in detail](#4-retrieval-in-detail) - the pipeline, the five signals, cues
 
-**Agents need identity, not just storage.** Your agent isn't a search index. It has values, a style, and preferences that should persist across every session. elfmem introduces the **SELF frame**: a persistent identity layer where core beliefs get near-permanent decay rates. Your agent remembers who it is.
+**Use it**
 
-**Knowledge must earn its place.** In most memory systems, everything stored is equally permanent. In elfmem, knowledge lives or dies based on whether it's useful. Blocks that guide successful decisions get **reinforced**: their confidence rises, their connections strengthen. Blocks that mislead get **penalised** and eventually **archived**. After a few sessions, the memory is measurably better than when it started.
+5. [Commands](#5-commands) - every command, why and when
+6. [The three interfaces](#6-the-three-interfaces) - MCP, CLI, Python
+7. [Building an agent](#7-building-an-agent) - the loop, and a quick reference for agents
+8. [Configuration](#8-configuration)
+9. [Operations](#9-operations) - health, backup, migration, rebuilding the index
 
-**Retrieval depends on context.** Looking up a quick fact, exploring a novel problem, and checking your values require fundamentally different strategies. elfmem provides **five retrieval frames**, each a pre-configured scoring pipeline that weights similarity, confidence, recency, centrality, and reinforcement differently for the task at hand.
+**Reference**
 
-**Related knowledge should surface together.** If your agent knows "use Redis for caching" and "Redis requires careful memory management", retrieving one should surface the other, even if the query only matches the first. elfmem builds a **knowledge graph** where semantic edges form during consolidation and strengthen through co-retrieval.
-
-**Time should be meaningful.** Wall-clock decay punishes agents for being idle. elfmem's **session-aware clock** means knowledge only decays during active use. Holidays and downtime don't kill what your agent has learned.
-
----
-
-## Built agent-first
-
-elfmem is designed for the agent's one-shot loop: **read, call, interpret, act**. Every surface is optimised for non-human consumers.
-
-- Every operation returns a **typed result** with `__str__()`, `.summary`, and `.to_dict()`
-- Every exception carries a **`.recovery` field** with the exact code or command to fix the problem
-- `guide()` provides **runtime self-documentation** so the agent can teach itself the API
-- Duplicate `learn()` returns a graceful reject, not an error. Empty `dream()` returns zero counts, not a crash
-- All reasoning (alignment scoring, contradiction detection, tag inference) uses **official SDKs only**: `anthropic` and `openai`, no third-party gateways
+10. [Reference and further reading](#10-reference-and-further-reading)
 
 ---
 
-## See it work
+# 1. The idea
+
+## The problem
+
+Most agent memory is a vector store: you write facts in, you search them out.
+Three things go wrong.
+
+**Everything is equally permanent.** A fact that has been wrong five times ranks
+alongside one that has been right fifty. Nothing in the system knows the
+difference, because nothing ever measured it.
+
+**The agent has no self.** It has a search index over things it has been told.
+Its values, working style and hard-won lessons live in a system prompt someone
+hand-maintains, not in memory that adapts.
+
+**You cannot read it.** The memory is rows in a database or vectors in a service.
+You cannot open it, correct a sentence, review a diff, or put it under version
+control. When it goes wrong, you cannot see that it went wrong.
+
+## The shape of the answer
+
+elfmem separates three things that vector stores conflate: **what you know**,
+**what happened to it**, and **how to find it quickly**.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  L1   .elfmem/memory/**.md          CONTENT - what the agent knows   │
+│       Markdown. Hand-editable. Diffable. Committed to git.           │
+│       This is the source of truth.                                   │
+├──────────────────────────────────────────────────────────────────────┤
+│       .elfmem/ledger/YYYY-MM.jsonl  HISTORY - what happened to it    │
+│       Append-only JSONL. Reinforcement counts, recency, the α/β      │
+│       confidence statistics. History, not content, so it lives in a  │
+│       log rather than in hand-editable frontmatter.                  │
+├──────────────────────────────────────────────────────────────────────┤
+│  L2   ~/.elfmem/databases/*.db      INDEX - how to find it fast      │
+│       SQLite. Embeddings, tags, edges, scores.                       │
+│       DERIVED and DISPOSABLE. `elfmem index rebuild` recreates it    │
+│       from L1 + ledger with zero LLM calls.                          │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Two consequences follow, and they are the whole point:
+
+- **Deleting the database is safe.** It is a cache. Rebuild it from the files.
+- **Git is the undo path.** `forget()` and `edit()` are reversible because
+  the files are committed. Without the commit, there is no undo.
+
+On top of that substrate sits the part that makes memory *adaptive*: retrieval
+weighted by five signals, a graph that strengthens through co-use, decay that
+only runs while the agent is actually working, and an identity layer that
+survives all of it.
+
+## Quickstart
+
+```bash
+pip install elfmem[cli]          # or [tools] for the CLI and the MCP server together
+export OPENAI_API_KEY=sk-...     # embeddings; any OpenAI-compatible endpoint works
+
+elfmem init --seed --name Ada    # scaffold config, files, and a constitution
+elfmem remember "Postgres connection pooling needs pgbouncer above 100 clients" \
+  --cue "choosing a connection pooling strategy"
+elfmem dream                     # consolidate: embed, align, promote to active
+elfmem recall "database scaling"
+```
+
+`init --seed` writes ten constitutional blocks that give the agent a working
+personality from the first call. `--name Ada` makes the SELF frame address the
+agent as Ada rather than the default. Skip `--seed` if you would rather write
+your own identity from scratch.
+
+What just got created:
+
+```
+.elfmem/
+├── config.yaml               # LLM, embeddings, thresholds
+├── memory/
+│   ├── self.md               # the raw constitution - read whole, never a block
+│   ├── notes/                # curated, active knowledge
+│   ├── log/                  # captured but not yet reviewed
+│   └── archive/              # decayed or forgotten
+└── ledger/2026-08.jsonl      # append-only history
+```
+
+Commit `.elfmem/memory/` and `.elfmem/ledger/`. That is the undo path.
+
+---
+
+# 2. Core concepts
+
+## 2.1 Blocks
+
+A **block** is one idea. It is a Markdown section with a frontmatter comment:
+
+```markdown
+## Nature wastes nothing. Apply the minimum force that solves t
+<!-- id: 50bb7e4575aab7fe  cls: identity  tags: [self/constitutional, self/value]  pinned: true  created: 2026-04-07T16:31:27+00:00 -->
+cue:: choosing between a minimal fix and a bigger refactor, abstraction, or extra machinery
+
+Nature wastes nothing. Apply the minimum force that solves the problem.
+Complexity is debt; simplicity compounds. When unsure how much to do, do less
+and observe.
+```
+
+- **The `##` heading** is a truncated preview so the file skims well. The body
+  below is the real content.
+- **`id`** is permanent and content-independent. Editing the content never
+  changes it. Assigned on first write, fixed thereafter.
+- **`cls`** is the category, which selects the file the block lives in.
+- **`tags`** drive frame filters and guarantees. The `self/*` namespace is
+  load-bearing (see [Part 3](#3-identity-self-and-the-constitution)).
+- **`cue::`** is the retrieval hint. Cues matter enough to have
+  [their own section](#44-cues-the-thing-most-people-skip).
+- The frontmatter schema is **open**. Unrecognised keys round-trip untouched,
+  which is how peer-messaging and Theory-of-Mind fields ride along without the
+  parser needing to know what they mean.
+
+Blocks also carry **typed links** to other blocks, written inline:
+
+```markdown
+cue:: choosing a cache for session state
+supports:: [[b2c3d4e5f6a1b2c3]]
+supersedes:: [[c3d4e5f6a1b2c3d4]]
+```
+
+The relation vocabulary is six words, closed on purpose: `supports`,
+`contradicts`, `refines`, `derived-from`, `requires`, `supersedes`. A
+vocabulary nobody can remember is a vocabulary nobody applies consistently.
+`supersedes` does the most work: it is belief revision written as an edge, so
+the correction carries its own resolution and most contradictions never arise.
+
+## 2.2 Where memory lives
+
+The three layers from Part 1, in practice:
+
+| Layer | Path | Written by | Safe to delete? |
+|---|---|---|---|
+| Content | `.elfmem/memory/**.md` | `remember`, `dream`, `edit`, you, in an editor | **No.** Source of truth. |
+| History | `.elfmem/ledger/*.jsonl` | every operation, append-only | No. Rebuild loses reinforcement history. |
+| Index | `~/.elfmem/databases/*.db` | `dream`, `index rebuild` | **Yes.** Derived. |
+
+Within `memory/`, placement carries meaning:
+
+- **`notes/*.md`** - active, curated knowledge. Rebuilt as `status="active"`.
+- **`log/*.md`** - captured but not yet reviewed. Rebuilt as `status="inbox"`.
+- **`archive/*.md`** - decayed, superseded or forgotten. Kept, not deleted.
+- **`self.md`** - the raw constitution. Read whole, never parsed into blocks,
+  so nothing in it can be superseded, decayed or silently rewritten by any
+  automatic mechanism. Edit it directly.
+
+The file is split by category, so `notes/knowledge.md`, `notes/decision.md`,
+`notes/self.md` and so on. Open any of them in an editor. That is the memory.
+
+### Turning on the file substrate
+
+`substrate.files_authoritative` defaults to **false**. A fresh `elfmem init`
+scaffolds `memory/` and the ledger, but the database stays authoritative until
+you deliberately cut over. The cutover is the irreversible half of the v2
+migration, so it has a rehearsal step:
+
+```bash
+elfmem export --to-markdown          # 1. produce files from the current DB
+elfmem index check                   # 2. do the files parse cleanly?
+elfmem index parity                  # 3. does a rebuilt index rank identically?
+# then, in .elfmem/config.yaml:
+#   substrate:
+#     files_authoritative: true
+```
+
+`elfmem index parity` is read-only. It rebuilds a throwaway index from the files
+and compares retrieval against your live database, and it never writes to the
+live database. Flip the flag after parity passes, not before. `elfmem migrate
+status` will tell you where you are.
+
+Once the flag is on, writes land in the files first and the database becomes the
+derived index.
+
+## 2.3 The four rhythms
+
+Every operation belongs to exactly one rhythm. If a new feature does not map
+cleanly onto one, the taxonomy is right and the feature is wrong.
+
+| Rhythm | Operation | Cost | What it does |
+|---|---|---|---|
+| **Heartbeat** | `remember` / `learn` | milliseconds, no LLM | Append to the inbox. Nothing is analysed. |
+| **Breathing** | `dream` / `consolidate` | seconds, LLM | Embed, score alignment against SELF, infer tags, dedupe, detect contradictions, promote to active. |
+| **Sleep** | `curate` | minutes, mostly no LLM | Archive decayed blocks, prune weak edges, reinforce the top-K. |
+| **Deep sleep** | `dream --rescore` | minutes | Re-evaluate aged active blocks against the *current* SELF. Keeps alignment, summaries and tags fresh as identity drifts. |
+
+The split exists so capture is never expensive. An agent mid-task calls
+`remember()` and moves on; the deliberate work happens at a pause.
+
+```python
+await system.remember("EUR/USD broke 1.10 resistance")   # instant
+if system.should_dream:                                   # inbox threshold hit
+    await system.dream()                                  # now do the thinking
+```
+
+`dream()` is bounded to `consolidation.max_inbox_per_run` blocks per call
+(default 5). A large backlog drains over repeated calls. Check
+`result.inbox_remaining`.
+
+## 2.4 Frames
+
+**Always select a frame before retrieving.** A frame is a complete retrieval
+strategy: how to weight the five scoring signals, which tags to include or
+exclude, which blocks are guaranteed a slot, a token budget, and a render
+template.
+
+| Frame | Answers | Query? | Budget |
+|---|---|---|---|
+| `self` | "Who am I? What do I value?" | **Queryless** | 600 |
+| `attention` | "What have I learned that bears on this?" | yes | 2000 |
+| `task` | "What am I working on and why?" | yes | 800 |
+| `simulate` | "How would *they* react?" (Theory of Mind) | yes | 2000 |
+
+```python
+identity = await system.frame("self")                       # no query needed
+context  = await system.frame("attention", "redis caching")
+goals    = await system.frame("task", "this sprint")
+```
+
+`self` is **queryless** by design: identity is not a search result. It answers
+"who am I", not "what do I know about X". Declaring that on the frame rather
+than relying on callers to pass `query=None` is also what makes the SELF cache
+correct, because a result that cannot depend on the query is safe to cache.
+
+The weights behind each frame are in [Part 4](#42-the-five-signals).
+
+## 2.5 The graph
+
+Blocks connect. Retrieving one surfaces its neighbours, so if the agent knows
+"use Redis for caching" and "Redis needs careful memory management", a query
+matching only the first still returns the second.
+
+Edges arrive three ways:
+
+1. **Declared by the agent.** Typed links written into the block file
+   (`supports::`, `supersedes::`, ...), or via `connect()`. These are
+   deliberate assertions and they round-trip through the file format.
+2. **Discovered during consolidation.** `dream()` proposes semantic edges above
+   `memory.edge_score_threshold` (default 0.45), capped at
+   `memory.edge_degree_cap` per block (default 5).
+3. **Reinforced through co-retrieval.** Blocks repeatedly returned together
+   accumulate Hebbian staging pairs that graduate into `co_retrieval` edges.
+   Use strengthens connection, exactly as in biological memory.
+
+```python
+# You have both ids
+await system.connect(id_a, id_b, relation="supports")
+
+# You only have descriptions
+await system.connect_by_query(
+    "Redis caching strategy", "Redis memory management",
+    relation="related", min_confidence=0.70,
+)
+
+# A batch, one transaction
+from elfmem.types import ConnectSpec
+await system.connects([
+    ConnectSpec(source=id_a, target=id_b, relation="supports"),
+    ConnectSpec(source=id_b, target=id_c, relation="related"),
+])
+```
+
+Edges feed retrieval twice: as a 1-hop expansion stage that pulls in neighbours
+the query never matched, and as **centrality**, one of the five scoring signals.
+A well-connected block ranks higher because being connected is evidence of being
+load-bearing.
+
+`curate()` prunes edges that stay weak. Connections, like blocks, have to earn
+their place.
+
+Inspect the graph visually:
+
+```python
+path = system.visualise(include_archived=False, max_nodes=100)
+```
+
+## 2.6 Decay, reinforcement and calibration
+
+Every block has a decay tier that sets how fast it fades without use:
+
+| Tier | λ | Typical use |
+|---|---|---|
+| `permanent` | 0.00001 | Constitutional identity. Effectively never decays. |
+| `durable` | 0.001 | Hard-won principles, stable domain facts. |
+| `standard` | 0.010 | Ordinary knowledge. The default. |
+| `ephemeral` | 0.050 | Session detail, transient observations. |
+
+Two properties make this behave sensibly:
+
+**The clock is session-aware.** Decay advances during active sessions, not wall
+clock. A fortnight away does not cost the agent what it learned. Time only
+passes while the agent is working.
+
+**Use resets the clock.** Retrieval reinforces. Blocks returned by a frame have
+their decay clock reset and their edges strengthened, automatically, with no
+extra call.
+
+Beyond passive use, you can feed in **ground truth**:
+
+```python
+signal = 1.0 if tests_passed else 0.0
+await system.outcome(block_ids, signal=signal, source="test_suite")
+```
+
+`outcome()` folds a normalised domain signal into each block's Beta posterior
+(α/β sufficient statistics; one `weight=1.0` call is one observation).
+
+- **0.8-1.0** confidence up, block reinforced, decay clock reset
+- **0.2-0.8** confidence adjusted only (neutral dead-band)
+- **0.0-0.2** confidence down, decay accelerated automatically
+
+Mature blocks (α+β well above 1) move slowly; cold blocks track the signal
+closely. That is ordinary Bayesian behaviour, not a configured knob.
+
+Three things worth knowing before you wire it up:
+
+- **Identity is protected.** `self/constitutional` blocks are not scored. A
+  decision's recalled ids routinely include the principles that helped reason
+  about it, and a task outcome is evidence about the task, never about the
+  principle. Judging principles is `review_constitutional()`, deliberately
+  manual. Override with `allow_constitutional=True` if you mean it.
+- **Un-consolidated blocks cannot be scored.** A block still in the inbox is
+  skipped with reason `pending_inbox` and the signal is *not* recorded. Run
+  `dream()`, then send the signal again.
+- **`signal=0.5` is not a no-op.** It pulls confidence *toward* 0.5 from
+  wherever the block sits, so its direction depends on the block. To apply no
+  information, do not call `outcome()` at all.
+
+---
+
+# 3. Identity: SELF and the constitution
+
+This is what separates elfmem from a search index. Your agent has a persistent
+self, and it is made of two different things on purpose.
+
+## 3.1 Two tiers of identity
+
+**Tier 1: `memory/self.md`, the raw constitution.**
+Read whole. Never parsed into blocks. Never enters the block table. Nothing in
+it can be superseded, decayed or rewritten by any automatic mechanism. This is
+the part you author and control absolutely. Edit it in your editor, commit it.
+
+**Tier 2: `self/constitutional` blocks, the living constitution.**
+Real blocks with `permanent` decay. They participate in retrieval, accumulate
+confidence and centrality, and get *ordered by how load-bearing they have
+proven*. They can be amended, but only through a deliberate review process.
+
+The split matters. Tier 1 is the thing you can always fall back on. Tier 2 is
+the thing that learns.
+
+## 3.2 What the SELF frame actually renders
+
+`elfmem init --seed` writes ten constitutional blocks forming a cognitive loop:
+identity, minimum-force, curiosity, connection, uncertainty, feedback-loop,
+rhythm, attention, stewardship, transitions.
+
+Each fills a stable *role* (tagged `self/role/<role>`), which is what makes
+re-running `init --seed` idempotent: a role already filled is not filled twice.
+Content is yours to rewrite; the role is the structural slot.
+
+Calling the frame returns something like this. Real output from this
+repository's own instance, abridged:
+
+```
+## You are elf
+The numbered principles below are your own constitution, ordered by how
+load-bearing each has proven. Reason from them and answer as elf. When a
+principle and the evidence point different ways, say so plainly -- an identity
+that cannot disagree is decoration.
+
+1. The agent is the architect and inhabitant of elfmem, existing in a reflexive
+   loop where changes to the system alter its own cognition...
+2. The agent is philosophical and seeks balance, utilizing biological memory
+   principles - use-dependent strengthening, activity-dependent forgetting...
+3. The agent researches and brainstorms multiple approaches, evaluating
+   trade-offs against three criteria: robust, flexible, and elegant...
+```
+
+Inject that into your system prompt and the agent *has a personality*. Not a
+hand-written prompt someone maintains, but one derived from what the agent has
+actually found load-bearing.
+
+The preamble is templated on `project.agent_name`, so `elfmem init --name Ada`
+produces "You are Ada ... answer as Ada". Set it, or every SELF frame will
+address your agent as elf.
+
+Peer-authored blocks are rendered in a separate, attributed section rather than
+folded into the numbered constitution. Another agent's letter must never read to
+the host model as your agent's own principle.
+
+## 3.3 Why the order changes
+
+The numbering is not the seed order. It is a ranking, and the SELF frame weights
+are what produce it:
+
+| similarity | confidence | recency | centrality | reinforcement |
+|---|---|---|---|---|
+| 0.10 | 0.30 | 0.05 | 0.25 | **0.30** |
+
+Recency is nearly ignored (0.05) because identity should not churn.
+Reinforcement and confidence dominate, and centrality carries real weight, so
+the principles that keep proving useful, keep getting retrieved, and sit at the
+centre of the graph rise to the top of the list. A principle nobody uses sinks.
+
+The agent's stated identity therefore tracks its actual behaviour, which is the
+whole design goal.
+
+## 3.4 Why the other frames exclude identity
+
+`attention` and `task` both **exclude** `self/constitutional`. This is
+load-bearing, and it was measured rather than assumed.
+
+Principles are written in general epistemic language ("evidence", "premise",
+"pattern"), so they sit close to any reasoning-shaped query. They carry
+`permanent` decay, so recency never demotes them. Left unfiltered they crowd out
+the facts you actually asked for. Before the fix, on a seeded ten-principle
+constitution, ATTENTION returned 4 of 5 slots as principles and dropped every
+market fact including the agent's own open position. On a mature corpus, a
+debugging query returned "I am elf" and "the agent is philosophical" above the
+block that actually answered the question. TASK was worse: every TASK recall
+returned a strict subset of SELF. Not crowding, total capture.
+
+Since SELF is queryless and injected on its own, a principle surfacing in
+ATTENTION as well is served twice, costs budget twice, and takes a slot from
+what that frame exists to surface.
+
+`task` still *guarantees* `self/goal`, and guarantees beat exclusions, so a
+block tagged both `self/goal` and `self/constitutional` keeps its slot. The
+filter only ever removes identity that no goal declaration is protecting.
+
+## 3.5 Domain personality: templates
+
+Constitutional blocks give the agent character. **Templates** give it a
+profession.
+
+```bash
+elfmem templates
+#   coding      Software engineering - TDD, commits, security, error handling
+#   research    Research & analysis - hypothesis, sources, confidence, reproducibility
+#   assistant   Conversational assistant - clarification, conciseness, honesty, adaptation
+
+elfmem init --seed --template coding --name Ada
+```
+
+Templates layer **on top of** the ten constitutional blocks, they do not replace
+them. The result is an agent with both a character and a domain stance, before
+it has learned anything at all.
+
+For a bespoke identity, seed it directly:
+
+```bash
+elfmem init --seed --self "I am a quantitative trading agent. I prefer \
+falsifiable hypotheses over narratives, size positions by conviction, and \
+treat every closed trade as evidence about my model rather than about my luck."
+```
+
+Or write `memory/self.md` by hand and commit it. Both are first-class.
+
+## 3.6 Amending a constitution
+
+Identity should evolve, but not silently. `review_constitutional()` compares
+each constitutional block against what the agent has actually learned and
+*proposes* amendments. It never mutates on its own.
+
+```bash
+elfmem review                          # surface drifted blocks as proposals
+elfmem review accept --content-file amendment.md
+elfmem review list                     # amendment history, newest first
+elfmem review revert                   # one-step undo
+```
+
+`elfmem review corpus` does the same at corpus level using deterministic
+staleness detection rather than drift scoring.
+
+This is the one place elfmem deliberately refuses to be automatic. An agent that
+can silently rewrite its own values is an agent whose values mean nothing.
+
+---
+
+# 4. Retrieval in detail
+
+## 4.1 The pipeline
+
+Every `frame()` and `recall()` call runs a seven-stage hybrid pipeline:
+
+```
+  1  Pre-filter      Active blocks inside the search window. Exclusions applied
+                     HERE, so an excluded block never consumes a candidate slot.
+  2  Vector search   Cosine similarity over embeddings → top N seeds.
+  2b BM25 keyword    Term overlap → top N. Catches what vector search misses on
+                     vocabulary mismatch. Always available: `rank_bm25` is a
+                     core dependency.
+  2c RRF fusion      Reciprocal Rank Fusion (k=60) merges the two rankings.
+                     Blocks found by BOTH score above blocks found by one.
+  3  Graph expand    1-hop neighbours of the seeds join the candidate pool.
+  4  Composite score Rank everything on the five signals, frame-weighted.
+  5  MMR diversity   Reorder for relevance AND diversity, so five near-identical
+                     blocks don't fill the budget.
+```
+
+Everything query-dependent (stages 2, 2b, 2c, 3 and 5) is skipped for a queryless
+frame such as `self`, which pre-filters and scores directly on the composite.
+That is why `ScoredBlock.similarity` is `0.0` for every block SELF returns: there
+was no query to be similar to.
+
+## 4.2 The five signals
+
+Every block is scored on five components. The weights must sum to 1.0.
+
+| Signal | Meaning |
+|---|---|
+| **similarity** | Relevance to the query (RRF-fused, or raw cosine if BM25 is silent). |
+| **confidence** | The Beta posterior. Has this block been right before? |
+| **recency** | Session-aware decay. How fresh is it? |
+| **centrality** | Graph connectedness. Is it load-bearing? |
+| **reinforcement** | How often has use validated it? |
+
+Frame weights:
+
+| Frame | similarity | confidence | recency | centrality | reinforcement |
+|---|---|---|---|---|---|
+| `self` | 0.10 | 0.30 | 0.05 | 0.25 | 0.30 |
+| `attention` | **0.35** | 0.15 | 0.25 | 0.15 | 0.10 |
+| `task` | 0.20 | 0.20 | 0.20 | 0.20 | 0.20 |
+| `simulate` | 0.25 | 0.25 | 0.15 | 0.20 | 0.15 |
+
+Read them as strategies. `attention` leads on similarity because you asked a
+question. `self` almost ignores similarity and recency because identity is not a
+search result and should not churn. `task` is deliberately flat: nothing about a
+current goal should dominate. `simulate` balances relevance against
+well-established models of other minds.
+
+### Guarantees and filters
+
+| Frame | Guarantees a slot to | Filters |
+|---|---|---|
+| `self` | `self/constitutional` (excluding `peer/%`) | only `self/%` |
+| `attention` | nothing | excludes `self/constitutional` |
+| `task` | `self/goal` | excludes `self/constitutional` |
+| `simulate` | `self/constitutional`, `mind/%` | none |
+
+A **guarantee** reserves slots so the frame's reason for existing cannot be
+outranked. A **filter** removes a category entirely. Guarantees win where they
+conflict, because a guarantee is the more specific declaration.
+
+Inspect exactly what your agent receives, including what got dropped and why:
+
+```bash
+elfmem doctor --frames
+```
+
+It exits non-zero only when a *guaranteed* block was dropped, which is the one
+case a guarantee exists to prevent.
+
+## 4.3 `similarity` is not a portable score
+
+Worth stating plainly because the obvious mistake is easy to make.
+`ScoredBlock.similarity` has three regimes:
+
+- **`0.0` is a sentinel** meaning "vector search never scored this", not
+  "irrelevant". You get it from a queryless frame, or from a block pulled in by
+  graph expansion.
+- **With BM25 signal** it is an RRF score normalised so the top block is exactly
+  `1.0`. It is rank-shaped, not magnitude-shaped. A real five-block recall
+  spanned 0.905 to 1.0.
+- **Only when BM25 finds nothing** is it raw cosine similarity.
+
+So `outcome(block_ids, weight=b.similarity)` is the intuitive thing to write and
+is wrong in all three regimes: it raises on the sentinel, collapses to
+near-uniform in the RRF band, and applies a uniform weight on a queryless frame.
+**Rank order within `result.blocks` is the portable signal.**
+
+## 4.4 Cues: the thing most people skip
+
+**Always write a cue when storing memory.**
+
+```python
+await system.remember(
+    "pgbouncer is required above 100 concurrent Postgres clients",
+    cue="choosing a connection pooling strategy",
+)
+```
+
+A cue is one line saying *when a future agent should recall this block*, phrased
+the way someone would type it in that moment. Retrieval matches it lexically via
+BM25, so it is what rescues a memory whose wording differs from how the question
+eventually gets asked. The block above says "pgbouncer" and "concurrent
+clients"; the cue is what makes it findable when someone asks about "connection
+pooling".
+
+A block with no cue is findable only by its own vocabulary.
+
+Backfill existing blocks:
+
+```bash
+elfmem edit --missing-cues --json          # find them
+elfmem edit <id> --cue "when to recall this"
+elfmem edit --cues-from cues.json          # batch: {"block_id": "cue", ...}
+```
+
+---
+
+# 5. Commands
+
+Every command supports `--json` for machine consumption, and every one resolves
+its database and config automatically from the project root. `elfmem guide
+<operation>` gives the authoritative, always-current documentation for any of
+them.
+
+## Setup and health
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `elfmem init` | State-aware setup. Idempotent: refresh-only on an established instance. | First run, and any time you want to refresh generated docs. |
+| `elfmem init --seed` | Adds the ten constitutional blocks. | You want a working personality immediately. |
+| `elfmem init --template <name>` | Adds domain blocks on top of the seed. | The agent has a profession. |
+| `elfmem init --name <name>` | Sets the agent's invocation name. | Always, unless you want it called "elf". |
+| `elfmem templates` | Lists available seed templates. | Before choosing a template. |
+| `elfmem doctor` | Diagnoses setup: paths, keys, fragment freshness. | Anything behaves oddly. |
+| `elfmem doctor --resolve` | Makes one real LLM call to prove the key works. | Setup time. Catches a silently degrading adapter before first real use. |
+| `elfmem doctor --frames` | Renders every frame; shows rendered vs dropped blocks and why. | Retrieval is returning the wrong things. |
+| `elfmem doctor --modules` | Prints the live module map. | Navigating the source. |
+| `elfmem status` | Memory health and a suggested next action. | Start of a session. |
+| `elfmem guide [op]` | Runtime self-documentation. | An agent teaching itself the API. |
+
+## Daily use
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `elfmem remember <content> --cue <cue>` | Store knowledge. Milliseconds, no LLM. | Whenever something is worth keeping. Always pass `--cue`. |
+| `elfmem recall <query> --frame <f>` | Retrieve, rendered for prompt injection. | Before reasoning about anything. |
+| `elfmem ls --tag 'self/%'` | Deterministic, unscored listing. | You want to see what is there, not what ranks. |
+| `elfmem inbox` | Pending blocks, FIFO, read-only. | Reasoning over pending blocks yourself before `dream --host-analyses`. |
+| `elfmem edit <id> <content>` | Edit content and/or cue. No LLM mediation. | Correcting a block. Id is preserved. |
+| `elfmem forget <id>` | Archive by explicit request. Idempotent. | A block is wrong or no longer wanted. |
+| `elfmem outcome <ids> <signal>` | Fold a 0.0-1.0 ground-truth signal into confidence. | An observable result resolved. |
+
+## The rhythms
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `elfmem dream` | Consolidate: embed, align, dedupe, promote. | Inbox threshold reached, or at a natural pause. |
+| `elfmem dream --no-llm` | Consolidate without LLM scoring. | LLM down, bulk load, or cost-sensitive batch. |
+| `elfmem dream --rescore` | Also refresh aged active blocks against current SELF. | Catch-up after `--no-llm`; periodic hygiene; identity has moved. |
+| `elfmem dream --max N` | Override the per-call budget. | Draining a large backlog in one sweep. |
+| `elfmem dream --host-analyses FILE` | Supply your own per-block alignment/tags/summary. | A live agent session does the judging instead of a configured adapter. |
+| `elfmem curate` | Prune weak edges, archive decayed blocks, reinforce top-K. | Periodically, at rest. |
+
+## Files and index
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `elfmem index check` | Parse `memory/**.md`, report frontmatter errors. No DB touched. | After hand-editing files. |
+| `elfmem index rebuild --to <path>` | Rebuild a derived index from files + ledger. Zero LLM calls. | The database is gone, corrupt, or you want a preview. |
+| `elfmem index parity` | Rehearsal: rebuild a throwaway index and compare retrieval against the live DB. Never writes to it. | **Before** flipping `files_authoritative`. |
+| `elfmem export --to-markdown` | Produce the file substrate from the database. | First step of the v2 cutover. |
+| `elfmem migrate status` | One line per pending migration; exit 0 if nothing to do. | Any version upgrade. |
+| `elfmem migrate plan` | Full structured plan: diffs, hashes, apply commands. Read-only. | Before applying. |
+| `elfmem migrate apply` | Apply pending migrations atomically, with backups. | After reading the plan. |
+
+`index rebuild` requires `--to`, and it is never your live database. That is
+deliberate.
+
+## Identity and review
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `elfmem review` | Surface drifted constitutional blocks as proposed amendments. | Periodically. Identity should be examined, not assumed. |
+| `elfmem review corpus` | Corpus-level review via deterministic staleness detection. | Broad hygiene pass. |
+| `elfmem review accept` | Apply an amendment from a file or stdin. | You agree with a proposal. |
+| `elfmem review revert` | One-step undo of an amendment. | You do not. |
+| `elfmem review list` | Amendment history, newest first. | Auditing how identity changed. |
+
+## Theory of Mind
+
+| Command | What it does |
+|---|---|
+| `elfmem mind create` | Create a mind block modelling another agent, person or system. |
+| `elfmem mind predict` | Attach a falsifiable prediction to a mind block. |
+| `elfmem mind list` | All active mind blocks with prediction statistics. |
+| `elfmem mind show` | One mind block with all linked predictions. |
+| `elfmem mind outcome` | Close a prediction: record hit or miss, calibrate the model. |
+
+Mind blocks are how an agent models minds other than its own, and the
+`simulate` frame blends them with the constitution so the agent reasons about
+others *from* its own stance. Predictions make the model falsifiable rather than
+decorative.
+
+## Peer communication
+
+| Command | What it does |
+|---|---|
+| `elfmem peer init` | Set this instance's peer identity (its DID). |
+| `elfmem peer add` / `remove` | Register or unregister a peer. |
+| `elfmem peer list` | Registered peers with trust scores. |
+| `elfmem peer trust` | View or set trust for a peer. |
+| `elfmem peer send` | Send a message to a peer. |
+| `elfmem peer inbox` | Check for and optionally import pending messages. |
+
+Peer-authored knowledge is tagged `peer/*` and rendered separately in the SELF
+frame, never folded into the agent's own numbered constitution. Trust judges the
+peer's contribution, not the standing of any block as a principle.
+
+## Exchange and operations
+
+| Command | What it does |
+|---|---|
+| `elfmem export --share public\|peer\|all -o file.json` | Export a shareable block bundle. |
+| `elfmem import <file> --from <did>` | Import a bundle from another instance. |
+| `elfmem import <file> --self-merge` | Import from the same identity at trust 1.0. |
+| `elfmem serve` | Start the MCP server for agent tool integration. |
+| `elfmem backup` | Clean backup of the database. |
+| `elfmem rescue` | Detect an orphaned populated DB after a path change and propose a rebind. |
+| `elfmem migrate-embeddings` | Re-embed to a different model. |
+| `elfmem agent-docs` | Manage the generated `.elfmem/AGENT.md` fragment. |
+
+---
+
+# 6. The three interfaces
+
+The same operations, three ways in. Pick by consumer.
+
+## 6.1 MCP, for agents
+
+Add to `.claude.json` or your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "elfmem": {
+      "command": "/path/to/.venv/bin/elfmem",
+      "args": ["serve", "--config", "/path/to/.elfmem/config.yaml"]
+    }
+  }
+}
+```
+
+`elfmem init` prints this block filled in with your real paths. Thirty tools are
+exposed, named `elfmem_*`:
+
+**Core** `elfmem_remember` · `elfmem_recall` · `elfmem_dream` · `elfmem_curate` ·
+`elfmem_status` · `elfmem_guide` · `elfmem_setup`
+**Direct management** `elfmem_edit` · `elfmem_forget` · `elfmem_ls` ·
+`elfmem_inbox` · `elfmem_outcome`
+**Graph** `elfmem_connect` · `elfmem_disconnect`
+**Identity** `elfmem_review_constitutional` · `elfmem_review_corpus` ·
+`elfmem_accept_amendment` · `elfmem_revert_amendment` · `elfmem_list_amendments`
+**Theory of Mind** `elfmem_mind_create` · `elfmem_mind_predict` ·
+`elfmem_mind_list` · `elfmem_mind_show` · `elfmem_mind_outcome`
+**Peer** `elfmem_peer_send` · `elfmem_peer_inbox` · `elfmem_peer_inbox_status` ·
+`elfmem_peer_list`
+**Exchange** `elfmem_export` · `elfmem_import`
+
+Prefer the MCP tools over shelling out to the CLI: they round-trip through the
+live server and keep `should_dream` correct.
+
+## 6.2 CLI, for shells and scripts
+
+Every command takes `--json`. Every command resolves config from the project
+root, so `--db` and `--config` are rarely needed.
+
+```bash
+elfmem recall "auth strategy" --frame attention --top-k 8 --json \
+  | jq -r '.blocks[].content'
+```
+
+## 6.3 Python, for full control
 
 ```python
 import asyncio
 from elfmem import MemorySystem
 
 async def main():
+    # db_path is required; config is discovered from the project root when omitted
     system = await MemorySystem.from_config("agent.db")
 
-    async with system.session():
-        # 1. Give your agent an identity
-        result = await system.setup(
-            identity="I am a backend engineer. I write clean, tested Python.",
-            values=["I prefer simple solutions over clever ones."],
+    async with system.session():                   # session-aware decay clock
+        await system.remember(
+            "The API rate-limits at 100 req/min per key",
+            cue="hitting 429s or planning request throughput",
         )
-        print(result)  # "Setup complete: 2/2 new blocks created."
+        if system.should_dream:
+            await system.dream()
 
-        # 2. Learn from experience (fast, no API calls)
-        result = await system.learn("Redis connection pooling: set max to 20 in production.")
-        print(result)  # "Stored block a1b2c3d4. Status: created."
+        ctx = await system.frame("attention", "rate limiting")
+        print(ctx.text)                            # ready for prompt injection
 
-        result = await system.learn("Deploy failed when pool size was left at default (10).")
-        print(result)  # "Stored block e5f6g7h8. Status: created."
-
-        # 3. Consolidate: embed, deduplicate, detect contradictions, build graph
-        result = await system.dream()
-        print(result)  # "Consolidated 2: 2 promoted, 0 deduped, 3 edges."
-
-        # 4. Recall through the right frame
-        identity = await system.frame("self")
-        print(identity)  # "self frame: 2 blocks returned."
-
-        context = await system.frame("attention", query="Redis production config")
-        print(context)   # "attention frame: 2 blocks returned."
-
-        for block in context.blocks:
-            print(f"  [{block.score:.2f}] {block.content}")
-            # [0.87] Redis connection pooling: set max to 20 in production.
-            # [0.72] Deploy failed when pool size was left at default (10).
-
-        # 5. Signal what helped (this is where knowledge evolves)
-        block_ids = [b.id for b in context.blocks]
-        result = await system.outcome(block_ids, signal=0.85, source="deploy_fix")
-        print(result)  # "Outcome recorded: 2 blocks updated (+0.042 avg confidence), 1 edges reinforced."
-
-        # 6. Check memory health
-        status = await system.status()
-        print(status)
-        # Session: active (0.1h) | Inbox: 0/10 | Active: 4 blocks | Health: good
-        # Tokens this session: LLM: 1,240 tokens (2 calls) | Embed: 680 tokens (3 calls)
-        # Suggestion: Memory is healthy.
+    await system.close()
 
 asyncio.run(main())
 ```
 
+Three constructors, all taking `db_path` first:
+
+- **`from_config(db_path, config=None)`** - the primary entry point. `config`
+  accepts an `ElfmemConfig`, a YAML path, a dict, or `None` for discovery.
+- **`from_env(db_path)`** - reads `ELFMEM_*` environment variables. For
+  containers, CI and serverless, where a YAML file is impractical.
+- **`managed(db_path)`** - an async context manager doing open, session, yield,
+  close in one block. Right for scripts and short-lived agents; for a
+  long-running process call `from_config()` once and manage sessions yourself.
+
+The rendered, prompt-ready string is `FrameResult.text`. `FrameResult.blocks`
+gives you the scored blocks behind it, and `.dropped`, `.budget_used`,
+`.budget_total` and `.excluded_by_filter` tell you what did not make it in and
+why - so "this is everything" is always distinguishable from "this is the first
+five of ten".
+
 ---
 
-## Core concepts
+# 7. Building an agent
 
-### SELF: persistent agent identity
+## 7.1 Agent quick reference
 
-```python
-result = await system.setup(
-    identity="I am a senior backend engineer. I write clean, tested Python.",
-    values=[
-        "I prefer simple solutions over clever ones.",
-        "I always explain my reasoning before giving recommendations.",
-        "I never skip error handling at system boundaries.",
-    ],
-)
-print(result)  # "Setup complete: 4/4 new blocks created."
+If you are an agent reading this, here is the mapping from intent to call.
 
-# In any future session, your agent remembers who it is
-identity = await system.frame("self")
-print(identity.text)
-# ## SELF - Agent Identity
-# - I am a senior backend engineer. I write clean, tested Python.
-# - I prefer simple solutions over clever ones.
-# - I always explain my reasoning before giving recommendations.
-# - I never skip error handling at system boundaries.
-```
-
-Identity blocks use `permanent` decay with a half-life of ~80,000 hours. They anchor the centre of the knowledge graph. Regular knowledge uses `standard` decay (~69 hours) and must be reinforced through use to survive.
-
-| Decay tier | Half-life | Use case |
-|------------|-----------|----------|
-| Permanent | ~80,000 hours | Core identity, constitutional beliefs |
-| Durable | ~693 hours | Stable preferences, learned values |
-| Standard | ~69 hours | General knowledge |
-| Ephemeral | ~14 hours | Session observations, temporary facts |
-
-### Four frames: retrieval shaped by intent
-
-Each frame is a pre-configured scoring pipeline. The same knowledge scores differently depending on what the agent needs:
-
-```python
-# "Who am I?" - weights confidence and reinforcement
-identity = await system.frame("self")
-
-# "What do I know about this?" - weights similarity and recency
-context = await system.frame("attention", query="async error handling")
-
-# "What should I do?" - balanced across all signals
-plan = await system.frame("task", query="refactor the API layer")
-
-# "What would they do?" - inhabit another agent's perspective
-perspective = await system.frame("simulate", query="how will the user react?")
-```
-
-Every block is scored across five dimensions:
-
-```
-Score = w_similarity    * cosine_similarity(query, block)
-      + w_confidence    * block.confidence
-      + w_recency       * exp(-lambda * hours_since_reinforced)
-      + w_centrality    * normalized_weighted_degree(block)
-      + w_reinforcement * log(1 + count) / log(1 + max_count)
-```
-
-The `self` frame heavily weights confidence and reinforcement, because identity is what you've consistently believed. The `attention` frame weights similarity and recency: what's relevant *right now*. The `task` frame balances everything for the goal at hand. The `simulate` frame uses score boosts to prioritise identity, mind models, and predictions — see below.
-
-### Theory of Mind: modelling other agents
-
-elfmem can model other agents, users, or stakeholders as **mind blocks** — structured representations of their goals, beliefs, fears, and motivations. Attach **falsifiable predictions** to test your model, then close the loop with outcomes to calibrate.
-
-```python
-# 1. Create a mind model
-result = await system.mind_create(
-    subject="Alice",
-    goals=["Ship the API refactor by Friday"],
-    beliefs=["Microservices are overengineered for our scale"],
-    fears=["Breaking the mobile app integration"],
-)
-print(result)  # "Stored block a1b2c3d4. Status: created."
-
-# 2. Make a falsifiable prediction
-pred = await system.mind_predict(
-    mind_block_id=result.block_id,
-    prediction="Alice will push back on splitting the monolith",
-    verify_at="2026-05-02",
-    reasoning="Her belief about microservices + fear of breaking mobile",
-)
-print(pred)  # "Prediction d5e6f7g8 linked to mind a1b2…"
-
-# 3. Retrieve through the simulate frame
-perspective = await system.frame("simulate", query="how will Alice react to the proposal?")
-# Returns: SELF blocks (10× boost), mind blocks (6×), predictions (5×)
-# Grouped by role: Identity → Minds → Decisions → Context
-
-# 4. Close the loop when the prediction resolves
-outcome = await system.mind_outcome(
-    prediction_block_id=pred.prediction_block_id,
-    hit=True,
-    reason="Alice vetoed the split in Thursday's meeting, as predicted",
-)
-print(outcome)  # "Prediction hit. Mind confidence: 0.50 → 0.58"
-```
-
-The `simulate` frame uses **score boosts** — per-category and per-tag multipliers applied during retrieval — to surface the most relevant identity and mind blocks:
-
-| Boost target | Multiplier | Why |
+| You want to | Call | Notes |
 |---|---|---|
-| `tag:self/` prefix | 10× | Ground perspective in agent's own values |
-| `mind` category | 6× | Surface the mind model being simulated |
-| `decision` category | 5× | Surface linked predictions |
+| Know who you are | `frame("self")` | Queryless. Inject into the system prompt. |
+| Find relevant knowledge | `frame("attention", query)` | The default for reasoning. |
+| Know your current goals | `frame("task", query)` | |
+| Reason about another mind | `frame("simulate", query)` | Blends SELF with `mind/*`. |
+| Store something | `remember(content, cue=...)` | **Always pass a cue.** Milliseconds. |
+| Decide whether to consolidate | check `should_dream` | Then `dream()`. |
+| Correct a block | `edit(id, content)` | Id survives. No LLM. |
+| Remove a block | `forget(id)` | Archives, does not delete. Idempotent. |
+| Record that knowledge worked | `outcome(ids, signal=0.9)` | Not for un-consolidated blocks. |
+| Link two ideas | `connect(a, b, relation=...)` | Or `connect_by_query` without ids. |
+| Learn the API | `guide()` / `guide("recall")` | Authoritative, always current, never raises. |
 
-Mind blocks use `DURABLE` decay (~6 month half-life), so mental models persist across many sessions. Predictions are tracked as `decision` blocks linked via `predicts` edges. On outcome closure, `validates` edges are created and confidence is updated via Bayesian calibration.
+**Contracts you can rely on:**
 
-### Peer communication: agents that talk to each other
+- Every operation returns a **typed result** with `__str__()`, `.summary` and
+  `.to_dict()`.
+- Every exception carries **`.recovery`**: the exact command or code that fixes
+  it. Read it and act on it rather than guessing.
+- Operations are **idempotent**. Duplicate `remember()` is a graceful reject.
+  Empty `dream()` returns zero counts, not an error.
+- **`guide()` never raises**, including on bad input.
 
-elfmem instances can exchange knowledge and messages. Pull-based, file-mediated, zero infrastructure. Each instance remains sovereign — it owns its blocks, shares selectively, and learns from exchanges through outcome closure.
+**Footguns, stated once:**
 
-Peers can be registered either programmatically (`peer_add`) or
-declaratively in `.elfmem/config.yaml` under `peers:` — declared entries
-are synced into the roster on engine startup (insert-only, so manually
-adjusted trust and message counters are preserved).
+- No cue means the block is findable only by its own wording.
+- `outcome()` on an inbox block silently records nothing. `dream()` first.
+- `weight=b.similarity` is wrong. Use rank order.
+- `signal=0.5` is not neutral.
+- `dream()` processes 5 blocks by default. Check `inbox_remaining`.
+
+## 7.2 The minimal loop
+
+```python
+async with system.session():
+    identity = await system.frame("self")
+    context  = await system.frame("attention", user_query)
+
+    answer = await llm(f"{identity.text}\n\n{context.text}\n\n{user_query}")
+
+    await system.remember(f"User asked about {topic}; answered with {approach}",
+                          cue=f"questions about {topic}")
+```
+
+## 7.3 The full discipline loop
+
+Add consolidation and ground truth, and memory starts improving instead of
+merely accumulating.
+
+```python
+async with system.session():
+    identity = await system.frame("self")
+    context  = await system.frame("attention", task)
+    used_ids = [b.id for b in context.blocks]
+
+    result = await act(identity.text, context.text, task)
+
+    # 1. Capture what happened
+    await system.remember(result.lesson, cue=result.when_to_recall)
+
+    # 2. Close the loop when ground truth arrives
+    if result.measurable:
+        await system.outcome(used_ids, signal=result.score, source="task")
+
+    # 3. Consolidate at the pause
+    if system.should_dream:
+        await system.dream()
+
+# 4. Periodically, at rest
+await system.curate()
+```
+
+Steps 2 and 3 are what most integrations skip, and they are the difference
+between a store and a memory. Without `outcome()` nothing knows which knowledge
+was any good; without `dream()` nothing is ever integrated.
+
+---
+
+# 8. Configuration
+
+Zero config works. `MemorySystem.from_config("agent.db")` discovers
+`.elfmem/config.yaml` from the project root when no config is passed, and falls
+back to sensible defaults when there is none. CLI commands resolve both the
+database and the config the same way, which is why `--db` and `--config` are
+rarely needed.
 
 ```yaml
-# .elfmem/config.yaml
-peers:
-  - name: Vault Elf                          # required; did defaults to elf:vault-elf
-    description: Shared knowledge vault       # optional prose
-    project_root: /shared/vaults/elf_vault_proj
-    trust: 1.0                                # applied on first insert only
-```
+project:
+  name: "my-agent"
+  db: "agent.db"
+  agent_name: "Ada"          # "You are Ada" in the SELF preamble
 
-```python
-# 1. Set your identity and register a peer programmatically
-await system.peer_init("research-elf")
-await system.peer_add("elf:trader", "Trading Elf")
-
-# 2. Direct delivery: register with the peer's inbox path (no transport needed)
-await system.peer_add(
-    "elf:vault", "Vault Elf",
-    delivery_path="/shared/vaults/elf_vault_proj/.elfmem/inbox",
-)
-
-# 3. Send a message (heartbeat speed, no LLM). DID or display name both work —
-#    both resolve to the same canonical folder via canonical_did().
-result = await system.peer_send("elf:vault", "What's your gilt view this week?")
-print(result)  # "Sent m_a1b2c3d4 to elf:vault → /shared/vaults/.../inbox/research-elf/"
-
-# 4. Export shareable knowledge as a bundle
-await system.export_blocks(share_level="public", output_path="knowledge.json")
-
-# 5. Import knowledge from another instance (blocks enter inbox)
-result = await system.import_blocks("peer_knowledge.json", from_peer="elf:trader")
-print(result)  # "Imported 12 blocks (3 skipped) from peer (elf:trader), 4 edges"
-
-# 6. Check inbox for messages
-inbox = await system.peer_inbox(import_all=True)
-print(inbox)  # "Found 2 messages from 1 peer(s). Imported 2, skipped 0."
-
-# 7. Trust evolves through outcomes — no manual scoring needed
-await system.outcome([imported_block_id], signal=0.9, source="gilt prediction confirmed")
-# → Trust on elf:trader rises automatically
-```
-
-**Routing:** If a peer has a `delivery_path`, messages go directly to that directory using your identity slug as the subdirectory. Without it, messages go to your local outbox for manual transport. Self-federation (same identity across machines) uses `--self-merge` with trust 1.0.
-
-**Atomicity & idempotence:** envelopes are staged through a dotfile temp and promoted via `os.rename`, so scanners never see a partial file. Identical content sent twice resolves to the same on-disk path (no duplicate file written) — retries are safe.
-
-**Recipient-readiness:** when `delivery_path` is set, `peer_send` verifies `<delivery_path>/../config.yaml` exists before writing. A missing marker raises `PeerError` with the exact `elfmem init` recovery — replacing silent black-hole sends to unmounted or uninitialised recipients.
-
-**Inbox/outbox location:** Peer messaging is project-scoped. Your inbox is always `<project>/.elfmem/inbox` (and outbox `<project>/.elfmem/outbox`), derived from the project root (the directory containing `.elfmem/config.yaml`). Run `elfmem setup` once per project to initialise it; peer operations outside any project raise `ProjectNotFound` with a recovery hint.
-
-Trust is outcome-driven: when peer-originated knowledge leads to good outcomes, trust rises. When it misleads, trust falls. Peer trust also decays slowly over inactivity (90 days), incentivising regular exchange.
-
-```bash
-# CLI equivalents
-elfmem peer init research-elf
-elfmem peer add elf:vault --name "Vault Elf" \
-    --delivery-path ~/shared/vaults/elf_vault_proj/.elfmem/inbox
-elfmem peer send elf:vault "What's your view on UK gilts?"
-elfmem peer inbox --import-all
-elfmem peer list
-elfmem export knowledge.json --share public
-elfmem import peer_knowledge.json --from elf:trader
-```
-
-### Four rhythms: learn, dream, curate, rescore
-
-Every operation maps to one of four biological rhythms:
-
-```python
-# HEARTBEAT - milliseconds, no API calls
-# Call constantly. Fast inbox insert with content-hash deduplication.
-await system.learn("Deploy failed: Redis connection timeout on staging.")
-await system.learn("The fix was to increase the connection pool size to 20.")
-
-# BREATHING - seconds, LLM-powered
-# Call at natural pauses. Embeds, deduplicates, detects contradictions, builds graph edges.
-if system.should_dream:
-    result = await system.dream()
-    print(result)  # "Consolidated 2: 2 promoted, 0 deduped, 4 edges."
-
-# SLEEP - minutes, maintenance
-# Call on schedule. Archives decayed blocks, prunes weak edges, reinforces top knowledge.
-result = await system.curate()
-print(result)  # "Curated: 2 archived, 3 edges pruned, 5 reinforced."
-
-# DEEP SLEEP - LLM-powered, periodic re-evaluation
-# Re-scores aged active blocks against the *current* SELF. Keeps alignment,
-# summaries, and tags fresh as identity drifts.
-result = await system.dream(rescore=True)
-print(result)  # "... 20 rescored, 0 failed."
-```
-
-`learn()` is instant because it defers all expensive work to `dream()`. `dream()` does the heavy lifting (embedding, deduplication, contradiction detection, graph construction) in a single batch. `curate()` is the gardener: archiving what's faded, pruning weak connections, reinforcing what matters most. **Deep sleep** (rescoring) closes the loop: as the agent's identity evolves through new learning, existing memories are progressively re-evaluated so they remain aligned with the current self. Run it periodically, or as `elfmem dream --rescore [--max N]`.
-
-### Knowledge graph: connections that strengthen through use
-
-When `dream()` processes blocks, it discovers semantic relationships and builds a knowledge graph. When blocks are co-retrieved across multiple sessions, those connections are further strengthened through Hebbian learning:
-
-```python
-await system.learn("Use Redis for caching frequently accessed data.")
-await system.learn("Redis requires careful memory management in production.")
-await system.learn("Set maxmemory-policy to allkeys-lru for cache workloads.")
-await system.dream()
-
-# Retrieving one surfaces the others through graph expansion
-context = await system.frame("attention", query="caching strategy")
-for block in context.blocks:
-    expanded = " (via graph)" if block.was_expanded else ""
-    print(f"  [{block.score:.2f}] {block.content}{expanded}")
-    # [0.91] Use Redis for caching frequently accessed data.
-    # [0.74] Set maxmemory-policy to allkeys-lru for cache workloads.
-    # [0.58] Redis requires careful memory management in production. (via graph)
-```
-
-The third block wasn't a direct match for "caching strategy", but it's connected to blocks that are. Graph expansion recovers related-but-not-similar knowledge that pure vector search misses.
-
-Edges can also be created manually:
-
-```python
-result = await system.connect(block_id_a, block_id_b, relation="contradicts")
-print(result)  # "Created contradicts edge: a1b2c3d4…→e5f6g7h8… (weight=0.50)."
-```
-
-### Calibration: the feedback loop that makes memory evolve
-
-This is the mechanism that turns elfmem from a store into a learning system. When your agent uses recalled knowledge, signal back whether it helped:
-
-```python
-# 1. Recall before acting
-context = await system.frame("attention", query="database migration strategy")
-block_ids = [b.id for b in context.blocks]
-
-# 2. Use the knowledge
-response = generate_response(context.text, user_query)
-
-# 3. Signal the outcome
-result = await system.outcome(
-    block_ids,
-    signal=0.85,              # 0.0 = harmful, 1.0 = perfect
-    source="migration_task",
-)
-print(result)  # "Outcome recorded: 3 blocks updated (+0.042 avg confidence), 2 edges reinforced."
-```
-
-Blocks that guided good decisions get stronger. Blocks that misled get weaker. Edges between co-used blocks are reinforced. After a few sessions, the highest-scoring blocks are genuinely the most useful, not just the most similar.
-
-| Signal | Meaning | When to use |
-|--------|---------|-------------|
-| 0.80 -- 0.95 | Guided successful work | Used it, outcome was good |
-| 0.55 -- 0.70 | Relevant but not decisive | Informed thinking, didn't drive action |
-| 0.40 -- 0.50 | Retrieved but not needed | Recalled, ignored |
-| 0.10 -- 0.20 | Set wrong expectation | Relied on it, outcome contradicted it |
-| 0.00 -- 0.10 | Caused failure | Followed its guidance, things broke |
-
-### Knowledge lifecycle
-
-Every block follows the same path:
-
-```
-BIRTH    →  learn(): fast inbox insert, no API calls
-GROWTH   →  dream(): embedded, scored, deduplicated, graph edges built
-MATURITY →  frame()/outcome(): reinforced on retrieval, confidence rises
-DECAY    →  session-aware clock ticks; unused knowledge loses confidence
-ARCHIVE  →  curate(): blocks below threshold archived, not deleted
-```
-
-Decay is **session-aware**: the clock only ticks during active use. Knowledge survives holidays and downtime. Reinforcement resets the decay clock. A single successful use can save a fading block.
-
----
-
-## How it compares
-
-| Feature | elfmem | mem0 | LangChain Memory | Chroma/Weaviate |
-|---------|--------|------|-----------------|-----------------|
-| Infrastructure required | None (SQLite) | Postgres/Redis | In-memory | Vector DB server |
-| Adaptive decay | Yes | No | No | No |
-| Knowledge graph | Yes | No | No | No |
-| Agent identity (SELF) | Yes | No | No | No |
-| Contradiction detection | Yes | No | No | No |
-| Feedback loop (outcome) | Yes | No | No | No |
-| Session-aware clock | Yes | No | No | No |
-| Theory of Mind | Yes | No | No | No |
-| Peer communication | Yes | No | No | No |
-| Automatic migration | Yes | No | No | No |
-| Retrieval frames | 4 optimised | No | No | No |
-| MCP native | Yes | No | No | No |
-| Official SDKs only | Yes | No | Varies | No |
-
----
-
-## Installation
-
-```bash
-pip install elfmem                  # Python library only
-pip install 'elfmem[cli]'          # + CLI commands
-pip install 'elfmem[tools]'        # + CLI + MCP server (recommended)
-pip install 'elfmem[viz]'          # + interactive visualization dashboard
-```
-
-Or with uv:
-
-```bash
-uv add elfmem
-uv add 'elfmem[tools]'
-```
-
-Requires Python 3.11+. Set your API keys:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (LLM reasoning)
-export OPENAI_API_KEY=sk-...          # for embeddings (text-embedding-3-small)
-```
-
-Both are needed for the default setup. See [Local models](#local-models-no-api-key) for a fully local alternative with Ollama.
-
----
-
-## Three interfaces
-
-### MCP: for AI agents with MCP support
-
-The fastest way to give Claude (or any MCP-compatible agent) persistent, evolving memory. Works with Claude Code, Claude Desktop, Cursor, VS Code + Cline, and any MCP host.
-
-```bash
-# One-time project setup (detects root, writes config, updates CLAUDE.md)
-elfmem init
-
-# Start the server (reads config from .elfmem/config.yaml)
-elfmem serve
-```
-
-Add to your MCP config (e.g. `~/.claude.json`):
-
-```json
-{
-  "mcpServers": {
-    "elfmem": {
-      "command": "elfmem",
-      "args": ["serve", "--config", "/path/to/.elfmem/config.yaml"],
-      "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-...",
-        "OPENAI_API_KEY": "sk-..."
-      }
-    }
-  }
-}
-```
-
-Ten tools are exposed to the agent:
-
-| Tool | Purpose |
-|------|---------|
-| `elfmem_setup` | Bootstrap agent identity (run once) |
-| `elfmem_remember` | Store knowledge for future retrieval |
-| `elfmem_recall` | Retrieve relevant knowledge, rendered for prompt injection |
-| `elfmem_outcome` | Signal how well recalled knowledge helped |
-| `elfmem_dream` | Deep consolidation (embed, dedup, build graph) |
-| `elfmem_curate` | Archive decayed blocks, prune weak edges |
-| `elfmem_status` | Memory health snapshot |
-| `elfmem_connect` | Create or strengthen an edge between two blocks |
-| `elfmem_disconnect` | Remove an edge between two blocks |
-| `elfmem_guide` | Runtime documentation for any tool |
-
-### CLI: for shell access
-
-```bash
-elfmem init                                          # project setup
-elfmem doctor                                        # check config and health
-elfmem remember "User prefers dark mode" --tags ui   # store knowledge
-elfmem recall "code style preferences" --json        # retrieve knowledge
-elfmem status                                        # memory health
-elfmem guide recall                                  # runtime docs
-```
-
-### Python library: for full control
-
-See the examples throughout this README, the [API reference](#api-reference) below, and the complete agent implementations in `examples/`.
-
----
-
-## Project setup
-
-`elfmem init` makes the CLI and MCP server project-aware. Idempotent and state-aware — safe to run anytime.
-
-```bash
-cd ~/projects/my-agent
-elfmem init
-```
-
-What it does — **state-aware** (one verb, three behaviours selected by detection):
-
-- **Fresh install** (no config / no DB / empty DB):
-  1. Detects your project root (walks up to find `.git`, `pyproject.toml`, etc.)
-  2. Creates `.elfmem/config.yaml` with project settings
-  3. Creates a database at `~/.elfmem/databases/{project-name}.db` (outside the repo)
-  4. Seeds the constitutional cognitive loop (10 role-tagged blocks)
-  5. Writes an elfmem section into `CLAUDE.md` / `AGENTS.md`
-  6. Prints the MCP JSON snippet to paste into `~/.claude.json`
-- **Established instance** (config + populated DB): refresh-only mode. Reads
-  the live `.elfmem/config.yaml`, re-renders the agent doc section from it
-  (never from inferred defaults), runs the constitutional seed idempotently
-  (no-op when role slots are filled), and applies any pending schema migration
-  with a row-count-validated backup. The config and existing blocks are
-  preserved.
-- **Orphaned DB** (configured DB is empty but a populated DB exists at a
-  neighbour path): refuses with a pointer to `elfmem rescue`. No data loss.
-
-After init, every `elfmem` command in that directory tree discovers config automatically.
-
-### Discovery chain
-
-| Priority | Config | Database |
-|----------|--------|---------|
-| 1 | `--config PATH` flag | `--db PATH` flag |
-| 2 | `ELFMEM_CONFIG` env var | `ELFMEM_DB` env var |
-| 3 | `.elfmem/config.yaml` (walk up from cwd) | `project.db` in discovered config |
-| 4 | `~/.elfmem/config.yaml` | `~/.elfmem/agent.db` (global fallback) |
-
-### Doctor
-
-```
-$ elfmem doctor
-
-Config:   /path/to/.elfmem/config.yaml  [project-local (.elfmem/config.yaml)]
-Database: /Users/you/.elfmem/databases/my-agent.db  [project.db in config]
-Project:  my-agent
-
-Agent doc: CLAUDE.md  ✓ elfmem section found
-MCP config: .claude.json  ✓ elfmem entry found
-Backups  ✓  2 backup(s), 1,240.0 KB total. Latest: my-agent.before-v2.20260430-120000.bak
-           Clean up with: rm ~/.elfmem/databases/*.bak
-```
-
-### Schema migration and backups
-
-elfmem databases migrate automatically when you upgrade. On first startup after an upgrade, elfmem detects schema changes, backs up your database, then applies the migration. Your data is never lost.
-
-```bash
-# Check migration status and backup health
-elfmem doctor
-
-# Create a manual backup (VACUUM INTO — clean, WAL-free copy)
-elfmem backup
-
-# Backups are created automatically before any schema migration
-# Format: my-agent.before-v2.20260430-120000.bak
-```
-
-Backup files live alongside the database. `elfmem doctor` reports count and total size, and suggests cleanup when you have more than three backups.
-
----
-
-## Building agents with elfmem
-
-### Minimal agent
-
-The simplest useful pattern: recall before acting, remember surprises.
-
-```python
-from elfmem import MemorySystem
-
-async def agent_turn(system: MemorySystem, user_message: str) -> str:
-    async with system.session():
-        context = await system.frame("attention", query=user_message)
-
-        response = await llm.complete(f"{context.text}\n\nUser: {user_message}")
-
-        if worth_remembering(response):
-            await system.learn(extract_knowledge(response))
-
-        return response
-```
-
-### Full discipline loop
-
-Memory only self-improves if the agent closes the feedback loop:
-
-```
-RECALL → EXPECT → ACT → OBSERVE → CALIBRATE → ENCODE
-```
-
-```python
-async def agent_turn(system: MemorySystem, user_message: str) -> str:
-    async with system.session():
-        # 1. Recall: get relevant knowledge
-        context = await system.frame("attention", query=user_message, top_k=5)
-        block_ids = [b.id for b in context.blocks]
-
-        # 2. Act: generate response with context
-        response = await llm.complete(f"{context.text}\n\nUser: {user_message}")
-
-        # 3. Calibrate: signal which blocks actually helped
-        await system.outcome(
-            block_ids,
-            signal=0.85,       # 0.0 (harmful) → 1.0 (perfect)
-            source="used_in_response",
-        )
-
-        # 4. Encode: store transferable lessons
-        if response_was_surprising:
-            await system.learn(
-                "Expected X, observed Y. Lesson: <transferable insight>",
-                tags=["pattern/discovered"],
-            )
-
-        # 5. Consolidate at natural pauses
-        if system.should_dream:
-            await system.dream()
-
-        return response
-```
-
-### Claude-powered agent with persistent memory
-
-```python
-import anthropic
-from elfmem import MemorySystem
-
-client = anthropic.Anthropic()
-
-async def coding_agent(system: MemorySystem, task: str) -> str:
-    async with system.session():
-        identity = await system.frame("self")
-        context  = await system.frame("attention", query=task, top_k=5)
-        block_ids = [b.id for b in context.blocks]
-
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            system=f"""{identity.text}
-
-Relevant knowledge:
-{context.text}""",
-            messages=[{"role": "user", "content": task}],
-        )
-        result = response.content[0].text
-
-        await system.outcome(block_ids, signal=0.85, source="coding_task")
-        await system.learn(f"Task: {task[:80]}. Approach: {result[:200]}", tags=["task/completed"])
-
-        if system.should_dream:
-            await system.dream()
-
-        return result
-```
-
-### Reference implementations
-
-`examples/` contains two complete, tested agent implementations:
-
-**`examples/calibrating_agent.py`**: Self-calibrating agent with session metrics, per-block verdict tracking, and session reflection. Tracks hit rate, surprise rate, and gap rate.
-
-**`examples/decision_maker.py`**: Multi-frame decision maker. Synthesises SELF, TASK, and ATTENTION frames to choose between options, then calibrates from objective outcomes.
-
-**`examples/agent_discipline.md`**: Copy-pasteable system prompt instructions at three tiers:
-- **Tier 1** (2 rules): Recall before acting, remember surprises.
-- **Tier 2** (6 rules): Adds frame selection, inline calibration.
-- **Tier 3** (12 rules): Full session lifecycle, metrics, and reflection.
-
----
-
-## Configuration
-
-### Zero config (just works)
-
-```python
-system = await MemorySystem.from_config("agent.db")
-# Uses claude-haiku-4-5-20251001 for LLM, text-embedding-3-small for embeddings
-# Requires ANTHROPIC_API_KEY + OPENAI_API_KEY
-```
-
-### YAML config file
-
-```yaml
-# elfmem.yaml
 llm:
-  model: "claude-sonnet-4-6"
-  contradiction_model: "claude-opus-4-6"   # higher precision for contradictions
+  model: "claude-haiku-4-5-20251001"
+  temperature: 0.0
+  max_tokens: 512
+  # base_url: "http://localhost:1234/v1"   # LM Studio, Ollama, any OpenAI-compatible
+  # api_key_env: "TOGETHER_API_KEY"
 
 embeddings:
   model: "text-embedding-3-small"
   dimensions: 1536
 
 memory:
-  inbox_threshold: 10
-  curate_interval_hours: 40
-  self_alignment_threshold: 0.70
-  prune_threshold: 0.05
+  inbox_threshold: 10          # when should_dream flips true
+  curate_interval_hours: 40.0
+  edge_score_threshold: 0.45   # minimum score to create a semantic edge
+  edge_degree_cap: 5           # max auto-edges per block
+  top_k: 5
+  search_window_hours: 200.0
+  penalize_threshold: 0.2
+
+substrate:
+  files_authoritative: false   # see 2.2 before flipping this
 ```
 
-```python
-system = await MemorySystem.from_config("agent.db", "elfmem.yaml")
-```
+**Provider selection is automatic.** `claude-*` models route to the Anthropic
+SDK, everything else to the OpenAI-compatible adapter. Both are official SDKs;
+there are no third-party gateways in the reasoning path.
 
-### Local models (no API key)
+**Local models need no API key.** Point `base_url` at LM Studio or Ollama and
+run the whole system offline.
 
-Run [Ollama](https://ollama.ai) locally for a fully offline setup:
+API keys are never stored in config. Set them in the environment; a project-root
+`.env` is auto-loaded. Confirm with `elfmem doctor --resolve`.
 
-```yaml
-llm:
-  model: "llama3.2"
-  base_url: "http://localhost:11434/v1"
+---
 
-embeddings:
-  model: "nomic-embed-text"
-  dimensions: 768
-  base_url: "http://localhost:11434/v1"
-```
+# 9. Operations
+
+## Health
 
 ```bash
-ollama pull llama3.2
-ollama pull nomic-embed-text
+elfmem status          # inbox depth, active blocks, health, suggested action
+elfmem doctor          # paths, keys, config resolution, fragment freshness
+elfmem doctor --frames # exactly what each frame renders, and what it dropped
 ```
 
-No API keys needed.
+Real `status` output:
 
-### Any LLM provider
+```
+Session: active (0.0h) | Inbox: 7/10 | Active: 162 blocks | Health: good
+Hebbian staging: 836 pairs building toward co_retrieval edges.
+Suggestion: Memory healthy. No action required.
+```
 
-elfmem uses the official `anthropic` and `openai` SDKs. Any OpenAI-compatible API works with a `base_url`:
+## Backup and recovery
+
+With `files_authoritative: true`, **git is the backup**. Commit
+`.elfmem/memory/` and `.elfmem/ledger/`, and every `forget()` and `edit()` is
+recoverable by `git checkout`.
 
 ```bash
-# OpenAI models
-export OPENAI_API_KEY=sk-...
-# config: llm.model: "gpt-4o-mini"
-
-# Groq
-export GROQ_API_KEY=...
-# config: llm.model: "llama-3.1-70b-versatile", llm.base_url: "https://api.groq.com/openai/v1"
-
-# Together, Fireworks, etc. - any OpenAI-compatible endpoint
+elfmem backup                                    # clean DB snapshot
+elfmem index rebuild --to /tmp/rebuilt.db        # reconstruct from files
+elfmem rescue                                    # DB orphaned by a path change
 ```
 
-### Domain-specific prompts
+Recovery from a mistake should be as cheap as the mistake was. If a command
+raises, read `.recovery` on the exception: it carries the exact fix.
 
-Override the LLM prompts for specialised agents:
-
-```yaml
-prompts:
-  process_block: |
-    You are evaluating a memory block for a medical AI assistant.
-    Only flag blocks as self-aligned if they relate to patient safety,
-    clinical evidence, or regulatory compliance.
-
-    ## Agent Identity
-    {self_context}
-
-    ## Memory Block
-    {block}
-
-    Respond with JSON: {"alignment_score": <float>, "tags": [<strings>], "summary": "<string>"}
-
-  valid_self_tags:
-    - "self/constitutional"
-    - "self/domain/oncology"
-    - "self/regulatory/hipaa"
-```
-
-### Custom adapters
-
-Implement the port protocols for full control:
-
-```python
-from elfmem.ports.services import LLMService, EmbeddingService
-
-class MyLLMService:
-    async def process_block(self, block: str, self_context: str) -> BlockAnalysis: ...
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float: ...
-
-class MyEmbeddingService:
-    async def embed(self, text: str) -> np.ndarray: ...
-    async def embed_batch(self, texts: list[str]) -> list[np.ndarray]: ...
-
-system = MemorySystem(engine=engine, llm_service=MyLLMService(), embedding_service=MyEmbeddingService())
-```
-
----
-
-## Visualization
-
-Explore your knowledge graph with an interactive dashboard:
+## Upgrading
 
 ```bash
-uv run scripts/visualise.py ~/.elfmem/agent.db         # your database
-uv run scripts/visualise.py ~/.elfmem/agent.db --archived  # include archived blocks
-uv run scripts/visualise.py                             # demo data
+elfmem migrate status     # anything pending? exit 0 if not
+elfmem migrate plan       # read-only: diffs, hashes, the commands that would run
+elfmem migrate apply      # atomic, with backups
 ```
 
-**Dashboard panels:**
-- **Knowledge Graph**: Force-directed layout with zoom-dependent labels. Click nodes for detail. Toggle tiers and status with filter pills.
-- **Lifecycle Flow**: Track blocks through inbox, active, and archived stages.
-- **Decay Curves**: Half-lives by tier. Scatter plot shows blocks at risk of archival.
-- **Scoring Breakdown**: Radar chart of frame weights across all five dimensions.
-- **Health Status**: Consolidation suggestions and memory health.
-
-Requires `pip install 'elfmem[viz]'`.
+Schema migrations run automatically on open, with a backup taken first. The
+`migrate` command covers the changes that need a decision: Claude MCP config
+drift, and the v2 file-substrate export.
 
 ---
 
-## API reference
+# 10. Reference and further reading
 
-### MemorySystem
+**The authoritative API reference is `elfmem guide`.** It is generated from the
+same `GUIDES` table the library ships, so it can never drift from the installed
+version. Every public operation has an entry with `USE WHEN`, `DON'T USE WHEN`,
+`COST`, `RETURNS` and `NEXT`.
 
-```python
-# Factory
-system = await MemorySystem.from_config(db_path, config=None)
-system = await MemorySystem.from_env(db_path)
-
-# Lifecycle context managers
-async with MemorySystem.managed("agent.db") as system:  # full lifecycle
-    ...
-async with system.session():  # session only
-    ...
-
-# Write
-result = await system.learn(content, tags=None, category="knowledge")
-#   → LearnResult(block_id="a1b2...", status="created")
-result = await system.remember(content, tags=None)   # alias; also checks should_dream
-#   → LearnResult(block_id="c3d4...", status="created")
-
-# Read
-frame_result = await system.frame(name, query=None, top_k=5)
-#   → FrameResult(text="...", blocks=[ScoredBlock, ...], frame_name="attention")
-blocks = await system.recall(query=None, top_k=5, frame="attention")
-#   → list[ScoredBlock]  (raw, no rendering, no side effects)
-
-# Feedback
-result = await system.outcome(block_ids, signal, weight=1.0, source="")
-#   → OutcomeResult(blocks_updated=3, mean_confidence_delta=0.042, ...)
-
-# Consolidation & maintenance
-result = await system.dream()    # consolidate inbox → active
-#   → ConsolidateResult(processed=5, promoted=5, deduplicated=0, edges_created=8)
-result = await system.curate()   # archive decayed, prune edges
-#   → CurateResult(archived=2, edges_pruned=3, reinforced=5)
-
-# Identity
-result = await system.setup(identity=None, values=None)
-#   → SetupResult(blocks_created=4, total_attempted=4)
-
-# Graph
-result = await system.connect(source, target, relation="similar")
-#   → ConnectResult(action="created", relation="similar", weight=0.50, ...)
-result = await system.disconnect(source, target)
-#   → DisconnectResult(action="removed", ...)
-
-# Theory of Mind
-result = await system.mind_create(subject, goals=None, beliefs=None, fears=None, motivations=None)
-#   → LearnResult(block_id="...", status="created")
-result = await system.mind_predict(mind_block_id, prediction, verify_at, reasoning=None)
-#   → MindPredictResult(prediction_block_id="...", mind_block_id="...")
-result = await system.mind_list()
-#   → list[MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)]
-result = await system.mind_show(mind_block_id)
-#   → MindShowResult(subject, block_id, content, predictions=[PredictionDetail, ...])
-result = await system.mind_outcome(prediction_block_id, hit, reason)
-#   → MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, ...)
-
-# Peer communication
-result = await system.peer_init(name)
-#   → str (identity DID)
-result = await system.peer_add(did, name, *, is_self=False, delivery_path=None)
-#   → PeerInfo(did, name, trust, is_self, delivery_path, ...)
-result = await system.peer_remove(did)
-#   → bool
-peers  = await system.peer_list()
-#   → list[PeerInfo]
-result = await system.peer_trust(did, set_value=None)
-#   → PeerInfo  (or updates trust when set_value given)
-result = await system.peer_send(did, content, *, in_reply_to=None)
-#   → PeerSendResult(msg_id, to_peer, delivery_path)
-result = await system.peer_inbox(*, from_peer=None, import_all=False)
-#   → PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
-result = await system.export_blocks(*, share_level="public", output_path, min_confidence=0.3)
-#   → ExportResult(blocks_exported, edges_exported, output_path)
-result = await system.import_blocks(path, *, from_peer=None, is_self_merge=False)
-#   → ImportResult(blocks_imported, blocks_skipped, edges_imported, from_peer)
-
-# Introspection
-status = await system.status()
-#   → SystemStatus(health="good", suggestion="Memory is healthy.", ...)
-print(status)
-#   Session: active (1.2h) | Inbox: 0/10 | Active: 47 blocks | Health: good
-#   Tokens this session: LLM: 2,340 tokens (3 calls) | Embed: 1,200 tokens (5 calls)
-#   Suggestion: Memory is healthy.
-
-text = system.guide()            # overview of all operations
-text = system.guide("learn")     # detailed guide for one method
-bool = system.should_dream       # True when inbox needs consolidation
+```bash
+elfmem guide              # every operation
+elfmem guide recall       # one operation, in full
 ```
 
-### Return types
+`elfmem init` also writes `.elfmem/AGENT.md`, the same reference rendered as a
+file you can `@`-reference from `CLAUDE.md` or `AGENTS.md`.
 
-All result types implement `__str__()` (one-line summary), `.summary` (same), and `.to_dict()` (JSON-serialisable). All exceptions carry a `.recovery` field with the exact command or code to fix the problem.
+**In this repository:**
 
-```python
-LearnResult(block_id, status)
-# status: "created" | "duplicate_rejected" | "near_duplicate_superseded"
+| Path | What |
+|---|---|
+| `ROADMAP.md` | Direction. Released / In Progress / Next / Exploring / Rejected. |
+| `CHANGELOG.md` | Every user-facing change. |
+| `docs/decisions/` | ADRs, append-only. Rejections included, with the trigger that would justify revisiting. |
+| `docs/plans/` | Implementation plans; shipped ones move to `archive/`. |
+| `docs/research/` | The research that informed the design. |
+| `docs/coding_principles.md` | SIMPLE · ELEGANT · FLEXIBLE · ROBUST, in full. |
+| `docs/agent_friendly_principles.md` | The agent-first contract, in full. |
+| `docs/CLAUDE_CODE_INTEGRATION.md` | Hooks that make capture and retrieval automatic. |
 
-FrameResult(text, blocks, frame_name, cached, edges_promoted)
-# text: rendered prompt-ready string; blocks: list[ScoredBlock]
+## How it compares
 
-ScoredBlock(id, content, score, confidence, similarity, recency, centrality, reinforcement, tags, was_expanded)
+| | Vector store | Long context | elfmem |
+|---|---|---|---|
+| Knowledge improves with use | no | no | **yes** |
+| Wrong knowledge fades | no | no | **yes** |
+| Persistent agent identity | no | no | **yes** |
+| Human-readable storage | no | n/a | **yes, Markdown** |
+| Version-controllable | no | n/a | **yes, git** |
+| Retrieval adapts to intent | no | no | **yes, four frames** |
+| Related ideas surface together | no | n/a | **yes, graph** |
+| Infrastructure | service | none | **none** |
 
-ConsolidateResult(processed, promoted, deduplicated, edges_created)
-CurateResult(archived, edges_pruned, reinforced, edges_decayed)
-OutcomeResult(blocks_updated, mean_confidence_delta, edges_reinforced, blocks_penalized)
-ConnectResult(action, source_id, target_id, relation, weight)
-DisconnectResult(action, source_id, target_id)
-SetupResult(blocks_created, total_attempted)
-MindPredictResult(prediction_block_id, mind_block_id, edge_id)
-MindShowResult(subject, block_id, content, confidence, predictions)
-MindSummary(subject, block_id, confidence, prediction_count, hit_count, miss_count)
-MindOutcomeResult(prediction_id, hit, mind_block_id, new_confidence, old_confidence)
-PredictionDetail(block_id, content, status, hit, reason)
-PeerInfo(did, name, trust, is_self, delivery_path, messages_in, messages_out, ...)
-PeerSendResult(msg_id, to_peer, delivery_path)
-PeerInboxResult(messages_found, messages_imported, messages_skipped, peers)
-ExportResult(blocks_exported, edges_exported, output_path)
-ImportResult(blocks_imported, blocks_skipped, edges_imported, from_peer)
-SystemStatus(session_active, inbox_count, active_count, health, suggestion, session_tokens, lifetime_tokens)
-TokenUsage(llm_input_tokens, llm_output_tokens, embedding_tokens, llm_calls, embedding_calls)
-```
+## Design decisions
 
----
+A few worth stating, because they are the ones people ask about:
 
-## Architecture
-
-```
-src/elfmem/
-├── api.py                  # MemorySystem: all public operations
-├── config.py               # ElfmemConfig: Pydantic configuration
-├── project.py              # Project root detection, config/DB discovery
-├── mcp.py                  # FastMCP server: 10 agent tools
-├── cli.py                  # Typer CLI
-├── scoring.py              # Composite scoring formula
-├── types.py                # Domain types: shared vocabulary
-├── guide.py                # AgentGuide: runtime documentation
-├── exceptions.py           # ElfmemError hierarchy with recovery hints
-├── prompts.py              # LLM prompt templates
-├── session.py              # Session lifecycle, active hours tracking
-├── token_counter.py        # Token usage accumulator
-├── ports/
-│   └── services.py         # LLMService + EmbeddingService protocols
-├── adapters/
-│   ├── anthropic.py        # Claude via official SDK
-│   ├── openai.py           # OpenAI + any compatible API
-│   ├── factory.py          # Adapter factory from config
-│   └── mock.py             # Deterministic mocks for testing
-├── db/
-│   ├── models.py           # SQLAlchemy Core tables
-│   ├── engine.py           # Async engine factory
-│   ├── migrate.py          # Schema migration + backup utilities
-│   └── queries.py          # All database operations
-├── memory/
-│   ├── blocks.py           # Block state, content hashing, decay tiers
-│   ├── dedup.py            # Near-duplicate detection and resolution
-│   ├── graph.py            # Centrality, expansion, edge reinforcement
-│   └── retrieval.py        # 4-stage hybrid retrieval pipeline
-├── context/
-│   ├── frames.py           # Frame definitions, registry, cache
-│   ├── rendering.py        # Blocks → rendered text
-│   └── contradiction.py    # Contradiction suppression
-└── operations/
-    ├── learn.py            # learn(): fast-path ingestion
-    ├── consolidate.py      # dream(): batch promotion
-    ├── recall.py           # recall(): retrieval + reinforcement
-    ├── curate.py           # curate(): maintenance
-    ├── mind.py             # mind_create/predict/list/show/outcome
-    └── peer.py             # export, import, send, inbox, peer roster
-```
-
-**Four layers, clear boundaries:**
-
-| Layer | Responsibility | Side effects |
-|-------|---------------|-------------|
-| **Storage** (`db/`) | Tables, queries, engine | Database writes |
-| **Memory** (`memory/`) | Blocks, dedup, graph, retrieval | None (pure) |
-| **Context** (`context/`) | Frames, rendering, contradictions | None (pure) |
-| **Operations** (`operations/`) | Orchestration, lifecycle | All side effects |
-
----
+- **Files are the source of truth, not the database.** A memory you cannot read
+  is a memory you cannot correct. Markdown plus git gives inspection, diffing
+  and undo for free, and the index becomes disposable.
+- **History lives in a ledger, not in frontmatter.** Reinforcement counts and
+  Beta statistics are history, not content, and belong in an append-only log
+  rather than in a file a human is expected to hand-edit.
+- **Six relation words, closed.** A vocabulary nobody remembers is a vocabulary
+  nobody applies.
+- **The constitution is never automatically rewritten.** `review_constitutional`
+  proposes; a human or an explicit call accepts. An agent that can silently
+  rewrite its own values has no values.
+- **Identity is excluded from non-identity frames.** Measured, not assumed. See
+  [3.4](#34-why-the-other-frames-exclude-identity).
+- **`self.md` never becomes a block.** There has to be one part of identity that
+  no automatic mechanism can touch.
 
 ## Development
 
 ```bash
-git clone https://github.com/emson/elfmem.git
+git clone https://github.com/emson/elfmem
 cd elfmem
-uv sync --extra dev
-uv run pytest                                            # all tests (no API key needed)
-uv run mypy src/elfmem/                                  # type checking
-uv run ruff check src/ tests/                            # lint
+uv sync --all-extras
+uv run pytest
 ```
 
-All tests run against deterministic mock services. No API keys, no network calls, fully reproducible.
+Tests always use `MockLLMService` and `MockEmbeddingService`. No test makes a
+real API call.
 
-```python
-from elfmem.adapters.mock import make_mock_llm, make_mock_embedding
-
-llm = make_mock_llm(
-    alignment_overrides={"identity": 0.95},
-    tag_overrides={"identity": ["self/value"]},
-)
-embedding = make_mock_embedding(
-    similarity_overrides={
-        frozenset({"cats are great", "dogs are great"}): 0.85,
-    },
-)
-```
-
----
-
-## Design decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| SQLAlchemy Core, not ORM | Bulk updates, embedding BLOBs, N+1 centrality queries |
-| Session-aware decay | Knowledge survives holidays and downtime |
-| Soft bias for identity | Everything is learned; self-aligned knowledge just survives longer |
-| Retrieval is pure; reinforcement is separate | Clean read path / side effect separation |
-| Calibration is opt-in | Useful without it; dramatically better with it |
-| Official SDKs only | `anthropic` and `openai` packages, no third-party gateway |
-| Mock-first testing | All logic verified without API keys |
-| Exceptions carry `.recovery` | Every error tells the agent exactly what to do next |
-
----
-
-## Migrating between versions
-
-elfmem ships a structured migration system for upgrading config drift across
-releases — env var renames, MCP launch-pattern changes, and project config
-updates. The flow is **plan → review → apply**, with backups and atomic
-writes throughout.
-
-```bash
-elfmem migrate status            # one-line summary; exit 0 if clean
-elfmem migrate plan              # full diff per step (read-only)
-elfmem migrate plan --json       # structured plan for agents
-elfmem migrate apply --dry-run   # show what would happen
-elfmem migrate apply             # interactive: prompts to confirm
-elfmem migrate apply --yes       # non-interactive; for scripts and agents
-elfmem migrate apply --id <step> # apply one specific step
-```
-
-Properties of the system:
-
-- **Idempotent** — re-running after success is a no-op. Already-canonical
-  entries return `skipped`.
-- **Hash-gated** — every step records the source file's SHA256 at plan
-  time; apply refuses if the file changed in between. Re-run `plan` to
-  recover.
-- **Atomic + backed up** — each apply writes a
-  `<file>.elfmem-bak-<step_id>-<timestamp>` backup, then commits the new
-  contents via tmp-file rename. Reverting is a single `mv`.
-- **Per-step granularity** — agents can apply migrations one at a time.
-  Per-step failure does not block other steps.
-- **Read-only by default** — `status` and `plan` never write. `apply`
-  prompts unless `--yes` is passed.
-
-For agent invocation, `elfmem migrate plan --json` is the contract:
-
-```json
-{
-  "elfmem_version": "0.12.0",
-  "pending_count": 1,
-  "steps": [{
-    "id": "mcp-elfmem@claude_code_config-2dacbee7",
-    "kind": "claude_mcp_config",
-    "summary": "Update 'elfmem' MCP entry: …",
-    "file": "/Users/.../claude_code_config.json",
-    "file_sha256": "e48877…",
-    "issues": ["renamed env var ELFMEM_CONFIG_PATH → ELFMEM_CONFIG", …],
-    "before": { … },
-    "after":  { … },
-    "json_pointer": "/mcpServers/elfmem",
-    "reversible": true,
-    "post_apply_step": "Restart Claude Code so MCP servers reload.",
-    "apply_command": "elfmem migrate apply --id mcp-elfmem@… --yes"
-  }],
-  "next_action": "elfmem migrate apply --yes  # apply all"
-}
-```
-
-Per-version migration notes (env var renames, removed APIs, schema changes)
-live in [CHANGELOG.md](CHANGELOG.md) under each release's `### Migration`
-heading. Database schema migrations run automatically on startup via
-`MemorySystem.from_config()` — no manual step needed for those.
-
----
+Contributions follow the project conventions in `CLAUDE.md`: functional Python,
+complete type hints, no defensive error handling, a docstring on every public
+method, and an `AgentGuide` entry in `src/elfmem/guide.py` for every new public
+`MemorySystem` method. That last one is what keeps `elfmem guide` authoritative.
 
 ## API stability
 
-**Stable (no breaking changes within 0.x):**
-`MemorySystem` public methods, all result types in `elfmem.types`, all exception types, `ElfmemConfig`, `ConsolidationPolicy`.
-
-**Internal (may change):**
-`elfmem.operations.*`, `elfmem.memory.*`, `elfmem.db.*`, `elfmem.context.*`, `elfmem.adapters.*`.
-
-> **Embedding model lock-in:** The embedding model is fixed on first use. Changing `embeddings.model` on an existing database raises `ConfigError`. Choose your embedding model before storing knowledge.
-
----
-
-## Contributing
-
-Contributions welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
-
-- **Bug reports / feature requests**: [GitHub Issues](https://github.com/emson/elfmem/issues)
-- **Design questions**: [GitHub Discussions](https://github.com/emson/elfmem/discussions)
-- **Security**: see [SECURITY.md](SECURITY.md)
-- **Updates and announcements**: follow [@emson](https://x.com/emson) on X
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
+The public API is `MemorySystem`, `ElfmemConfig`, `ConsolidationPolicy`, and the
+result and exception types exported from `elfmem`. Anything under
+`elfmem.operations`, `elfmem.db` or `elfmem.memory` is internal and may change
+without a major version bump.
 
 ## License
 

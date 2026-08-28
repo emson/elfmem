@@ -99,7 +99,6 @@ def build_elfmem_config(config: LoCoMoConfig) -> ElfmemConfig:
             "top_k": config.top_k,
             "search_window_hours": config.search_window_hours,
             "curate_interval_hours": 1000.0,
-            "contradiction_similarity_prefilter": config.contradiction_similarity_prefilter,
         },
     })
 
@@ -157,8 +156,7 @@ async def _ingest_conversation(
     # Phase 2: Single batch consolidation — all blocks get equal recency.
     # skip_llm=True: raw content embeddings outperform LLM summaries for
     # LoCoMo's factual retrieval (specific keywords matter more than distilled
-    # summaries). skip_contradictions is available for use cases where LLM
-    # summaries help (e.g., MemoryAgentBench).
+    # summaries).
     await system.begin_session(task_type="consolidation")
     result = await system.consolidate(skip_llm=True)
     await system.end_session()

@@ -18,6 +18,7 @@ async def learn(
     tags: list[str] | None = None,
     category: str = "knowledge",
     source: str = "api",
+    cue: str | None = None,
 ) -> LearnResult:
     """Ingest a block into the inbox (fast path — no LLM calls).
 
@@ -32,7 +33,13 @@ async def learn(
     existing = await get_block(conn, content_id)
     if existing is not None:
         if existing["status"] == "inbox":
-            return LearnResult(block_id=content_id, status="duplicate_rejected")
+            # Still pending: the duplicate it matched is itself un-consolidated,
+            # so this content is no more retrievable than it was before.
+            return LearnResult(
+                block_id=content_id,
+                status="duplicate_rejected",
+                pending_consolidation=True,
+            )
         # Already active or archived — re-learn with a new id
         block_id = uuid.uuid4().hex[:16]
     else:
@@ -45,9 +52,15 @@ async def learn(
         category=category,
         source=source,
         status="inbox",
+        cue=cue,
     )
 
     if tags:
         await add_tags(conn, block_id, tags)
 
-    return LearnResult(block_id=block_id, status="created")
+    # Always pending: this path inserts with status="inbox", so the block is
+    # stored but not yet retrievable by frame()/recall(). Saying so here is
+    # what stops `status="created"` from reading as "the agent can see it".
+    return LearnResult(
+        block_id=block_id, status="created", pending_consolidation=True
+    )

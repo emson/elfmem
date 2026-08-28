@@ -1,9 +1,16 @@
 """elfmem adapter for MemoryAgentBench — document ingestion + retrieval.
 
 Key difference from LoCoMo: MemoryAgentBench's Conflict Resolution competency
-tests contradiction detection — elfmem's primary moat. For CR, we use FULL
-consolidation (contradiction detection ON). For other competencies, we use
-skip_llm for speed.
+was designed to test contradiction detection. Pairwise LLM contradiction
+detection was retired from consolidate() in v2 step 7b (ADR 0010) — the
+04-10 benchmark run scored Conflict_Resolution at 4.8% with it fully
+enabled, corroborating the production evidence (86% of findings never
+resolved) that it wasn't earning its LLM cost. For CR we still run FULL
+consolidation (skip_llm=False) for the alignment/tag/summary scoring
+quality; retrieval-time contradiction suppression
+(context/contradiction.py::suppress_contradictions) still runs but has
+nothing to suppress until corpus-level LLM review (step 6b) replaces the
+write path. For other competencies we use skip_llm for speed.
 
 BM25 hybrid retrieval is handled natively by elfmem's retrieval pipeline
 (stage 2b in hybrid_retrieve). No adapter-level BM25 or RRF needed.
@@ -89,7 +96,6 @@ def build_elfmem_config(config: MABenchConfig) -> ElfmemConfig:
             "top_k": config.top_k,
             "search_window_hours": config.search_window_hours,
             "curate_interval_hours": 1000.0,
-            "contradiction_similarity_prefilter": config.contradiction_similarity_prefilter,
         },
     })
 
@@ -101,8 +107,9 @@ async def process_example(
 ) -> ExampleResult:
     """Ingest one MABench example and answer all its questions.
 
-    For Conflict Resolution: uses full consolidation (contradiction detection ON).
-    For other competencies: uses skip_llm for speed.
+    For Conflict Resolution: uses full consolidation (alignment/tag/summary
+    scoring) for retrieval quality. For other competencies: uses skip_llm
+    for speed.
     """
     context = example["context"]
     questions = example["questions"]
@@ -110,7 +117,8 @@ async def process_example(
     metadata = example.get("metadata", {})
     source = metadata.get("source", "unknown") if isinstance(metadata, dict) else "unknown"
 
-    # Conflict Resolution needs contradiction detection — elfmem's moat
+    # Conflict Resolution gets full LLM scoring for retrieval quality —
+    # pairwise contradiction detection itself was retired (ADR 0010).
     is_conflict_resolution = competency == "Conflict_Resolution"
     skip_llm = not is_conflict_resolution
 

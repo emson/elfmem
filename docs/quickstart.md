@@ -15,7 +15,7 @@ uv add elfmem               # Python library only
 Set your API key:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default model: claude-sonnet-4-6)
+export ANTHROPIC_API_KEY=sk-ant-...   # for Claude (default model: claude-haiku-4-5-20251001)
 # or
 export OPENAI_API_KEY=sk-...          # for OpenAI models
 ```
@@ -48,7 +48,7 @@ Add to your MCP host config (e.g. Claude Desktop `claude_desktop_config.json`):
 }
 ```
 
-Six tools become available: `elfmem_remember`, `elfmem_recall`, `elfmem_status`, `elfmem_outcome`, `elfmem_curate`, `elfmem_guide`. Sessions and consolidation are handled automatically.
+That's the core loop: `elfmem_remember`, `elfmem_recall`, `elfmem_status`, `elfmem_outcome`, `elfmem_curate`, `elfmem_guide`. 30 tools are exposed in total — direct-edit, Theory of Mind, peer communication, and constitutional review round out the surface. See the README's [MCP section](../README.md#mcp-for-ai-agents-with-mcp-support) for the full table. Sessions and consolidation are handled automatically.
 
 ### Option B: CLI (Shell access, no MCP needed)
 
@@ -193,10 +193,6 @@ Create `elfmem.yaml` for custom settings:
 ```yaml
 llm:
   model: "claude-sonnet-4-6"
-  # Per-call overrides (None = use model above)
-  alignment_model: null
-  tags_model: null
-  contradiction_model: null
 
 embeddings:
   model: "text-embedding-3-small"
@@ -243,13 +239,13 @@ learn()  →  inbox  →  consolidate()  →  active (graph)  →  recall()
                                               ↓
                                            decay
                                               ↓
-                                           archive
+                                  review_corpus() → forget()
 ```
 
 - **learn/remember**: instant, no LLM — blocks queue in inbox
 - **consolidate**: LLM calls per block — scores alignment, embeds, deduplicates, builds graph
 - **recall/frame**: fast — 4-stage hybrid retrieval (pre-filter + vector + graph + composite score)
-- **curate**: fast, DB only — archives stale blocks, prunes weak edges
+- **curate**: fast, DB only — prunes weak/decayed edges, reinforces top blocks. No longer archives on its own — `review_corpus()` surfaces stale candidates, `forget()` applies them
 
 ### Session-Aware Decay
 
@@ -292,24 +288,30 @@ After ~10 outcomes, evidence dominates the LLM alignment prior. Your memory lear
 
 ## MCP Tool Quick Reference
 
+The essential loop — 30 tools exist in total (direct-edit, Theory of Mind, peer communication, constitutional review); see the README's [MCP tools table](../README.md#mcp-for-ai-agents-with-mcp-support) for the rest.
+
 | Tool | Purpose | Cost |
 |------|---------|------|
 | `elfmem_remember` | Store knowledge | Instant |
 | `elfmem_recall` | Retrieve context for prompt injection | Fast (embed) |
 | `elfmem_status` | Memory health + suggestion | Fast (DB) |
 | `elfmem_outcome` | Record outcome signal to update confidence | Fast (DB) |
-| `elfmem_curate` | Archive stale blocks, prune weak edges | Fast (DB) |
+| `elfmem_curate` | Prune weak/decayed edges, reinforce top knowledge | Fast (DB) |
 | `elfmem_guide` | Runtime documentation for any operation | Instant |
 
 ---
 
 ## CLI Quick Reference
 
+The essential loop — 30 commands exist in total; see the README's [full CLI reference](../README.md#cli-for-shell-access) for setup, direct-edit, peer, mind, review, and index/export commands.
+
 ```bash
+elfmem init [--seed] [--name NAME]                                              # project setup
 elfmem remember CONTENT [--tags t1,t2] [--category C] [--db PATH] [--json]
 elfmem recall QUERY [--top-k N] [--frame attention|self|task|simulate] [--db PATH] [--json]
 elfmem status [--db PATH] [--json]
 elfmem outcome BLOCK_IDS SIGNAL [--weight N] [--source LABEL] [--db PATH] [--json]
+elfmem dream [--rescore] [--max N]                                              # consolidate inbox
 elfmem curate [--db PATH] [--json]
 elfmem guide [METHOD]
 elfmem serve --db PATH [--config PATH]
@@ -323,6 +325,6 @@ Config: `--config PATH` or `ELFMEM_CONFIG` env var.
 ## Next Steps
 
 - **Full reference**: `docs/elfmem_tool.md` — comprehensive MCP + CLI documentation
-- **Design philosophy**: `SIMULATION_OVERVIEW.md` — what elfmem solves and why
+- **Design philosophy**: `docs/simulation_overview.md` — what elfmem solves and why
 - **Architecture**: `docs/amgs_architecture.md` — technical deep dive
 - **Python API**: `system.guide()` inside Python, or `src/elfmem/api.py`

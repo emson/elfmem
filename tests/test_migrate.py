@@ -186,6 +186,87 @@ class TestMigration:
             version = await ensure_schema_current(conn)
         assert version == CURRENT_SCHEMA_VERSION
 
+    async def test_v6_adds_superseded_by_column(self):
+        """Migration adds the supersession audit-trail column (v2 step 1)."""
+        engine = await _create_v1_engine()
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn)
+
+        async with engine.connect() as conn:
+            result = await conn.execute(text("PRAGMA table_info(blocks)"))
+            cols = [row[1] for row in result]
+            assert "superseded_by" in cols
+
+            # Existing rows backfill to NULL — no way to recover which block
+            # superseded a pre-migration archival.
+            result = await conn.execute(
+                text("SELECT superseded_by FROM blocks WHERE id = 'test1'")
+            )
+            assert result.first()[0] is None
+
+        await engine.dispose()
+
+    async def test_v7_adds_pinned_column_defaulting_to_zero(self):
+        """`pinned:` existed in markdown frontmatter with no DB column and no
+        reader anywhere, so Invariant 5 was declared but unimplemented."""
+        engine = await _create_v1_engine()
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn)
+
+        async with engine.connect() as conn:
+            result = await conn.execute(text("PRAGMA table_info(blocks)"))
+            cols = [row[1] for row in result]
+            assert "pinned" in cols
+
+            result = await conn.execute(
+                text("SELECT pinned FROM blocks WHERE id = 'test1'")
+            )
+            assert result.first()[0] == 0
+
+        await engine.dispose()
+
+    async def test_v7_backfills_pinned_from_constitutional_tag(self):
+        """Backfill must protect exactly the blocks the tag-based pin guard
+        already protected, so the migration changes no behaviour by itself."""
+        from elfmem.db.engine import create_test_engine
+
+        engine = await create_test_engine()
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "INSERT INTO blocks (id, content, category, source, "
+                    "created_at, status, confidence, reinforcement_count, "
+                    "decay_lambda, last_reinforced_at, outcome_evidence) "
+                    "VALUES ('c1', 'const', 'self', 'seed', '2026-01-01', "
+                    "'active', 0.9, 0, 0.00001, 0.0, 0.0), "
+                    "('k1', 'plain', 'knowledge', 'agent', '2026-01-01', "
+                    "'active', 0.5, 0, 0.01, 0.0, 0.0)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "INSERT INTO block_tags (block_id, tag) "
+                    "VALUES ('c1', 'self/constitutional'), ('k1', 'cli')"
+                )
+            )
+            # Force a re-run of the v7 step against populated tables.
+            await conn.execute(
+                text("UPDATE system_config SET value = '6' "
+                     "WHERE key = 'schema_version'")
+            )
+            await conn.execute(text("UPDATE blocks SET pinned = 0"))
+
+        async with engine.begin() as conn:
+            await ensure_schema_current(conn)
+
+        async with engine.connect() as conn:
+            result = await conn.execute(
+                text("SELECT id, pinned FROM blocks ORDER BY id")
+            )
+            assert dict(result.all()) == {"c1": 1, "k1": 0}
+
+        await engine.dispose()
+
 
 class TestMigrationWithFromConfig:
     async def test_from_config_triggers_migration(self, tmp_path):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import time
@@ -23,18 +24,36 @@ from elfmem.context.frames import FrameCache, get_frame_definition
 from elfmem.db.engine import create_engine
 from elfmem.db.models import metadata
 from elfmem.db.queries import (
+    get_block,
     get_block_counts,
     get_config,
+    get_inbox_blocks,
     get_inbox_count,
+    get_tags_batch,
     get_total_active_hours,
+    list_active_blocks,
     load_co_retrieval_staging,
     prune_stale_co_retrieval_staging,
+    reinforce_blocks,
     seed_builtin_data,
     set_config,
+    update_block_content,
+    update_block_cue,
+    update_block_status,
 )
-from elfmem.exceptions import ElfmemError, FrameError, ProjectNotFound
+from elfmem.exceptions import (
+    BlockNotFound,
+    ConfigError,
+    ElfmemError,
+    FrameError,
+    ProjectNotFound,
+    SubstrateWriteError,
+)
 from elfmem.guide import get_guide
 from elfmem.logging_config import configure_logging
+from elfmem.memory import file_mutation as _file_mutation
+from elfmem.memory import ledger as _ledger
+from elfmem.memory.blockfile import Block as _BlockFile
 from elfmem.memory.graph import stage_and_promote_co_retrievals
 from elfmem.memory.retrieval import hybrid_retrieve
 from elfmem.operations.connect import do_connect, do_disconnect
@@ -43,6 +62,7 @@ from elfmem.operations.curate import curate as _curate
 from elfmem.operations.curate import should_curate
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome as _record_outcome
+from elfmem.operations.recall import _resolve_tag_set
 from elfmem.operations.recall import recall as _recall
 from elfmem.policy import ConsolidationPolicy
 from elfmem.ports.services import EmbeddingService, LLMService
@@ -52,19 +72,27 @@ from elfmem.token_counter import TokenCounter
 from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
+    ArchiveReason,
+    BlockAnalysis,
+    BlockSummary,
     ConnectByQueryResult,
     ConnectResult,
     ConnectSpec,
     ConnectsResult,
     ConsolidateResult,
     ConstitutionalReviewResult,
+    CorpusReviewResult,
     CurateResult,
     DisconnectResult,
+    EditResult,
     ExportResult,
+    ForgetResult,
     FrameResult,
     ImportResult,
+    InboxBlockSummary,
     LearnDocumentResult,
     LearnResult,
+    MetabolismDryRunResult,
     MindOutcomeResult,
     MindPredictResult,
     MindShowResult,
@@ -79,7 +107,10 @@ from elfmem.types import (
     SetupResult,
     SystemStatus,
     TokenUsage,
+    UseResult,
 )
+
+logger = logging.getLogger(__name__)
 
 # ── Document chunking helpers ────────────────────────────────────────────────
 
@@ -107,6 +138,64 @@ def _assemble_chunks(sentences: list[str], chunk_size: int) -> list[str]:
     if current:
         chunks.append(" ".join(current))
     return chunks
+
+
+def _parse_host_analyses(
+    raw: dict[str, dict[str, Any]] | None,
+) -> dict[str, BlockAnalysis] | None:
+    """Validate and convert host-supplied ``consolidate(host_analyses=...)``
+    input into ``BlockAnalysis``, reusing the exact schema
+    (``BlockAnalysisModel``) and tag-filtering (``VALID_SELF_TAGS``) a real
+    LLM adapter's response already goes through — host-supplied reasoning
+    gets the same guarantees, not a looser bespoke check. Raises on a
+    malformed entry rather than silently degrading: this is direct
+    structured input from the caller, not unreliable external I/O, so
+    fail-fast is correct here (contrast the broad except around the real
+    adapter call in operations/consolidate.py).
+    """
+    if not raw:
+        return None
+    from pydantic import ValidationError
+
+    from elfmem.adapters.models import BlockAnalysisModel
+    from elfmem.exceptions import HostAnalysisError
+    from elfmem.prompts import VALID_SELF_TAGS
+
+    result: dict[str, BlockAnalysis] = {}
+    for block_id, fields in raw.items():
+        try:
+            parsed = BlockAnalysisModel.model_validate(fields)
+        except ValidationError as e:
+            raise HostAnalysisError(
+                f"Invalid host_analyses entry for block {block_id!r}: {e}",
+                recovery=(
+                    "Each entry must be {\"alignment_score\": <float 0.0-1.0>, "
+                    "\"tags\": [<str>, ...], \"summary\": \"<str>\"}. "
+                    f"Fix block {block_id!r}'s entry and retry."
+                ),
+            ) from e
+        filtered_tags = [t for t in parsed.tags if t in VALID_SELF_TAGS]
+        result[block_id] = BlockAnalysis(
+            alignment_score=parsed.alignment_score,
+            tags=filtered_tags,
+            summary=parsed.summary,
+        )
+    return result
+
+
+def _db_matches_project(cfg: ElfmemConfig, db_path: str) -> bool:
+    """Is *db_path* the database this project's config declares?
+
+    Used to decide whether ledger events belong to the project's history.
+    A config with no project section declares nothing, so nothing conflicts.
+    """
+    declared = getattr(getattr(cfg, "project", None), "db", None)
+    if not declared:
+        return True
+    return (
+        Path(declared).expanduser().resolve()
+        == Path(db_path).expanduser().resolve()
+    )
 
 
 class MemorySystem:
@@ -150,6 +239,24 @@ class MemorySystem:
         # no project was discovered; peer ops then fail fast with ProjectNotFound
         # unless the config explicitly overrides inbox_dir/outbox_dir.
         self._frame_cache = FrameCache()
+        # Append-only event ledger. Holds the history the markdown substrate
+        # structurally cannot: reinforcement, recency, and the α/β posterior.
+        # None when no project was discovered — the ledger is a project-local
+        # file, and a global/ephemeral instance simply has nowhere to put it,
+        # which degrades to exactly the pre-ledger behaviour.
+        self._ledger_dir: Path | None = (
+            Path(project_root) / ".elfmem" / _ledger.LEDGER_DIRNAME
+            if project_root is not None
+            else None
+        )
+        # File substrate. `memory_dir` is where blocks live when files are
+        # authoritative; None when no project was discovered, in which case
+        # file authority is impossible and the flag is ignored.
+        self._memory_dir: Path | None = (
+            Path(project_root) / ".elfmem" / "memory"
+            if project_root is not None
+            else None
+        )
         self._session_id: str | None = None
         self._session_started_at: float | None = None  # monotonic seconds
         self._session_base_hours: float = 0.0  # total_active_hours at session start
@@ -177,12 +284,49 @@ class MemorySystem:
         # mean "N distinct sessions" not "N calls in one session."
         self._co_retrieval_session_seen: set[tuple[str, str]] = set()
 
+    @property
+    def _files_authoritative(self) -> bool:
+        """Is the file substrate the source of truth for writes?
+
+        Requires both the opt-in and a discoverable project: a global instance
+        has nowhere to put `.elfmem/memory/`, so it stays database-primary
+        regardless of the flag rather than failing at the first write.
+        """
+        return (
+            self._config.substrate.files_authoritative
+            and self._memory_dir is not None
+        )
+
+    def _require_memory_dir(self) -> Path:
+        """`_memory_dir`, narrowed to non-None. Call only guarded by `_files_authoritative`,
+        which already proved this; the assert documents the invariant for mypy rather
+        than defending against a case that can actually occur here."""
+        assert self._memory_dir is not None  # guaranteed by _files_authoritative
+        return self._memory_dir
+
+    def _log(self, kind: str, **payload: object) -> None:
+        """Append one ledger event. Silently a no-op with no project root.
+
+        Never raises: a memory operation that succeeded must not be reported
+        as failed because its history line could not be written. A lost line
+        costs some replayable history; a raised exception costs the write.
+        """
+        if self._ledger_dir is None:
+            return
+        try:
+            _ledger.append(
+                self._ledger_dir, kind,
+                active_hours=self._current_active_hours(), **payload,
+            )
+        except OSError as e:
+            logger.warning("Ledger append failed (%s): %s", kind, e)
+
     # ── Factory methods ──────────────────────────────────────────────────────
 
     @classmethod
     async def from_config(
         cls,
-        db_path: str,
+        db_path: str | os.PathLike[str],
         config: ElfmemConfig | str | dict[str, Any] | None = None,
         *,
         policy: ConsolidationPolicy | None = None,
@@ -224,7 +368,22 @@ class MemorySystem:
             # With adaptive consolidation policy:
             from elfmem import ConsolidationPolicy
             system = await MemorySystem.from_config("agent.db", policy=ConsolidationPolicy())
+
+        Raises:
+            TypeError: If ``db_path`` is not a str or PathLike. Checked here
+                rather than left to SQLite, which reports a config object
+                passed by mistake as ``OSError: [Errno 63] File name too
+                long: "Config(raw={...``.
         """
+        if not isinstance(db_path, str | os.PathLike):
+            raise TypeError(
+                f"db_path must be str or os.PathLike, got "
+                f"{type(db_path).__module__}.{type(db_path).__qualname__}. "
+                "The first argument is the database file path; pass config as "
+                "the second argument: from_config(db_path, config)."
+            )
+        # Normalise Path -> str once, so everything downstream sees one type.
+        db_path = os.fspath(db_path)
         cfg = _resolve_config(config)
 
         # Configure logging (zero overhead if disabled)
@@ -297,6 +456,18 @@ class MemorySystem:
         embedding_svc = LockedEmbeddingService(embedding_svc, engine)
 
         project_root = _discover_project_root(config)
+
+        # The ledger describes the memory that pairs with the project's own
+        # database. When `--db` points somewhere else -- a copy, a scratch
+        # index, a migration rehearsal -- events from that database must not
+        # land in the project's real ledger, so the ledger is switched off
+        # rather than pointed at a history it does not describe.
+        if project_root is not None and not _db_matches_project(cfg, db_path):
+            logger.debug(
+                "Ledger disabled: db_path %s is not this project's configured "
+                "database.", db_path,
+            )
+            project_root = None
 
         return cls(
             engine=engine,
@@ -711,6 +882,7 @@ class MemorySystem:
         *,
         category: str = "knowledge",
         source: str = "api",
+            cue: str | None = None,
     ) -> LearnResult:
         """Store a knowledge block for future retrieval.
 
@@ -742,7 +914,8 @@ class MemorySystem:
         """
         async with self._engine.begin() as conn:
             result = await _learn(
-                conn, content=content, tags=tags, category=category, source=source
+                conn, content=content, tags=tags, category=category,
+                source=source, cue=cue,
             )
         # Track pending count for should_dream advisory.
         # Both "created" and "near_duplicate_superseded" add a block to inbox.
@@ -750,15 +923,85 @@ class MemorySystem:
             self._pending += 1
         # Breadcrumbs: only created blocks get a usable ID for connect()
         if result.status == "created":
+            if self._files_authoritative:
+                # The file is the commit. The index insert above is a derived
+                # consequence -- if this raises, that row is orphaned, so it
+                # is rolled back rather than left claiming a block the
+                # substrate never accepted.
+                memory_dir = self._require_memory_dir()
+                try:
+                    _file_mutation.append_block(
+                        memory_dir,
+                        _BlockFile(
+                            title=content.strip().splitlines()[0][:60] or "Untitled",
+                            content=content,
+                            id=result.block_id,
+                            tags=list(tags or []),
+                            cue=cue,
+                        ),
+                        subdir="log",
+                        category=category,
+                    )
+                except Exception as exc:
+                    async with self._engine.begin() as conn:
+                        await update_block_status(
+                            conn, result.block_id, "archived",
+                            archive_reason=ArchiveReason.FORGOTTEN.value,
+                        )
+                    raise SubstrateWriteError(result.block_id, cause=exc) from exc
             self._last_learned_block_id = result.block_id
+            self._log(_ledger.KIND_BIRTH, id=result.block_id)
             if result.block_id not in self._session_block_ids:
                 self._session_block_ids.append(result.block_id)
         self._record_op("learn", result.summary)
         return result
 
+    async def inbox(self, max_count: int | None = None) -> list[InboxBlockSummary]:
+        """List pending inbox blocks — not yet consolidated. FIFO order
+        (oldest first), matching the order `consolidate()` would process
+        them under `max_inbox_per_run`.
+
+        USE WHEN: reasoning about pending blocks yourself before calling
+        `consolidate(host_analyses=...)` — e.g. a host agent session (this
+        Claude Code session) supplying its own alignment_score/tags/summary
+        instead of a configured LLM adapter.
+
+        DON'T USE WHEN: you only need a count — `status().inbox_count` is
+        cheaper (no content fetched).
+
+        COST: pure read. No LLM calls, no embedding calls.
+
+        RETURNS: list[InboxBlockSummary] — id, content, category, tags,
+        created_at. Empty list if the inbox is empty.
+
+        NEXT: for each block, decide alignment_score (0.0-1.0), tags (from
+        the self/* vocabulary — self/constitutional, self/constraint,
+        self/value, self/style, self/goal, self/context), and a factual
+        1-2 sentence summary. Then call `consolidate(host_analyses={
+        block_id: {"alignment_score": ..., "tags": [...], "summary": ...}
+        })` — or `dream(host_analyses=...)` to also run rescore/curate in
+        the same call.
+        """
+        async with self._engine.connect() as conn:
+            rows = await get_inbox_blocks(conn)
+            if max_count is not None:
+                rows = rows[:max_count]
+            tags_map = await get_tags_batch(conn, [r["id"] for r in rows])
+        return [
+            InboxBlockSummary(
+                id=r["id"],
+                content=r["content"],
+                category=r["category"],
+                tags=tags_map.get(r["id"], []),
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+
     async def consolidate(
-        self, *, skip_llm: bool = False, skip_contradictions: bool = False,
+        self, *, skip_llm: bool = False,
         max_inbox_per_run: int | None = None,
+        host_analyses: dict[str, dict[str, Any]] | None = None,
     ) -> ConsolidateResult:
         """Process inbox blocks: score, embed, deduplicate, and promote to active memory.
 
@@ -769,11 +1012,11 @@ class MemorySystem:
         DON'T USE WHEN: Inbox is empty — safe to call but returns zero counts.
 
         COST: LLM call per block (alignment scoring + tag inference). Slow for
-        large inboxes; fast when inbox is small. Options for bulk ingestion:
-        - skip_contradictions=True: keeps LLM summaries + alignment but skips
-          O(n²) contradiction detection. Best for large ingestion batches.
+        large inboxes; fast when inbox is small.
         - skip_llm=True: bypasses ALL LLM calls (embed + promote only).
           Fastest but blocks get neutral scoring and no summaries.
+        - host_analyses: supply the analysis yourself instead of paying for
+          (or depending on) a configured LLM adapter — see below.
 
         One call processes at most ``max_inbox_per_run`` blocks (default from
         ``consolidation.max_inbox_per_run``, currently 5 — ADR 0007). A large
@@ -783,13 +1026,26 @@ class MemorySystem:
         full-drain sweep on a fast adapter, matching the ``rescore()``
         convention for its own ``max_count``.
 
+        Args:
+            host_analyses: ``{block_id: {"alignment_score": float,
+                "tags": [str, ...], "summary": str}, ...}``. A block id
+                present here is treated as genuinely analysed — the
+                configured LLM adapter is never called for it, and the
+                block is scored exactly as a successful adapter call would
+                score it (not the neutral ``skip_llm`` fallback). Lets a
+                host agent session (e.g. this Claude Code session) supply
+                its own reasoning instead of a configured LLM adapter —
+                see ``inbox()`` for the read half of this loop. Blocks in
+                the batch not covered here still go through the normal
+                path (configured adapter, or ``skip_llm`` fallback).
+                Validated and tag-filtered the same way a real adapter's
+                response is (``VALID_SELF_TAGS``) — a malformed entry
+                raises rather than silently degrading, since this is
+                direct structured input, not unreliable external I/O.
+
         RETURNS: ConsolidateResult with counts: processed, promoted,
-        deduplicated, edges_created, contradictions_detected, inbox_remaining.
-        processed=0 means inbox was empty. contradictions_detected is the
-        per-call LLM verdict (above-threshold pairs found this batch), not a
-        cumulative DB row count — some pairs may already exist in the
-        contradictions table from prior calls and are silently deduplicated
-        on insert.
+        deduplicated, edges_created, inbox_remaining. processed=0 means
+        inbox was empty.
 
         NEXT: Promoted blocks are now searchable via frame() and recall().
         Also triggers curate() automatically if curate_interval has elapsed.
@@ -798,6 +1054,7 @@ class MemorySystem:
         current_hours = self._current_active_hours()
         mem = self._config.memory
         budget = max_inbox_per_run if max_inbox_per_run is not None else mem.max_inbox_per_run
+        parsed_host_analyses = _parse_host_analyses(host_analyses)
 
         async with self._engine.begin() as conn:
             result = await consolidate(
@@ -806,16 +1063,14 @@ class MemorySystem:
                 embedding_svc=self._embedding,
                 current_active_hours=current_hours,
                 self_alignment_threshold=mem.self_alignment_threshold,
-                contradiction_threshold=mem.contradiction_threshold,
                 near_dup_exact_threshold=mem.near_dup_exact_threshold,
                 near_dup_near_threshold=mem.near_dup_near_threshold,
                 edge_score_threshold=mem.edge_score_threshold,
                 edge_degree_cap=mem.edge_degree_cap,
-                contradiction_similarity_prefilter=mem.contradiction_similarity_prefilter,
-                contradiction_top_k=mem.contradiction_top_k,
                 skip_llm=skip_llm,
-                skip_contradictions=skip_contradictions,
                 max_inbox_per_run=budget,
+                host_analyses=parsed_host_analyses,
+                ledger_dir=self._ledger_dir,
             )
             await set_config(conn, "last_consolidated_at", datetime.now(UTC).isoformat())
 
@@ -823,6 +1078,23 @@ class MemorySystem:
         # _pending tracks what's actually left rather than assuming a full
         # drain. should_dream/status() stay accurate across repeated calls.
         self._pending = result.inbox_remaining
+        if self._files_authoritative:
+            memory_dir = self._require_memory_dir()
+            # Promotion happened in the index; the substrate has to follow, or
+            # the block stays in log/ and every rebuild returns it to inbox.
+            async with self._engine.connect() as conn:
+                rows = await list_active_blocks(conn)
+            _file_mutation.reconcile_status(
+                memory_dir,
+                active_categories={r["id"]: r["category"] for r in rows},
+            )
+            # Tags are declared state, so LLM-inferred ones have to reach the
+            # file. Left in the index alone, a rebuild would drop every tag
+            # the agent derived, taking frame('self')'s tag filter and the
+            # decay tier with it.
+            async with self._engine.connect() as conn:
+                tags_by_id = await get_tags_batch(conn, [r["id"] for r in rows])
+            _file_mutation.sync_tags(memory_dir, tags_by_id)
         self._frame_cache.clear()
 
         async with self._engine.connect() as conn:
@@ -839,7 +1111,6 @@ class MemorySystem:
                 await _curate(
                     conn,
                     current_active_hours=current_hours,
-                    prune_threshold=mem.prune_threshold,
                     edge_prune_threshold=mem.edge_prune_threshold,
                     reinforce_top_n=mem.curate_reinforce_top_n,
                 )
@@ -858,6 +1129,7 @@ class MemorySystem:
         *,
         category: str = "knowledge",
         source: str = "api",
+            cue: str | None = None,
     ) -> LearnResult:
         """Store knowledge and auto-start a session. Agent-friendly variant of learn().
 
@@ -890,7 +1162,7 @@ class MemorySystem:
         """
         # Idempotent session start: no-op if session already active.
         await self.begin_session()
-        return await self.learn(content, tags=tags, category=category, source=source)
+        return await self.learn(content, tags=tags, category=category, source=source, cue=cue)
 
     async def learn_document(
         self,
@@ -973,6 +1245,239 @@ class MemorySystem:
         self._record_op("learn_document", doc_result.summary)
         return doc_result
 
+    async def edit(
+        self, block_id: str, content: str | None = None, *,
+        cue: str | None = None,
+    ) -> EditResult:
+        """Replace an active block's content directly — no LLM mediation.
+
+        USE WHEN: A stored memory is wrong, stale, or needs rewording, and
+        you know which block. This is the direct write path RC1 identified
+        as missing — previously the only way to change a block's content was
+        an indirect side effect of near-duplicate supersession.
+
+        DON'T USE WHEN: The block is in inbox (not yet consolidated) or
+        already archived — edit() only targets active blocks. For an inbox
+        block, just learn() the corrected version instead.
+
+        COST: One embedding call (the new content must be re-embedded). No
+        LLM call — alignment/tags/summary are not re-scored here.
+
+        RETURNS: EditResult with the block's id.
+
+        NEXT: The block's summary and last_scored_at are cleared, so it is
+        first in line for the next dream(--rescore) or consolidate() cycle.
+        Confidence, reinforcement_count, and decay_lambda are untouched —
+        editing content is not a knowledge-confirmation event.
+
+        Raises:
+            BlockNotFound: block_id doesn't exist or isn't active.
+
+        Example::
+
+            result = await system.edit(block_id, "Corrected: prefers tabs, not spaces.")
+        """
+        if content is None and cue is None:
+            raise ConfigError(
+                "edit() needs content, cue, or both — nothing to change.",
+                recovery="Pass content='...' to rewrite the block, or "
+                        "cue='...' to set when it should be recalled.",
+            )
+        async with self._engine.begin() as conn:
+            block = await get_block(conn, block_id)
+            if block is None or block["status"] != "active":
+                raise BlockNotFound(block_id)
+            if self._files_authoritative:
+                memory_dir = self._require_memory_dir()
+                # Content and cue are both declared state: both belong in the
+                # file, which is the truth a rebuild reads.
+                _file_mutation.edit_block(
+                    memory_dir, block_id, content, cue=cue
+                )
+            if content is not None:
+                embedding = await self._embedding.embed(content.strip().lower())
+                await update_block_content(
+                    conn,
+                    block_id=block_id,
+                    content=content,
+                    embedding=embedding,
+                    embedding_model=self._embedding.model_name,
+                )
+            if cue is not None:
+                # No re-embed: a cue says when to recall the block, not what
+                # it claims, so it neither invalidates the embedding nor
+                # belongs in the rescore queue.
+                await update_block_cue(conn, block_id=block_id, cue=cue)
+        self._frame_cache.clear()
+        self._log(_ledger.KIND_EDIT, id=block_id)
+        result = EditResult(block_id=block_id)
+        self._record_op("edit", result.summary)
+        return result
+
+    async def forget(
+        self, block_id: str, *, reason: ArchiveReason = ArchiveReason.FORGOTTEN,
+    ) -> ForgetResult:
+        """Archive a block by explicit request — the direct delete path.
+
+        USE WHEN: A memory should no longer be active — it's wrong, no
+        longer relevant, or was seeded content you never wanted. This is
+        the direct delete path RC1 identified as missing; previously blocks
+        could only leave active memory via near-duplicate supersession or
+        decay, neither of which is a deliberate human choice.
+
+        DON'T USE WHEN: You want a block to stop showing up in retrieval
+        temporarily without losing it forever — forget() is a real archive
+        (tags, edges, and contradictions involving this block are removed).
+
+        COST: Instant. No LLM or embedding calls.
+
+        RETURNS: ForgetResult. status='forgotten' on a real archive;
+        status='already_archived' if the block was archived already — this
+        is a safe no-op, not an error, so forget() is idempotent to call.
+
+        NEXT: The block no longer appears in frame(), recall(), or ls().
+
+        Args:
+            block_id: The block to archive.
+            reason: Audit trail for *why* — defaults to FORGOTTEN (a direct
+                    human/agent decision). `review_corpus()` (v2 step 6a)
+                    passes DECAYED when applying an accepted staleness
+                    proposal, so `archive_reason` distinguishes "I decided
+                    to remove this" from "corpus review found it stale and
+                    I accepted that finding" in the same audit column.
+
+        Raises:
+            BlockNotFound: block_id doesn't exist at all (any status).
+
+        Example::
+
+            result = await system.forget(block_id)
+            print(result)  # Forgot block a1b2c3d4.
+        """
+        async with self._engine.begin() as conn:
+            block = await get_block(conn, block_id)
+            if block is None:
+                raise BlockNotFound(block_id)
+            if block["status"] == "archived":
+                result = ForgetResult(block_id=block_id, status="already_archived")
+                self._record_op("forget", result.summary)
+                return result
+            if self._files_authoritative:
+                memory_dir = self._require_memory_dir()
+                # Removing it from the file is the real forget; the index row
+                # is only marked archived so retrieval stops returning it.
+                # Git history is the undo, which is why .elfmem/memory must
+                # be committed.
+                _file_mutation.forget_block(memory_dir, block_id)
+            await update_block_status(
+                conn, block_id, "archived",
+                archive_reason=reason.value,
+            )
+        self._frame_cache.clear()
+        self._log(_ledger.KIND_REMOVE, id=block_id, why=reason.value)
+        result = ForgetResult(block_id=block_id, status="forgotten")
+        self._record_op("forget", result.summary)
+        return result
+
+    async def review_corpus(self) -> CorpusReviewResult:
+        """Run a corpus-level review cycle: deterministic staleness detection.
+
+        USE WHEN: Periodically, to find blocks that have quietly stopped
+        earning their place — long-unused, rarely reinforced, never
+        confirmed by an outcome. The corpus-level counterpart to
+        review_constitutional(): proposes, never mutates on its own.
+
+        DON'T USE WHEN: You want automatic archival — nothing is applied
+        until you call forget(proposal.block_id, reason=ArchiveReason.DECAYED)
+        per proposal you accept. See `elfmem review corpus` for the
+        interactive accept/reject/skip walkthrough.
+
+        COST: Zero LLM calls — pure SQL/math over already-active blocks.
+        (Duplicate/contradiction detection, which does need one whole-corpus
+        LLM call, is a later addition to this method's output, not yet
+        built.)
+
+        RETURNS: CorpusReviewResult with reviewed_count and a list of
+        CorpusProposal (kind='stale' today).
+
+        NEXT: Iterate `.proposals`; for each you accept, call
+        `forget(proposal.block_id, reason=ArchiveReason.DECAYED)`.
+
+        Example::
+
+            result = await system.review_corpus()
+            for p in result.proposals:
+                print(p)  # [stale] a1b2c3d4…: not reinforced in 812h (reinforced 0x, ...)
+        """
+        from elfmem.operations.corpus_review import review_corpus as _review_corpus
+
+        current_hours = self._current_active_hours()
+        cfg = self._config.review.corpus
+        async with self._engine.connect() as conn:
+            result = await _review_corpus(
+                conn,
+                current_active_hours=current_hours,
+                min_hours_since_reinforced=cfg.stale_min_hours_since_reinforced,
+                max_reinforcement_count=cfg.stale_max_reinforcement_count,
+                max_proposals=cfg.max_proposals,
+            )
+        self._record_op("review_corpus", result.summary)
+        return result
+
+    async def ls(
+        self,
+        tag: str | None = None,
+        category: str | None = None,
+        *,
+        limit: int = 50,
+    ) -> list[BlockSummary]:
+        """List active blocks — a deterministic, unscored view of memory.
+
+        USE WHEN: You need to see what's in memory to find a block_id for
+        edit()/forget(), or to audit memory contents directly. This is the
+        direct read path RC1 identified as missing.
+
+        DON'T USE WHEN: You want relevance-ranked results for a query — use
+        recall() or frame() instead. ls() does not rank by similarity,
+        centrality, or reinforcement; it is a flat listing, most-recently-
+        active first.
+
+        COST: Instant. No LLM or embedding calls.
+
+        RETURNS: List of BlockSummary, most-recently-reinforced first.
+        Empty list if nothing matches (not an error).
+
+        NEXT: Pass a returned .id to edit() or forget().
+
+        Args:
+            tag: Optional SQL LIKE pattern (e.g. 'self/%' for a prefix
+                 match), same semantics as frame()'s tag_filter.
+            category: Optional exact category match.
+            limit: Maximum rows returned (default 50).
+
+        Example::
+
+            for b in await system.ls(tag="self/%"):
+                print(b)  # a1b2c3d4 Apply minimum force... [self/value]
+        """
+        async with self._engine.connect() as conn:
+            rows = await list_active_blocks(
+                conn, tag=tag, category=category, limit=limit,
+            )
+            ids = [row["id"] for row in rows]
+            tags_map = await get_tags_batch(conn, ids)
+        return [
+            BlockSummary(
+                id=row["id"],
+                content=row["content"],
+                category=row["category"],
+                tags=tags_map.get(row["id"], []),
+                created_at=row["created_at"],
+                reinforcement_count=row["reinforcement_count"],
+            )
+            for row in rows
+        ]
+
     async def rescore(
         self, *, max_count: int | None = None,
     ) -> dict[str, int]:
@@ -1036,16 +1541,59 @@ class MemorySystem:
             self._engine, block_ids=candidates,
             llm=self._llm, embedding_svc=self._embedding,
             evidence_weight=self._config.memory.rescore_evidence_weight,
+            ledger_dir=self._ledger_dir,
         )
+
+    async def metabolism_dry_run(
+        self, *, max_count: int | None = None,
+    ) -> MetabolismDryRunResult:
+        """Propose goal-directed connections without writing anything.
+
+        Edge-metabolism Stage A (docs/plans/plan_edge_metabolism.md): for
+        each rescore-eligible block, judges a widened candidate shortlist
+        against elf's own ``self/goal`` blocks — not just similarity — and
+        reports what it would connect. **Never calls insert_edge.** Stage B
+        (applying proposals live, no gate) is a separate, not-yet-approved
+        decision; this method exists to gather the evidence that decision
+        needs.
+
+        USE WHEN: sanity-checking edge metabolism against real content
+            before deciding whether Stage B is worth building.
+        DON'T USE WHEN: you want edges actually created — nothing here
+            writes to the graph.
+        COST: one LLM call per block considered (same eligibility rule and
+            budget as ``rescore()`` — default 20/run).
+        RETURNS: ``MetabolismDryRunResult`` — proposed connections with
+            one-line reasoning each, plus candidate-pool sizes (evidence for
+            "is there anything here worth connecting" even before reading
+            individual proposals).
+        NEXT: read the proposals by hand. This is the validation step the
+            Zettelkasten-auto-linking deferral (docs/plans/archive/plan_memory_scoring.md)
+            asked for before any live graph-mutation mechanism ships.
+        """
+        from elfmem.operations.rescore import RescoreFilter, select_rescore_candidates
+        from elfmem.operations.rescore import metabolism_dry_run as _metabolism_dry_run
+
+        cfg = self._config.rescore
+        budget = max_count if max_count is not None else cfg.max_per_run
+        filt = RescoreFilter(
+            exclude_categories=tuple(cfg.exclude_categories),
+            exclude_tags=tuple(cfg.exclude_tags),
+            min_age_hours=cfg.min_age_hours,
+            target_max_age_days=cfg.target_max_age_days,
+        )
+        async with self._engine.connect() as conn:
+            candidates = await select_rescore_candidates(conn, filt=filt, max_count=budget)
+            return await _metabolism_dry_run(conn, block_ids=candidates, llm=self._llm)
 
     async def dream(
         self,
         *,
         skip_llm: bool = False,
-        skip_contradictions: bool = False,
         rescore: bool = False,
         rescore_max: int | None = None,
         inbox_max: int | None = None,
+        host_analyses: dict[str, dict[str, Any]] | None = None,
     ) -> ConsolidateResult | None:
         """Consolidate pending blocks at a natural pause point.
 
@@ -1080,8 +1628,6 @@ class MemorySystem:
                 for bulk ingestion where alignment scoring isn't needed.
                 Affected blocks have ``last_scored_at = NULL`` and are picked
                 up first by ``rescore=True`` on a future call.
-            skip_contradictions: Keep LLM summaries but skip O(n²) contradiction
-                detection. Good balance of quality and speed.
             rescore: After processing inbox, also refresh aged or unscored
                 active blocks against the current SELF. Mutually exclusive
                 with ``skip_llm`` (rescore needs the LLM by definition).
@@ -1092,6 +1638,10 @@ class MemorySystem:
                 flag maps to both this and ``rescore_max`` in the same
                 invocation (ADR 0007) — pass them separately here for
                 independent control.
+            host_analyses: supply your own alignment_score/tags/summary for
+                some or all pending blocks instead of the configured LLM
+                adapter — see ``consolidate()``'s ``host_analyses`` and
+                ``inbox()`` for the read half of this loop.
 
         Example::
 
@@ -1113,8 +1663,9 @@ class MemorySystem:
         result: ConsolidateResult | None = None
         if self._pending > 0:
             result = await self.consolidate(
-                skip_llm=skip_llm, skip_contradictions=skip_contradictions,
+                skip_llm=skip_llm,
                 max_inbox_per_run=inbox_max,
+                host_analyses=host_analyses,
             )
         if rescore:
             rs = await self.rescore(max_count=rescore_max)
@@ -1171,13 +1722,15 @@ class MemorySystem:
         identity: str | None = None,
         values: list[str] | None = None,
         *,
-        seed: bool = True,
+        seed: bool = False,
     ) -> SetupResult:
-        """Bootstrap agent identity: seed constitutional blocks and optional identity.
+        """Bootstrap agent identity: optional identity/values, optional constitutional seed.
 
-        USE WHEN: First use — before any other operations. Seeds 10 constitutional
-        blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
-        then adds any identity description and domain values you provide.
+        USE WHEN: First use — before any other operations. Adds any identity
+        description and domain values you provide. Pass seed=True to also
+        seed 10 constitutional blocks that form a cognitive loop (curiosity,
+        feedback, balance, etc.) — an opinionated starting personality, not
+        a requirement.
 
         DON'T USE WHEN: Every session — SELF blocks persist across restarts.
         Re-running is idempotent: each constitutional block fills a stable
@@ -1189,19 +1742,23 @@ class MemorySystem:
 
         RETURNS: SetupResult with blocks_created (new) and total_attempted.
         blocks_created=0 means all were already present — safe, not an error.
+        With no identity, no values, and seed=False (the default), this is a
+        no-op: total_attempted=0.
 
         NEXT: SELF blocks sit in inbox until dream() or consolidate() runs.
-        After consolidation, frame('self') returns constitutional blocks as
-        guaranteed slots. Call dream() or let the session context manager
-        handle consolidation automatically.
+        After consolidation, frame('self') returns constitutional blocks (if
+        seeded) as guaranteed slots, plus any domain values you added. Call
+        dream() or let the session context manager handle consolidation
+        automatically.
 
         Args:
             identity: Optional identity description stored as a self/context block.
             values:   Optional list of domain-specific principles, each stored
                       as a separate self/value block.
-            seed:     Seed the 10 constitutional blocks (default True). Pass
-                      False to skip constitutional seeding and only add
-                      identity/values — useful for custom bootstrapping.
+            seed:     Seed the 10 constitutional blocks (default False — v2
+                      step 4: onboarding no longer writes opinionated content
+                      before you've expressed a preference). Pass True to
+                      seed the constitutional cognitive loop.
 
         Example::
 
@@ -1209,7 +1766,11 @@ class MemorySystem:
                 identity="I am a trading assistant focused on risk-adjusted returns.",
                 values=["cut losing positions early", "size positions to max 2% risk"],
             )
-            print(result)  # Setup complete: 12/12 new blocks created.
+            print(result)  # Setup complete: 3/3 new blocks created.
+
+            # Opt into the constitutional cognitive loop too:
+            result = await system.setup(seed=True)
+            print(result)  # Setup complete: 10/10 new blocks created.
         """
         results: list[LearnResult] = []
 
@@ -1274,6 +1835,7 @@ class MemorySystem:
         query: str | None = None,
         *,
         top_k: int | None = None,
+        reinforce: bool = True,
     ) -> FrameResult:
         """Retrieve and render context for the named frame, ready for prompt injection.
 
@@ -1295,7 +1857,18 @@ class MemorySystem:
             name: Frame name — 'self', 'attention', or 'task'.
             query: Query text. Required for ATTENTION; optional for TASK;
                    not used for SELF (identity context is queryless).
-            top_k: Number of blocks to return. Defaults to config.memory.top_k.
+            top_k: Hard ceiling on blocks returned. Defaults to
+                   ``max(config.memory.top_k, number of guaranteed blocks)``,
+                   so a frame guaranteeing ten constitutional blocks does not
+                   render five of them by default. An explicit value always
+                   binds, and whatever it excludes is listed in
+                   ``result.dropped``.
+            reinforce: Whether retrieval strengthens what it returns (the
+                   normal behaviour, and how memory learns what gets used).
+                   Pass False to preview a frame without changing any
+                   scoring — what ``elfmem doctor --frames`` uses, since a
+                   diagnostic that reinforced on every run would inflate the
+                   scores of exactly the blocks it reports on.
 
         Raises:
             FrameError: If name is not a valid frame. Recovery hint included.
@@ -1308,9 +1881,30 @@ class MemorySystem:
                 recovery="Valid frames: 'self', 'attention', 'task', 'simulate'.",
             ) from exc
 
-        k = top_k if top_k is not None else self._config.memory.top_k
+        # Idempotent session start: no-op if a session is already active.
+        # Not optional. frame() reinforces what it returns, and reinforcement
+        # writes `last_reinforced_at` from the activity clock -- which, with
+        # no session open, has a 0.0 baseline. Retrieval would then stamp
+        # every block it touched as maximally aged, destroying the recency of
+        # the blocks it just judged most relevant. remember() has always
+        # guarded this; frame() did not, and every caller that reached it via
+        # the MCP server or managed() happened to open a session first.
+        await self.begin_session()
+
+        # `top_k` is deliberately forwarded unresolved. recall() needs to know
+        # whether the caller actually asked for a ceiling: an explicit value
+        # always binds, while the default becomes max(config, n_guaranteed) so
+        # a frame guaranteeing ten blocks stops rendering five by default.
         current_hours = self._current_active_hours()
         mem = self._config.memory
+        proj = self._config.project
+        # SELF's "You are X" preamble takes its name from project.agent_name --
+        # the same field elfmem init --name/`--name` writes and AGENT.md
+        # already reads -- so a host that named its agent gets that name back
+        # from the one runtime path that previously never saw it (see
+        # docs/self_preamble_naming_report.md). Empty/unset falls back to
+        # "elf", preserving today's text exactly.
+        host_name = proj.agent_name if proj and proj.agent_name else "elf"
 
         async with self._engine.begin() as conn:
             result = await _recall(
@@ -1319,8 +1913,11 @@ class MemorySystem:
                 frame_def=frame_def,
                 query=query,
                 current_active_hours=current_hours,
-                top_k=k,
+                top_k=top_k,
+                default_top_k=mem.top_k,
                 cache=self._frame_cache,
+                reinforce=reinforce,
+                host_name=host_name,
             )
             # Hebbian staging — fires on genuine frame() retrievals only.
             # Skipped on cache hits: a cached result carries no new retrieval signal.
@@ -1330,7 +1927,7 @@ class MemorySystem:
             # begin_session() cycle so threshold means "N distinct sessions."
             recalled_ids = [b.id for b in result.blocks]
             promoted_count = 0
-            if recalled_ids and not result.cached:
+            if recalled_ids and not result.cached and reinforce:
                 promoted_count = await stage_and_promote_co_retrievals(
                     conn,
                     recalled_ids,
@@ -1343,6 +1940,16 @@ class MemorySystem:
                 )
             result.edges_promoted = promoted_count
         self._last_recall_block_ids = recalled_ids
+        # The free label tier: recorded by the system, needing nothing from
+        # the calling agent. Across three real instances the *voluntary*
+        # feedback verb has been called nine times in total, so a history
+        # that depends on agent discipline is a history that stays empty.
+        if recalled_ids and not result.cached and reinforce:
+            _ledger.record_assembly(
+                self._ledger_dir, recalled_ids,
+                active_hours=self._current_active_hours(),
+                frame=name, session_id=self._session_id,
+            )
         for bid in recalled_ids:
             if bid not in self._session_block_ids:
                 self._session_block_ids.append(bid)
@@ -1400,6 +2007,21 @@ class MemorySystem:
             tag_filter = frame_def.filters.tag_patterns[0]
 
         async with self._engine.connect() as conn:
+            # Same exclusions frame() applies. recall() is documented as
+            # "raw block data without rendering" -- raw means unrendered, not
+            # a different retrieval, so a frame's declared filters have to
+            # hold here too or `recall(frame="attention")` quietly disagrees
+            # with `frame("attention")` about what the frame contains.
+            excluded_ids = await _resolve_tag_set(
+                conn,
+                include_patterns=frame_def.filters.exclude_tag_patterns,
+                minus_patterns=frame_def.filters.exclude_exempt_patterns,
+            )
+            guaranteed_ids = await _resolve_tag_set(
+                conn,
+                include_patterns=frame_def.guarantees,
+                minus_patterns=frame_def.guarantee_excludes,
+            )
             blocks = await hybrid_retrieve(
                 conn,
                 embedding_svc=self._embedding,
@@ -1408,6 +2030,7 @@ class MemorySystem:
                 current_active_hours=current_hours,
                 top_k=k,
                 tag_filter=tag_filter,
+                exclude_ids=excluded_ids - guaranteed_ids,
                 search_window_hours=frame_def.filters.search_window_hours,
             )
 
@@ -1428,6 +2051,7 @@ class MemorySystem:
         *,
         weight: float = 1.0,
         source: str = "",
+        allow_constitutional: bool = False,
     ) -> OutcomeResult:
         """Update block confidence from a normalised domain outcome signal.
 
@@ -1467,6 +2091,30 @@ class MemorySystem:
             0.2–0.8  → confidence adjusted, no reinforcement or penalization
             0.0–0.2  → confidence DOWN + decay accelerated automatically
 
+        **To apply no information, do not call this method.** There is no
+        parameter value that means "no update", and the two candidates both
+        look like one:
+
+        - ``signal=0.5`` is NOT a neutral no-op. It pulls every block's
+          confidence *toward* 0.5 from wherever it currently sits, so it is a
+          direction like any other value — and its direction depends on the
+          block, not on the signal. A block at confidence 1.0 moves DOWN to
+          0.75; a block at 0.28 moves UP to 0.30; only a block already at 0.5
+          is unmoved. Reserve 0.5 for genuinely balanced evidence, which is a
+          real claim about the block, not an absence of one.
+        - ``weight=0.0`` raises ``ValueError`` rather than silently no-op'ing,
+          deliberately: a zero-weight call is a caller bug worth failing on,
+          not a way to skip a block. Filter the ids instead.
+
+        Weighting by retrieval relevance: do NOT derive ``weight`` from
+        ``ScoredBlock.similarity``. It is not a portable relevance score —
+        ``0.0`` is a sentinel for "vector search never scored this" (queryless
+        frames, graph-expanded blocks), and when BM25 has signal the values are
+        rank-normalised into a narrow band rather than spread across [0, 1].
+        ``weight=b.similarity`` therefore raises on the sentinel and is close
+        to uniform everywhere else. See ``ScoredBlock.similarity``; rank order
+        within ``result.blocks`` is the portable signal.
+
         Domain signal normalisation (one-liners in agent code)::
 
             signal = 1.0 - brier_score           # trading: 0=worst, 1=perfect
@@ -1480,6 +2128,12 @@ class MemorySystem:
             weight: Observation weight (> 0.0). Higher = faster convergence.
                     Use weight > 1.0 for high-stakes outcomes.
             source: Audit label (e.g. "brier", "test_suite", "csat", "engagement").
+            allow_constitutional: Also score `self/constitutional` blocks.
+                Off by default: a task outcome is evidence about the task, not
+                about the principle that helped reason through it, and a
+                decision's recalled block_ids routinely include both. Skipped
+                ids come back on `result.skipped_constitutional`. To revise a
+                principle, use `review_constitutional()` — deliberately manual.
 
         Raises:
             ValueError: If signal is outside [0.0, 1.0] or weight <= 0.0.
@@ -1508,8 +2162,63 @@ class MemorySystem:
                 penalize_threshold=mem.penalize_threshold,
                 penalty_factor=mem.penalty_factor,
                 lambda_ceiling=mem.lambda_ceiling,
+                allow_constitutional=allow_constitutional,
             )
+        for bid in block_ids:
+            self._log(_ledger.KIND_OUTCOME, id=bid, sig=signal, w=weight, src=source)
         self._record_op("outcome", result.summary)
+        return result
+
+    async def record_use(
+        self,
+        block_ids: list[str],
+        *,
+        source: str = "",
+    ) -> UseResult:
+        """Record that these blocks actually informed an answer, not just appeared.
+
+        USE WHEN: A turn has finished and you know which of the retrieved
+        blocks were drawn on -- typically from a host hook comparing the
+        response against what was assembled (see
+        ``elfmem.memory.attribution``). This is the evidence tier above
+        ``frame()``'s automatic assembly record and below ``outcome()``.
+
+        DON'T USE WHEN: You know whether the knowledge was *right*. That is
+        ``outcome()``, which moves the Beta posterior. Use is relevance, not
+        truth: a block can be drawn on and be wrong, and folding usage into
+        confidence would quietly redefine it from "has proven right" to "gets
+        talked about" -- in a term carrying 15-30% of every frame's ranking.
+
+        COST: Instant. One indexed UPDATE and one ledger append. No LLM, no
+        embedding.
+
+        RETURNS: UseResult with the number of blocks reinforced.
+
+        NEXT: Nothing. The reinforcement is the effect -- a used block now
+        outranks one that was retrieved beside it and contributed nothing,
+        and its decay clock resets a second time.
+
+        Args:
+            block_ids: Blocks that demonstrably contributed. Empty is a no-op
+                returning zero counts, not an error -- a turn that used none
+                of its context is a normal, and informative, outcome.
+            source: Audit label for the ledger (e.g. "claude-code").
+        """
+        if not block_ids:
+            return UseResult(blocks_reinforced=0, source=source)
+
+        # See frame(): reinforcement on a 0.0 clock ages what it rewards.
+        await self.begin_session()
+        current_hours = self._current_active_hours()
+        async with self._engine.begin() as conn:
+            await reinforce_blocks(conn, block_ids, current_hours)
+        _ledger.record_use(
+            self._ledger_dir, block_ids,
+            active_hours=current_hours, source=source or None,
+            session_id=self._session_id,
+        )
+        result = UseResult(blocks_reinforced=len(block_ids), source=source)
+        self._record_op("record_use", result.summary)
         return result
 
     async def connect(
@@ -1764,7 +2473,7 @@ class MemorySystem:
         return batch_result
 
     async def curate(self) -> CurateResult:
-        """Archive decayed blocks, prune weak edges, reinforce top-N knowledge.
+        """Prune weak/decayed edges, reinforce top-N knowledge.
 
         USE WHEN: Explicit maintenance after heavy use, or when retrieval
         quality degrades. Also runs automatically after consolidate() when
@@ -1775,9 +2484,9 @@ class MemorySystem:
 
         COST: Fast. Database operations only; no LLM calls.
 
-        RETURNS: CurateResult with counts: archived (decayed blocks removed),
-        edges_pruned (weak edges removed), reinforced (top-N blocks boosted).
-        All zeros means memory was already clean.
+        RETURNS: CurateResult with counts: edges_pruned (weak edges removed),
+        edges_decayed (temporally-decayed edges removed), reinforced (top-N
+        blocks boosted). All zeros means memory was already clean.
 
         NEXT: Memory is cleaner. Retrieval quality may improve.
         """
@@ -1787,7 +2496,6 @@ class MemorySystem:
             result = await _curate(
                 conn,
                 current_active_hours=current_hours,
-                prune_threshold=mem.prune_threshold,
                 edge_prune_threshold=mem.edge_prune_threshold,
                 reinforce_top_n=mem.curate_reinforce_top_n,
             )

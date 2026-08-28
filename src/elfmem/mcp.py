@@ -99,9 +99,10 @@ def _mem() -> MemorySystem:
 async def _tool_remember(
     content: str,
     tags: list[str] | None = None,
+    cue: str | None = None,
 ) -> dict[str, Any]:
     mem = _mem()
-    result = await mem.remember(content, tags=tags)
+    result = await mem.remember(content, tags=tags, cue=cue)
     response = result.to_dict()
     response["should_dream"] = mem.should_dream
     return response
@@ -116,6 +117,35 @@ async def _tool_recall(
     await mem.begin_session()  # idempotent — no-op if session already active
     result = await mem.frame(frame, query=query or None, top_k=top_k)
     return format_recall_response(result)
+
+
+async def _tool_edit(
+    block_id: str, content: str | None = None, cue: str | None = None,
+) -> dict[str, Any]:
+    mem = _mem()
+    result = await mem.edit(block_id, content, cue=cue)
+    return result.to_dict()
+
+
+async def _tool_forget(block_id: str) -> dict[str, Any]:
+    mem = _mem()
+    result = await mem.forget(block_id)
+    return result.to_dict()
+
+
+async def _tool_ls(
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    mem = _mem()
+    results = await mem.ls(tag, category, limit=limit)
+    return [r.to_dict() for r in results]
+
+
+async def _tool_inbox(max_count: int | None = None) -> list[dict[str, Any]]:
+    results = await _mem().inbox(max_count)
+    return [r.to_dict() for r in results]
 
 
 async def _tool_status(peer_inbox: bool = False) -> dict[str, Any]:
@@ -145,13 +175,13 @@ async def _tool_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
-    skip_contradictions: bool = False,
+    host_analyses: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     result = await _mem().dream(
         skip_llm=no_llm,
-        skip_contradictions=skip_contradictions,
         rescore=rescore,
         rescore_max=rescore_max,
+        host_analyses=host_analyses,
     )
     if result is None:
         return {"message": "No pending blocks to consolidate", "status": "idle"}
@@ -161,7 +191,7 @@ async def _tool_dream(
 async def _tool_setup(
     identity: str | None = None,
     values: list[str] | None = None,
-    seed: bool = True,
+    seed: bool = False,
 ) -> dict[str, Any]:
     result = await _mem().setup(identity=identity, values=values, seed=seed)
     return result.to_dict()
@@ -339,6 +369,15 @@ async def _tool_review_constitutional(
         return _error_envelope(e)
 
 
+async def _tool_review_corpus() -> dict[str, Any]:
+    from elfmem.exceptions import ElfmemError
+    try:
+        result = await _mem().review_corpus()
+        return result.to_dict()
+    except ElfmemError as e:
+        return _error_envelope(e)
+
+
 async def _tool_accept_amendment(
     block_id: str,
     proposed_content: str,
@@ -385,17 +424,29 @@ async def _tool_list_amendments(
 async def elfmem_remember(
     content: str,
     tags: list[str] | None = None,
+    cue: str | None = None,
 ) -> dict[str, Any]:
     """Store knowledge for future retrieval.
 
     Call when the agent discovers a fact, preference, decision, or observation
     worth keeping across sessions. Pure learn, no blocking.
 
+    ALWAYS pass a `cue`. It states *when a future agent should recall this
+    block* — the situation, not a summary. Retrieval matches it lexically
+    against the query, so it is what rescues a memory whose wording differs
+    from how the question gets asked. Write it the way someone would type it
+    in that moment:
+
+        cue="deciding whether to add a new command or extend an existing one"
+        cue="when a dream run is killed partway through consolidation"
+
+    Not "when relevant", and not a restatement of the block's conclusion.
+
     Returns: block_id, status, and should_dream advisory.
     If should_dream is True, consolidation (embedding, alignment, contradictions)
     will benefit from running soon via elfmem_dream.
     """
-    return await _tool_remember(content, tags=tags)
+    return await _tool_remember(content, tags=tags, cue=cue)
 
 
 @mcp.tool()
@@ -412,6 +463,61 @@ async def elfmem_recall(
         | "simulate" (Theory-of-Mind retrieval — self constitution + mind/* blocks).
     """
     return await _tool_recall(query, top_k=top_k, frame=frame)
+
+
+@mcp.tool()
+async def elfmem_edit(
+    block_id: str, content: str | None = None, cue: str | None = None,
+) -> dict[str, Any]:
+    """Edit an active block's content and/or its cue line. No LLM mediation.
+
+    Use when a stored memory is wrong, stale, or needs rewording and you
+    know its block_id (e.g. from elfmem_ls). Pass `content` to rewrite it,
+    `cue` to change when it should be recalled, or both.
+
+    Setting only a cue is cheap: no re-embedding, and confidence,
+    reinforcement and the rescore queue are all untouched — a cue says when
+    to recall a block, not what it claims.
+    """
+    return await _tool_edit(block_id, content, cue)
+
+
+@mcp.tool()
+async def elfmem_forget(block_id: str) -> dict[str, Any]:
+    """Archive a block by explicit request — the direct delete path.
+
+    Use when a memory should no longer be active. Idempotent: forgetting
+    an already-archived block returns status='already_archived', not an error.
+    """
+    return await _tool_forget(block_id)
+
+
+@mcp.tool()
+async def elfmem_ls(
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """List active blocks — a deterministic, unscored view of memory.
+
+    Use to find a block_id for elfmem_edit/elfmem_forget, or to audit
+    memory contents directly. Not relevance-ranked — use elfmem_recall
+    for that. tag is a SQL LIKE pattern (e.g. 'self/%').
+    """
+    return await _tool_ls(tag, category, limit)
+
+
+@mcp.tool()
+async def elfmem_inbox(max_count: int | None = None) -> list[dict[str, Any]]:
+    """List pending blocks not yet consolidated — FIFO order (oldest first).
+
+    Read-only, no LLM calls. Use this to reason about pending blocks
+    yourself (alignment_score 0.0-1.0, tags from the self/* vocabulary,
+    a factual 1-2 sentence summary) before calling elfmem_dream with
+    host_analyses — i.e. supplying your own analysis instead of relying on
+    elfmem's configured LLM adapter.
+    """
+    return await _tool_inbox(max_count)
 
 
 @mcp.tool()
@@ -441,7 +547,7 @@ async def elfmem_outcome(
 
 @mcp.tool()
 async def elfmem_curate() -> dict[str, Any]:
-    """Archive decayed blocks, prune weak edges, reinforce top knowledge.
+    """Prune weak/decayed edges, reinforce top knowledge.
 
     Runs automatically on schedule after consolidation.
     Call manually only if retrieval quality visibly degrades.
@@ -454,17 +560,16 @@ async def elfmem_dream(
     rescore: bool = False,
     rescore_max: int | None = None,
     no_llm: bool = False,
-    skip_contradictions: bool = False,
+    host_analyses: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Deep consolidation: embed, align, detect contradictions, build graph.
+    """Deep consolidation: embed, align, promote to active memory, build graph.
 
     Call when elfmem_remember indicates should_dream=True, or when you want
     to consolidate pending knowledge. Safe at natural pause points.
 
     Embedding & LLM calls per pending block. Slow if many pending.
-    Returns: blocks processed, promoted, dedup'd, edges created,
-    contradictions_detected — plus rescored / rescore_failed when
-    rescore=True.
+    Returns: blocks processed, promoted, dedup'd, edges created — plus
+    rescored / rescore_failed when rescore=True.
 
     rescore: After processing the inbox, refresh aged or unscored active
              blocks against the current SELF (deep-sleep mode, v0.13.3).
@@ -476,15 +581,21 @@ async def elfmem_dream(
              bulk loads, cost-sensitive batches. Affected blocks have
              last_scored_at=NULL and will be picked up first by a future
              rescore=True call.
-    skip_contradictions: Keep LLM scoring but skip the O(n²) contradiction
-             detection loop. Use for trusted structured ingestion where
-             contradiction discovery isn't needed.
+    host_analyses: supply your own analysis for some or all pending blocks
+             instead of elfmem's configured LLM adapter — e.g. this session
+             reasoning over elfmem_inbox's output. Shape:
+             {"block_id": {"alignment_score": 0.0-1.0, "tags": [...],
+             "summary": "..."}, ...}. tags must come from the self/*
+             vocabulary (self/constitutional, self/constraint, self/value,
+             self/style, self/goal, self/context) — others are silently
+             dropped. Blocks not covered here still use the normal path
+             (configured adapter, or the no_llm fallback).
     """
     return await _tool_dream(
         rescore=rescore,
         rescore_max=rescore_max,
         no_llm=no_llm,
-        skip_contradictions=skip_contradictions,
+        host_analyses=host_analyses,
     )
 
 
@@ -492,20 +603,21 @@ async def elfmem_dream(
 async def elfmem_setup(
     identity: str | None = None,
     values: list[str] | None = None,
-    seed: bool = True,
+    seed: bool = False,
 ) -> dict[str, Any]:
     """Bootstrap agent identity in the SELF frame.
 
-    Call this on first use to establish who you are. Seeds 10 constitutional
-    blocks that form the cognitive loop (curiosity, feedback, balance, etc.)
-    then adds any identity description and values you provide.
+    Call this on first use to establish who you are — adds any identity
+    description and values you provide. Pass seed=True to also seed 10
+    constitutional blocks that form a cognitive loop (curiosity, feedback,
+    balance, etc.) — an opinionated starting personality, not a requirement.
 
     Safe to call multiple times — exact duplicate content is silently rejected,
-    so re-running is harmless. Constitutional blocks are created once, then
-    skipped on subsequent calls.
+    so re-running is harmless. Constitutional blocks (if seeded) are created
+    once, then skipped on subsequent calls.
 
-    seed:     Seed the 10 constitutional blocks (default True). Pass False to
-              skip constitutional seeding and only add identity/values.
+    seed:     Seed the 10 constitutional blocks (default False — this no
+              longer happens silently; opt in explicitly).
     identity: Optional natural language description of agent role and constraints.
     values:   Optional list of domain-specific principles (each stored separately).
 
@@ -774,6 +886,24 @@ async def elfmem_review_constitutional(
         min_block_evidence=min_block_evidence,
         min_age_days=min_age_days,
     )
+
+
+@mcp.tool()
+async def elfmem_review_corpus() -> dict[str, Any]:
+    """Run a corpus-level review cycle: deterministic staleness detection.
+
+    USE WHEN: Periodically, to find ordinary blocks that have quietly
+    stopped earning their place — long-unused, rarely reinforced, never
+    confirmed by an outcome. Zero LLM calls. This only PROPOSES; nothing is
+    applied until elfmem_forget is called per accepted proposal. Distinct
+    from elfmem_review_constitutional, which checks self/constitutional
+    blocks for drift, not ordinary memory for staleness.
+
+    RETURNS: dict with keys ``reviewed_count`` and ``proposals`` (each with
+        block_id, kind='stale', reason, content_preview).
+    NEXT: For each proposal worth applying, call elfmem_forget(block_id).
+    """
+    return await _tool_review_corpus()
 
 
 @mcp.tool()

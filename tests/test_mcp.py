@@ -13,8 +13,11 @@ import pytest
 
 from elfmem.api import MemorySystem
 from elfmem.types import (
+    BlockSummary,
     ConsolidateResult,
     CurateResult,
+    EditResult,
+    ForgetResult,
     FrameResult,
     LearnResult,
     MindOutcomeResult,
@@ -122,6 +125,44 @@ class TestMcpTools:
         result = await _tool_recall(query="test")
         assert result["blocks"][0]["id"] == "xyz789"
 
+    async def test_edit_returns_dict_with_block_id(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_edit
+
+        mock_mem.edit.return_value = EditResult(block_id="abc123")
+        result = await _tool_edit(block_id="abc123", content="new content")
+        assert result["block_id"] == "abc123"
+        mock_mem.edit.assert_awaited_once_with("abc123", "new content", cue=None)
+
+    async def test_forget_returns_dict_with_status(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_forget
+
+        mock_mem.forget.return_value = ForgetResult(block_id="abc123", status="forgotten")
+        result = await _tool_forget(block_id="abc123")
+        assert result["status"] == "forgotten"
+
+    async def test_ls_returns_list_of_dicts(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_ls
+
+        mock_mem.ls.return_value = [
+            BlockSummary(
+                id="abc123",
+                content="a block",
+                category="knowledge",
+                tags=["python"],
+                created_at="2024-01-01T00:00:00",
+                reinforcement_count=1,
+            )
+        ]
+        result = await _tool_ls()
+        assert result[0]["id"] == "abc123"
+
+    async def test_ls_passes_filters_through(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_ls
+
+        mock_mem.ls.return_value = []
+        await _tool_ls(tag="self/%", category="knowledge", limit=10)
+        mock_mem.ls.assert_awaited_once_with("self/%", "knowledge", limit=10)
+
     async def test_status_returns_dict_with_health(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import _tool_status
 
@@ -147,10 +188,10 @@ class TestMcpTools:
         from elfmem.mcp import _tool_curate
 
         mock_mem.curate.return_value = CurateResult(
-            archived=1, edges_pruned=2, reinforced=3
+            edges_pruned=2, reinforced=3
         )
         result = await _tool_curate()
-        assert result["archived"] == 1
+        assert result["edges_pruned"] == 2
 
     async def test_guide_returns_string(self, mock_mem: AsyncMock) -> None:
         from elfmem.mcp import _tool_guide
@@ -177,8 +218,9 @@ class TestMcpTools:
         )
         await _tool_dream(rescore=True, rescore_max=5)
         mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=False,
+            skip_llm=False,
             rescore=True, rescore_max=5,
+            host_analyses=None,
         )
 
     async def test_dream_threads_no_llm_flag(self, mock_mem: AsyncMock) -> None:
@@ -189,22 +231,9 @@ class TestMcpTools:
         )
         await _tool_dream(no_llm=True)
         mock_mem.dream.assert_called_once_with(
-            skip_llm=True, skip_contradictions=False,
+            skip_llm=True,
             rescore=False, rescore_max=None,
-        )
-
-    async def test_dream_threads_skip_contradictions_flag(
-        self, mock_mem: AsyncMock
-    ) -> None:
-        from elfmem.mcp import _tool_dream
-
-        mock_mem.dream.return_value = ConsolidateResult(
-            processed=2, promoted=2, deduplicated=0, edges_created=1,
-        )
-        await _tool_dream(skip_contradictions=True)
-        mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=True,
-            rescore=False, rescore_max=None,
+            host_analyses=None,
         )
 
     async def test_dream_default_flags_unchanged(self, mock_mem: AsyncMock) -> None:
@@ -216,9 +245,41 @@ class TestMcpTools:
         )
         await _tool_dream()
         mock_mem.dream.assert_called_once_with(
-            skip_llm=False, skip_contradictions=False,
+            skip_llm=False,
             rescore=False, rescore_max=None,
+            host_analyses=None,
         )
+
+    async def test_dream_threads_host_analyses(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_dream
+
+        mock_mem.dream.return_value = ConsolidateResult(
+            processed=1, promoted=1, deduplicated=0, edges_created=0,
+        )
+        analyses = {"b1": {"alignment_score": 0.8, "tags": ["self/goal"], "summary": "s"}}
+        await _tool_dream(host_analyses=analyses)
+        mock_mem.dream.assert_called_once_with(
+            skip_llm=False,
+            rescore=False, rescore_max=None,
+            host_analyses=analyses,
+        )
+
+    async def test_inbox_tool_calls_mem_inbox(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_inbox
+        from elfmem.types import InboxBlockSummary
+
+        mock_mem.inbox.return_value = [
+            InboxBlockSummary(
+                id="b1", content="pending fact", category="knowledge",
+                tags=[], created_at="2026-01-01T00:00:00",
+            ),
+        ]
+        result = await _tool_inbox(max_count=10)
+        mock_mem.inbox.assert_called_once_with(10)
+        assert result == [{
+            "id": "b1", "content": "pending fact", "category": "knowledge",
+            "tags": [], "created_at": "2026-01-01T00:00:00",
+        }]
 
     # ── Theory of Mind MCP tools (closes #50 item 3) ────────────────────────
 
@@ -307,3 +368,29 @@ class TestMemGuard:
         monkeypatch.setattr(mcp_module, "_memory", None)
         with pytest.raises(RuntimeError, match="not initialised"):
             await _tool_status()
+
+
+class TestCueReachesTheAgentSurface:
+    """A cue can only be written by whoever had the context at write time.
+    If the MCP surface cannot carry one, every memory a Claude Code session
+    stores is cue-less, and lexical retrieval regresses for all new content."""
+
+    async def test_remember_forwards_a_cue(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_remember
+
+        mock_mem.remember.return_value = LearnResult(
+            block_id="abc123", status="created"
+        )
+        await _tool_remember("Some fact.", ["billing"], "when chasing invoices")
+        mock_mem.remember.assert_awaited_once_with(
+            "Some fact.", tags=["billing"], cue="when chasing invoices"
+        )
+
+    async def test_edit_can_set_only_a_cue(self, mock_mem: AsyncMock) -> None:
+        from elfmem.mcp import _tool_edit
+
+        mock_mem.edit.return_value = EditResult(block_id="abc123")
+        await _tool_edit("abc123", None, "when choosing a sync strategy")
+        mock_mem.edit.assert_awaited_once_with(
+            "abc123", None, cue="when choosing a sync strategy"
+        )

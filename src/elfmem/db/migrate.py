@@ -33,7 +33,7 @@ from elfmem.db.queries import get_config, set_config
 logger = logging.getLogger(__name__)
 
 # Bump this when adding a new migration function.
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 9
 
 
 async def ensure_schema_current(
@@ -83,6 +83,18 @@ async def ensure_schema_current(
 
     if version < 5:
         await _migrate_v5_block_amendments(conn)
+
+    if version < 6:
+        await _migrate_v6_superseded_by(conn)
+
+    if version < 7:
+        await _migrate_v7_pinned(conn)
+
+    if version < 8:
+        await _migrate_v8_block_format_v2(conn)
+
+    if version < 9:
+        await _migrate_v9_near_duplicate_pairs(conn)
 
     final = await _get_version(conn)
     logger.info("Schema migrated from v%d to v%d", version, final)
@@ -242,7 +254,108 @@ async def _migrate_v5_block_amendments(conn: AsyncConnection) -> None:
     logger.info("Migration v5 complete: block_amendments audit table added")
 
 
+# ── Migration: v5 → v6 (supersession audit trail) ───────────────────────────
+
+
+async def _migrate_v6_superseded_by(conn: AsyncConnection) -> None:
+    """Add ``superseded_by`` — the id of the block that replaced this one.
+
+    Until now, supersession wrote ``archive_reason='superseded'`` with no
+    record of *which* block did the superseding — the archived row carried
+    only that *something* replaced it, never what. This is the first half of
+    closing that gap (the second half is the pin guard in
+    ``operations/consolidate.py`` that refuses to supersede a
+    ``self/constitutional`` block at all — see docs/plans/plan_v2_substrate_reevaluation.md
+    §5.3/§9 step 1). Existing archived rows have no way to recover which
+    block superseded them, so this is left NULL on backfill rather than
+    guessed at.
+    """
+    await _add_column(conn, "blocks", "superseded_by", "TEXT")
+    await set_config(conn, "schema_version", "6")
+    logger.info("Migration v6 complete: superseded_by audit column added")
+
+
+async def _migrate_v7_pinned(conn: AsyncConnection) -> None:
+    """Add ``pinned`` — the column Invariant 5 always assumed existed.
+
+    ``pinned:`` has been written into markdown frontmatter since the v2
+    export landed, but there was no column, no reader, and no enforcement
+    anywhere in ``src/`` — so "a pinned block is never proposed for removal"
+    was a declared invariant with no implementation behind it. The automatic
+    supersession guard in ``operations/consolidate.py`` checked the
+    ``self/constitutional`` tag directly instead, which is narrower: it
+    protects the constitution and nothing else.
+
+    Backfill sets ``pinned=1`` for exactly the blocks that tag-based guard
+    already protected, so this migration changes no behaviour on its own —
+    it only gives the guard a column to generalise onto.
+    """
+    await _add_column(conn, "blocks", "pinned", "INTEGER NOT NULL DEFAULT 0")
+    # A database old enough to predate block_tags has no tags to backfill
+    # from; the column default (0) is already correct there. Checked
+    # explicitly rather than caught, so a real failure still surfaces.
+    if await _table_exists(conn, "block_tags"):
+        await conn.execute(
+            text(
+                "UPDATE blocks SET pinned = 1 WHERE id IN ("
+                "  SELECT block_id FROM block_tags WHERE tag = 'self/constitutional'"
+                ")"
+            )
+        )
+    await set_config(conn, "schema_version", "7")
+    logger.info("Migration v7 complete: pinned column added and backfilled")
+
+
+async def _migrate_v8_block_format_v2(conn: AsyncConnection) -> None:
+    """Add the block-format-v2 declared fields.
+
+    ``blocks.cue`` and ``blocks.volatility_class`` are authored, not computed,
+    so they stay NULL on backfill: guessing a cue would defeat its purpose,
+    which is that a writer who had the context says when the block matters.
+    Existing blocks get theirs from a deliberate backfill pass, not from a
+    migration inventing them.
+
+    ``edges.declared_by`` records the declaring endpoint of a typed link. Also
+    NULL on backfill: existing edges are canonicalised (min, max) and their
+    original direction is not recoverable.
+    """
+    await _add_column(conn, "blocks", "cue", "TEXT")
+    await _add_column(conn, "blocks", "volatility_class", "TEXT")
+    await _add_column(conn, "edges", "declared_by", "TEXT")
+    await set_config(conn, "schema_version", "8")
+    logger.info("Migration v8 complete: cue, volatility_class, declared_by added")
+
+
+async def _migrate_v9_near_duplicate_pairs(conn: AsyncConnection) -> None:
+    """Let the contradictions table also record near-duplicate pairs.
+
+    Automatic supersession used to archive the existing block outright: 41 of
+    the 187 blocks ever created on the maintainer's instance died that way,
+    including six constitutional ones, with no audit row and no undo. Keeping
+    both and recording the pair costs about 11% more corpus tokens and makes
+    the loss impossible.
+
+    Existing rows are contradictions by definition, which is exactly what the
+    column default gives them.
+    """
+    await _add_column(
+        conn, "contradictions", "kind", "TEXT NOT NULL DEFAULT 'contradiction'"
+    )
+    await _add_column(conn, "contradictions", "cue_similarity", "FLOAT")
+    await set_config(conn, "schema_version", "9")
+    logger.info("Migration v9 complete: near-duplicate pair recording added")
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+async def _table_exists(conn: AsyncConnection, table: str) -> bool:
+    """Does *table* exist in this database?"""
+    result = await conn.execute(
+        text("SELECT 1 FROM sqlite_master WHERE type='table' AND name=:t LIMIT 1"),
+        {"t": table},
+    )
+    return result.first() is not None
 
 
 async def _add_column(

@@ -670,6 +670,37 @@ The following shows how these principles apply to the elfmem library specificall
 | Progressive disclosure | Tier 1: `learn()` + `recall()`; Tier 2: `session()` + `frame()`; Tier 3: full control |
 | Minimal imports | `from elfmem import MemorySystem, LearnResult, ...` — all from root |
 | Consistent returns | `LearnResult`, `ConsolidateResult`, `CurateResult`, `FrameResult` all follow same shape |
+| Report what you reduced | `FrameResult.dropped`, `ConsolidateResult.analyses_unused`, `LearnResult.pending_consolidation` |
+
+### Report what you reduced
+
+A principle earned from a real integration failure, not from theory
+(`integration_friction_report.md`). An operation that silently delivers less
+than the caller asked for is worse than one that fails, because success is
+reported either way and only the caller's expectations know the difference.
+
+elfmem's write path has four stages — `remember` → inbox → `consolidate` →
+frame render — and every one of them could reduce the caller's intent while
+stage one returned `status="created"`. An integrator seeded ten constitutional
+principles, received ten successes, and the agent saw none of them; then five;
+then five in someone else's words. That is one bug class wearing four masks.
+
+The rule that follows: **a typed result must carry what the operation withheld,
+not only what it delivered.** Concretely —
+
+- an empty `FrameResult.dropped` must be the caller's proof that *this is
+  everything*, so a non-empty one is the only way to learn the agent is
+  running on part of what you stored;
+- the reason belongs on each dropped item, not once per call, because one
+  call can reduce for several independent reasons and a scalar would have to
+  misreport all but one;
+- silently substituting your own behaviour for an explicit caller instruction
+  (`host_analyses`, `top_k`) is the sharpest form of this bug — the caller
+  passed the argument precisely to prevent what happened anyway.
+
+The test for whether a limit is honestly implemented: can a caller
+distinguish "this is all there is" from "this is the part that fit", without
+reading the source?
 | Budget control | `max_tokens` on `frame()`, `top_k` on `recall()` |
 | Operation history | `system.history(last_n=10)` → structured operation log |
 | MCP server | `elfmem_learn`, `elfmem_recall`, `elfmem_frame`, `elfmem_status`, `elfmem_guide` |

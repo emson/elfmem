@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elfmem"
-version = "0.19.3"
+version = "0.20.0"
 description = "Adaptive memory for LLM agents — adaptive decay, knowledge graph, zero infrastructure"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -47,6 +47,11 @@ dependencies = [
     "anthropic>=0.40,<1.0",
     "pyyaml>=6.0",
     "greenlet>=3.0",
+    # Core, not optional: the cue line makes lexical retrieval load-bearing,
+    # and a silently-absent BM25 means cues do nothing at all. It was an
+    # extra until v2 Phase 2, and was in fact not installed on the maintainer's
+    # own instance -- so half of hybrid retrieval had never run there.
+    "rank_bm25>=0.2.2",
 ]
 
 [project.urls]
@@ -58,7 +63,7 @@ Changelog = "https://github.com/emson/elfmem/blob/main/CHANGELOG.md"
 Security = "https://github.com/emson/elfmem/blob/main/SECURITY.md"
 
 [project.optional-dependencies]
-bm25 = ["rank_bm25>=0.2.2"]
+bm25 = []  # retained for install compatibility; rank_bm25 is now a core dependency
 mcp = ["fastmcp>=2.0"]
 cli = ["typer>=0.12"]
 tools = ["fastmcp>=2.0", "typer>=0.12"]

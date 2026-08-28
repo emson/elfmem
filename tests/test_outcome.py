@@ -22,7 +22,7 @@ from elfmem.db.queries import (
 )
 from elfmem.operations.consolidate import consolidate
 from elfmem.operations.learn import learn
-from elfmem.operations.outcome import compute_bayesian_update, record_outcome
+from elfmem.operations.outcome import compute_bayesian_update_ab, record_outcome
 from elfmem.types import OutcomeResult
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
@@ -50,48 +50,48 @@ async def _make_active_block(conn, mock_llm, mock_embedding, content="test block
 # ── Bayesian update — pure function ───────────────────────────────────────────
 
 
-class TestComputeBayesianUpdate:
-    """Unit tests for compute_bayesian_update() — no DB required."""
+class TestComputeBayesianUpdateAb:
+    """Unit tests for compute_bayesian_update_ab() — no DB required.
+
+    Ported from the deprecated confidence-in/confidence-out wrapper
+    (compute_bayesian_update, removed after two minor versions past its own
+    "scheduled for removal in v0.18+"): the behavioural properties these
+    pin -- direction, convergence, range -- hold regardless of which
+    function form computes them, and every block has stored (α, β) directly
+    since v0.17, so the sufficient-statistics form is what production
+    actually calls.
+    """
 
     def test_good_outcome_increases_confidence(self):
-        result = compute_bayesian_update(
-            confidence=0.5, outcome_evidence=0.0, signal=1.0, weight=1.0, prior_strength=2.0
-        )
-        assert result > 0.5
+        _, _, confidence = compute_bayesian_update_ab(1.0, 1.0, signal=1.0, weight=1.0)
+        assert confidence > 0.5
 
     def test_bad_outcome_decreases_confidence(self):
-        result = compute_bayesian_update(
-            confidence=0.5, outcome_evidence=0.0, signal=0.0, weight=1.0, prior_strength=2.0
-        )
-        assert result < 0.5
+        _, _, confidence = compute_bayesian_update_ab(1.0, 1.0, signal=0.0, weight=1.0)
+        assert confidence < 0.5
 
     def test_converges_toward_1_after_many_good_outcomes(self):
-        confidence, evidence = 0.5, 0.0
+        success, failure = 1.0, 1.0
         for _ in range(20):
-            confidence = compute_bayesian_update(
-                confidence=confidence, outcome_evidence=evidence,
-                signal=1.0, weight=1.0, prior_strength=2.0,
+            success, failure, confidence = compute_bayesian_update_ab(
+                success, failure, signal=1.0, weight=1.0,
             )
-            evidence += 1.0
         assert confidence > 0.90
 
     def test_converges_toward_0_after_many_bad_outcomes(self):
-        confidence, evidence = 0.5, 0.0
+        success, failure = 1.0, 1.0
         for _ in range(20):
-            confidence = compute_bayesian_update(
-                confidence=confidence, outcome_evidence=evidence,
-                signal=0.0, weight=1.0, prior_strength=2.0,
+            success, failure, confidence = compute_bayesian_update_ab(
+                success, failure, signal=0.0, weight=1.0,
             )
-            evidence += 1.0
         assert confidence < 0.10
 
     def test_output_always_in_range(self):
         for signal in [0.0, 0.25, 0.5, 0.75, 1.0]:
-            result = compute_bayesian_update(
-                confidence=0.3, outcome_evidence=10.0, signal=signal,
-                weight=2.0, prior_strength=2.0,
+            _, _, confidence = compute_bayesian_update_ab(
+                3.0, 7.0, signal=signal, weight=2.0,
             )
-            assert 0.0 <= result <= 1.0
+            assert 0.0 <= confidence <= 1.0
 
 
 # ── record_outcome() ───────────────────────────────────────────────────────────
@@ -433,3 +433,40 @@ class TestOutcomeDrivenEdges:
         assert len(all_edges) == 1, "Must not duplicate the outcome edge"
         assert result2.outcome_edges_created == 0
         assert result2.edges_reinforced == 1
+
+
+class TestNoInformationMeansDoNotCall:
+    """Pins the contract documented on `outcome()` and `guide("outcome")`:
+    there is no parameter value meaning "no update", and both candidates look
+    like one. A downstream integration reached for each in turn — `signal=0.5`
+    as "this outcome teaches nothing", then `weight=similarity` which bottoms
+    out at 0.0 — and needed measurement to discover neither does what it reads
+    like. These tests keep that documentation true.
+    """
+
+    def test_signal_half_is_a_direction_not_a_no_op(self):
+        """It pulls confidence TOWARD 0.5 from wherever the block sits, so the
+        direction depends on the block, not the signal."""
+        _, _, high = compute_bayesian_update_ab(1.0, 0.0, signal=0.5, weight=1.0)
+        assert high < 1.0, "a confident block moves DOWN on a 'neutral' signal"
+
+        before = 3.1 / (3.1 + 7.9)
+        _, _, low = compute_bayesian_update_ab(3.1, 7.9, signal=0.5, weight=1.0)
+        assert low > before, "a doubted block moves UP on the same 'neutral' signal"
+
+    def test_signal_half_is_only_neutral_for_a_block_already_there(self):
+        _, _, unchanged = compute_bayesian_update_ab(1.0, 1.0, signal=0.5, weight=1.0)
+        assert unchanged == pytest.approx(0.5)
+
+    async def test_zero_weight_raises_rather_than_skipping(self, setup):
+        """Deliberate: a zero-weight call is a caller bug worth failing on,
+        not a way to skip a block. The documented alternative is filtering
+        the ids."""
+        engine, mock_llm, mock_embedding = setup
+        async with engine.begin() as conn:
+            block_id = await _make_active_block(conn, mock_llm, mock_embedding)
+            with pytest.raises(ValueError, match="weight must be > 0.0"):
+                await record_outcome(
+                    conn, block_ids=[block_id], signal=0.9, weight=0.0,
+                    source="t", current_active_hours=1.0, reinforce_threshold=0.8,
+                )

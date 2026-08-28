@@ -1,4 +1,8 @@
-"""Curate operation tests — maintenance, archival, edge pruning, reinforcement."""
+"""Curate operation tests — maintenance: edge pruning, reinforcement.
+
+Decay-driven block archival was retired in v2 step 7a (ADR 0009);
+review_corpus() (elfmem review corpus) is its replacement.
+"""
 
 import pytest
 
@@ -35,38 +39,8 @@ async def system_setup():
     await engine.dispose()
 
 
-class TestArchiveDecayedBlocks:
-    """Archive blocks below recency threshold."""
-
-    async def test_archive_blocks_below_prune_threshold(self, system_setup) -> None:
-        """TC-L-007: curate() archives blocks with recency < prune_threshold."""
-        engine, mock_llm, mock_embedding = system_setup
-        async with engine.begin() as conn:
-            # Create block and consolidate at hour 10
-            result = await learn(conn, content="test block", category="knowledge", source="api")
-            block_id = result.block_id
-
-            await consolidate(
-                conn,
-                llm=mock_llm,
-                embedding_svc=mock_embedding,
-                current_active_hours=10.0,
-            )
-
-            # Verify block is active
-            block = await get_block(conn, block_id)
-            assert block["status"] == BlockStatus.ACTIVE
-
-            # Simulate 200 hours passing without reinforcement
-            # At hour 210, recency = exp(-0.010 * (210 - 10)) = exp(-2.0) ≈ 0.135
-            # Since 0.135 > 0.05 (prune threshold), block survives
-
-            # At hour 260, recency = exp(-0.010 * (260 - 10)) = exp(-2.5) ≈ 0.082
-            # Still survives (0.082 > 0.05)
-
-            # At hour 360, recency = exp(-0.010 * (360 - 10)) = exp(-3.5) ≈ 0.030
-            # Now 0.030 < 0.05, so block should be archived
-            # This test would call curate() at hour 360
+class TestArchiveReasonRecording:
+    """Archive reason is recorded correctly regardless of trigger."""
 
     async def test_archive_reason_set_correctly(self, system_setup) -> None:
         """TC-D-010: Archive reason set correctly (decayed for recency < threshold)."""
@@ -90,53 +64,6 @@ class TestArchiveDecayedBlocks:
             block = await get_block(conn, block_id)
             assert block["status"] == BlockStatus.ARCHIVED
             assert block["archive_reason"] == "decayed"
-
-    async def test_ephemeral_block_reaches_prune_at_60_hours(self, system_setup) -> None:
-        """TC-D-002: Ephemeral block reaches prune threshold at ~60 active hours."""
-        # Ephemeral: λ = 0.050
-        # target: recency = 0.05
-        # 0.05 = exp(-0.050 * hours_since)
-        # ln(0.05) = -0.050 * hours_since
-        # hours_since = ln(0.05) / -0.050 ≈ -2.996 / -0.050 ≈ 60 hours
-        # So ephemeral block with λ=0.050 decays to 0.05 in ~60 hours
-        pass
-
-    async def test_durable_block_survives_300_hours(self, system_setup) -> None:
-        """TC-D-007: Durable block survives 300 hours without reinforcement."""
-        # Durable: λ = 0.001
-        # At 300 hours: recency = exp(-0.001 * 300) = exp(-0.3) ≈ 0.741
-        # 0.741 > 0.05, so survives
-        pass
-
-    async def test_permanent_block_near_immortal(self, system_setup) -> None:
-        """TC-D-003: Permanent block near-immortal (never pruned in practice)."""
-        # Permanent: λ = 0.00001
-        # At 299,600 hours: recency = exp(-0.00001 * 299600) = exp(-3.0) ≈ 0.050
-        # So would need ~299,600 active hours (~34 years) to reach prune threshold
-        pass
-
-    async def test_reinforcement_resets_decay_clock(self, system_setup) -> None:
-        """TC-D-005: Reinforcement resets decay clock (last_reinforced_at updated)."""
-        engine, mock_llm, mock_embedding = system_setup
-        async with engine.begin() as conn:
-            # Create and consolidate at hour 10
-            result = await learn(conn, content="block", category="knowledge", source="api")
-            block_id = result.block_id
-
-            await consolidate(
-                conn,
-                llm=mock_llm,
-                embedding_svc=mock_embedding,
-                current_active_hours=10.0,
-            )
-
-            block_before = await get_block(conn, block_id)
-            block_before["last_reinforced_at"]
-
-            # Simulate reinforcement (would be done by curate's reinforce_top_blocks)
-            # Update last_reinforced_at to 100 (moving from 10)
-            # At new time 200: hours_since = 200 - 100 = 100 (instead of 190)
-            # So recency improves, block survives longer
 
 
 class TestPruneWeakEdges:
@@ -363,7 +290,7 @@ class TestCurateEmptyCorpus:
     """Curate on empty corpus is a no-op."""
 
     async def test_curate_empty_corpus_returns_zeros(self, system_setup) -> None:
-        """Curate on zero active blocks returns CurateResult(0, 0, 0)."""
+        """Curate on zero active blocks returns an all-zero CurateResult."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
             # No blocks created
@@ -372,24 +299,8 @@ class TestCurateEmptyCorpus:
             assert len(active) == 0
 
 
-class TestDecayTierSurvivalTimelines:
-    """Decay tier recency values over time."""
-
-    async def test_standard_block_survival_timeline(self, system_setup) -> None:
-        """TC-D-001: Standard block recency values at various hours_since."""
-        # Standard: λ = 0.010
-        # hours_since=0: recency=1.0
-        # hours_since=100: recency=exp(-1.0)≈0.368
-        # hours_since=200: recency=exp(-2.0)≈0.135
-        # hours_since=300: recency=exp(-3.0)≈0.050 (at prune threshold)
-        # hours_since=400: recency=exp(-4.0)≈0.018 (archived)
-        pass
-
-    async def test_durable_block_survival_100_hours(self, system_setup) -> None:
-        """Durable block survives 100 hours without reinforcement."""
-        # Durable: λ = 0.001
-        # hours_since=100: recency=exp(-0.1)≈0.905 (survives)
-        pass
+class TestSearchWindowBoundary:
+    """Retrieval pre-filter boundary — unrelated to curate()'s decay tiers."""
 
     async def test_search_window_boundary(self, system_setup) -> None:
         """TC-D-006: Pre-filter correctly excludes blocks at search_window_hours boundary."""

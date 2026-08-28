@@ -283,8 +283,10 @@ class TestCurateStaginSync:
         mock_llm: MockLLMService,
         mock_embedding: MockEmbeddingService,
     ) -> None:
-        """Blocks archived by curate() have their staging rows removed via CASCADE.
-        curate() then reloads staging so _co_retrieval_staging is consistent.
+        """Blocks archived (by any means — forget(), supersession, etc.) have
+        their staging rows removed via CASCADE. curate() then reloads staging
+        so _co_retrieval_staging is consistent — this sync runs unconditionally
+        every curate() call, independent of what curate() itself did.
         """
         cfg = ElfmemConfig(
             memory=MemoryConfig(
@@ -300,9 +302,8 @@ class TestCurateStaginSync:
             config=cfg,
         )
 
-        # Seed staging with a pair that points to a soon-to-be-archived block.
-        # last_reinforced_at is far in the past so recency drops below prune_threshold
-        # even when current_active_hours=0 (hours_since = 0 - (-1e6) = 1_000_000).
+        # Seed staging with a pair, then archive one of the blocks directly
+        # (curate() no longer archives blocks itself — see ADR 0009).
         async with test_engine.begin() as conn:
             await insert_block(
                 conn,
@@ -311,7 +312,6 @@ class TestCurateStaginSync:
                 category="knowledge",
                 source="t",
                 status="active",
-                last_reinforced_at=-1_000_000.0,
             )
             await insert_block(
                 conn,
@@ -320,9 +320,9 @@ class TestCurateStaginSync:
                 category="knowledge",
                 source="t",
                 status="active",
-                last_reinforced_at=-1_000_000.0,
             )
             await upsert_co_retrieval_count(conn, ("stale1", "stale2"), 2)
+            await update_block_status(conn, "stale1", "archived", archive_reason="forgotten")
 
         # Pre-load staging into memory system
         async with test_engine.connect() as conn:
@@ -330,8 +330,9 @@ class TestCurateStaginSync:
 
         assert mem._co_retrieval_staging.get(("stale1", "stale2")) == 2
 
-        # curate() archives stale blocks; prune_stale_co_retrieval_staging removes
-        # their staging rows; curate() then reloads the staging dict
+        # curate() syncs staging after archival regardless of source;
+        # prune_stale_co_retrieval_staging removes the row for the archived
+        # block, then curate() reloads the staging dict.
         await mem.curate()
 
         assert ("stale1", "stale2") not in mem._co_retrieval_staging

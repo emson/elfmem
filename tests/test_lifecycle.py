@@ -1,6 +1,7 @@
 """Lifecycle operations test suite — learn(), consolidate(), end_session()."""
 
 import pytest
+from sqlalchemy import text as sa_text
 
 from elfmem.adapters.mock import MockEmbeddingService, MockLLMService
 from elfmem.db.engine import create_test_engine
@@ -173,7 +174,7 @@ class TestConsolidateOperation:
             block = await get_block(conn, result.block_id)
             assert block["self_alignment"] is not None
 
-    async def test_consolidate_near_duplicate_supersedes(self, system_setup) -> None:
+    async def test_consolidate_near_duplicate_is_recorded_not_destroyed(self, system_setup) -> None:
         """TC-L-005: Near-duplicate resolution (forget + create + inherit)."""
         engine, mock_llm, mock_embedding = system_setup
         async with engine.begin() as conn:
@@ -216,8 +217,12 @@ class TestConsolidateOperation:
                 current_active_hours=10.0,
             )
 
-            # First block should be archived, second should be promoted
-            assert consolidate_result.deduplicated >= 1
+            # Both survive; the pair is recorded rather than resolved by
+            # deleting one half. `deduplicated` counts only the non-destructive
+            # exact-duplicate path (>=0.95), where the *incoming* block is
+            # dropped and nothing already stored is lost.
+            assert consolidate_result.near_duplicates_flagged >= 1
+            assert consolidate_result.deduplicated == 0
 
     async def test_consolidate_very_high_similarity_rejected(self, system_setup) -> None:
         """TC-L-006: Very high similarity (>0.95) block rejected silently."""
@@ -557,47 +562,114 @@ class TestDecayTierDetermination:
             assert block is not None
 
 
-class TestContradictionStorage:
-    """Contradiction detection at consolidation."""
+class TestConstitutionalSupersessionGuard:
+    """Pin guard: self/constitutional blocks are never silently superseded.
 
-    async def test_contradiction_stored_in_contradictions_table(self, system_setup) -> None:
-        """TC-G-008: Contradictions stored in contradictions table, not edges."""
+    v2 step 1 (docs/plans/plan_v2_substrate_reevaluation.md §5.3/§9) — the
+    fix for the mechanism that lost 6 of 10 seeded constitutional roles on
+    the live instance with no guard and no audit trail.
+    """
+
+    async def test_constitutional_block_not_superseded(self, system_setup) -> None:
+        """A near-duplicate never silently overwrites a self/constitutional block."""
         engine, mock_llm, mock_embedding = system_setup
-
-        # Configure LLM to detect contradictions
-        mock_llm.contradiction_overrides = {
-            ("sync", "async"): 0.92,
-        }
+        mock_llm.tag_overrides = {"constitutional-principle": ["self/constitutional"]}
 
         async with engine.begin() as conn:
-            # Create and promote first block
             await learn(
                 conn,
-                content="Use synchronous calls always.",
+                content="This is a constitutional-principle about honesty.",
+                category="self",
+                source="api",
+            )
+            await consolidate(
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=10.0,
+            )
+
+            await learn(
+                conn,
+                content="This is a reworded constitutional-principle about honesty.",
+                category="self",
+                source="api",
+            )
+
+            embedding_with_override = MockEmbeddingService(
+                similarity_overrides={
+                    frozenset({
+                        "This is a constitutional-principle about honesty.".lower().strip(),
+                        "This is a reworded constitutional-principle about honesty.".lower().strip(),
+                    }): 0.92
+                }
+            )
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=embedding_with_override,
+                current_active_hours=10.0,
+            )
+
+            assert result.blocked_supersessions == 1
+            assert result.deduplicated == 0
+            active = await get_active_blocks(conn)
+            assert len(active) == 2  # both survive — nothing was destroyed
+
+    async def test_ordinary_block_still_superseded_with_audit_trail(self, system_setup) -> None:
+        """Near-duplicates are recorded as a pair, not resolved by deletion.
+
+        Nothing on the automatic path destroys an existing block any more, so
+        the pin guard is subsumed rather than merely widened: an unpinned
+        block is now as safe as a pinned one."""
+        engine, mock_llm, mock_embedding = system_setup
+        async with engine.begin() as conn:
+            first = await learn(
+                conn,
+                content="Use async patterns in Python for I/O-bound tasks.",
                 category="knowledge",
                 source="api",
             )
             await consolidate(
-                conn,
-                llm=mock_llm,
-                embedding_svc=mock_embedding,
-                current_active_hours=10.0,
+                conn, llm=mock_llm, embedding_svc=mock_embedding, current_active_hours=10.0,
             )
 
-            # Create contradicting block
-            await learn(
+            second = await learn(
                 conn,
-                content="Never use synchronous calls — always async.",
+                content="Use async/await in Python for I/O-bound task handling.",
                 category="knowledge",
                 source="api",
             )
 
-            await consolidate(
-                conn,
-                llm=mock_llm,
-                embedding_svc=mock_embedding,
+            embedding_with_override = MockEmbeddingService(
+                similarity_overrides={
+                    frozenset({
+                        "Use async patterns in Python for I/O-bound tasks.".lower().strip(),
+                        "Use async/await in Python for I/O-bound task handling.".lower().strip(),
+                    }): 0.92
+                }
+            )
+            result = await consolidate(
+                conn, llm=mock_llm, embedding_svc=embedding_with_override,
                 current_active_hours=10.0,
             )
 
-            # Should have detected contradiction
-            # Check via queries.get_contradictions_for_blocks
+            # Both blocks survive. Automatic supersession used to archive
+            # `first` here; 41 of 187 blocks ever created on the maintainer's
+            # instance died that way, six of them constitutional, with no
+            # audit row and no undo.
+            assert result.near_duplicates_flagged == 1
+            assert result.deduplicated == 0
+
+            kept = await get_block(conn, first.block_id)
+            assert kept is not None
+            assert kept["status"] == "active"
+            assert kept["superseded_by"] is None
+            assert (await get_block(conn, second.block_id))["status"] == "active"
+
+            # The pair is recorded for deliberate review instead.
+            rows = (await conn.execute(sa_text(
+                "SELECT block_a_id, block_b_id, kind, score FROM contradictions"
+            ))).mappings().all()
+            assert len(rows) == 1
+            assert rows[0]["kind"] == "near_duplicate"
+            assert {rows[0]["block_a_id"], rows[0]["block_b_id"]} == {
+                first.block_id, second.block_id
+            }
+            assert rows[0]["score"] == pytest.approx(0.92)
+

@@ -96,23 +96,35 @@ Respond with JSON:
 {{"proposed_content": "<string>", "rationale": "<string>"}}
 """
 
-CONTRADICTION_PROMPT: str = """\
-You are detecting logical contradictions between two memory blocks.
+GOAL_DIRECTED_EDGE_PROMPT: str = """\
+You are looking for connections between one memory block and a short list of
+candidate blocks, judged against the agent's own stated goals — not by
+surface similarity.
 
-## Block A
-{block_a}
+## Agent's active goals
+{self_goals}
 
-## Block B
-{block_b}
+## Block being evaluated
+{block_content}
 
-Rate how contradictory these blocks are:
-- 0.0: Compatible — can both be true simultaneously
-- 0.3: Tension — different emphases or perspectives, not directly contradictory
-- 0.7: Conflicting — one implies the other is wrong or outdated
-- 1.0: Direct contradiction — both cannot be true at the same time
+## Candidate blocks
+{candidates}
 
-Focus on logical contradiction, not just difference of opinion or emphasis.
-Technical corrections (Block B updates/supersedes Block A) score high (0.7+).
+For each candidate that genuinely serves one of the agent's stated goals if
+connected to the block above, propose a connection. Rules:
 
-Respond with JSON: {{"score": <float between 0.0 and 1.0>}}
+- Only propose a connection you can justify against a SPECIFIC goal listed
+  above — name it in your reasoning.
+- Do NOT propose a connection based on topic or vocabulary overlap alone;
+  that is already handled by similarity edges elsewhere. This step exists to
+  find connections similarity would miss.
+- Propose at most {max_edges} connections. Fewer is fine — most blocks will
+  have zero connections that meet this bar. An empty list is a correct,
+  common answer.
+- ``candidate_id`` MUST be copied exactly from the candidate list above. Do
+  not invent an id.
+- ``reasoning`` MUST be one sentence, naming the goal and why it applies.
+
+Respond with JSON:
+{{"proposals": [{{"candidate_id": "<string>", "reasoning": "<string>"}}]}}
 """

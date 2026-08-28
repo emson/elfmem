@@ -28,12 +28,19 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from elfmem.project import get_project_info
+from elfmem.config import ElfmemConfig
+from elfmem.project import (
+    get_project_info,
+    read_agent_name_from_config,
+    set_agent_name_in_config,
+)
 
 # Env var aliases that have been renamed. Map deprecated → canonical.
 DEPRECATED_ENV_VARS: dict[str, str] = {
@@ -812,6 +819,505 @@ def apply_plan(
     return ApplyResult(results=results)
 
 
+# ── Substrate migration (v2 file substrate) ────────────────────────────────
+#
+# One more step `kind` on the same MigrationStep/status/plan/apply model
+# used above for Claude MCP config drift — not a parallel command surface.
+# `elfmem migrate status/plan/apply` already knows how to run this; users
+# don't learn anything new.
+#
+# The whole thing is additive and read-only against the live database: it
+# is only ever read from, never written to or deleted. Every write goes to
+# a *new* file (a timestamped backup, `.elfmem/memory/**.md`, a fresh
+# `.elfmem/index.db`). That is also what makes rollback (`undo_substrate_step`)
+# safe by construction — nothing destructive ever happened to undo.
+#
+# Deliberately NOT built here: switching a live MemorySystem over to read
+# from the file substrate ("cutover" / "flip authority", plan doc Phases
+# 5-6). That needs real re-wiring of learn()/edit()/forget()/etc. at the
+# API level, not a migration step — see docs/plans/v2_substrate/plan/
+# build-plan.md units U-006/U-007. This step stops at "exported and
+# verified," clearly labelled as such.
+
+SUBSTRATE_MARKER_NAME = ".substrate-migration.json"
+
+
+@dataclass(frozen=True)
+class SubstrateMarker:
+    """Recorded state of the last successful substrate export/rebuild/verify
+    cycle for one project's `.elfmem/` directory.
+
+    Read by ``scan_substrate`` to decide whether a new step is pending (the
+    database's current fingerprint no longer matches ``fingerprint``), and
+    by ``undo_substrate_step`` to refuse removing files that were hand-edited
+    since export (``files_fingerprint`` no longer matches what's on disk).
+    """
+
+    fingerprint: str
+    files_fingerprint: str
+    applied_at: str
+    backup_path: str
+    memory_dir: str
+    index_db_path: str
+    blocks_exported: int
+    blocks_written: int
+    parity_passed: bool
+    diverging_query_count: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fingerprint": self.fingerprint,
+            "files_fingerprint": self.files_fingerprint,
+            "applied_at": self.applied_at,
+            "backup_path": self.backup_path,
+            "memory_dir": self.memory_dir,
+            "index_db_path": self.index_db_path,
+            "blocks_exported": self.blocks_exported,
+            "blocks_written": self.blocks_written,
+            "parity_passed": self.parity_passed,
+            "diverging_query_count": self.diverging_query_count,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SubstrateMarker:
+        fields = (
+            "fingerprint", "files_fingerprint", "applied_at", "backup_path",
+            "memory_dir", "index_db_path", "blocks_exported", "blocks_written",
+            "parity_passed", "diverging_query_count",
+        )
+        return cls(**{k: data[k] for k in fields})
+
+
+def _substrate_paths(memory_dir: Path) -> tuple[Path, Path]:
+    """(index_db_path, marker_dir) derived from --memory-dir, so a custom
+    --memory-dir override moves the derived index and marker with it."""
+    return memory_dir.parent / "index.db", memory_dir.parent
+
+
+def _marker_path(marker_dir: Path) -> Path:
+    return marker_dir / SUBSTRATE_MARKER_NAME
+
+
+def _read_marker(marker_dir: Path) -> SubstrateMarker | None:
+    path = _marker_path(marker_dir)
+    if not path.exists():
+        return None
+    try:
+        return SubstrateMarker.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        # A corrupted marker is treated as "no record" — the next scan
+        # re-detects the migration as pending rather than raising, since
+        # nothing about this file being unreadable makes the DB unsafe.
+        return None
+
+
+def _write_marker_atomic(marker_dir: Path, marker: SubstrateMarker) -> None:
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    target = _marker_path(marker_dir)
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(marker.to_dict(), indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, target)
+
+
+def _remove_marker(marker_dir: Path) -> None:
+    with contextlib.suppress(OSError):
+        _marker_path(marker_dir).unlink()
+
+
+async def _corpus_snapshot(conn: Any) -> tuple[dict[str, int], str]:
+    """Read-only. Returns (block counts by status, content fingerprint).
+
+    Deliberately mirrors exactly what ``export_to_markdown`` reads (same
+    fetchers, same tag batching) so the fingerprint changes precisely when
+    a re-export would actually produce different files — not a raw file
+    hash, which would false-positive on SQLite's own WAL/page-cache churn
+    the way a JSON config file never does.
+    """
+    from elfmem.db.queries import (
+        get_active_blocks,
+        get_archived_blocks,
+        get_inbox_blocks,
+        get_tags_batch,
+    )
+
+    counts: dict[str, int] = {}
+    fp_parts: list[str] = []
+    fetchers = {
+        "active": get_active_blocks,
+        "inbox": get_inbox_blocks,
+        "archived": get_archived_blocks,
+    }
+    for status, fetcher in fetchers.items():
+        rows = await fetcher(conn)
+        counts[status] = len(rows)
+        if not rows:
+            continue
+        tags_by_id = await get_tags_batch(conn, [r["id"] for r in rows])
+        for row in sorted(rows, key=lambda r: r["id"]):
+            tags = ",".join(sorted(tags_by_id.get(row["id"], [])))
+            digest = hashlib.sha256(row["content"].encode("utf-8")).hexdigest()[:16]
+            fp_parts.append(f"{row['id']}|{status}|{row['category']}|{tags}|{digest}")
+
+    fingerprint = hashlib.sha256("\n".join(fp_parts).encode("utf-8")).hexdigest()
+    return counts, fingerprint
+
+
+def _compute_files_fingerprint(memory_dir: Path) -> str:
+    """Hash of every exported .md file's contents, used solely to detect
+    hand-edits between apply and undo — not a staleness gate against the DB."""
+    parts: list[str] = []
+    if memory_dir.is_dir():
+        for path in sorted(memory_dir.glob("**/*.md")):
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+            parts.append(f"{path.relative_to(memory_dir)}|{digest}")
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def substrate_step_id(db_path: Path) -> str:
+    h = hashlib.sha256(str(db_path).encode()).hexdigest()[:8]
+    stem = db_path.stem.replace(".", "-")
+    return f"substrate-export@{stem}-{h}"
+
+
+async def scan_substrate(db_path: Path, memory_dir: Path) -> MigrationStep | None:
+    """Read-only. Detect whether this project's database has content not
+    yet reflected in a verified `.elfmem/memory/` export.
+
+    Pending when the database has any blocks and either no export has ever
+    been recorded, or the database's content fingerprint has changed since
+    the last recorded export. Returns None — nothing pending — otherwise.
+
+    Never pending once the project has already cut over: with
+    ``substrate.files_authoritative`` on, the files are the source of truth
+    and the database is the derived copy, so "export the database to files"
+    is backwards. Proposing it there would offer to overwrite the authority
+    with its own index.
+    """
+    from elfmem.db.engine import create_engine
+
+    if not db_path.exists():
+        return None
+
+    config_path = memory_dir.parent / "config.yaml"
+    if config_path.is_file():
+        from elfmem.config import ElfmemConfig
+
+        if ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+            return None
+
+    engine = await create_engine(str(db_path))
+    try:
+        async with engine.connect() as conn:
+            counts, fingerprint = await _corpus_snapshot(conn)
+    finally:
+        await engine.dispose()
+
+    total = sum(counts.values())
+    if total == 0:
+        return None
+
+    index_db_path, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+    if marker is not None and marker.fingerprint == fingerprint:
+        return None
+
+    issues = [
+        f"{total} block(s) ({', '.join(f'{v} {k}' for k, v in counts.items() if v)}) "
+        "not yet reflected in a verified .elfmem/memory/ export",
+        "graph edges and reinforcement count/recency do not carry through "
+        "export/rebuild — a known, disclosed limitation, not a defect",
+    ]
+    if marker is not None:
+        issues.insert(0, "database content changed since the last export")
+
+    return MigrationStep(
+        id=substrate_step_id(db_path),
+        kind="substrate_export",
+        summary=(
+            f"Export {total} block(s) to the .elfmem/memory/ file substrate "
+            "and build a verified derived index (does not change how your "
+            "agent operates today)"
+        ),
+        file=db_path,
+        file_sha256=fingerprint,
+        issues=issues,
+        before=counts,
+        after={
+            "description": (
+                f"All blocks written to {memory_dir}/**.md; a derived index "
+                f"built at {index_db_path}; retrieval parity checked against "
+                "4 frame-level queries. Your live database and agent "
+                "behaviour are unchanged by this step."
+            ),
+        },
+        json_pointer="",
+        reversible=True,
+        post_apply_step=(
+            "Nothing to restart — your agent keeps reading the original "
+            "database. Check the parity result in the apply output (or "
+            "re-run 'elfmem index parity'); a failed gate is informational, "
+            "not a rollback trigger."
+        ),
+    )
+
+
+async def apply_substrate_step(
+    step: MigrationStep,
+    *,
+    memory_dir: Path,
+    cfg: ElfmemConfig,
+    dry_run: bool = False,
+) -> StepApplyResult:
+    """Apply a `substrate_export` step: backup, export, rebuild, verify.
+
+    Never modifies, deletes, or overwrites the live database — it is only
+    ever read from. Every write lands in a new file: the backup, the
+    `.elfmem/memory/` export, and a fresh derived `index.db`. Re-running
+    after a prior successful apply fully re-derives the index from
+    whatever's currently on disk (safe to re-run; not incremental).
+    """
+    import tempfile
+    from datetime import UTC, datetime
+
+    from sqlalchemy import text as sa_text
+
+    from elfmem.adapters.factory import make_embedding_adapter
+    from elfmem.context.frames import ATTENTION_FRAME, SELF_FRAME, SIMULATE_FRAME, TASK_FRAME
+    from elfmem.db.engine import create_engine
+    from elfmem.db.migrate import vacuum_backup
+    from elfmem.db.models import metadata
+    from elfmem.memory.index_rebuild import rebuild_index
+    from elfmem.memory.ledger import ledger_dir_for
+    from elfmem.migration.export import export_to_markdown
+    from elfmem.migration.parity import check_retrieval_parity
+    from elfmem.token_counter import TokenCounter
+
+    db_path = step.file
+    index_db_path, marker_dir = _substrate_paths(memory_dir)
+    queries: list[tuple[str | None, Any]] = [
+        (None, ATTENTION_FRAME), (None, SELF_FRAME),
+        (None, TASK_FRAME), (None, SIMULATE_FRAME),
+    ]
+
+    live_engine = await create_engine(str(db_path))
+    try:
+        async with live_engine.connect() as conn:
+            counts, current_fp = await _corpus_snapshot(conn)
+        if current_fp != step.file_sha256:
+            return StepApplyResult(
+                step.id, "stale",
+                "database content changed since 'elfmem migrate plan' was "
+                "run. Re-run 'elfmem migrate plan' and try again.",
+            )
+
+        embedding_svc = make_embedding_adapter(cfg, TokenCounter())
+
+        if dry_run:
+            with tempfile.TemporaryDirectory() as tmp:
+                scratch_memory = Path(tmp) / "memory"
+                async with live_engine.connect() as conn:
+                    export_result = await export_to_markdown(
+                        conn, scratch_memory,
+                        ledger_dir=ledger_dir_for(scratch_memory),
+                    )
+                rebuild_engine = await create_engine(str(Path(tmp) / "index.db"))
+                try:
+                    async with rebuild_engine.begin() as conn:
+                        await conn.run_sync(metadata.create_all)
+                        rebuild_result = await rebuild_index(
+                            conn, scratch_memory, embedding_svc, cfg.embeddings.model,
+                            ledger_dir=ledger_dir_for(scratch_memory),
+                        )
+                    async with (
+                        live_engine.connect() as conn_before,
+                        rebuild_engine.connect() as conn_after,
+                    ):
+                        parity = await check_retrieval_parity(
+                            conn_before, conn_after, embedding_svc, queries,
+                        )
+                finally:
+                    await rebuild_engine.dispose()
+            gate = (
+                "PASS" if parity.passed
+                else f"FAIL ({len(parity.diverging_queries())} quer(ies) diverge)"
+            )
+            return StepApplyResult(
+                step.id, "applied",
+                f"[dry-run] would export {export_result.blocks_exported} "
+                f"block(s), rebuild {rebuild_result.blocks_written} block(s), "
+                f"parity gate: {gate}. Nothing written.",
+            )
+
+        # ── Real run ──────────────────────────────────────────────────
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        backup_path = db_path.with_suffix(f".before-substrate.{timestamp}.bak")
+        async with live_engine.begin() as conn:
+            await vacuum_backup(conn, str(backup_path))
+
+        backup_engine = await create_engine(str(backup_path))
+        try:
+            async with backup_engine.connect() as conn:
+                backup_counts, _ = await _corpus_snapshot(conn)
+        finally:
+            await backup_engine.dispose()
+        if backup_counts != counts:
+            return StepApplyResult(
+                step.id, "failed",
+                f"backup validation failed — counts diverge (live={counts}, "
+                f"backup={backup_counts}). No export was written; your "
+                f"database is untouched. Backup left at {backup_path} for "
+                "inspection.",
+            )
+
+        async with live_engine.connect() as conn:
+            export_result = await export_to_markdown(
+                conn, memory_dir, ledger_dir=ledger_dir_for(memory_dir)
+            )
+
+        rebuild_engine = await create_engine(str(index_db_path))
+        try:
+            async with rebuild_engine.begin() as conn:
+                await conn.run_sync(metadata.create_all)
+                existing = (
+                    await conn.execute(sa_text("SELECT COUNT(*) FROM blocks"))
+                ).scalar_one()
+                if existing:
+                    await conn.execute(sa_text("DELETE FROM edges"))
+                    await conn.execute(sa_text("DELETE FROM block_tags"))
+                    await conn.execute(sa_text("DELETE FROM blocks"))
+                rebuild_result = await rebuild_index(
+                    conn, memory_dir, embedding_svc, cfg.embeddings.model,
+                    ledger_dir=ledger_dir_for(memory_dir),
+                )
+            async with (
+                live_engine.connect() as conn_before,
+                rebuild_engine.connect() as conn_after,
+            ):
+                parity = await check_retrieval_parity(
+                    conn_before, conn_after, embedding_svc, queries,
+                )
+        finally:
+            await rebuild_engine.dispose()
+
+        marker = SubstrateMarker(
+            fingerprint=current_fp,
+            files_fingerprint=_compute_files_fingerprint(memory_dir),
+            applied_at=datetime.now(UTC).isoformat(),
+            backup_path=str(backup_path),
+            memory_dir=str(memory_dir),
+            index_db_path=str(index_db_path),
+            blocks_exported=export_result.blocks_exported,
+            blocks_written=rebuild_result.blocks_written,
+            parity_passed=parity.passed,
+            diverging_query_count=len(parity.diverging_queries()),
+        )
+        _write_marker_atomic(marker_dir, marker)
+
+        gate = (
+            "PASSED" if parity.passed
+            else f"FAILED — {len(parity.diverging_queries())} quer(ies) "
+                 "diverge, see 'elfmem index parity' for detail"
+        )
+        detail = (
+            f"Exported {export_result.blocks_exported} block(s) to "
+            f"{memory_dir}; verified index built at {index_db_path} "
+            f"({rebuild_result.blocks_written} block(s)); parity gate {gate}. "
+            f"Your agent is unchanged — still reading {db_path}."
+        )
+        return StepApplyResult(step.id, "applied", detail, backup=backup_path)
+    finally:
+        await live_engine.dispose()
+
+
+async def undo_substrate_step(
+    step: MigrationStep,
+    *,
+    memory_dir: Path,
+    force: bool = False,
+) -> StepApplyResult:
+    """Remove the artifacts a prior ``apply_substrate_step`` created.
+
+    Never touches the live database — nothing here can lose data that
+    isn't already a byproduct of this migration step. Refuses (unless
+    ``force=True``) if ``.elfmem/memory/`` has changed since it was
+    written, protecting hand-edits made to the exported files.
+    """
+    import shutil
+
+    _, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+    if marker is None:
+        return StepApplyResult(
+            step.id, "skipped",
+            "no recorded substrate migration to undo (already clean, or never applied)",
+        )
+
+    if not force:
+        current_files_fp = _compute_files_fingerprint(memory_dir)
+        if current_files_fp != marker.files_fingerprint:
+            return StepApplyResult(
+                step.id, "failed",
+                f"{memory_dir} has changed since this migration was applied "
+                "(hand-edited?) — refusing to delete possibly-unsaved work. "
+                "Pass --force to remove anyway, or back up your edits first.",
+            )
+
+    if memory_dir.exists():
+        shutil.rmtree(memory_dir)
+    with contextlib.suppress(OSError):
+        Path(marker.index_db_path).unlink()
+    _remove_marker(marker_dir)
+
+    return StepApplyResult(
+        step.id, "applied",
+        f"Removed {memory_dir} and {marker.index_db_path}. Your original "
+        f"database was never modified; its backup remains at "
+        f"{marker.backup_path}.",
+    )
+
+
+async def build_full_plan(
+    *,
+    db_path: Path | None = None,
+    memory_dir: Path | None = None,
+    scan_paths: tuple[Path, ...] = DEFAULT_SCAN_PATHS,
+) -> MigrationPlan:
+    """``build_plan()`` (Claude MCP config drift) plus ``scan_substrate()``
+    (the v2 file-substrate export), combined into the one plan
+    ``elfmem migrate status/plan/apply`` operate on.
+
+    ``db_path``/``memory_dir`` are None when the caller has no resolved
+    project (global mode, before ``elfmem init``) — the substrate check is
+    skipped in that case, not an error.
+    """
+    plan = build_plan(scan_paths)
+    if db_path is None or memory_dir is None:
+        return plan
+    config_path = memory_dir.parent / "config.yaml"
+    extra: list[MigrationStep] = []
+    substrate_step = await scan_substrate(db_path, memory_dir)
+    if substrate_step is not None:
+        extra.append(substrate_step)
+    else:
+        # Cutover is only ever offered once the export it depends on has
+        # been applied, so the two steps are mutually exclusive by
+        # construction: `scan_substrate` returns a step while an export is
+        # outstanding, and stops once one is recorded and current. Offering
+        # both at once would invite flipping authority to a stale snapshot.
+        cutover_step = await scan_cutover(db_path, memory_dir, config_path)
+        if cutover_step is not None:
+            extra.append(cutover_step)
+    # Independent of both: project.agent_name has nothing to do with the file
+    # substrate, so it is offered alongside whichever of the two above is
+    # pending, not gated on either.
+    agent_name_step = scan_agent_name(config_path)
+    if agent_name_step is not None:
+        extra.append(agent_name_step)
+    if not extra:
+        return plan
+    return MigrationPlan(steps=[*plan.steps, *extra], warnings=plan.warnings)
+
+
 # ── Formatting ────────────────────────────────────────────────────────────────
 
 
@@ -834,3 +1340,546 @@ def format_finding(finding: MigrationFinding) -> str:
     for ln in json.dumps(finding.suggested, indent=2).splitlines():
         lines.append(f"    {ln}")
     return "\n".join(lines)
+
+
+# ── Substrate cutover (plan doc Phase 6: flip authority) ──────────────────────
+#
+# ADR 0011 deferred this step because "cutover needs real re-wiring of
+# learn()/edit()/forget() at the API level, not a migration script". That
+# re-wiring has since landed -- `MemorySystem._files_authoritative` now gates
+# file-native append/edit/forget/reconcile/sync -- so the reason for the
+# deferral no longer holds and the step that completes the migration can
+# exist. See ADR 0013.
+#
+# What makes this safe, and why it is a genuinely small change: under file
+# authority the database is still written on every operation (learn() inserts
+# the row first and only then appends to the file, archiving the row if the
+# file write fails). The database therefore never falls behind the files, so
+# flipping the flag back leaves a complete, current database. Cutover is a
+# config edit with a real undo, not a data movement.
+#
+# The data movement already happened in `substrate_export`, which is why this
+# step refuses to run until that one has been applied AND its parity gate
+# passed AND the corpus fingerprint still matches. Measured round-trip
+# fidelity of that export on a corpus exercising learn/consolidate/outcome/
+# connect/mind/edit/forget/curate: zero field drift, zero tag drift, edges
+# preserved. Archived blocks are exported to `archive/` but deliberately not
+# rebuilt into the active index.
+
+
+_FILES_AUTH_RE = re.compile(
+    r"^(?P<indent>[ \t]*)files_authoritative[ \t]*:[ \t]*(?P<value>\S+)[ \t]*$"
+)
+_SUBSTRATE_RE = re.compile(r"^substrate[ \t]*:[ \t]*$")
+
+
+def _set_files_authoritative(config_path: Path, *, value: bool) -> None:
+    """Set `substrate.files_authoritative` in place, preserving everything else.
+
+    A surgical line edit rather than a yaml load/dump round-trip, because the
+    generated config is mostly comments -- the provider notes, the key-name
+    hints, the reason each threshold is what it is -- and pyyaml would discard
+    every one of them. The MCP-config patcher takes the same view for the same
+    reason.
+
+    Three shapes are handled: the key already present (replace the value, keep
+    its indentation), a `substrate:` block without the key (insert under it),
+    and neither (append a fresh block). Commented-out occurrences are ignored,
+    so a config carrying `# files_authoritative: false` as documentation is not
+    mistaken for the setting itself.
+    """
+    literal = "true" if value else "false"
+    lines = config_path.read_text(encoding="utf-8").splitlines()
+
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue
+        match = _FILES_AUTH_RE.match(line)
+        if match:
+            lines[i] = f"{match.group('indent')}files_authoritative: {literal}"
+            config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    for i, line in enumerate(lines):
+        if not line.lstrip().startswith("#") and _SUBSTRATE_RE.match(line):
+            lines.insert(i + 1, f"  files_authoritative: {literal}")
+            config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    if lines and lines[-1].strip():
+        lines.append("")
+    lines.extend([
+        "# Files are the source of truth: writes land in .elfmem/memory/**.md",
+        "# first, and the database at project.db is a derived index that",
+        "# `elfmem index rebuild` reproduces from files + .elfmem/ledger/.",
+        "# Commit .elfmem/memory/ and .elfmem/ledger/ -- git history is the",
+        "# undo path for forget() and edit().",
+        "substrate:",
+        f"  files_authoritative: {literal}",
+    ])
+    config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+@dataclass(frozen=True)
+class CutoverPreflight:
+    """One safety condition checked before authority is flipped."""
+
+    name: str
+    ok: bool
+    detail: str
+    recovery: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name, "ok": self.ok,
+            "detail": self.detail, "recovery": self.recovery,
+        }
+
+
+def _git_tracks(path: Path) -> tuple[bool, str]:
+    """Is *path* inside a git worktree AND not ignored?
+
+    Both halves matter and the second is the one that bites. `elfmem init`
+    writes an `.elfmem/.gitignore` that deliberately does not ignore
+    `memory/` or `ledger/`, but a repository-root `.gitignore` carrying a
+    blanket `.elfmem/` rule silences those negations entirely -- git does not
+    descend into an excluded directory to read them. The undo path then fails
+    silently, which is the one failure mode this whole check exists to
+    prevent.
+
+    Despite the name, this does NOT check whether anything has actually been
+    `git add`ed -- only that it *could* be. An all-untracked directory passes
+    here; `_git_is_clean` (called next, only when this passes) is what
+    catches that case, via the `??` porcelain lines an untracked path
+    produces. The two checks are deliberately split this way so a caller
+    sees "not trackable" and "trackable but never committed" as distinct
+    failures with distinct recoveries, not one conflated check.
+    """
+    import subprocess
+
+    try:
+        inside = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return False, "not inside a git worktree"
+        ignored = subprocess.run(
+            ["git", "check-ignore", "-q", str(path)],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        # check-ignore exits 0 when the path IS ignored.
+        if ignored.returncode == 0:
+            return False, f"{path.name}/ is gitignored"
+        return True, "tracked"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"git unavailable ({type(exc).__name__})"
+
+
+def _git_is_clean(path: Path) -> tuple[bool, str]:
+    """Does *path* have uncommitted changes?
+
+    A dirty substrate at cutover means the pre-cutover state was never
+    captured in history, so the undo path has nothing to return to.
+    """
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(path)],
+            cwd=path.parent, capture_output=True, text=True, timeout=10,
+        )
+        if proc.returncode != 0:
+            return False, "git status failed"
+        dirty = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+        if dirty:
+            return False, f"{len(dirty)} uncommitted change(s)"
+        return True, "clean"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"git unavailable ({type(exc).__name__})"
+
+
+async def cutover_preflight(
+    db_path: Path, memory_dir: Path, config_path: Path,
+) -> list[CutoverPreflight]:
+    """Every condition that must hold before authority is flipped. Read-only.
+
+    Ordered cheapest-first so a missing export is reported before a git
+    subprocess runs.
+    """
+    from elfmem.config import ElfmemConfig
+    from elfmem.db.engine import create_engine
+
+    checks: list[CutoverPreflight] = []
+    _, marker_dir = _substrate_paths(memory_dir)
+    marker = _read_marker(marker_dir)
+
+    checks.append(CutoverPreflight(
+        "export applied", marker is not None,
+        "substrate export recorded" if marker else "no substrate export recorded",
+        recovery="elfmem migrate apply  # runs the export step first",
+    ))
+
+    # Deliberately no early return on a missing marker. The first friction
+    # report's headline complaint was "each fix revealed the next gate" --
+    # a preflight that stops at the first failure reproduces exactly that,
+    # one round trip per problem. Everything checkable is checked, so a
+    # caller sees the whole list of what to fix in one pass. Only the two
+    # checks that read the marker itself are skipped when there is none.
+    if marker is not None:
+        checks.append(CutoverPreflight(
+            "parity passed", marker.parity_passed,
+            "retrieval parity matched the live database" if marker.parity_passed
+            else f"{marker.diverging_query_count} query(ies) diverged at export time",
+            recovery="Investigate with: elfmem index parity  # do not force past this",
+        ))
+
+    # The corpus must not have moved since the export, or the files are a
+    # stale snapshot and cutover would silently adopt the older state.
+    fingerprint_ok, fp_detail = False, "database unreadable"
+    if marker is not None and db_path.exists():
+        engine = await create_engine(str(db_path))
+        try:
+            async with engine.connect() as conn:
+                _, current_fp = await _corpus_snapshot(conn)
+            fingerprint_ok = current_fp == marker.fingerprint
+            fp_detail = (
+                "corpus unchanged since export" if fingerprint_ok
+                else "database changed since export — files are a stale snapshot"
+            )
+        finally:
+            await engine.dispose()
+    elif marker is None:
+        fp_detail = "no export to compare against"
+    if marker is not None:
+        checks.append(CutoverPreflight(
+            "corpus unchanged", fingerprint_ok, fp_detail,
+            recovery="elfmem migrate apply  # re-export, then retry cutover",
+        ))
+
+    checks.append(CutoverPreflight(
+        "project-local config", config_path.is_file(),
+        str(config_path) if config_path.is_file() else "no project-local config.yaml",
+        recovery="elfmem init  # a global instance has nowhere to put .elfmem/memory/",
+    ))
+
+    already = False
+    if config_path.is_file():
+        already = ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative
+    checks.append(CutoverPreflight(
+        "not already cut over", not already,
+        "files_authoritative is off" if not already else "already files-authoritative",
+    ))
+
+    # Git is not a nicety here: under file authority, git history is the ONLY
+    # undo for forget() and edit(). Without it a forget is unrecoverable.
+    #
+    # Gated on `marker is not None`, same as the two checks above: without an
+    # export there is nothing to cut over to regardless of git state, so
+    # running up to 6 git subprocesses (2 paths x tracked-check + clean-check,
+    # each with a 10s timeout) to report that would contradict this
+    # function's own "cheapest-first" ordering. `scan_cutover` calls this on
+    # every project whose `scan_substrate` returns None -- which includes
+    # every empty, never-exported project, not just post-export ones -- so
+    # this is the common case, not a rare one: a fresh `elfmem migrate
+    # status` call would otherwise shell out to git for no reason on a
+    # project with nothing to check git for.
+    if marker is not None:
+        ledger_dir = memory_dir.parent / "ledger"
+        for label, path in (("memory", memory_dir), ("ledger", ledger_dir)):
+            tracked, detail = _git_tracks(path)
+            checks.append(CutoverPreflight(
+                f"git tracks {label}/", tracked, detail,
+                recovery=(
+                    "git init, and make sure no parent .gitignore excludes .elfmem/ — "
+                    "git history is the only undo path for forget() and edit()"
+                ),
+            ))
+            if tracked:
+                clean, cdetail = _git_is_clean(path)
+                checks.append(CutoverPreflight(
+                    f"{label}/ committed", clean, cdetail,
+                    recovery=f"git add {path} && git commit  # capture the pre-cutover state",
+                ))
+    return checks
+
+
+def cutover_step_id(config_path: Path) -> str:
+    """Deterministic id for this project's cutover step.
+
+    Named for the project directory, not `config_path.parent`, which is
+    always the literal `.elfmem` and would make every project's step id
+    identical. `apply --undo --id` reconstructs this rather than looking it
+    up, since an applied step is no longer pending and so is absent from
+    the plan.
+    """
+    return f"substrate-cutover@{config_path.parent.parent.name}"
+
+
+async def scan_cutover(
+    db_path: Path, memory_dir: Path, config_path: Path,
+) -> MigrationStep | None:
+    """Read-only. Pending once a verified export exists and authority has not
+    yet been flipped. Returns None when there is nothing to offer."""
+    checks = await cutover_preflight(db_path, memory_dir, config_path)
+    by_name = {c.name: c for c in checks}
+    if not by_name.get("export applied", CutoverPreflight("", False, "")).ok:
+        return None
+    if not by_name.get("not already cut over", CutoverPreflight("", False, "")).ok:
+        return None
+
+    blockers = [c for c in checks if not c.ok]
+    return MigrationStep(
+        id=cutover_step_id(config_path),
+        kind="substrate_cutover",
+        summary=(
+            "Flip substrate.files_authoritative to true — the exported "
+            ".elfmem/memory/ files become the source of truth and the "
+            "database becomes the derived index"
+        ),
+        file=config_path,
+        file_sha256=_sha256(config_path) if config_path.is_file() else "",
+        issues=[f"{c.name}: {c.detail}" for c in blockers],
+        before={"files_authoritative": False},
+        after={"files_authoritative": True},
+        json_pointer="/substrate/files_authoritative",
+        reversible=True,
+        post_apply_step=(
+            "Commit .elfmem/memory/ and .elfmem/ledger/. From here git "
+            "history is the undo path for forget() and edit(). Roll back "
+            "with: elfmem migrate apply --undo --id <step>"
+        ),
+    )
+
+
+async def apply_cutover_step(
+    step: MigrationStep,
+    *,
+    db_path: Path,
+    memory_dir: Path,
+    config_path: Path,
+    dry_run: bool = False,
+    force: bool = False,
+) -> StepApplyResult:
+    """Flip `substrate.files_authoritative` on, after preflight.
+
+    The write is a single key in config.yaml, backed up first. Everything
+    that could actually lose data already happened (and was verified) in the
+    export step; this only changes which copy is believed.
+    """
+    import shutil
+
+    checks = await cutover_preflight(db_path, memory_dir, config_path)
+    blockers = [c for c in checks if not c.ok]
+    if blockers and not force:
+        lines = "; ".join(f"{c.name}: {c.detail} → {c.recovery}" for c in blockers)
+        return StepApplyResult(step.id, "failed", f"preflight failed — {lines}")
+
+    if dry_run:
+        return StepApplyResult(
+            step.id, "skipped",
+            f"dry run — would set substrate.files_authoritative: true in {config_path}",
+        )
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-cutover-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
+    _set_files_authoritative(config_path, value=True)
+
+    from elfmem.config import ElfmemConfig
+
+    if not ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "flag did not read back as true after write; config restored from backup",
+            backup=backup,
+        )
+    forced = " (preflight forced)" if blockers else ""
+    return StepApplyResult(
+        step.id, "applied",
+        f"files_authoritative: true — .elfmem/memory/ is now the source of "
+        f"truth{forced}",
+        backup=backup,
+    )
+
+
+async def undo_cutover_step(
+    step: MigrationStep, *, config_path: Path,
+) -> StepApplyResult:
+    """Flip authority back to the database.
+
+    Lossless by construction: file authority never stops writing the database
+    row, so the database is current at the moment of rollback. Anything
+    written since cutover is in both places.
+
+    Backs up before writing and reads the value back afterward, restoring on
+    mismatch -- the same guarantee `apply_cutover_step` makes on the forward
+    path. Undo is the "something's wrong, get back to safety" path; it is the
+    one place that guarantee matters most, not somewhere it can be skipped.
+    """
+    import shutil
+
+    from elfmem.config import ElfmemConfig
+
+    if not config_path.is_file():
+        return StepApplyResult(step.id, "skipped", "no config.yaml to revert")
+    if not ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        return StepApplyResult(step.id, "skipped", "already database-authoritative")
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-cutover-undo-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
+    _set_files_authoritative(config_path, value=False)
+
+    if ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "files_authoritative still true after undo write; config restored "
+            "from backup",
+            backup=backup,
+        )
+    return StepApplyResult(
+        step.id, "applied",
+        "files_authoritative: false — the database is authoritative again; "
+        "the exported files are left in place",
+        backup=backup,
+    )
+
+
+# ── Agent naming (docs/self_preamble_naming_report.md) ────────────────────────
+#
+# `project.agent_name` defaults to `""`, and elfmem_index @ c19dcc5 made it
+# load-bearing at runtime: the SELF frame's own preamble now reads
+# "You are {agent_name}", falling back to "elf" only when the field is empty.
+# That fallback is deliberately silent -- it is what kept every pre-existing
+# config rendering byte-for-byte the same text after the fix shipped -- but
+# silent is exactly the failure mode this project has spent this migration
+# closing everywhere else: an unset value producing behaviour nobody chose,
+# discoverable only by reading source. A project that has never set
+# agent_name is one config edit away from an identity it never decided on.
+#
+# The fix here is not "detect a bug", the way substrate_export/cutover detect
+# genuine drift -- an unset agent_name is not wrong, elf is a perfectly good
+# default identity. It is "make the choice explicit": write SOME value,
+# `"elf"` if nothing else is offered, so a project's identity is a fact
+# recorded in its own config.yaml rather than an implicit library default a
+# future reader has to already know about to find.
+
+
+def agent_name_step_id(config_path: Path) -> str:
+    """Deterministic id for this project's agent-naming step."""
+    return f"agent-name@{config_path.parent.parent.name}"
+
+
+def scan_agent_name(config_path: Path) -> MigrationStep | None:
+    """Read-only. Pending when a project-local config exists but has never
+    set `project.agent_name`. Idempotent: once anything is set -- `"elf"`
+    included -- this stops being offered, the same "not already done" shape
+    as `scan_cutover`.
+    """
+    if not config_path.is_file():
+        return None
+    if read_agent_name_from_config(config_path):
+        return None
+
+    return MigrationStep(
+        id=agent_name_step_id(config_path),
+        kind="agent_name",
+        summary=(
+            "Set project.agent_name — unset today, which means the SELF "
+            "frame's preamble silently falls back to \"You are elf\". "
+            "Applying without a chosen name sets it to \"elf\" explicitly, "
+            "same behaviour, now a recorded fact in your own config rather "
+            "than an implicit library default."
+        ),
+        file=config_path,
+        file_sha256=_sha256(config_path),
+        issues=["project.agent_name has never been set"],
+        before={"agent_name": ""},
+        after={"agent_name": "elf"},
+        json_pointer="/project/agent_name",
+        reversible=True,
+        post_apply_step=(
+            "Run `elfmem agent-docs install` to refresh AGENT.md with this "
+            "name."
+        ),
+    )
+
+
+def apply_agent_name_step(
+    step: MigrationStep,
+    *,
+    config_path: Path,
+    name: str = "elf",
+    dry_run: bool = False,
+) -> StepApplyResult:
+    """Set `project.agent_name`, defaulting to `"elf"`.
+
+    `name` is resolved by the caller (interactively prompted, or defaulted
+    for `--yes`/`--dry-run`/`--json`). Backs up before writing and reads the
+    value back afterward, restoring on mismatch -- the same two guarantees
+    every other apply function in this module makes (`apply_cutover_step`'s
+    `shutil.copy2` + `ElfmemConfig.from_yaml(...)` re-check;
+    `apply_substrate_step`'s `VACUUM INTO`; config-drift's
+    `<file>.elfmem-bak-<step_id>-<timestamp>`) and the README's own
+    documented claim ("each apply writes a backup before touching
+    anything"). A regex-based surgical edit (`set_agent_name_in_config`) is
+    exactly the risk profile that pattern exists to cover.
+    """
+    import shutil
+
+    chosen = name.strip() or "elf"
+    if dry_run:
+        return StepApplyResult(
+            step.id, "skipped",
+            f'dry run — would set project.agent_name: "{chosen}" in {config_path}',
+        )
+
+    from elfmem.config import ElfmemConfig
+    from elfmem.exceptions import ConfigError
+
+    if not config_path.is_file():
+        # No backup possible -- nothing exists yet to protect.
+        # set_agent_name_in_config's contract is to raise ConfigError for
+        # exactly this case (`.recovery` included), so its failure is
+        # reported here rather than duplicating that message by hand.
+        try:
+            set_agent_name_in_config(config_path, chosen)
+        except ConfigError as exc:
+            return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}")
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-agent-name-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
+
+    try:
+        action = set_agent_name_in_config(config_path, chosen)
+    except ConfigError as exc:
+        return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}", backup=backup)
+
+    if action == "unchanged":
+        return StepApplyResult(
+            step.id, "skipped", f'project.agent_name is already "{chosen}"',
+        )
+
+    reread = ElfmemConfig.from_yaml(str(config_path)).project
+    if reread is None or reread.agent_name != chosen:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "agent_name did not read back as the chosen value after write; "
+            "config restored from backup",
+            backup=backup,
+        )
+    return StepApplyResult(
+        step.id, "applied",
+        f'project.agent_name: "{chosen}" ({action}) — the SELF frame now '
+        f'reads "You are {chosen}". Run `elfmem agent-docs install` to '
+        f"refresh AGENT.md.",
+        backup=backup,
+    )

@@ -15,6 +15,8 @@ Complete guide to setting up environment variables and configuration for elfmem 
 
 ## Quick Start
 
+**Installing from source:** use `uv sync --extra mcp --extra cli` (or `--all-extras`). Never `uv add elfmem[mcp]` — since the package is itself named `elfmem`, `uv add` tries to add a third-party dependency on itself and fails with a self-dependency error. `--extra` is singular, repeated once per extra.
+
 ### First-Time Setup
 
 Run `elfmem init` once before anything else. It creates `~/.elfmem/`, generates a default `config.yaml`, and optionally seeds your SELF frame (agent identity):
@@ -71,11 +73,20 @@ elfmem init [OPTIONS]
 
 Options:
   --self TEXT      Natural language description of agent identity (seeds SELF frame)
-  --db TEXT        Database path (default: ~/.elfmem/agent.db, env: ELFMEM_DB)
-  --config TEXT    Config YAML path (default: ~/.elfmem/config.yaml, env: ELFMEM_CONFIG)
-  --force          Overwrite existing config (default: skip if exists)
+  --name TEXT      Agent invocation name; renders an "Agent Identity" section into .elfmem/AGENT.md
+  --seed/--no-seed Seed the constitutional cognitive loop (10 role-tagged blocks). Opt-in, default off
+  --template TEXT  Layer a domain-specific seed on top of --seed; `elfmem templates` lists options
+  --db TEXT        Database path (default: auto from project name, env: ELFMEM_DB)
+  --config TEXT    Config YAML path (default: auto-discovered, env: ELFMEM_CONFIG)
+  --global         Force ~/.elfmem/ regardless of project detection
+  --force          Overwrite existing config (default: skip if exists; never overwrites the DB)
+  --force-new      Bypass the orphaned-DB rescue check. Almost never needed — prefer `elfmem rescue`
+  --docs-file TEXT Write the elfmem section to this agent doc file instead of CLAUDE.md/AGENTS.md
+  --no-docs        Skip writing to CLAUDE.md / AGENTS.md
   --json           Output JSON instead of human-readable text
 ```
+
+**Breaking change (v2 step 4):** a fresh `elfmem init` writes **zero memory blocks** by default — previously it always seeded the 10 constitutional cognitive-loop blocks. Pass `--seed` explicitly to get the old behaviour. Established instances (config + DB already populated) are unaffected — re-running `init` without `--seed` is still a no-op refresh.
 
 **When to use:**
 - First run — before `elfmem serve` or any CLI/MCP tool use
@@ -94,9 +105,15 @@ Read-only diagnostic command. Checks config, database, SELF blocks, and API keys
 elfmem doctor [OPTIONS]
 
 Options:
-  --db TEXT        Database path (default: ~/.elfmem/agent.db, env: ELFMEM_DB)
-  --config TEXT    Config YAML path (default: ~/.elfmem/config.yaml, env: ELFMEM_CONFIG)
-  --json           Output JSON
+  --db TEXT         Database path (default: auto-discovered, env: ELFMEM_DB)
+  --config TEXT     Config YAML path (default: auto-discovered, env: ELFMEM_CONFIG)
+  --resolve         Make one real LLM call against the configured llm: section to confirm
+                     the key actually works (not just that a key string is present). Costs
+                     time and, for hosted models, money — opt-in
+  --migrate-mcp      Scan MCP configs (~/.claude.json, .mcp.json) for stale entries, print
+                     fixes only — apply with `elfmem migrate apply`
+  --modules         Print the live module map (src/elfmem/project.py KEY_MODULES) and exit
+  --json            Output JSON
 ```
 
 **Output example:**
@@ -119,7 +136,7 @@ elfmem_setup(
     identity="I am Claude Code, an AI-powered software engineering assistant.",
     values=["write minimal clean code", "confirm before destructive operations"]
 )
-# Returns: {"status": "setup_complete", "blocks_created": 2, "blocks": [...]}
+# Returns: {"blocks_created": 2, "total_attempted": 2}
 ```
 
 Safe to call multiple times — exact duplicates are silently rejected.
@@ -129,6 +146,8 @@ Safe to call multiple times — exact duplicates are silently rejected.
 ## Environment Variables
 
 All env vars are **optional**. Provider API keys are read by the Anthropic and OpenAI SDKs from standard env vars at the time of the first API call.
+
+A `.env` file at the project root (next to `.elfmem/config.yaml`) is auto-discovered and loaded for every CLI command — `remember`, `recall`, `doctor`, all of them, not just `serve --env-file`. Real environment variables always win over `.env` values. `elfmem doctor`'s "API keys" check reports whether a key came from `.env` or the real environment.
 
 ### Database & Config Paths
 
@@ -162,6 +181,17 @@ All env vars are **optional**. Provider API keys are read by the Anthropic and O
 
 The Anthropic and OpenAI SDKs read these standard env vars automatically. No additional setup needed.
 
+**Any other provider — `llm.api_key_env` / `embeddings.api_key_env`:** every OpenAI-compatible adapter reads the literal `OPENAI_API_KEY` regardless of `base_url` unless told otherwise — so Together.ai, Groq, OpenRouter, or any other OpenAI-compatible provider only worked if you misnamed your key `OPENAI_API_KEY`. Name the real variable explicitly:
+
+```yaml
+llm:
+  model: "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+  base_url: "https://api.together.xyz/v1"
+  api_key_env: "TOGETHER_API_KEY"
+```
+
+Unset (the default) is unchanged behaviour: `OPENAI_API_KEY` for OpenAI-compatible adapters, `ANTHROPIC_API_KEY` for `claude-*` models. A misconfigured `api_key_env` resolves to no key rather than silently falling back to a real-but-wrong one.
+
 ---
 
 ## YAML Configuration
@@ -182,33 +212,33 @@ llm:
   timeout: 30
   max_retries: 3
   base_url: null
-  # Per-call model overrides (optional)
+  api_key_env: null                # e.g. "TOGETHER_API_KEY" for non-Anthropic/OpenAI providers
+  # Per-call model override (optional)
   process_block_model: null        # Use model above if null
-  contradiction_model: null
 
 embeddings:
   model: "text-embedding-3-small"
   dimensions: 1536
   timeout: 30
   base_url: null
+  api_key_env: null
 
 memory:
   # Lifecycle
   inbox_threshold: 10
   curate_interval_hours: 40.0
-  prune_threshold: 0.05
   search_window_hours: 200.0
   vector_n_seeds_multiplier: 4
+  max_inbox_per_run: 5             # bounds one consolidate()/dream() call (ADR 0007)
 
   # Quality thresholds
   self_alignment_threshold: 0.70
-  contradiction_threshold: 0.80
   near_dup_exact_threshold: 0.95
   near_dup_near_threshold: 0.90
 
   # Graph
-  similarity_edge_threshold: 0.60
-  edge_degree_cap: 10
+  edge_score_threshold: 0.45
+  edge_degree_cap: 5
   edge_prune_threshold: 0.10
   edge_reinforce_delta: 0.10
 
@@ -224,17 +254,17 @@ memory:
   lambda_ceiling: 0.050
 
 prompts:
-  # Inline overrides (None = use library defaults)
+  # Inline override (None = use library default)
   process_block: null              # Combined block analysis prompt
-  contradiction: null
 
-  # File-based overrides
+  # File-based override
   process_block_file: null         # Path to custom process_block prompt
-  contradiction_file: null
 
   # Custom tag vocabulary
   valid_self_tags: null            # null = use library defaults
 ```
+
+Removed in v2 ([ADR 0009](decisions/0009-retire-decay-driven-archival.md), [ADR 0010](decisions/0010-retire-pairwise-contradiction-detection.md)) — a config that still sets these has them silently ignored, not an error: `memory.prune_threshold` (block-level archival trigger, retired — `curate()` no longer auto-archives, see `elfmem review corpus`), `memory.contradiction_threshold` / `.contradiction_similarity_prefilter` / `.contradiction_top_k`, `llm.contradiction_model`, `prompts.contradiction` / `.contradiction_file`. `memory.similarity_edge_threshold` was always a misnomer for `edge_score_threshold`, corrected above.
 
 ### Minimal Configuration File
 
@@ -315,12 +345,46 @@ prompts:
 ### Per-Call Model Overrides
 
 ```yaml
-# Use GPT-4 for block analysis (expensive), but gpt-4o-mini for contradictions
+# Use a stronger model for block analysis specifically; everything else uses model above
 llm:
   model: "gpt-4o-mini"
   process_block_model: "gpt-4"     # Override for block analysis
-  contradiction_model: null         # Use model above
 ```
+
+### Substrate: where memory actually lives
+
+```yaml
+substrate:
+  files_authoritative: false   # default
+```
+
+Two storage modes, and the difference is *which copy is believed* when they
+disagree:
+
+| | `false` (default) | `true` |
+|---|---|---|
+| source of truth | the SQLite database | `.elfmem/memory/**.md` |
+| the database is | everything | a derived index, rebuildable |
+| undo for `forget()`/`edit()` | none | git history |
+| rebuild command | n/a | `elfmem index rebuild` (files + `.elfmem/ledger/`) |
+
+**Do not set this by hand on a database that already has content.** Turning
+it on does not move anything — it only changes which copy is trusted, so a
+project whose files are empty or stale would start believing the wrong one.
+Use the migration, which exports, verifies, and only then offers the flip:
+
+```bash
+elfmem migrate status    # offers the export first, then the cutover
+elfmem migrate apply --yes
+```
+
+See the README's [Substrate migration](../README.md#substrate-migration-exporting-to-the-file-substrate)
+section for the full flow, the preflight checks, and the rollback path.
+
+Editing it by hand is reasonable in exactly one case: a brand-new project
+with no blocks yet, where there is nothing to migrate and nothing to lose.
+Commit `.elfmem/memory/` and `.elfmem/ledger/` either way — under file
+authority they are your data, not build output.
 
 ---
 
@@ -402,7 +466,7 @@ mcp-run elfmem serve --db ./agent.db --config ./elfmem.yaml
    ```
 
 4. **Code defaults** (library built-ins)
-   - `model: "claude-sonnet-4-6"`
+   - `model: "claude-haiku-4-5-20251001"`
    - `embeddings.model: "text-embedding-3-small"`
    - `embeddings.dimensions: 1536`
 

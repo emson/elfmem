@@ -44,9 +44,28 @@ class LLMService(Protocol):
         """
         ...
 
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Return a float in [0.0, 1.0] indicating the contradiction strength
-        between two blocks. >= threshold means active contradiction."""
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Propose up to ``max_edges`` connections judged against the agent's
+        own stated goals, not similarity (edge-metabolism Stage A — see
+        docs/plans/plan_edge_metabolism.md). ``candidates`` is
+        ``[(block_id, content_or_summary), ...]``.
+
+        Returns ``[{"candidate_id": str, "reasoning": str}, ...]`` — possibly
+        empty. Adapters MUST raise on parse / schema / API failure rather
+        than return a sentinel, same contract as ``propose_amendment``; the
+        orchestration treats a raise as zero proposals for this block and
+        continues to the next one. Dry-run only in Stage A — nothing calling
+        this may write to the ``edges`` table without a separately-approved
+        Stage B.
+        """
         ...
 
 

@@ -16,9 +16,13 @@ import re
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from elfmem.db import queries
-from elfmem.db.queries import insert_agent_edge
+from elfmem.db.queries import get_block, insert_agent_edge
 from elfmem.exceptions import BlockNotActiveError, ElfmemError
-from elfmem.memory.blocks import decay_lambda_for_tier, determine_decay_tier
+from elfmem.memory.blocks import (
+    compute_content_hash,
+    decay_lambda_for_tier,
+    determine_decay_tier,
+)
 from elfmem.operations.connect import do_connect
 from elfmem.operations.learn import learn as _learn
 from elfmem.operations.outcome import record_outcome
@@ -111,7 +115,23 @@ async def create_mind(
     The block is stored with category="mind" and tagged ``mind/<subject-slug>``.
     Decay tier is DURABLE (λ=0.001, ~6 month half-life).
 
-    Returns LearnResult — reuses the standard learn pathway.
+    Dedup is checked here against a fresh lookup, not left to learn():
+    learn()'s exact-hash check only recognises a duplicate while the
+    existing block is status='inbox' -- correct for its own job, since an
+    active knowledge block is deliberately allowed to re-enter as fresh
+    content so consolidate()'s embedding-based near-dup pass can reconcile
+    it. But predict() legitimately promotes a mind block to active inline,
+    well before any dream() cycle ("the deliberate act of predicting
+    validates the model" -- see predict() below), and mind_create()'s own
+    contract ("instant, no LLM, dedup guaranteed") never accounted for
+    that: every call after the first predict() would fall through learn()'s
+    "already active -- re-learn with a fresh id" branch and mint a new
+    mind, not just once but on every subsequent call. The fix belongs at
+    this layer, not by widening learn()'s scope for every other caller to
+    fix a promise only mind_create() makes. Archived is deliberately
+    excluded: a forgotten mind was a decision to remove it, and re-creating
+    the same subject should mint fresh -- matching learn()'s own
+    archived-block semantics.
     """
     if not subject.strip():
         raise ValueError("subject must be non-empty")
@@ -120,6 +140,17 @@ async def create_mind(
     content = _build_mind_content(
         subject, goals=goals, beliefs=beliefs, fears=fears, motivations=motivations,
     )
+    content_id = compute_content_hash(content)
+    existing = await get_block(conn, content_id)
+    if existing is not None and existing["status"] in ("inbox", "active"):
+        return LearnResult(
+            block_id=content_id,
+            status="duplicate_rejected",
+            # An active match is already retrievable; only an inbox one is
+            # still waiting on consolidation.
+            pending_consolidation=existing["status"] == "inbox",
+        )
+
     tags = [f"mind/{slug}"]
 
     return await _learn(
@@ -375,6 +406,11 @@ async def mind_outcome(
         current_active_hours=current_active_hours,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
+        # This scores one block the caller named, not everything a task
+        # happened to recall, so the constitutional guard does not apply --
+        # and a mind block CAN accrete `self/constitutional` during
+        # consolidation, which would otherwise silently stop calibrating it.
+        allow_constitutional=True,
     )
 
     # 2. Record attenuated outcome on mind block (signal scaled by 0.5)
@@ -388,6 +424,7 @@ async def mind_outcome(
         current_active_hours=current_active_hours,
         reinforce_threshold=reinforce_threshold,
         edge_reinforce_delta=edge_reinforce_delta,
+        allow_constitutional=True,  # same reasoning as the decision block above
     )
 
     # 3. Reinforce the canonical mind↔decision edge on outcome closure.

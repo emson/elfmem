@@ -25,12 +25,12 @@ from pydantic import ValidationError
 from elfmem.adapters.models import (
     AmendmentProposalModel,
     BlockAnalysisModel,
-    ContradictionScore,
+    GoalDirectedEdgeProposalsModel,
 )
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
-    CONTRADICTION_PROMPT,
+    GOAL_DIRECTED_EDGE_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -79,9 +79,7 @@ class OpenAILLMAdapter:
         base_url: str | None = None,
         api_key: str | None = None,
         process_block_model: str | None = None,
-        contradiction_model: str | None = None,
         process_block_prompt: str | None = None,
-        contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
         token_counter: TokenCounter | None = None,
     ) -> None:
@@ -90,14 +88,9 @@ class OpenAILLMAdapter:
         self._max_tokens = max_tokens
         self._max_retries = max_retries
         self._process_block_model = process_block_model
-        self._contradiction_model = contradiction_model
         self._process_block_prompt = (
             process_block_prompt if process_block_prompt is not None
             else BLOCK_ANALYSIS_PROMPT
-        )
-        self._contradiction_prompt = (
-            contradiction_prompt if contradiction_prompt is not None
-            else CONTRADICTION_PROMPT
         )
         self._valid_self_tags: frozenset[str] = (
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
@@ -244,23 +237,51 @@ class OpenAILLMAdapter:
                 last_exc = exc
         raise last_exc  # type: ignore[misc]
 
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Score the logical contradiction between two memory blocks.
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Propose goal-directed connections for one block (edge-metabolism
+        Stage A — docs/plans/plan_edge_metabolism.md). Dry-run only.
 
-        USE WHEN:   Called by consolidate() for candidate pairs above the cosine prefilter.
-        DON'T USE:  Testing — use MockLLMService instead (no API cost).
+        USE WHEN:   Called by rescore's metabolism dry run for each rescored block.
+        DON'T USE:  Testing — use MockLLMService.
         COST:       1 OpenAI API call. Retries up to max_retries on schema violations.
-        RETURNS:    float ∈ [0.0, 1.0]; >= contradiction_threshold means active contradiction.
-        NEXT:       Score compared against MemoryConfig.contradiction_threshold in consolidate().
+        RETURNS:    [{"candidate_id": str, "reasoning": str}, ...], possibly empty.
+        NEXT:       Caller validates candidate_id against its own candidate
+                    set and reports proposals — never writes to `edges`.
         """
-        prompt = self._contradiction_prompt.format(block_a=block_a, block_b=block_b)
-        model = self._effective_model(self._contradiction_model)
+        goals_block = (
+            "\n".join(f"- {g}" for g in self_goals)
+            if self_goals
+            else "(no self/goal blocks defined yet)"
+        )
+        candidates_block = (
+            "\n".join(f"- id: {cid}\n  content: {content}" for cid, content in candidates)
+            if candidates
+            else "(no candidates)"
+        )
+        prompt = GOAL_DIRECTED_EDGE_PROMPT.format(
+            self_goals=goals_block,
+            block_content=block_summary or block_content,
+            candidates=candidates_block,
+            max_edges=max_edges,
+        )
+        model = self._effective_model(self._process_block_model)
         last_exc: Exception | None = None
         for _ in range(self._max_retries):
             text = await self._complete(prompt, model)
             try:
-                result = ContradictionScore.model_validate_json(text)
-                return float(result.score)
+                result = GoalDirectedEdgeProposalsModel.model_validate_json(text)
+                return [
+                    {"candidate_id": p.candidate_id, "reasoning": p.reasoning}
+                    for p in result.proposals[:max_edges]
+                ]
             except (ValidationError, json.JSONDecodeError) as exc:
                 last_exc = exc
         raise last_exc  # type: ignore[misc]

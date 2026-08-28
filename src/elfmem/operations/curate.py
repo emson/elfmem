@@ -1,4 +1,14 @@
-"""curate() — scheduled maintenance: archive decayed blocks, prune edges, reinforce top-N."""
+"""curate() — scheduled maintenance: prune edges, reinforce top-N.
+
+Decay-driven block archival was retired in v2 step 7a: in months of
+self-hosted operation it never fired (0 blocks archived with reason
+'decayed', vs 41 'superseded'), while ``review_corpus()`` (step 6a) already
+covers the same "unused, rarely reinforced" signal deterministically and at
+zero LLM cost. Decay tier / lambda / recency themselves are NOT retired —
+they remain live inputs to retrieval ranking (``memory/retrieval.py``),
+edge decay pruning below, and this module's own top-N reinforcement scoring.
+See ADR 0009.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +28,6 @@ from elfmem.db.queries import (
     prune_weak_edges,
     reinforce_blocks,
     set_config,
-    update_block_status,
 )
 from elfmem.memory.blocks import determine_decay_tier
 from elfmem.scoring import (
@@ -30,12 +39,9 @@ from elfmem.scoring import (
 )
 from elfmem.types import CurateResult, DecayTier
 
-PRUNE_THRESHOLD = 0.05
 EDGE_PRUNE_THRESHOLD = 0.10
 CURATE_REINFORCE_TOP_N = 5
 CURATE_INTERVAL_HOURS = 40.0
-# Blocks above this percentile of weighted degree are bridge-protected from archival
-BRIDGE_PROTECTION_QUANTILE = 0.80
 
 
 async def should_curate(
@@ -61,20 +67,18 @@ async def curate(
     conn: AsyncConnection,
     *,
     current_active_hours: float,
-    prune_threshold: float = PRUNE_THRESHOLD,
     edge_prune_threshold: float = EDGE_PRUNE_THRESHOLD,
     reinforce_top_n: int = CURATE_REINFORCE_TOP_N,
 ) -> CurateResult:
     """Run maintenance on the memory corpus.
 
-    Three phases:
-    1. Archive blocks whose recency has dropped below prune_threshold
-    2. Delete edges whose weight is below edge_prune_threshold
-    3. Reinforce the top-N blocks by composite score
+    Two phases:
+    1. Delete edges whose weight — or temporally-decayed effective weight —
+       is below edge_prune_threshold
+    2. Reinforce the top-N blocks by composite score
 
     Updates last_curate_at in system_config after completion.
     """
-    archived = await _archive_decayed_blocks(conn, current_active_hours, prune_threshold)
     edges_pruned = await prune_weak_edges(conn, edge_prune_threshold)
     edges_decayed = await _prune_decayed_edges(conn, current_active_hours, edge_prune_threshold)
     constitutional_reinforced = await _reinforce_constitutional(conn, current_active_hours)
@@ -85,7 +89,6 @@ async def curate(
     await set_config(conn, "last_curate_at", str(current_active_hours))
 
     return CurateResult(
-        archived=archived,
         edges_pruned=edges_pruned,
         reinforced=reinforced,
         constitutional_reinforced=constitutional_reinforced,
@@ -144,53 +147,6 @@ async def _prune_decayed_edges(
             to_delete.append((edge["from_id"], edge["to_id"]))
 
     return await delete_edges_bulk(conn, to_delete)
-
-
-async def _archive_decayed_blocks(
-    conn: AsyncConnection,
-    current_active_hours: float,
-    prune_threshold: float,
-) -> int:
-    """Archive active blocks whose recency has fallen below prune_threshold.
-
-    Bridge protection: blocks in the top 20% by weighted degree are structurally
-    important connectors and are exempt from archival even when their recency
-    drops below the threshold. This preserves graph connectivity across knowledge
-    clusters that might otherwise be silently severed.
-    """
-    active = await get_active_blocks(conn)
-    if not active:
-        return 0
-
-    # Compute weighted degree for all active blocks
-    all_ids = [b["id"] for b in active]
-    degrees = await get_weighted_degree(conn, all_ids)
-
-    # Bridge threshold: 80th percentile of non-zero weighted degrees.
-    # Blocks with degree=0 (isolated) are never bridge-protected.
-    nonzero_degs = sorted(d for d in degrees.values() if d > 0.0)
-    if nonzero_degs:
-        p_idx = min(
-            int(len(nonzero_degs) * BRIDGE_PROTECTION_QUANTILE),
-            len(nonzero_degs) - 1,
-        )
-        bridge_threshold = nonzero_degs[p_idx]
-    else:
-        bridge_threshold = 0.0  # no edges in graph — nothing to protect
-
-    archived = 0
-    for block in active:
-        tags_row = await _get_tags_fast(conn, block["id"])
-        tier = determine_decay_tier(tags_row, block["category"])
-        hours_since = current_active_hours - float(block["last_reinforced_at"])
-        recency = compute_recency(tier, hours_since)
-        if recency < prune_threshold:
-            # Skip archival for highly-connected bridge nodes
-            if bridge_threshold > 0.0 and degrees.get(block["id"], 0.0) >= bridge_threshold:
-                continue
-            await update_block_status(conn, block["id"], "archived", archive_reason="decayed")
-            archived += 1
-    return archived
 
 
 async def _reinforce_constitutional(

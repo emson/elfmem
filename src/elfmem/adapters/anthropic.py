@@ -14,12 +14,12 @@ import anthropic
 from elfmem.adapters.models import (
     AmendmentProposalModel,
     BlockAnalysisModel,
-    ContradictionScore,
+    GoalDirectedEdgeProposalsModel,
 )
 from elfmem.prompts import (
     AMENDMENT_PROPOSAL_PROMPT,
     BLOCK_ANALYSIS_PROMPT,
-    CONTRADICTION_PROMPT,
+    GOAL_DIRECTED_EDGE_PROMPT,
     VALID_SELF_TAGS,
 )
 from elfmem.token_counter import TokenCounter
@@ -27,8 +27,8 @@ from elfmem.types import BlockAnalysis
 
 # Tool names used for forced structured-output calls.
 _ANALYZE_BLOCK_TOOL = "analyze_block"
-_SCORE_CONTRADICTION_TOOL = "score_contradiction"
 _PROPOSE_AMENDMENT_TOOL = "propose_amendment"
+_PROPOSE_GOAL_DIRECTED_EDGES_TOOL = "propose_goal_directed_edges"
 
 
 class AnthropicLLMAdapter:
@@ -50,10 +50,9 @@ class AnthropicLLMAdapter:
         max_tokens: int = 512,
         timeout: int = 30,
         max_retries: int = 3,
+        api_key: str | None = None,
         process_block_model: str | None = None,
-        contradiction_model: str | None = None,
         process_block_prompt: str | None = None,
-        contradiction_prompt: str | None = None,
         valid_self_tags: frozenset[str] | None = None,
         token_counter: TokenCounter | None = None,
     ) -> None:
@@ -61,20 +60,20 @@ class AnthropicLLMAdapter:
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._process_block_model = process_block_model
-        self._contradiction_model = contradiction_model
         self._process_block_prompt = (
             process_block_prompt if process_block_prompt is not None
             else BLOCK_ANALYSIS_PROMPT
-        )
-        self._contradiction_prompt = (
-            contradiction_prompt if contradiction_prompt is not None
-            else CONTRADICTION_PROMPT
         )
         self._valid_self_tags: frozenset[str] = (
             valid_self_tags if valid_self_tags is not None else VALID_SELF_TAGS
         )
         self._token_counter = token_counter
+        # api_key=None is the SDK's own documented default: fall back to
+        # ANTHROPIC_API_KEY. Passing it explicitly (v2 step 5) only changes
+        # behaviour when the caller resolved a key from a differently-named
+        # env var via LLMConfig.api_key_env.
         self._client = anthropic.AsyncAnthropic(
+            api_key=api_key,
             timeout=float(timeout),
             max_retries=max_retries,
         )
@@ -204,22 +203,53 @@ class AnthropicLLMAdapter:
             "rationale": result.rationale,
         }
 
-    async def detect_contradiction(self, block_a: str, block_b: str) -> float:
-        """Score the logical contradiction between two memory blocks.
+    async def propose_goal_directed_edges(
+        self,
+        *,
+        block_content: str,
+        block_summary: str | None,
+        self_goals: list[str],
+        candidates: list[tuple[str, str]],
+        max_edges: int,
+    ) -> list[dict[str, str]]:
+        """Propose goal-directed connections for one block (edge-metabolism
+        Stage A — docs/plans/plan_edge_metabolism.md). Dry-run only.
 
-        USE WHEN:   Called by consolidate() for candidate pairs above the cosine prefilter.
-        DON'T USE:  Testing — use MockLLMService instead (no API cost).
+        USE WHEN:   Called by rescore's metabolism dry run for each rescored block.
+        DON'T USE:  Testing — use MockLLMService.
         COST:       1 Anthropic API call via forced tool use.
-        RETURNS:    float ∈ [0.0, 1.0]; >= contradiction_threshold means active contradiction.
-        NEXT:       Score compared against MemoryConfig.contradiction_threshold in consolidate().
+        RETURNS:    [{"candidate_id": str, "reasoning": str}, ...], possibly empty.
+        NEXT:       Caller validates candidate_id against its own candidate
+                    set and reports proposals — never writes to `edges`.
         """
-        prompt = self._contradiction_prompt.format(block_a=block_a, block_b=block_b)
-        raw = await self._call_tool(
-            tool_name=_SCORE_CONTRADICTION_TOOL,
-            description="Score the logical contradiction between two memory blocks.",
-            schema=ContradictionScore.model_json_schema(),
-            prompt=prompt,
-            model=self._effective_model(self._contradiction_model),
+        goals_block = (
+            "\n".join(f"- {g}" for g in self_goals)
+            if self_goals
+            else "(no self/goal blocks defined yet)"
         )
-        result = ContradictionScore.model_validate(raw)
-        return float(result.score)
+        candidates_block = (
+            "\n".join(f"- id: {cid}\n  content: {content}" for cid, content in candidates)
+            if candidates
+            else "(no candidates)"
+        )
+        prompt = GOAL_DIRECTED_EDGE_PROMPT.format(
+            self_goals=goals_block,
+            block_content=block_summary or block_content,
+            candidates=candidates_block,
+            max_edges=max_edges,
+        )
+        raw = await self._call_tool(
+            tool_name=_PROPOSE_GOAL_DIRECTED_EDGES_TOOL,
+            description=(
+                "Propose connections between a memory block and candidate "
+                "blocks, judged against the agent's own stated goals."
+            ),
+            schema=GoalDirectedEdgeProposalsModel.model_json_schema(),
+            prompt=prompt,
+            model=self._effective_model(self._process_block_model),
+        )
+        result = GoalDirectedEdgeProposalsModel.model_validate(raw)
+        return [
+            {"candidate_id": p.candidate_id, "reasoning": p.reasoning}
+            for p in result.proposals[:max_edges]
+        ]

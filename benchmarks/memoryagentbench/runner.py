@@ -224,7 +224,6 @@ async def run(args: argparse.Namespace) -> None:
                 "top_k": config.top_k,
                 "inbox_threshold": config.inbox_threshold,
                 "search_window_hours": config.search_window_hours,
-                "contradiction_similarity_prefilter": config.contradiction_similarity_prefilter,
                 "chunk_size": config.chunk_size,
                 "consolidate_every_n_chunks": config.consolidate_every_n_chunks,
             },

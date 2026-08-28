@@ -66,6 +66,11 @@ async def insert_block(
     last_reinforced_at: float = 0.0,
     success_count: float | None = None,
     failure_count: float | None = None,
+    reinforcement_count: int = 0,
+    pinned: bool = False,
+    created_at: str | None = None,
+    cue: str | None = None,
+    volatility_class: str | None = None,
 ) -> None:
     """Insert a new block. Raises IntegrityError if id already exists.
 
@@ -74,6 +79,14 @@ async def insert_block(
     β=1-confidence. This keeps the invariant ``confidence == α / (α + β)``
     from birth, so the first outcome update doesn't have to "earn back" the
     confidence the caller just set.
+
+    ``created_at`` defaults to now, which is right for a genuinely new
+    block. A *rebuild* from the file substrate must pass the block's real
+    birth timestamp instead: it was written to the frontmatter as
+    ``created:`` and parsed back, but before v2 Phase 0 this function
+    silently overwrote it, so every rebuilt block was dated at rebuild time.
+    ``reinforcement_count`` is here for the same reason — a rebuild that
+    forces it to 0 zeroes a live term in the retrieval composite.
     """
     if success_count is None or failure_count is None:
         success_count = confidence
@@ -86,10 +99,13 @@ async def insert_block(
             source=source,
             status=status,
             confidence=confidence,
-            reinforcement_count=0,
+            reinforcement_count=reinforcement_count,
             decay_lambda=decay_lambda,
             last_reinforced_at=last_reinforced_at,
-            created_at=_now_iso(),
+            created_at=created_at or _now_iso(),
+            pinned=1 if pinned else 0,
+            cue=cue,
+            volatility_class=volatility_class,
             success_count=success_count,
             failure_count=failure_count,
         )
@@ -183,11 +199,17 @@ async def update_block_status(
     status: str,
     *,
     archive_reason: str | None = None,
+    superseded_by: str | None = None,
 ) -> None:
     """Transition a block to a new status.
 
     When archiving, explicitly deletes related tags, edges, and contradictions
     since FK CASCADE only fires on physical DELETE, not on status UPDATE.
+
+    ``superseded_by`` (v2 step 1) records the id of the replacing block when
+    ``archive_reason='superseded'`` — the audit trail supersession never had.
+    Callers pass it only for that archive reason; it is a plain optional
+    column write otherwise.
     """
     if status == "archived":
         await conn.execute(
@@ -209,6 +231,8 @@ async def update_block_status(
     values: dict[str, object] = {"status": status}
     if archive_reason is not None:
         values["archive_reason"] = archive_reason
+    if superseded_by is not None:
+        values["superseded_by"] = superseded_by
     await conn.execute(update(blocks).where(blocks.c.id == block_id).values(**values))
 
 
@@ -424,6 +448,33 @@ async def get_tags_batch(
     return tags_map
 
 
+async def list_active_blocks(
+    conn: AsyncConnection,
+    *,
+    tag: str | None = None,
+    category: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """List active blocks, optionally filtered by tag pattern and/or category.
+
+    Ordered by last_reinforced_at descending (most recently active first).
+    Pure read — no LLM or embedding calls. ``tag`` is a SQL LIKE pattern,
+    matching the semantics of ``frame()``'s existing ``tag_filter`` (e.g.
+    'self/%' for a prefix match) rather than requiring an exact tag string.
+    """
+    stmt = select(blocks).where(blocks.c.status == "active")
+    if category is not None:
+        stmt = stmt.where(blocks.c.category == category)
+    if tag is not None:
+        tagged_ids = select(block_tags.c.block_id).where(block_tags.c.tag.like(tag))
+        stmt = stmt.where(blocks.c.id.in_(tagged_ids))
+    stmt = stmt.order_by(blocks.c.last_reinforced_at.desc())
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    result = await conn.execute(stmt)
+    return [dict(row) for row in result.mappings()]
+
+
 async def get_blocks_by_tag_pattern(
     conn: AsyncConnection,
     pattern: str,
@@ -463,8 +514,14 @@ async def insert_edge(
     origin: str = "similarity",
     last_active_hours: float | None = None,
     note: str | None = None,
+    declared_by: str | None = None,
 ) -> None:
-    """Insert a similarity edge idempotently. from_id < to_id enforced by caller."""
+    """Insert a similarity edge idempotently. from_id < to_id enforced by caller.
+
+    ``declared_by`` names the endpoint that authored the relation, for typed
+    links read back from the file substrate. Endpoints are canonicalised, so
+    without it a directed relation loses its arrow on the next export.
+    """
     await conn.execute(
         insert(edges).prefix_with("OR IGNORE").values(
             from_id=from_id,
@@ -476,6 +533,7 @@ async def insert_edge(
             origin=origin,
             last_active_hours=last_active_hours,
             note=note,
+            declared_by=declared_by,
         )
     )
 
@@ -790,17 +848,42 @@ async def insert_contradiction(
     block_a_id: str,
     block_b_id: str,
     score: float,
+    kind: str = "contradiction",
+    cue_similarity: float | None = None,
 ) -> None:
-    """Insert a contradiction record."""
+    """Insert a contradiction or near-duplicate pair record.
+
+    ``OR IGNORE`` because the pair is unique by (a, b): re-encountering the
+    same near-duplicate on a later consolidation must not raise, and must not
+    overwrite a review decision already recorded against it.
+    """
     await conn.execute(
-        insert(contradictions).values(
+        insert(contradictions).prefix_with("OR IGNORE").values(
             block_a_id=block_a_id,
             block_b_id=block_b_id,
             score=score,
             resolved=0,
             created_at=_now_iso(),
+            kind=kind,
+            cue_similarity=cue_similarity,
         )
     )
+
+
+async def get_unresolved_pairs(
+    conn: AsyncConnection, *, kind: str | None = None,
+) -> list[dict[str, Any]]:
+    """Unresolved contradiction / near-duplicate pairs, newest first.
+
+    ``kind=None`` returns both. Used by ``review_corpus()`` to surface the
+    near-duplicate pairs that automatic supersession used to resolve by
+    deleting one half.
+    """
+    stmt = select(contradictions).where(contradictions.c.resolved == 0)
+    if kind is not None:
+        stmt = stmt.where(contradictions.c.kind == kind)
+    result = await conn.execute(stmt.order_by(contradictions.c.created_at.desc()))
+    return [dict(row) for row in result.mappings()]
 
 
 async def get_contradictions_for_blocks(
@@ -1527,6 +1610,41 @@ async def list_amendments(
             "ORDER BY timestamp DESC, id DESC LIMIT :limit"
         )
         result = await conn.execute(sql, {"bid": block_id, "limit": limit})
+    return [dict(row) for row in result.mappings()]
+
+
+async def update_block_cue(
+    conn: AsyncConnection, *, block_id: str, cue: str | None,
+) -> None:
+    """Set a block's cue line: when a future agent should recall it.
+
+    Deliberately does NOT touch content, embedding, summary, or
+    ``last_scored_at``. A cue is metadata about *retrieval*, not a change to
+    what the block claims, so it must not push the block into the rescore
+    queue the way a content edit does.
+    """
+    await conn.execute(
+        update(blocks).where(blocks.c.id == block_id).values(cue=cue)
+    )
+
+
+async def get_blocks_missing_cue(
+    conn: AsyncConnection, *, limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Active blocks with no cue line, oldest first.
+
+    Oldest-first because a backfill that is interrupted should have covered
+    the blocks least likely to be re-derived from recent context.
+    """
+    query = (
+        select(blocks)
+        .where(blocks.c.status == "active")
+        .where(or_(blocks.c.cue.is_(None), blocks.c.cue == ""))
+        .order_by(blocks.c.created_at)
+    )
+    if limit is not None:
+        query = query.limit(limit)
+    result = await conn.execute(query)
     return [dict(row) for row in result.mappings()]
 
 

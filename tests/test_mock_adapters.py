@@ -31,12 +31,6 @@ class TestMockLLMServiceProtocol:
         result = await MockLLMService().process_block("test block", "context")
         assert isinstance(result, BlockAnalysis)
 
-    @pytest.mark.asyncio
-    async def test_detect_contradiction_returns_float_in_range(self) -> None:
-        score = await MockLLMService().detect_contradiction("block a", "block b")
-        assert isinstance(score, float)
-        assert 0.0 <= score <= 1.0
-
 
 class TestMockEmbeddingServiceProtocol:
     """MockEmbeddingService satisfies the EmbeddingService protocol."""
@@ -79,24 +73,6 @@ class TestMockLLMServiceConfiguration:
         mock = MockLLMService(tag_overrides={"constitutional": ["self/constitutional"]})
         result = await mock.process_block("This is a constitutional belief.", "context")
         assert result.tags == ["self/constitutional"]
-
-    @pytest.mark.asyncio
-    async def test_contradiction_override_matches_both_contents(self) -> None:
-        mock = MockLLMService(
-            default_contradiction=0.1,
-            contradiction_overrides={("sync", "async"): 0.92},
-        )
-        score = await mock.detect_contradiction(
-            "Always use synchronous calls.",
-            "Never use synchronous calls — always async.",
-        )
-        assert abs(score - 0.92) < TOL
-
-    @pytest.mark.asyncio
-    async def test_default_contradiction_score(self) -> None:
-        mock = MockLLMService(default_contradiction=0.15)
-        score = await mock.detect_contradiction("block a", "block b")
-        assert abs(score - 0.15) < TOL
 
 
 # ── Embedding determinism ──────────────────────────────────────────────────────

@@ -25,8 +25,9 @@ import re
 import shutil
 import sys
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 # Env vars whose values may be paths but should NEVER be tilde-expanded
 # (legacy compatibility). The canonical name comes first; aliases are deprecated.
@@ -184,6 +185,24 @@ def find_local_config(start: Path | None = None) -> Path | None:
     if root is None:
         return None
     candidate = root / _LOCAL_CONFIG_SUBDIR / _LOCAL_CONFIG_NAME
+    return candidate if candidate.exists() else None
+
+
+def find_env_file(start: Path | None = None) -> Path | None:
+    """Walk up from *start* to find an existing <project_root>/.env.
+
+    Mirrors ``find_local_config``'s discovery pattern (v2 step 3). Previously
+    ``.env`` was only loaded via ``serve --env-file``, an opt-in flag — every
+    other command (``remember``, ``recall``, ``doctor``, ...) never saw a
+    project's ``.env`` at all unless the key happened to already be in the
+    real shell environment. Callers should still prefer real environment
+    variables: ``load_env_file`` (below) uses ``setdefault`` so a value
+    already present in ``os.environ`` is never overridden by the file.
+    """
+    root = find_project_root(start)
+    if root is None:
+        return None
+    candidate = root / ".env"
     return candidate if candidate.exists() else None
 
 
@@ -362,6 +381,133 @@ def detect_mcp_config(root: Path) -> Path | None:
     return None
 
 
+@dataclass(frozen=True)
+class McpEntryReport:
+    """One elfmem MCP entry and what is wrong with where it points."""
+
+    path: Path
+    server: str
+    issues: tuple[str, ...]
+
+    @property
+    def ok(self) -> bool:
+        return not self.issues
+
+
+def _mcp_files(root: Path) -> list[Path]:
+    """Every MCP config file under *root*, not just the first.
+
+    ``detect_mcp_config`` returns the first match, which is why a second,
+    stale file stays invisible: the entry actually in use looks fine while a
+    wrong one sits alongside it, waiting for whichever tool reads that file.
+    """
+    return [root / name for name in _MCP_CANDIDATES if (root / name).exists()]
+
+
+def _elfmem_entries(path: Path, root: Path) -> list[tuple[str, dict[str, Any]]]:
+    """Extract elfmem MCP server entries from one config file.
+
+    Handles the flat ``mcpServers`` shape and ``~/.claude.json``'s nested
+    ``projects[<path>].mcpServers`` shape (ADR 0008), in JSON or YAML.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8")
+        if path.suffix in {".yaml", ".yml"}:
+            import yaml
+
+            data = yaml.safe_load(raw) or {}
+        else:
+            data = json.loads(raw)
+    except (OSError, ValueError, ImportError):
+        return []
+    if not isinstance(data, dict):
+        return []
+
+    found: list[tuple[str, dict[str, Any]]] = []
+    for scope in (data, *(data.get("projects") or {}).values()):
+        if not isinstance(scope, dict):
+            continue
+        for name, entry in (scope.get("mcpServers") or {}).items():
+            if "elfmem" in name and isinstance(entry, dict):
+                found.append((name, entry))
+    return found
+
+
+def _arg_value(args: list[Any], flag: str) -> str | None:
+    for i, a in enumerate(args):
+        if a == flag and i + 1 < len(args):
+            return str(args[i + 1])
+    return None
+
+
+def check_mcp_entries(
+    root: Path, *, expected_config: Path, expected_db: str | None = None,
+) -> list[McpEntryReport]:
+    """Validate that every elfmem MCP entry points at *this* project.
+
+    USE WHEN: `elfmem doctor` — presence of the string "elfmem" in a config
+        file says nothing about whether the server it starts talks to this
+        project's memory.
+    DON'T USE WHEN: rewriting entries; that is `elfmem migrate`, which
+        proposes fixes rather than only reporting them.
+    COST: reads a handful of small config files. No DB, no LLM.
+    RETURNS: one report per elfmem entry found, each carrying its issues.
+        An empty list means no entry exists anywhere.
+    NEXT: `elfmem migrate` to apply the suggested corrections.
+
+    Checks the target, not the spelling: a wrong `--config` makes the agent
+    read another project's memory while every surface still reports healthy.
+    """
+    reports: list[McpEntryReport] = []
+    for path in _mcp_files(root):
+        for name, entry in _elfmem_entries(path, root):
+            issues: list[str] = []
+            args = [str(a) for a in (entry.get("args") or [])]
+
+            declared_config = _arg_value(args, "--config")
+            if declared_config is None:
+                issues.append(
+                    "no --config: the server falls back to a global config, "
+                    "so it may not read this project's memory at all"
+                )
+            else:
+                resolved = Path(declared_config).expanduser()
+                if not resolved.is_absolute():
+                    resolved = root / resolved
+                if resolved.resolve() != expected_config.resolve():
+                    issues.append(
+                        f"--config points at {resolved.resolve()}, but this "
+                        f"project's config is {expected_config.resolve()}"
+                    )
+
+            declared_db = _arg_value(args, "--db")
+            if (
+                declared_db is not None
+                and expected_db
+                and Path(declared_db).expanduser().resolve()
+                != Path(expected_db).expanduser().resolve()
+            ):
+                issues.append(
+                    f"--db points at {Path(declared_db).expanduser()}, but "
+                    f"this project's database is {expected_db}"
+                )
+
+            command = str(entry.get("command") or "")
+            if command and "/" not in command and command != "uv":
+                issues.append(
+                    f"command {command!r} is a bare name, so it resolves "
+                    "against the spawning shell's PATH — that misses a "
+                    "project-local venv (ADR 0008)"
+                )
+            elif command.startswith("/") and not Path(command).exists():
+                issues.append(f"command {command} does not exist")
+
+            reports.append(
+                McpEntryReport(path=path, server=name, issues=tuple(issues))
+            )
+    return reports
+
+
 def format_key_modules() -> str:
     """Return KEY_MODULES as a formatted markdown table for terminal output."""
     lines = ["Key module paths (from project.py KEY_MODULES):", ""]
@@ -405,11 +551,10 @@ def has_agent_section(doc_path: Path) -> bool:
     return SECTION_START_PREFIX in doc_path.read_text(encoding="utf-8")
 
 
-def has_mcp_entry(mcp_path: Path) -> bool:
-    """Return True if *mcp_path* mentions 'elfmem'."""
-    if not mcp_path.exists():
-        return False
-    return "elfmem" in mcp_path.read_text(encoding="utf-8")
+# has_mcp_entry() was removed here. It answered "does this file contain the
+# string 'elfmem'", which is true of an entry pointing at a completely
+# different project's config and database — drift that hid behind a green
+# doctor check twice. Use check_mcp_entries(), which validates the target.
 
 
 # ── Agent doc writing ─────────────────────────────────────────────────────────
@@ -757,6 +902,92 @@ def mcp_json_snippet(config_path: str, project_root: Path | str | None = None) -
 
 
 # ── Convenience ───────────────────────────────────────────────────────────────
+
+
+_MEMORY_SUBDIRS: tuple[str, ...] = ("notes", "log", "archive")
+
+_ELFMEM_GITIGNORE = """\
+# elfmem local state — derived, machine-specific, or private. Not versioned.
+*.db
+*.db-shm
+*.db-wal
+inbox/
+outbox/
+.agent-docs.lock
+.substrate-migration.json
+ledger/.checkpoint.json
+
+# memory/ and ledger/ are deliberately NOT ignored. They are the
+# authoritative substrate: git history is the undo path for forget() and
+# edit(), and the ledger is what makes the derived index rebuildable.
+"""
+
+_SELF_MD_TEMPLATE = """\
+# {agent_name}
+
+<!--
+This file is the constitution. It is read whole as the `self` frame's
+preamble and never becomes a block, so nothing here can be superseded,
+decayed, or silently rewritten by any automatic mechanism.
+
+Edit it directly. Everything below the line is a placeholder — replace it.
+-->
+
+---
+
+_No constitution written yet._
+"""
+
+
+def ensure_memory_scaffold(
+    config_dir: Path, *, agent_name: str = "elf"
+) -> dict[str, str]:
+    """Create the file substrate `.elfmem/memory/` and its local .gitignore.
+
+    USE WHEN: `elfmem init` runs, on fresh and established instances alike.
+    DON'T USE WHEN: you want to seed memory *content* — this writes no
+        blocks. `self.md` lands as an explicit placeholder, not as opinions.
+    COST: a few mkdir/write calls. No DB, no LLM, no embedding.
+    RETURNS: {path: action} where action is "created" or "exists (skipped)",
+        so `init` can report what it actually did.
+    NEXT: `git add .elfmem/memory && git commit` — without that commit,
+        `forget()` still has no recovery path.
+
+    Idempotent: an existing `self.md` or `.gitignore` is never overwritten,
+    because either may be hand-edited and both are cheap to lose accidentally.
+    """
+    actions: dict[str, str] = {}
+    memory_dir = config_dir / "memory"
+
+    for subdir in _MEMORY_SUBDIRS:
+        target = memory_dir / subdir
+        target.mkdir(parents=True, exist_ok=True)
+        # Git does not track empty directories, and an unversioned notes/
+        # defeats the point of creating it at all.
+        keep = target / ".gitkeep"
+        if keep.exists():
+            actions[str(keep)] = "exists (skipped)"
+        else:
+            keep.write_text("", encoding="utf-8")
+            actions[str(keep)] = "created"
+
+    self_md = memory_dir / "self.md"
+    if self_md.exists():
+        actions[str(self_md)] = "exists (skipped)"
+    else:
+        self_md.write_text(
+            _SELF_MD_TEMPLATE.format(agent_name=agent_name), encoding="utf-8"
+        )
+        actions[str(self_md)] = "created"
+
+    gitignore = config_dir / ".gitignore"
+    if gitignore.exists():
+        actions[str(gitignore)] = "exists (skipped)"
+    else:
+        gitignore.write_text(_ELFMEM_GITIGNORE, encoding="utf-8")
+        actions[str(gitignore)] = "created"
+
+    return actions
 
 
 def get_project_info(cwd: Path | None = None) -> ProjectInfo | None:

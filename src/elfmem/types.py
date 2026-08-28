@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 
 class BlockStatus(StrEnum):
@@ -40,16 +40,60 @@ class DecayTier(StrEnum):
 
 @dataclass
 class ScoredBlock:
+    """One block a retrieval returned, with the signals that ranked it.
+
+    The scoring fields are diagnostic — they explain *why* this block ranked
+    where it did within THIS result set. Two of them read like portable,
+    absolute measures and are not; see ``similarity`` and ``score`` below
+    before deriving anything from them, and in particular before deriving
+    ``outcome(weight=...)`` from them.
+    """
+
     id: str
     content: str
     tags: list[str]
+
+    #: NOT a portable relevance score, despite the name. Three regimes:
+    #:
+    #: - ``0.0`` is a SENTINEL meaning "vector search never scored this",
+    #:   not "irrelevant". Two ways to get it: a queryless frame (SELF scores
+    #:   every block 0.0 — there is no query to be similar to), or a block
+    #:   pulled in by 1-hop graph expansion rather than by the query
+    #:   (``was_expanded=True``).
+    #: - When BM25 has signal, this is a Reciprocal-Rank-Fusion score
+    #:   normalised so the top-ranked block is exactly ``1.0``. It is
+    #:   rank-shaped, not magnitude-shaped: measured on a real corpus, a
+    #:   five-block recall spanned 0.905–1.0, so differences here are far
+    #:   smaller than raw relevance differences.
+    #: - Only when BM25 finds nothing is this the raw cosine similarity.
+    #:
+    #: Consequence for weighted credit assignment: ``outcome(weight=b.similarity)``
+    #: is the obvious thing to write and is wrong in all three regimes — it
+    #: raises ``ValueError`` on the sentinel (weight must be > 0.0), collapses
+    #: to a near-uniform weight in the RRF band, and applies a uniform weight
+    #: on a queryless frame. Rank order within ``result.blocks`` is the
+    #: portable signal; this number is not.
     similarity: float
+
     confidence: float
     recency: float
     centrality: float
     reinforcement: float
+
+    #: The composite ranking value that ordered this result set — a blend of
+    #: similarity, confidence, recency, centrality, reinforcement and the
+    #: exploration bonus, weighted per frame. NOT a semantic-similarity score:
+    #: a block can score highly on reinforcement and centrality alone, so a
+    #: high ``score`` against an unrelated query is normal, not a bug. Use it
+    #: to explain ranking, never as a relevance threshold.
     score: float
+
+    #: True when the block reached this result set through graph expansion
+    #: (a 1-hop neighbour of a query hit) rather than by matching the query.
+    #: This is the discriminator that tells a ``similarity`` of 0.0 apart
+    #: from a genuine low score.
     was_expanded: bool = False
+
     status: str = BlockStatus.ACTIVE.value
 
     @property
@@ -78,24 +122,138 @@ class ScoredBlock:
 
 
 @dataclass
+class DroppedBlock:
+    """A block that was eligible for a frame but did not reach the rendered text.
+
+    The reason is carried per block, not once per frame, because a single
+    call can drop for several reasons at once: one half of a near-duplicate
+    pair is suppressed, blocks past ``top_k`` never reach the renderer, and
+    blocks the renderer could not fit are dropped again on budget. A single
+    frame-level reason would have to pick one and misreport the others.
+
+    ``contradiction`` is the least obvious and the most consequential for a
+    constitution: consolidation flags near-duplicate pairs rather than
+    destroying either half (ADR 0010), and retrieval then shows only the
+    higher-confidence one. Seed eight similarly-worded principles and the
+    agent can legitimately receive three, which used to look identical to
+    having only ever stored three.
+    """
+
+    id: str
+    content: str
+    tags: list[str]
+    reason: Literal["top_k", "token_budget", "contradiction"]
+
+    @property
+    def summary(self) -> str:
+        preview = self.content[:60] + ("…" if len(self.content) > 60 else "")
+        return f"{self.id[:8]}… ({self.reason}) {preview}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "tags": self.tags,
+            "reason": self.reason,
+        }
+
+
+@dataclass
 class FrameResult:
     text: str
     blocks: list[ScoredBlock]
     frame_name: str
     cached: bool = False
     edges_promoted: int = 0  # co_retrieval edges promoted during this frame() call
+    # Blocks that were eligible but never reached `text`. Empty is the
+    # normal case and means "this is everything", which is precisely what a
+    # caller could not previously distinguish from "this is the first five
+    # of ten". A partial identity the agent believes is whole is the worst
+    # failure this library can produce; these three fields are what make it
+    # visible without reading the renderer's source.
+    dropped: list[DroppedBlock] = field(default_factory=list)
+    budget_used: int = 0
+    budget_total: int = 0
+    # How many active blocks this frame's `exclude_tag_patterns` bar from it
+    # entirely -- a property of the corpus and the frame, NOT a count of what
+    # this particular query would otherwise have returned. Reading it as the
+    # latter is what makes it look like it disagrees with `blocks`; the
+    # invariant that ties them together is that an excluded block appears in
+    # neither `blocks` nor `dropped`, because it was never a candidate.
+    #
+    # A count rather than a list, deliberately: unlike top_k, token_budget and
+    # contradiction -- which are emergent, and so cannot be predicted without
+    # being told -- a frame filter is declared, static, and readable in the
+    # frame definition. The number is what a caller cannot otherwise know.
+    excluded_by_filter: int = 0
+
+    @property
+    def dropped_reasons(self) -> set[str]:
+        """Which limits actually bit this call — ``{"top_k"}``, ``{"token_budget"}``,
+        both, or empty when nothing was dropped."""
+        return {d.reason for d in self.dropped}
 
     @property
     def summary(self) -> str:
         count = len(self.blocks)
         cached_note = " (cached)" if self.cached else ""
-        if count == 0:
+        if count == 0 and not self.dropped:
+            # An empty frame with an active exclusion is not the same event as
+            # an empty corpus, and the caller cannot tell them apart from the
+            # block list alone -- which is precisely the confusion this whole
+            # reporting effort exists to remove.
+            if self.excluded_by_filter:
+                return (
+                    f"{self.frame_name} frame: no blocks found — "
+                    f"{self.excluded_by_filter} excluded by this frame's tag "
+                    "filter. Identity blocks belong to the self frame; if you "
+                    "expected knowledge here, none matched."
+                )
             return f"{self.frame_name} frame: no blocks found."
         noun = "block" if count == 1 else "blocks"
-        return f"{self.frame_name} frame: {count} {noun} returned{cached_note}."
+        base = f"{self.frame_name} frame: {count} {noun} returned{cached_note}"
+        if self.budget_total:
+            base += f", {self.budget_used}/{self.budget_total} tokens"
+        if self.dropped:
+            by_reason = ", ".join(
+                f"{sum(1 for d in self.dropped if d.reason == r)} {r}"
+                for r in sorted(self.dropped_reasons)
+            )
+            base += f" — {len(self.dropped)} dropped ({by_reason})"
+        return base + "."
 
     def __str__(self) -> str:
         return self.summary
+
+    def compose(self, query: str) -> str:
+        """Combine the rendered frame and the query into one complete prompt.
+
+        USE WHEN: You are building the prompt for a *separate* model call and
+        the question is not already in that model's context -- a library
+        caller, an agent loop, a subagent brief.
+
+        DON'T USE WHEN: The host already holds the question, which is the case
+        for every MCP tool call from a chat client. Use ``.text`` there;
+        echoing the question back merely duplicates it, and a paraphrased
+        duplicate is worse than none because the model may answer the copy.
+
+        COST: Instant. Pure string assembly, no retrieval and no LLM call.
+
+        RETURNS: str -- the frame text, then the question under its own
+        heading. Returns the bare question when no blocks were retrieved, so
+        an empty memory degrades to an unaugmented prompt rather than a
+        heading with nothing under it.
+
+        NEXT: Send it as the prompt. Any instruction about *how* to answer
+        belongs in the frame template, not here -- this method stitches, the
+        template speaks.
+        """
+        if not self.text:
+            return query
+        return f"{self.text}\n\n## The question\n{query}"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -108,27 +266,203 @@ class FrameResult:
 
 
 @dataclass
-class LearnResult:
-    block_id: str
-    status: str  # "created" | "duplicate_rejected" | "near_duplicate_superseded"
+class UseResult:
+    """Result of record_use() — blocks confirmed to have informed an answer.
+
+    Agent-friendly surface
+    ----------------------
+    - ``__str__`` → one-line summary optimised for agent context windows
+    - ``summary`` → property; same as ``__str__``
+    - ``to_dict()`` → JSON-serialisable dict for programmatic access
+    """
+
+    blocks_reinforced: int
+    source: str = ""
 
     @property
     def summary(self) -> str:
-        short_id = self.block_id[:8]
-        if self.status == "created":
-            return f"Stored block {short_id}. Status: created."
-        if self.status == "duplicate_rejected":
-            return f"Duplicate — block {short_id} already exists."
-        if self.status == "near_duplicate_superseded":
-            return f"Updated block {short_id} (superseded near-duplicate)."
-        # Fallback for future status values
-        return f"Block {short_id}. Status: {self.status}."
+        if self.blocks_reinforced == 0:
+            return "Use recorded: no blocks were drawn on."
+        noun = "block" if self.blocks_reinforced == 1 else "blocks"
+        via = f" (via {self.source})" if self.source else ""
+        return f"Use recorded: {self.blocks_reinforced} {noun} reinforced{via}."
 
     def __str__(self) -> str:
         return self.summary
 
     def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_reinforced": self.blocks_reinforced,
+            "source": self.source,
+        }
+
+
+@dataclass
+class LearnResult:
+    block_id: str
+    status: str  # "created" | "duplicate_rejected" | "near_duplicate_superseded"
+    # True while the block is in the inbox: stored, but NOT yet retrievable by
+    # frame()/recall(). `status="created"` is true and, on its own, misleading
+    # -- a caller who seeds ten principles gets ten successes and an empty
+    # frame, because consolidation has not run. This field is what makes that
+    # gap visible at the call site instead of at debugging time.
+    pending_consolidation: bool = False
+
+    @property
+    def visible(self) -> bool:
+        """Can frame()/recall() return this block right now? The inverse of
+        ``pending_consolidation`` -- named positively because "is it visible
+        to the agent" is the question callers actually ask."""
+        return not self.pending_consolidation
+
+    @property
+    def summary(self) -> str:
+        short_id = self.block_id[:8]
+        pending = (
+            " Pending consolidation — not yet retrievable; run dream()."
+            if self.pending_consolidation
+            else ""
+        )
+        if self.status == "created":
+            return f"Stored block {short_id}. Status: created.{pending}"
+        if self.status == "duplicate_rejected":
+            return f"Duplicate — block {short_id} already exists.{pending}"
+        if self.status == "near_duplicate_superseded":
+            return f"Updated block {short_id} (superseded near-duplicate).{pending}"
+        # Fallback for future status values
+        return f"Block {short_id}. Status: {self.status}.{pending}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "status": self.status,
+            "pending_consolidation": self.pending_consolidation,
+            "visible": self.visible,
+        }
+
+
+@dataclass
+class EditResult:
+    """Result of edit() — replacing an active block's content.
+
+    USE WHEN: Confirming a content edit landed and re-embedding was queued.
+    COST: Zero — pure summary.
+    RETURNS: The edited block's id.
+    NEXT: The block's summary/last_scored_at are cleared; dream() or
+    consolidate() will refresh them on the next cycle.
+    """
+
+    block_id: str
+
+    @property
+    def summary(self) -> str:
+        return f"Edited block {self.block_id[:8]}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {"block_id": self.block_id}
+
+
+@dataclass
+class ForgetResult:
+    """Result of forget() — archiving a block by explicit request.
+
+    USE WHEN: Confirming a block was removed from active memory.
+    DON'T USE WHEN: You need to check whether a block exists before calling —
+    forget() on an already-archived block is a safe no-op, not an error.
+    COST: Zero — pure summary.
+    RETURNS: block_id and status ('forgotten' | 'already_archived').
+    NEXT: None — the block no longer appears in frame()/recall()/ls().
+    """
+
+    block_id: str
+    status: str  # "forgotten" | "already_archived"
+
+    @property
+    def summary(self) -> str:
+        if self.status == "already_archived":
+            return f"Block {self.block_id[:8]} was already archived."
+        return f"Forgot block {self.block_id[:8]}."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
         return {"block_id": self.block_id, "status": self.status}
+
+
+@dataclass
+class BlockSummary:
+    """One row of ls() — a deterministic, unscored listing of an active block.
+
+    Unlike ScoredBlock (retrieval output), there is no similarity, centrality,
+    or reinforcement-derived score here — ls() is a flat listing, not a ranked
+    retrieval. Use frame()/recall() when relevance ranking matters.
+    """
+
+    id: str
+    content: str
+    category: str
+    tags: list[str]
+    created_at: str
+    reinforcement_count: int
+
+    @property
+    def summary(self) -> str:
+        tag_str = f" [{', '.join(self.tags[:3])}]" if self.tags else ""
+        truncated = self.content[:80] + ("…" if len(self.content) > 80 else "")
+        return f"{self.id[:8]} {truncated}{tag_str}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "category": self.category,
+            "tags": self.tags,
+            "created_at": self.created_at,
+            "reinforcement_count": self.reinforcement_count,
+        }
+
+
+@dataclass
+class InboxBlockSummary:
+    """One pending inbox block, not yet consolidated. FIFO order (oldest
+    first) — matches how consolidate() would process them under
+    max_inbox_per_run. See ``MemorySystem.inbox()``: the read half of
+    letting a host agent session supply its own alignment/tags/summary via
+    ``dream(host_analyses=...)`` instead of a configured LLM adapter."""
+
+    id: str
+    content: str
+    category: str
+    tags: list[str]
+    created_at: str
+
+    @property
+    def summary(self) -> str:
+        tag_str = f" [{', '.join(self.tags[:3])}]" if self.tags else ""
+        truncated = self.content[:80] + ("…" if len(self.content) > 80 else "")
+        return f"{self.id[:8]} {truncated}{tag_str}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "content": self.content,
+            "category": self.category,
+            "tags": self.tags,
+            "created_at": self.created_at,
+        }
 
 
 @dataclass
@@ -174,47 +508,14 @@ class LearnDocumentResult:
 
 
 @dataclass
-class ContradictionFinding:
-    """One contradiction detected during consolidate(), with detection-time signals.
-
-    Surfaced on ``ConsolidateResult.contradictions`` so agents can apply
-    per-deployment suppression rules (e.g., "high cosine with high tag
-    overlap likely means same topic, not contradiction") on dream output
-    without recomputing from current block state. The features capture
-    signal at the moment of detection — block content / tags / categories
-    may have changed by the time the row is read at recall.
-    """
-
-    block_a_id: str
-    block_b_id: str
-    score: float          # LLM contradiction confidence in [0, 1]
-    cosine: float         # embedding similarity at detection (clamped ≥ 0)
-    tag_jaccard: float    # |A∩B| / |A∪B| over the two blocks' tag sets
-    category_match: bool  # block-level proxy for shared framing
-    hours_apart: float    # |hours_a − hours_b| at detection time
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "block_a_id": self.block_a_id,
-            "block_b_id": self.block_b_id,
-            "score": self.score,
-            "cosine": self.cosine,
-            "tag_jaccard": self.tag_jaccard,
-            "category_match": self.category_match,
-            "hours_apart": self.hours_apart,
-        }
-
-
-@dataclass
 class ConsolidationHealthMetrics:
     """Diagnostic ratios from one consolidation cycle.
 
     Observability-only — no policy or runtime behaviour reads these. They
-    exist so operators (and future plans) can detect whether any of the
-    four static thresholds in ``operations/consolidate.py``
-    (``EDGE_SCORE_THRESHOLD``, ``CONTRADICTION_THRESHOLD``,
-    ``CONTRADICTION_SIMILARITY_PREFILTER``, per-tier ``decay_lambda``) is
-    systematically misbehaving on a real deployment.
+    exist so operators (and future plans) can detect whether either of the
+    two remaining static thresholds in ``operations/consolidate.py``
+    (``EDGE_SCORE_THRESHOLD``, per-tier ``decay_lambda``) is systematically
+    misbehaving on a real deployment.
 
     Trigger conditions for revisiting multi-parameter self-tuning are in
     ADR 0006. Field semantics:
@@ -222,19 +523,10 @@ class ConsolidationHealthMetrics:
     - ``edge_creation_rate``: edges created per promoted block. Falling
       to near-zero suggests EDGE_SCORE_THRESHOLD is too strict;
       ballooning suggests it's too loose.
-    - ``contradiction_detection_rate``: contradictions flagged per pair
-      check. Persistently zero means contradictions aren't being found;
-      persistently high means the threshold may be too loose.
-    - ``prefilter_pass_rate``: pairs above the cosine prefilter per pair
-      check. Answers "is the prefilter spending LLM calls on noise?"
     - ``promotion_rate``: same signal ``ConsolidationPolicy`` uses, but
       surfaced for operator corroboration.
     - ``deduplication_rate``: sanity check that dedup is doing useful
       work, not just rejecting most of the inbox.
-    - ``contradiction_cap_rate`` (ADR 0007): of the pairs that clear the
-      cosine prefilter, the fraction skipped because they fell outside the
-      per-block ``contradiction_top_k`` cap. Persistently non-zero on a real
-      deployment is the reopen trigger for raising ``contradiction_top_k``.
 
     All fields are in [0.0, 1.0] except ``edge_creation_rate`` which is
     an unbounded non-negative ratio (a single promoted block can form up
@@ -242,20 +534,14 @@ class ConsolidationHealthMetrics:
     """
 
     edge_creation_rate: float
-    contradiction_detection_rate: float
-    prefilter_pass_rate: float
     promotion_rate: float
     deduplication_rate: float
-    contradiction_cap_rate: float = 0.0
 
     def to_dict(self) -> dict[str, float]:
         return {
             "edge_creation_rate": round(self.edge_creation_rate, 3),
-            "contradiction_detection_rate": round(self.contradiction_detection_rate, 3),
-            "prefilter_pass_rate": round(self.prefilter_pass_rate, 3),
             "promotion_rate": round(self.promotion_rate, 3),
             "deduplication_rate": round(self.deduplication_rate, 3),
-            "contradiction_cap_rate": round(self.contradiction_cap_rate, 3),
         }
 
 
@@ -265,16 +551,6 @@ class ConsolidateResult:
     promoted: int
     deduplicated: int
     edges_created: int
-    # Contradictions detected and inserted into the contradictions table this
-    # call. Detection runs on every above-prefilter pair unless
-    # ``skip_contradictions=True``; the count was previously invisible from
-    # ``ConsolidateResult`` even though detection ran and rows were written.
-    # Surfaced in v0.14.0 (issue #50 item 1).
-    contradictions_detected: int = 0
-    # Per-pair findings with detection-time features (cosine, tag_jaccard,
-    # category_match, hours_apart). Enables agent-side rules without an
-    # extra DB query. Empty when no pairs detected.
-    contradictions: list[ContradictionFinding] = field(default_factory=list)
     # Deep-sleep rescoring counts (v0.13.3). Populated when dream() is
     # called with rescore=True; otherwise zeros. Tracks the second phase
     # of dream — refreshing existing active blocks, separate from the
@@ -290,6 +566,42 @@ class ConsolidateResult:
     # Inbox blocks left unprocessed by ``consolidation.max_inbox_per_run``
     # (ADR 0007). 0 unless the inbox was larger than the per-run budget.
     inbox_remaining: int = 0
+    # Near-duplicate matches refused because the candidate-to-be-archived
+    # block was tagged self/constitutional (v2 step 1 pin guard, see
+    # docs/plans/plan_v2_substrate_reevaluation.md §5.3/§9). The incoming
+    # block was promoted alongside it instead of silently overwriting it —
+    # 0 means every near-duplicate this call encountered was safe to
+    # supersede normally. A nonzero value is not an error; it means a
+    # near-duplicate pair is now sitting in active memory for a human (or a
+    # future corpus-level review) to reconcile.
+
+    @property
+    def blocked_supersessions(self) -> int:
+        """Deprecated alias for ``near_duplicates_flagged``.
+
+        Named for the v2 step 1 pin guard, which refused to supersede a
+        ``self/constitutional`` block while every other block was still
+        destroyed. Nothing on this path destroys anything now, so "blocked"
+        no longer distinguishes anything: the count is every near-duplicate.
+        Kept as an alias so existing readers do not break; read
+        ``near_duplicates_flagged`` instead.
+        """
+        return self.near_duplicates_flagged
+    # Near-duplicate pairs recorded this cycle. Automatic supersession used to
+    # archive the older block outright; both are now kept and the pair is
+    # written to the `contradictions` table with kind='near_duplicate' for
+    # `elfmem review` to reconcile deliberately. A nonzero value is normal,
+    # not an error — it is the count of destructions that did not happen.
+    near_duplicates_flagged: int = 0
+    # Block ids whose caller-supplied `host_analyses` entry this run did NOT
+    # apply, because the block fell outside `consolidation.max_inbox_per_run`
+    # (ADR 0007). This is not cosmetic: an unapplied analysis means the block
+    # is left for a later pass that will analyse it with the configured LLM
+    # instead -- silently substituting generated wording for wording the
+    # caller supplied precisely to prevent that, inverting an explicit
+    # instruction. Re-submit these ids on the next call, or raise
+    # `consolidation.max_inbox_per_run`.
+    analyses_unused: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
@@ -306,8 +618,10 @@ class ConsolidateResult:
             if self.deduplicated:
                 parts.append(f"{self.deduplicated} deduped")
             parts.append(f"{self.edges_created} edges")
-            if self.contradictions_detected:
-                parts.append(f"{self.contradictions_detected} contradictions")
+            if self.near_duplicates_flagged:
+                n = self.near_duplicates_flagged
+                noun = "pair" if n == 1 else "pairs"
+                parts.append(f"{n} near-duplicate {noun} kept and flagged")
         if self.rescored or self.rescore_failed:
             rs = f"{self.rescored} rescored"
             if self.rescore_failed:
@@ -321,6 +635,13 @@ class ConsolidateResult:
         suffix = "."
         if self.inbox_remaining:
             suffix = f" — {self.inbox_remaining} remaining, run dream() again to continue."
+        if self.analyses_unused:
+            n = len(self.analyses_unused)
+            noun = "analysis" if n == 1 else "analyses"
+            suffix = (
+                f" — {n} supplied {noun} NOT applied (outside max_inbox_per_run); "
+                "re-submit on the next call or they will be LLM-analysed instead."
+            )
         return prefix + ", ".join(parts) + suffix
 
     def __str__(self) -> str:
@@ -332,18 +653,17 @@ class ConsolidateResult:
             "promoted": self.promoted,
             "deduplicated": self.deduplicated,
             "edges_created": self.edges_created,
-            "contradictions_detected": self.contradictions_detected,
-            "contradictions": [c.to_dict() for c in self.contradictions],
             "rescored": self.rescored,
             "rescore_failed": self.rescore_failed,
             "health": self.health.to_dict() if self.health is not None else None,
             "inbox_remaining": self.inbox_remaining,
+            "blocked_supersessions": self.blocked_supersessions,
+            "analyses_unused": self.analyses_unused,
         }
 
 
 @dataclass
 class CurateResult:
-    archived: int
     edges_pruned: int
     reinforced: int
     constitutional_reinforced: int = 0
@@ -352,12 +672,10 @@ class CurateResult:
 
     @property
     def summary(self) -> str:
-        if not any([self.archived, self.edges_pruned, self.reinforced,
+        if not any([self.edges_pruned, self.reinforced,
                     self.constitutional_reinforced, self.edges_decayed]):
             return "Curated: nothing required."
         parts: list[str] = []
-        if self.archived:
-            parts.append(f"{self.archived} archived")
         if self.edges_pruned:
             parts.append(f"{self.edges_pruned} edges pruned")
         if self.edges_decayed:
@@ -382,13 +700,111 @@ class CurateResult:
 
     def to_dict(self) -> dict[str, int]:
         return {
-            "archived": self.archived,
             "edges_pruned": self.edges_pruned,
             "reinforced": self.reinforced,
             "constitutional_reinforced": self.constitutional_reinforced,
             "edges_decayed": self.edges_decayed,
             "total_edges_after": self.total_edges_after,
         }
+
+
+@dataclass(frozen=True)
+class GoalDirectedEdgeProposal:
+    """One proposed tier-2 connection from edge-metabolism Stage A
+    (docs/plans/plan_edge_metabolism.md). Not yet applied to the graph —
+    Stage A never calls insert_edge."""
+
+    block_id: str
+    candidate_id: str
+    reasoning: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "block_id": self.block_id,
+            "candidate_id": self.candidate_id,
+            "reasoning": self.reasoning,
+        }
+
+
+@dataclass
+class MetabolismDryRunResult:
+    """Everything one ``metabolism_dry_run()`` pass found. Nothing in this
+    result has been written to the edges table — see
+    docs/plans/plan_edge_metabolism.md "Stage A".
+
+    Deliberately includes the raw ingredients (``self_goals``,
+    ``candidates``), not just the pipeline's own ``proposals`` — a caller
+    with no configured LLM (or one that failed; check ``llm_failures``) can
+    still read these and reason over them itself, e.g. a host agent session
+    applying its own judgement via ``connect()``. This is why there is no
+    separate "candidates only" mode: the same result already carries both.
+    """
+
+    blocks_considered: int
+    self_goals: list[str] = field(default_factory=list)
+    # block_id -> [(candidate_id, summary_or_content), ...]
+    candidates: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    proposals: list[GoalDirectedEdgeProposal] = field(default_factory=list)
+    llm_failures: int = 0
+
+    @property
+    def summary(self) -> str:
+        if not self.self_goals:
+            return (
+                f"Metabolism dry run: {self.blocks_considered} block(s) considered, "
+                "no self/goal blocks found — nothing to judge connections against."
+            )
+        parts = [f"{self.blocks_considered} block(s) considered"]
+        parts.append(f"{len(self.proposals)} connection(s) proposed")
+        if self.llm_failures:
+            parts.append(f"{self.llm_failures} LLM call(s) failed — see .candidates for raw data")
+        return f"Metabolism dry run: {', '.join(parts)}. Nothing written."
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "blocks_considered": self.blocks_considered,
+            "self_goals": self.self_goals,
+            "candidates": {
+                block_id: [{"id": cid, "content": content} for cid, content in pairs]
+                for block_id, pairs in self.candidates.items()
+            },
+            "proposals": [p.to_dict() for p in self.proposals],
+            "llm_failures": self.llm_failures,
+        }
+
+
+_SKIP_LABEL = {
+    "constitutional": (
+        "constitutional (identity is not judged by task outcomes — use "
+        "review_constitutional, or pass allow_constitutional=True)"
+    ),
+    "pending_inbox": (
+        "still in the inbox — NOT recorded; run dream(), then send the signal again"
+    ),
+    "archived": "archived (deliberately forgotten)",
+    "unmatched": "no such block (check the ids)",
+}
+
+
+@dataclass(frozen=True)
+class SkippedBlock:
+    """One block id an outcome() call did not score, and why."""
+
+    id: str
+    reason: Literal["constitutional", "pending_inbox", "archived", "unmatched"]
+
+    @property
+    def summary(self) -> str:
+        return f"{self.id[:8]}… ({self.reason})"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "reason": self.reason}
 
 
 @dataclass(frozen=True)
@@ -408,11 +824,41 @@ class OutcomeResult:
     blocks_penalized: int = 0
     outcome_edges_created: int = 0
     """New edges created by outcome() between non-similar but co-used blocks."""
+    # Every id that did NOT receive the signal, each carrying why. Without
+    # this a caller cannot tell "wrong id" from "not consolidated yet" from
+    # "constitutional skip" -- all three returned blocks_updated=0 and the
+    # same shape. `pending_inbox` is the one that silently ate real signal:
+    # remember() then outcome() before a dream() is an ordinary sequence for
+    # an agent whose work resolves faster than its consolidation cycle.
+    #
+    # Reason-per-item rather than one list per reason, mirroring
+    # FrameResult.dropped: one call can skip for several reasons at once, and
+    # a caller wanting only one of them can filter with skipped_for().
+    skipped: list[SkippedBlock] = field(default_factory=list)
+
+    def skipped_for(self, reason: str) -> list[str]:
+        """Ids skipped for one reason — e.g. ``"pending_inbox"``."""
+        return [s.id for s in self.skipped if s.reason == reason]
+
+    @property
+    def skipped_constitutional(self) -> list[str]:
+        """Ids refused because they are `self/constitutional`. A task outcome
+        is evidence about the task, never about the principle that helped
+        reason through it, and the tier granting permanence should also grant
+        protection. Pass `allow_constitutional=True` to override."""
+        return self.skipped_for("constitutional")
 
     @property
     def summary(self) -> str:
+        skipped = ""
+        if self.skipped:
+            counts: dict[str, int] = {}
+            for item in self.skipped:
+                counts[item.reason] = counts.get(item.reason, 0) + 1
+            parts = [f"{n} {_SKIP_LABEL[r]}" for r, n in sorted(counts.items())]
+            skipped = f" Not scored: {'; '.join(parts)}."
         if self.blocks_updated == 0:
-            return "Outcome recorded: nothing to update."
+            return f"Outcome recorded: nothing to update.{skipped}"
         noun = "block" if self.blocks_updated == 1 else "blocks"
         delta_str = f"{self.mean_confidence_delta:+.3f}"
         parts = [f"{self.blocks_updated} {noun} updated ({delta_str} avg confidence)"]
@@ -423,7 +869,7 @@ class OutcomeResult:
         if self.blocks_penalized:
             pen_noun = "block" if self.blocks_penalized == 1 else "blocks"
             parts.append(f"{self.blocks_penalized} {pen_noun} penalized")
-        return f"Outcome recorded: {', '.join(parts)}."
+        return f"Outcome recorded: {', '.join(parts)}.{skipped}"
 
     def __str__(self) -> str:
         return self.summary
@@ -435,6 +881,8 @@ class OutcomeResult:
             "edges_reinforced": self.edges_reinforced,
             "blocks_penalized": self.blocks_penalized,
             "outcome_edges_created": self.outcome_edges_created,
+            "skipped": [item.to_dict() for item in self.skipped],
+            "skipped_constitutional": self.skipped_constitutional,
         }
 
 
@@ -1358,6 +1806,129 @@ class ConstitutionalReviewResult:
             "skipped_count": self.skipped_count,
             "insufficient_history": self.insufficient_history,
             "failed_proposal_count": self.failed_proposal_count,
+        }
+
+
+# ── Corpus review types (v2 step 6a) ─────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class CorpusProposal:
+    """One proposed action from `review_corpus()`, awaiting accept/reject.
+
+    USE WHEN: Surfacing a corpus-level review finding for explicit review.
+    DON'T USE WHEN: Applying it — call ``forget(block_id, reason=...)``.
+    COST: Zero by itself (it is a value object).
+    RETURNS: Which block, what kind of finding, and why.
+    NEXT: Accept -> forget(block_id, reason=ArchiveReason.DECAYED); reject -> discard.
+
+    ``kind`` is 'stale' today (deterministic, no LLM). 'duplicate' and
+    'contradiction' (LLM-detected) are a later addition — this field exists
+    now so that addition doesn't need a new type, only a new value.
+    """
+
+    block_id: str
+    kind: str
+    reason: str
+    content_preview: str
+
+    @property
+    def summary(self) -> str:
+        return f"[{self.kind}] {self.block_id[:8]}…: {self.reason}"
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "block_id": self.block_id,
+            "kind": self.kind,
+            "reason": self.reason,
+            "content_preview": self.content_preview,
+        }
+
+
+@dataclass(frozen=True)
+class NearDuplicatePair:
+    """Two active blocks whose content matched closely enough that one of them
+    used to be silently archived.
+
+    ``cue_similarity`` is lexical overlap of the two cue lines, or None when
+    either block has none. It is reported so a reviewer can see whether the
+    pair answers the same retrieval situation (likely a true duplicate) or
+    different ones (likely both worth keeping). Nothing thresholds it.
+    """
+
+    block_a_id: str
+    block_b_id: str
+    similarity: float
+    cue_similarity: float | None = None
+
+    @property
+    def summary(self) -> str:
+        cue = (
+            "cue n/a" if self.cue_similarity is None
+            else f"cue {self.cue_similarity:.2f}"
+        )
+        return (
+            f"{self.block_a_id[:8]} ~ {self.block_b_id[:8]} "
+            f"(content {self.similarity:.2f}, {cue})"
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_a_id": self.block_a_id,
+            "block_b_id": self.block_b_id,
+            "similarity": self.similarity,
+            "cue_similarity": self.cue_similarity,
+        }
+
+
+@dataclass(frozen=True)
+class CorpusReviewResult:
+    """Result of ``review_corpus()`` — proposed archivals + counts.
+
+    USE WHEN: The agent has called a corpus review cycle.
+    DON'T USE WHEN: You only need the raw proposals — read ``.proposals``.
+    COST: Zero LLM calls for 'stale' proposals (pure SQL/math).
+    RETURNS: Proposals plus the number of active blocks considered.
+    NEXT: Iterate ``.proposals`` and call ``forget()`` per choice.
+    """
+
+    reviewed_count: int
+    proposals: list[CorpusProposal] = field(default_factory=list)
+    near_duplicate_pairs: list[NearDuplicatePair] = field(default_factory=list)
+
+    @property
+    def summary(self) -> str:
+        n = len(self.proposals)
+        pairs = len(self.near_duplicate_pairs)
+        parts: list[str] = []
+        if n:
+            parts.append(f"{n} stale {'proposal' if n == 1 else 'proposals'}")
+        if pairs:
+            parts.append(
+                f"{pairs} near-duplicate {'pair' if pairs == 1 else 'pairs'}"
+            )
+        if not parts:
+            return f"Corpus review: {self.reviewed_count} reviewed, nothing to review."
+        return (
+            f"Corpus review: {', '.join(parts)} ({self.reviewed_count} reviewed)."
+        )
+
+    def __str__(self) -> str:
+        return self.summary
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "reviewed_count": self.reviewed_count,
+            "proposals": [p.to_dict() for p in self.proposals],
+            "near_duplicate_pairs": [
+                p.to_dict() for p in self.near_duplicate_pairs
+            ],
         }
 
 

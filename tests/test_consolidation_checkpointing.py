@@ -1,10 +1,13 @@
 """Tests for ADR 0007 — bound and checkpoint consolidation for slow LLM adapters.
 
-Three independent guarantees, each verified directly:
-- contradiction_top_k bounds per-block LLM calls regardless of active-set size
+Two independent guarantees, each verified directly:
 - max_inbox_per_run bounds and resumes inbox processing across dream() calls
 - rescore_blocks() commits durably per block — a crash mid-batch does not
   lose already-rescored blocks
+
+(A third guarantee, ADR 0007's contradiction_top_k cap on per-block LLM
+calls, was retired along with pairwise contradiction detection in v2 step
+7b — see ADR 0010.)
 
 See docs/decisions/0007-bound-and-checkpoint-consolidation.md and
 docs/plans/plan_consolidation_checkpointing.md.
@@ -19,61 +22,6 @@ from elfmem.api import MemorySystem
 from elfmem.config import ElfmemConfig, MemoryConfig
 from elfmem.db.queries import get_block, insert_block
 from elfmem.operations.rescore import rescore_blocks
-
-
-class TestContradictionTopKCap:
-    """Change 1: cap contradiction LLM calls per block to contradiction_top_k."""
-
-    async def test_caps_llm_calls_regardless_of_candidate_count(
-        self, test_engine,
-    ) -> None:
-        embedding = MockEmbeddingService(dimensions=64)
-        llm = MockLLMService()
-
-        new_content = "a fresh claim about quarterly pricing strategy"
-        new_norm = new_content.strip().lower()
-        await embedding.embed(new_norm)  # cache the anchor before seeding actives
-
-        n_active = 12
-        top_k = 5
-        overrides: dict[frozenset[str], float] = {}
-        active_contents = []
-        for i in range(n_active):
-            c = f"active claim number {i} about something unrelated"
-            active_contents.append(c)
-            # 0.6: clears the 0.40 contradiction prefilter, stays below the
-            # 0.90 near-dup threshold so it doesn't get superseded instead.
-            overrides[frozenset({c.strip().lower(), new_norm})] = 0.6
-        embedding._similarity_overrides = overrides
-
-        cfg = ElfmemConfig(
-            memory=MemoryConfig(
-                inbox_threshold=100,
-                max_inbox_per_run=100,
-                contradiction_top_k=top_k,
-            ),
-        )
-        system = MemorySystem(
-            engine=test_engine, llm_service=llm, embedding_service=embedding, config=cfg,
-        )
-        await system.begin_session()
-
-        # Seed n_active active blocks without contradiction checks — they
-        # only need to exist as active, not be involved in this dream().
-        for c in active_contents:
-            await system.learn(c)
-        await system.dream(skip_contradictions=True)
-        assert llm.contradiction_calls == 0
-
-        # The block under test: compares against all n_active seeded blocks,
-        # all of which clear the prefilter (0.6 similarity).
-        await system.learn(new_content)
-        result = await system.dream()
-
-        assert result is not None
-        assert llm.contradiction_calls == top_k
-        assert result.health is not None
-        assert result.health.contradiction_cap_rate > 0.0
 
 
 class TestInboxBudget:

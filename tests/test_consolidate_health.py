@@ -38,8 +38,6 @@ class TestHealthShape:
     def test_health_dataclass_constructs(self) -> None:
         h = ConsolidationHealthMetrics(
             edge_creation_rate=1.5,
-            contradiction_detection_rate=0.0,
-            prefilter_pass_rate=0.25,
             promotion_rate=0.8,
             deduplication_rate=0.2,
         )
@@ -48,8 +46,6 @@ class TestHealthShape:
     def test_health_to_dict_rounds_to_three_places(self) -> None:
         h = ConsolidationHealthMetrics(
             edge_creation_rate=1.23456,
-            contradiction_detection_rate=0.0,
-            prefilter_pass_rate=0.5,
             promotion_rate=0.66667,
             deduplication_rate=0.33333,
         )
@@ -96,10 +92,6 @@ class TestHealthOnRealConsolidation:
         # promotion_rate and deduplication_rate ∈ [0.0, 1.0] by construction.
         assert 0.0 <= h.promotion_rate <= 1.0
         assert 0.0 <= h.deduplication_rate <= 1.0
-        # prefilter_pass_rate ∈ [0.0, 1.0]; 0.0 is honest when no pair checks happened.
-        assert 0.0 <= h.prefilter_pass_rate <= 1.0
-        # contradiction_detection_rate ∈ [0.0, 1.0].
-        assert 0.0 <= h.contradiction_detection_rate <= 1.0
         # edge_creation_rate is an unbounded non-negative ratio (cap is
         # EDGE_DEGREE_CAP=5 edges per block).
         assert h.edge_creation_rate >= 0.0
@@ -128,11 +120,8 @@ class TestHealthOnRealConsolidation:
         assert d["health"] is not None
         assert set(d["health"].keys()) == {
             "edge_creation_rate",
-            "contradiction_detection_rate",
-            "prefilter_pass_rate",
             "promotion_rate",
             "deduplication_rate",
-            "contradiction_cap_rate",
         }
 
 

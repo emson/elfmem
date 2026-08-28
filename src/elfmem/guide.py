@@ -53,7 +53,10 @@ class AgentGuide:
 GUIDES: dict[str, AgentGuide] = {
     "remember": AgentGuide(
         name="remember",
-        what="Store knowledge and auto-start a session. Agent-friendly variant of learn().",
+        what=(
+            "Store knowledge and auto-start a session. Agent-friendly variant "
+            "of learn(). Always pass cue= — see below."
+        ),
         when=(
             "Building always-on agents, MCP tools, or any context where you don't want "
             "to manage session lifecycle explicitly. Prefer this over learn() for agent code."
@@ -62,24 +65,51 @@ GUIDES: dict[str, AgentGuide] = {
             "You're using the session() context manager — either works, but session() is "
             "cleaner for scripted use. Never call in a tight loop; one call per new observation."
         ),
-        cost="Instant. No LLM calls. Auto-starts session if none active (idempotent).",
+        cost=(
+            "Instant. No LLM calls. Auto-starts session if none active "
+            "(idempotent).\n\n"
+            "ALWAYS pass cue=: one line saying WHEN a future agent should "
+            "recall this block — the situation, not a summary. Retrieval "
+            "matches it lexically against the query, so the cue is what "
+            "rescues a memory whose wording differs from how the question "
+            "later gets asked. Write it as someone would type it in that "
+            "moment:\n"
+            "    cue='deciding whether to add a command or extend an existing one'\n"
+            "    cue='when a dream run is killed partway through consolidation'\n"
+            "Not 'when relevant'; not a restatement of the block's conclusion."
+        ),
         returns=(
             "LearnResult. Same status values as learn(): "
             "'created' — new block stored; "
             "'duplicate_rejected' — exact content already exists; "
             "'near_duplicate_superseded' — similar block replaced. "
-            "Check system.should_dream after this call."
+            "STORED IS NOT VISIBLE: 'created' means the block is in the inbox, "
+            "where frame() and recall() cannot see it. result.visible is False "
+            "and result.pending_consolidation is True until dream() runs. "
+            "Seed ten principles, get ten successes, and the agent sees none "
+            "of them until you consolidate. Check system.should_dream."
         ),
         next=(
             "After calling remember(), check system.should_dream. "
-            "When True, call dream() at the next natural pause (not in a tight loop)."
+            "When True, call dream() at the next natural pause (not in a tight loop). "
+            "Then verify what the agent will actually receive — "
+            "`print((await system.frame('self')).summary)` or "
+            "`elfmem doctor --frames`. "
+            "CONSOLIDATION MAY REWRITE THIS TEXT, and the rewrite is what "
+            "renders: the LLM's summary replaces your wording in the frame. "
+            "For text that must survive verbatim — a ratified constitution, a "
+            "quote, legal or safety wording — supply your own analysis via "
+            "dream(host_analyses={block_id: {...}}) and check "
+            "result.analyses_unused, which lists ids that were NOT applied."
         ),
         example=(
             "result = await system.remember('EUR/USD breaks 1.10 resistance')\n"
+            "print(result.visible)  # False — stored, not yet retrievable\n"
             "if system.should_dream:\n"
             "    dream_result = await system.dream()\n"
             "    if dream_result:\n"
-            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.\n"
+            "print((await system.frame('self')).summary)  # what the agent sees"
         ),
     ),
     "dream": AgentGuide(
@@ -95,26 +125,22 @@ GUIDES: dict[str, AgentGuide] = {
             "Don't call before remember() — blocks need to queue first."
         ),
         cost=(
-            "LLM call per pending block (alignment scoring + tag inference). "
-            "Bounded to consolidation.max_inbox_per_run per call (default 5 — "
-            "ADR 0007), not the whole inbox; a larger backlog drains across "
-            "repeated calls. Returns None immediately (zero cost) if inbox is empty."
+            "LLM call per pending block (alignment scoring + tag inference), "
+            "unless host_analyses covers it — see below. Bounded to "
+            "consolidation.max_inbox_per_run per call (default 5 — ADR 0007), "
+            "not the whole inbox; a larger backlog drains across repeated "
+            "calls. Returns None immediately (zero cost) if inbox is empty."
         ),
         returns=(
             "ConsolidateResult if blocks were processed — includes processed, promoted, "
-            "deduplicated, edges_created, contradictions_detected counts, plus a "
-            "contradictions list of ContradictionFinding records carrying per-pair "
-            "detection-time signals (cosine, tag_jaccard, category_match, hours_apart) "
-            "agents can use to gate suppression rules. "
+            "deduplicated, edges_created counts. "
             "inbox_remaining reports blocks left after this call's budget "
             "(consolidation.max_inbox_per_run, default 5) — nonzero means call "
             "dream() again to keep draining. "
-            "Also includes .health (ConsolidationHealthMetrics): six diagnostic "
-            "ratios per cycle (edge_creation_rate, contradiction_detection_rate, "
-            "prefilter_pass_rate, promotion_rate, deduplication_rate, "
-            "contradiction_cap_rate) for monitoring the static thresholds in "
-            "operations/consolidate.py — see ADR 0006 and ADR 0007. "
-            ".health is None when called on an empty inbox. "
+            "Also includes .health (ConsolidationHealthMetrics): three diagnostic "
+            "ratios per cycle (edge_creation_rate, promotion_rate, deduplication_rate) "
+            "for monitoring the static thresholds in operations/consolidate.py — "
+            "see ADR 0006. .health is None when called on an empty inbox. "
             "None if inbox was empty. None is not an error."
         ),
         next=(
@@ -124,7 +150,17 @@ GUIDES: dict[str, AgentGuide] = {
             "reaches 0, like learn_document() does) to fully drain a large backlog. "
             "If policy is set, adaptive threshold adjusts based on promotion rate. "
             "Tip: blocks with shared tags form graph edges at lower cosine similarity — "
-            "richer tags mean a better-connected knowledge graph."
+            "richer tags mean a better-connected knowledge graph. "
+            "host_analyses: supply your own alignment_score/tags/summary for some "
+            "or all pending blocks instead of the configured LLM adapter — e.g. "
+            "this Claude Code session reasoning over inbox() output instead of "
+            "depending on a local model or API key. {block_id: {\"alignment_score\": "
+            "0.0-1.0, \"tags\": [...], \"summary\": \"...\"}, ...}. Scored exactly as "
+            "a successful adapter call would be (last_scored_at stamped, not the "
+            "neutral skip_llm fallback). Blocks not covered still use the normal "
+            "path. Validated the same way a real adapter's response is — a "
+            "malformed entry raises HostAnalysisError with .recovery, since this "
+            "is direct structured input, not unreliable external I/O."
         ),
         example=(
             "# Always-on agent pattern — drains a backlog across calls\n"
@@ -134,7 +170,49 @@ GUIDES: dict[str, AgentGuide] = {
             "    while dream_result and dream_result.inbox_remaining > 0:\n"
             "        dream_result = await system.dream()\n"
             "    if dream_result:\n"
-            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges."
+            "        print(dream_result)  # Consolidated 5: 4 promoted, 8 edges.\n"
+            "\n"
+            "# Host-agent reasoning instead of a configured LLM adapter\n"
+            "pending = await system.inbox()\n"
+            "analyses = {b.id: {\"alignment_score\": 0.8, \"tags\": [\"self/goal\"],\n"
+            "                    \"summary\": \"...\"} for b in pending}  # reason yourself\n"
+            "await system.dream(host_analyses=analyses)"
+        ),
+    ),
+    "inbox": AgentGuide(
+        name="inbox",
+        what="List pending blocks not yet consolidated — FIFO order (oldest first).",
+        when=(
+            "Reasoning about pending blocks yourself before calling "
+            "dream(host_analyses=...) — e.g. this Claude Code session supplying "
+            "its own alignment_score/tags/summary instead of a configured LLM "
+            "adapter (no local model or API key needed for that path)."
+        ),
+        when_not=(
+            "You only need a count — status().inbox_count is cheaper (no "
+            "content fetched). You want to apply the analysis — that's "
+            "dream(host_analyses=...) or consolidate(host_analyses=...)."
+        ),
+        cost="Pure read. No LLM calls, no embedding calls.",
+        returns=(
+            "list[InboxBlockSummary]: id, content, category, tags, created_at. "
+            "Empty list if the inbox is empty."
+        ),
+        next=(
+            "For each block, decide alignment_score (0.0-1.0), tags (from "
+            "self/constitutional, self/constraint, self/value, self/style, "
+            "self/goal, self/context), and a factual 1-2 sentence summary. "
+            "Then call dream(host_analyses={block_id: {...}, ...})."
+        ),
+        example=(
+            "pending = await system.inbox(max_count=10)\n"
+            "for block in pending:\n"
+            "    print(block.id, block.content)\n"
+            "# ... reason about each, then:\n"
+            "await system.dream(host_analyses={\n"
+            "    pending[0].id: {\"alignment_score\": 0.8, \"tags\": [\"self/goal\"],\n"
+            "                    \"summary\": \"...\"},\n"
+            "})"
         ),
     ),
     "learn": AgentGuide(
@@ -162,6 +240,81 @@ GUIDES: dict[str, AgentGuide] = {
         example=(
             "result = await system.learn('User prefers dark mode')\n"
             "print(result)  # Stored block a1b2c3d4. Status: created."
+        ),
+    ),
+    "edit": AgentGuide(
+        name="edit",
+        what="Content and/or cue. Replace an active block's content directly — no LLM mediation.",
+        when=(
+            "A stored memory is wrong, stale, or needs rewording, and you know "
+            "which block_id. The direct write path — previously the only way to "
+            "change content was an indirect side effect of near-duplicate supersession."
+        ),
+        when_not=(
+            "The block is in inbox (not yet consolidated) — learn() the corrected "
+            "version instead. The block is already archived — edit() only targets active blocks."
+        ),
+        cost="One embedding call to re-embed the new content. No LLM call.",
+        returns="EditResult with the block's id.",
+        next=(
+            "summary and last_scored_at are cleared — the block is first in line "
+            "for the next dream(--rescore). Confidence and reinforcement_count are untouched."
+        ),
+        example=(
+            "result = await system.edit(block_id, 'Corrected: prefers tabs, not spaces.')\n"
+            "print(result)  # Edited block a1b2c3d4."
+        ),
+    ),
+    "forget": AgentGuide(
+        name="forget",
+        what="Archive a block by explicit request — the direct delete path.",
+        when=(
+            "A memory should no longer be active — wrong, no longer relevant, or "
+            "unwanted seeded content. The direct delete path — previously blocks "
+            "could only leave active memory via supersession or decay, never a "
+            "deliberate choice."
+        ),
+        when_not=(
+            "You want retrieval suppressed temporarily without real deletion — "
+            "forget() removes the block's tags, edges, and contradictions permanently."
+        ),
+        cost="Instant. No LLM or embedding calls.",
+        returns=(
+            "ForgetResult. status='forgotten' on a real archive; "
+            "status='already_archived' if it was archived already — safe no-op, not an error."
+        ),
+        next=(
+            "The block no longer appears in frame(), recall(), or ls(). "
+            "Pass reason=ArchiveReason.DECAYED when applying an accepted "
+            "review_corpus() proposal, so the audit trail distinguishes a "
+            "direct decision from an accepted staleness finding — default "
+            "is ArchiveReason.FORGOTTEN."
+        ),
+        example=(
+            "result = await system.forget(block_id)\n"
+            "print(result)  # Forgot block a1b2c3d4."
+        ),
+    ),
+    "ls": AgentGuide(
+        name="ls",
+        what="List active blocks — a deterministic, unscored view of memory.",
+        when=(
+            "You need to find a block_id for edit()/forget(), or audit memory "
+            "contents directly. The direct read path RC1 identified as missing."
+        ),
+        when_not=(
+            "You want relevance-ranked results for a query — use recall() or "
+            "frame() instead. ls() does not rank by similarity or centrality."
+        ),
+        cost="Instant. No LLM or embedding calls.",
+        returns=(
+            "List of BlockSummary, most-recently-reinforced first. "
+            "Empty list if nothing matches."
+        ),
+        next="Pass a returned .id to edit() or forget().",
+        example=(
+            "for b in await system.ls(tag='self/%'):\n"
+            "    print(b)  # a1b2c3d4 Apply minimum force... [self/value]"
         ),
     ),
     "learn_document": AgentGuide(
@@ -214,8 +367,7 @@ GUIDES: dict[str, AgentGuide] = {
             "ConsolidateResult with counts: processed (blocks processed this call, "
             "capped by the budget — not necessarily the whole inbox), "
             "promoted (moved to active), deduplicated (near-duplicates found), "
-            "edges_created (knowledge graph edges built), contradictions_detected "
-            "(opposing pairs detected and inserted into the contradictions table), "
+            "edges_created (knowledge graph edges built), "
             "inbox_remaining (blocks left after this call's budget — nonzero "
             "means call consolidate()/dream() again to keep draining)."
         ),
@@ -237,25 +389,91 @@ GUIDES: dict[str, AgentGuide] = {
         when=(
             "Assembling context for an LLM prompt. "
             "Use 'self' for identity context, 'attention' for query-relevant knowledge, "
-            "'task' for goal/task context."
+            "'task' for goal/task context. 'self' is QUERYLESS: it answers "
+            "'who am I', returns the constitution ordered by how load-bearing "
+            "each principle has proven, and ignores any query passed to it. "
+            "For 'what do I know about X', use 'attention'."
         ),
         when_not=(
             "You only need raw block data without rendering — use recall() instead. "
             "Avoid calling frame() inside tight generation loops; results are cached."
         ),
-        cost="Fast. Embedding call if query provided; no LLM calls.",
+        cost=(
+            "Fast. One embedding call for query-driven frames; none for 'self'. "
+            "No LLM calls."
+        ),
         returns=(
-            "FrameResult. Use result.text for direct prompt injection. "
-            "result.blocks contains the scored ScoredBlock candidates. "
-            "result.cached indicates whether this was served from the TTL cache."
+            "FrameResult. Use result.text for direct prompt injection, or "
+            "result.compose(query) to get text and question as one prompt when "
+            "the receiving model does not already have the question. "
+            "result.blocks contains what actually reached the text. "
+            "result.cached indicates whether this was served from the TTL cache "
+            "(only queryless frames are cacheable). "
+            "CHECK result.dropped: eligible blocks that did NOT reach the text, "
+            "each with .reason — 'top_k', 'token_budget', or 'contradiction' "
+            "(one half of a near-duplicate pair, suppressed at retrieval). "
+            "Empty means 'this is everything'; non-empty means the agent is "
+            "seeing part of what you stored. result.budget_used / "
+            "result.budget_total show the token spend. The limits that decide "
+            "all this: SELF renders within a 600-token budget (ATTENTION 2000, "
+            "TASK 800, SIMULATE 2000), tokens are ESTIMATED as len(text)//4, "
+            "and top_k defaults to max(memory.top_k, number of guaranteed "
+            "blocks) — an explicit top_k is always a hard ceiling. "
+            "ATTENTION additionally excludes self/constitutional blocks "
+            "(peer-authored ones exempt): identity is SELF's job, SELF is "
+            "queryless and injected on its own, so a principle here would be "
+            "served twice and take a slot from learned knowledge. "
+            "result.excluded_by_filter counts what that removed. "
+            "SELF's preamble ('You are <name>') uses project.agent_name if "
+            "set (elfmem init --name), else 'elf' — set it before shipping "
+            "under a different agent name, or every SELF frame will still "
+            "say 'answer as elf'."
         ),
         next=(
             "Inject result.text into your LLM prompt. "
-            "Reinforce is a side effect of retrieval — no separate call needed."
+            "Reinforce is a side effect of retrieval — no separate call needed. "
+            "Run `elfmem doctor --frames` to see rendered-vs-dropped for every "
+            "frame at once, which is the fastest answer to 'what does my agent "
+            "actually see'."
         ),
         example=(
             "ctx = await system.frame('attention', query='error handling')\n"
-            "prompt = f'{ctx.text}\\nUser: how do I handle errors?'"
+            "prompt = ctx.compose('how do I handle errors?')"
+        ),
+    ),
+    "record_use": AgentGuide(
+        name="record_use",
+        what="Record that retrieved blocks actually informed an answer.",
+        when=(
+            "A turn finished and you know which retrieved blocks were drawn "
+            "on — normally from a host hook comparing the response against "
+            "what was assembled (elfmem.memory.attribution does the scoring). "
+            "The evidence tier above frame()'s automatic assembly record and "
+            "below outcome()."
+        ),
+        when_not=(
+            "You know whether the knowledge was RIGHT — that is outcome(), "
+            "which moves the Beta posterior. Use is relevance, not truth: a "
+            "block can be drawn on and be wrong, and folding usage into "
+            "confidence would redefine it from 'has proven right' to 'gets "
+            "talked about'."
+        ),
+        cost="Instant. One indexed UPDATE and one ledger append. No LLM calls.",
+        returns=(
+            "UseResult with blocks_reinforced. Empty block_ids returns zero "
+            "counts rather than raising — a turn that used none of its "
+            "context is a normal and informative outcome."
+        ),
+        next=(
+            "Nothing. The reinforcement is the effect: a used block now "
+            "outranks one retrieved beside it that contributed nothing."
+        ),
+        example=(
+            "from elfmem.memory.attribution import attributed_ids\n"
+            "ctx = await system.frame('attention', query=prompt)\n"
+            "# ... model answers ...\n"
+            "used = attributed_ids({b.id: b.content for b in ctx.blocks}, answer)\n"
+            "await system.record_use(used, source='claude-code')"
         ),
     ),
     "recall": AgentGuide(
@@ -283,7 +501,7 @@ GUIDES: dict[str, AgentGuide] = {
     ),
     "curate": AgentGuide(
         name="curate",
-        what="Maintenance: archive decayed blocks, prune weak edges, reinforce top knowledge.",
+        what="Maintenance: prune weak/decayed edges, reinforce top knowledge.",
         when=(
             "Explicit maintenance after heavy use, or when retrieval quality degrades. "
             "Also runs automatically when curate_interval_hours elapses after consolidate()."
@@ -294,9 +512,11 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         cost="Fast. Database operations only; no LLM calls.",
         returns=(
-            "CurateResult with counts: archived (decayed blocks removed from active), "
-            "edges_pruned (weak graph edges removed), "
-            "reinforced (top-N blocks had reinforcement boosted)."
+            "CurateResult with counts: edges_pruned (weak graph edges removed), "
+            "edges_decayed (temporally-decayed edges removed), "
+            "reinforced (top-N blocks had reinforcement boosted). "
+            "Decayed blocks are no longer archived by curate() — use "
+            "review_corpus() (elfmem review corpus) for staleness detection instead."
         ),
         next=(
             "Memory is now cleaner. "
@@ -304,7 +524,7 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         example=(
             "result = await system.curate()\n"
-            "print(result)  # Curated: 2 archived, 1 edges pruned, 5 reinforced."
+            "print(result)  # Curated: 1 edges pruned, 5 reinforced."
         ),
     ),
     "rescore": AgentGuide(
@@ -350,6 +570,58 @@ GUIDES: dict[str, AgentGuide] = {
             "\n"
             "# Bundled with dream — process inbox, then rescore aged active\n"
             "result = await system.dream(rescore=True, rescore_max=20)"
+        ),
+    ),
+    "metabolism_dry_run": AgentGuide(
+        name="metabolism_dry_run",
+        what=(
+            "Edge-metabolism Stage A (docs/plans/plan_edge_metabolism.md): for "
+            "each rescore-eligible block, judges a widened candidate shortlist "
+            "against elf's own self/goal blocks — not just cosine similarity — "
+            "and reports what it would connect. Never calls insert_edge; "
+            "nothing here is applied to the graph."
+        ),
+        when=(
+            "Sanity-checking the edge-metabolism mechanism against real content "
+            "before deciding whether Stage B (live, ungated application) is "
+            "worth building. This is the validation step the Zettelkasten-"
+            "auto-linking deferral (docs/plans/archive/plan_memory_scoring.md) "
+            "asked for before any live graph-mutation mechanism ships."
+        ),
+        when_not=(
+            "You want edges actually created — this never writes to the graph. "
+            "No self/goal blocks exist yet — every candidate pool is computed "
+            "for nothing since there is nothing to judge relevance against."
+        ),
+        cost=(
+            "One LLM call per block considered (same eligibility rule and "
+            "budget as rescore() — default 20/run). One embedding-free KNN "
+            "scan (pure math) per block for the candidate shortlist."
+        ),
+        returns=(
+            "MetabolismDryRunResult: blocks_considered, self_goals (actual "
+            "content, not just a count), candidates (per block id: [(id, "
+            "summary), ...] — populated even when the LLM call failed or no "
+            "LLM is configured), proposals (block_id, candidate_id, "
+            "reasoning), llm_failures. Empty proposals is the common, "
+            "correct answer; read self_goals/candidates directly if you'd "
+            "rather judge them yourself (e.g. a host agent session applying "
+            "its own reasoning via connect() — no separate 'candidates "
+            "only' mode needed, the same result already carries both)."
+        ),
+        next=(
+            "Read the proposals by hand, or reason over self_goals/"
+            "candidates directly and apply your own judgement via "
+            "connect(). There is currently no Stage B (elfmem applying "
+            "proposals live, unattended) — that decision is open, see the "
+            "plan doc's 'Decision needed' section."
+        ),
+        example=(
+            "result = await system.metabolism_dry_run(max_count=20)\n"
+            "print(result)  # 'Metabolism dry run: 20 block(s) considered, "
+            "3 connection(s) proposed. Nothing written.'\n"
+            "for p in result.proposals:\n"
+            "    print(p.block_id, '->', p.candidate_id, ':', p.reasoning)"
         ),
     ),
     "status": AgentGuide(
@@ -426,8 +698,22 @@ GUIDES: dict[str, AgentGuide] = {
             "OutcomeResult with: blocks_updated (active blocks whose confidence changed), "
             "mean_confidence_delta (average confidence shift, positive or negative), "
             "edges_reinforced (graph edges strengthened for positive signals), "
-            "blocks_penalized (blocks whose decay was accelerated for low signals). "
-            "blocks_updated=0 means all block_ids were non-active (silently skipped)."
+            "blocks_penalized (blocks whose decay was accelerated for low signals), "
+            "skipped (every id NOT scored, each with a reason: pending_inbox, "
+            "unmatched, archived, or constitutional — read it with "
+            "result.skipped_for(reason)). "
+            "PENDING_INBOX MATTERS: a block that has not been consolidated yet "
+            "cannot be scored, and the signal is NOT recorded — remember() then "
+            "outcome() before a dream() is an ordinary sequence when work "
+            "resolves faster than the consolidation cycle. Run dream(), then "
+            "send the signal again. "
+            "IDENTITY IS PROTECTED: self/constitutional blocks are NOT scored. A "
+            "decision's recalled ids routinely include the principles that helped "
+            "reason about it, and a task outcome is evidence about the task, never "
+            "about the principle — judging that is review_constitutional(), which is "
+            "deliberately manual. Pass allow_constitutional=True to override. Peer "
+            "trust is unaffected either way: it judges the peer\'s contribution, not "
+            "the block\'s standing as a principle."
         ),
         next=(
             "Signal spectrum (default thresholds): "
@@ -438,7 +724,20 @@ GUIDES: dict[str, AgentGuide] = {
             "Mature blocks (α+β ≫ 1) move slowly; cold blocks (still at the "
             "promotion prior, α+β=1) track the signal closely — this is the "
             "natural Bayesian behaviour, not a configured knob. "
-            "DURABLE and PERMANENT blocks are never penalized."
+            "DURABLE and PERMANENT blocks are never penalized. "
+            "TO APPLY NO INFORMATION, DO NOT CALL outcome() — no parameter "
+            "value means 'no update', and both candidates look like one. "
+            "signal=0.5 is NOT a neutral no-op: it pulls confidence TOWARD "
+            "0.5 from wherever the block sits, so its direction depends on "
+            "the block, not the signal (a block at 1.0 drops to 0.75; one at "
+            "0.28 rises to 0.30). weight=0.0 raises ValueError deliberately "
+            "rather than skipping the block — filter the ids instead. "
+            "DO NOT derive weight from ScoredBlock.similarity: 0.0 there is a "
+            "sentinel for 'vector search never scored this' (queryless "
+            "frames, graph-expanded blocks), and with BM25 signal the values "
+            "are rank-normalised into a narrow band, so weight=b.similarity "
+            "raises on the sentinel and is near-uniform everywhere else. "
+            "Rank order within result.blocks is the portable signal."
         ),
         example=(
             "# Trading: Brier score resolved after 30 days\n"
@@ -463,12 +762,14 @@ GUIDES: dict[str, AgentGuide] = {
     "setup": AgentGuide(
         name="setup",
         what=(
-            "Bootstrap the cognitive loop: seeds 10 constitutional blocks, then adds optional "
-            "identity description and domain values to the SELF frame."
+            "Bootstrap agent identity: adds optional identity description and domain values "
+            "to the SELF frame. Pass seed=True to also seed 10 constitutional blocks that "
+            "form a cognitive loop — an opinionated starting personality, not a default."
         ),
         when=(
             "First use — before any other operations. Also when the agent's role, values, or "
-            "constraints change significantly. Constitutional blocks ship with every instance."
+            "constraints change significantly. seed=True is worth considering on first use if "
+            "you want a ready-made cognitive-loop starting point rather than a blank slate."
         ),
         when_not=(
             "Every session — SELF blocks persist across restarts. Duplicates are rejected "
@@ -479,31 +780,31 @@ GUIDES: dict[str, AgentGuide] = {
             "consolidate() (auto on session close)."
         ),
         returns=(
-            "dict with status='setup_complete', blocks_created (int), and blocks (list of "
-            "LearnResult dicts). blocks_created=0 means all were exact duplicates — safe. "
-            "Constitutional blocks are tagged self/constitutional"
-            " (PERMANENT decay, ~34yr half-life)."
+            "SetupResult with blocks_created (int, new blocks only) and total_attempted (int, "
+            "including duplicates). blocks_created=0 means all were exact duplicates — safe, "
+            "not an error. Constitutional blocks (seed=True) are tagged self/constitutional "
+            "(PERMANENT decay, ~34yr half-life)."
         ),
         next=(
             "SELF blocks sit in inbox until consolidate() runs (auto on session close). "
             "After consolidation, recall(frame='self') always includes constitutional blocks "
-            "(guaranteed slots) plus any domain values you added. "
+            "(guaranteed slots, if seeded) plus any domain values you added. "
             "Check status with elfmem_status() or 'elfmem doctor' CLI. "
             "Three tiers: constitutional (PERMANENT) → values (DURABLE, ~29d)"
             " → context (STANDARD, ~3d)."
         ),
         example=(
-            "# Minimal: seeds 10 constitutional blocks only\n"
-            "elfmem_setup()\n"
+            "# Minimal: identity/values only, no constitutional seed (seed defaults to False)\n"
+            "elfmem_setup(identity='I am a trading assistant focused on risk-adjusted returns.')\n"
             "\n"
-            "# With identity: constitutional + custom identity block\n"
+            "# With domain values too\n"
             "elfmem_setup(\n"
             "    identity='I am a trading assistant focused on risk-adjusted returns.',\n"
             "    values=['cut losing positions early', 'size positions to max 2% risk']\n"
             ")\n"
             "\n"
-            "# Skip constitutional seeding (advanced: manual control)\n"
-            "elfmem_setup(seed=False, identity='Custom agent without default seed')"
+            "# Opt into the 10-block constitutional cognitive loop as well\n"
+            "elfmem_setup(seed=True, identity='I am a trading assistant.')"
         ),
     ),
     "connect": AgentGuide(
@@ -642,7 +943,16 @@ GUIDES: dict[str, AgentGuide] = {
             "A prediction has resolved — the verify_at date passed and you have evidence. "
             "No prior consolidation needed."
         ),
-        when_not="The prediction hasn't resolved yet. Wait for observable evidence.",
+        when_not=(
+            "The prediction hasn't resolved yet. Wait for observable evidence. "
+            "This matters more than it looks: `hit` is BINARY and has no weight, "
+            "so there is no way to say 'interim mark, worth 0.1 of a real "
+            "resolution' the way outcome(weight=...) allows. Scoring an open "
+            "position at low weight on the block path therefore records a FULL "
+            "miss against the mind. A prediction is right or wrong once, at its "
+            "horizon; resolving early makes the mind's confidence wrong in a "
+            "direction that then influences the next decision."
+        ),
         cost="Fast. Promotes decision block if needed, then updates confidence via Bayesian model.",
         returns=(
             "MindOutcomeResult with confidence deltas for both mind and decision blocks. "
@@ -650,7 +960,12 @@ GUIDES: dict[str, AgentGuide] = {
         ),
         next=(
             "The mind model's confidence is now calibrated. Future simulate frame "
-            "retrievals reflect the updated model accuracy."
+            "retrievals reflect the updated model accuracy. "
+            "NOT terminal: calling mind_outcome again on the same decision block "
+            "re-resolves it, and the arithmetic reverses cleanly — an early miss "
+            "later corrected to a hit returns the mind to its prior confidence "
+            "and the count to 1/1. So an early resolution is recoverable; you "
+            "just have to know to correct it."
         ),
         example=(
             "# Prediction hit\n"
@@ -1058,6 +1373,42 @@ GUIDES: dict[str, AgentGuide] = {
             "        print(f'Applied amendment {amend.amendment_id}')"
         ),
     ),
+    "review_corpus": AgentGuide(
+        name="review_corpus",
+        what=(
+            "READ-ONLY: surface ordinary blocks that have quietly stopped "
+            "earning their place — long-unused, rarely reinforced, never "
+            "confirmed by an outcome. Zero LLM calls (pure SQL/math). "
+            "Applies NOTHING. The corpus-level counterpart to "
+            "review_constitutional() — checks staleness, not drift."
+        ),
+        when=(
+            "Periodically, as memory accumulates, to find candidates for "
+            "forget() before they silently pile up. Safe to call any time."
+        ),
+        when_not=(
+            "Expecting automatic archival — nothing is applied until you "
+            "call forget() per proposal you accept. Expecting duplicate or "
+            "contradiction detection — that's a later addition, not built yet."
+        ),
+        cost="Zero LLM calls — one read of all active blocks, pure comparison.",
+        returns=(
+            "CorpusReviewResult with reviewed_count and proposals (each a "
+            "CorpusProposal: block_id, kind='stale', reason, content_preview)."
+        ),
+        next=(
+            "For each proposal you accept, call "
+            "forget(proposal.block_id, reason=ArchiveReason.DECAYED)."
+        ),
+        example=(
+            "result = await system.review_corpus()\n"
+            "for proposal in result.proposals:\n"
+            "    print(proposal)  # [stale] a1b2c3d4…: not reinforced in 812h ...\n"
+            "    if agent_decides_to_accept(proposal):\n"
+            "        from elfmem.types import ArchiveReason\n"
+            "        await system.forget(proposal.block_id, reason=ArchiveReason.DECAYED)"
+        ),
+    ),
     "accept_amendment": AgentGuide(
         name="accept_amendment",
         what=(
@@ -1195,6 +1546,310 @@ GUIDES: dict[str, AgentGuide] = {
             "history = await system.list_amendments(block_id='blk-abcd1234')"
         ),
     ),
+    "from_config": AgentGuide(
+        name="from_config",
+        what="Factory: build a MemorySystem from a database path plus optional config.",
+        when=(
+            "Starting up with an explicit config — a YAML path, a dict of overrides, or a "
+            "pre-built ElfmemConfig object. The standard entry point for library users."
+        ),
+        when_not=(
+            "You want config resolved purely from ELFMEM_* env vars — use from_env() instead. "
+            "You want the database connection torn down automatically — use managed() instead."
+        ),
+        cost="Fast. Opens the DB engine and runs any pending schema migration; no LLM calls.",
+        returns="A ready-to-use MemorySystem instance. Call close() when done, or use managed().",
+        next="Wrap calls in `async with system.session():` or call begin_session() explicitly.",
+        example=(
+            "system = await MemorySystem.from_config('agent.db', config='elfmem.yaml')\n"
+            "async with system.session():\n"
+            "    await system.learn('...')\n"
+            "await system.close()"
+        ),
+    ),
+    "from_env": AgentGuide(
+        name="from_env",
+        what="Factory: build a MemorySystem with config resolved purely from ELFMEM_* env vars.",
+        when=(
+            "Deployment contexts where config lives in the environment (containers, CI, "
+            "process managers) rather than a checked-in YAML file."
+        ),
+        when_not=(
+            "You have an explicit config path or dict in hand — use from_config() instead, "
+            "it's the more general form and from_env() adds nothing on top of it."
+        ),
+        cost="Fast. Opens the DB engine and runs any pending schema migration; no LLM calls.",
+        returns="A ready-to-use MemorySystem instance. Call close() when done, or use managed().",
+        next="Wrap calls in `async with system.session():` or call begin_session() explicitly.",
+        example=(
+            "# ELFMEM_LLM_MODEL, ELFMEM_EMBEDDING_MODEL, etc. read from the environment\n"
+            "system = await MemorySystem.from_env('agent.db')"
+        ),
+    ),
+    "managed": AgentGuide(
+        name="managed",
+        what="Async context manager: full lifecycle — open, optionally auto-dream, close.",
+        when=(
+            "Script-style or one-shot usage where you want the database connection and "
+            "final consolidation handled automatically without a separate close() call."
+        ),
+        when_not=(
+            "A long-lived server process (e.g. the MCP server) that manages its own "
+            "lifecycle — use from_config()/from_env() plus explicit close() there instead."
+        ),
+        cost="Same as from_config(); auto_dream=True adds one dream() call on exit if pending.",
+        returns="Yields a ready-to-use MemorySystem; closes it (and dreams if pending) on exit.",
+        next="Use system.session() inside the block if you also want session-scoped reinforcement.",
+        example=(
+            "async with MemorySystem.managed('agent.db') as system:\n"
+            "    await system.learn('User prefers dark mode.')\n"
+            "    # dream() runs automatically on exit if anything is pending"
+        ),
+    ),
+    "session": AgentGuide(
+        name="session",
+        what="Async context manager: scopes session-based reinforcement bookkeeping.",
+        when=(
+            "You want frame()/recall() calls inside the block to count toward this "
+            "session's reinforcement tracking and end_session() to report active hours."
+        ),
+        when_not=(
+            "You're already inside managed() and don't need session-scoped metrics — "
+            "operations work fine without an active session, just without that bookkeeping."
+        ),
+        cost="Instant. Pure bookkeeping — begin_session()/end_session() under the hood.",
+        returns="Yields self (the MemorySystem). No new object.",
+        next="Operations inside the block behave normally; session_block_ids accumulates.",
+        example=(
+            "async with system.session():\n"
+            "    context = await system.frame('attention', query='deploy checklist')\n"
+            "    print(system.session_block_ids)  # blocks touched so far this session"
+        ),
+    ),
+    "begin_session": AgentGuide(
+        name="begin_session",
+        what="Start a session explicitly, without the session() context-manager sugar.",
+        when=(
+            "You need to start a session in one place and end it in another (e.g. across "
+            "separate request handlers) where a single `async with` block can't span both."
+        ),
+        when_not=(
+            "A single function/block can hold the session — use `async with system.session():` "
+            "instead, it can't leak an unclosed session."
+        ),
+        cost="Instant. Pure bookkeeping.",
+        returns="str — the session id.",
+        next="Call end_session() when the task is done to record active hours.",
+        example=(
+            "session_id = await system.begin_session(task_type='code_review')\n"
+            "...\n"
+            "hours = await system.end_session()"
+        ),
+    ),
+    "end_session": AgentGuide(
+        name="end_session",
+        what="Close a session started with begin_session() and report active hours.",
+        when="Paired with an explicit begin_session() call, once the task is complete.",
+        when_not=(
+            "You used `async with system.session():` — it calls end_session() for you "
+            "automatically on exit."
+        ),
+        cost="Instant. Pure bookkeeping.",
+        returns="float — active hours elapsed during the session.",
+        next="Session-scoped bookkeeping (session_block_ids etc.) resets for the next session.",
+        example=(
+            "hours = await system.end_session()\n"
+            "print(f'Session ran {hours:.2f} active hours')"
+        ),
+    ),
+    "close": AgentGuide(
+        name="close",
+        what="Explicit teardown: closes the underlying database engine.",
+        when=(
+            "You built the MemorySystem with from_config()/from_env() (not managed()) "
+            "and are done with it."
+        ),
+        when_not=(
+            "You used `async with MemorySystem.managed(...):` — it calls close() for you "
+            "automatically on exit."
+        ),
+        cost="Fast. Flushes and closes the DB connection pool; no LLM calls.",
+        returns="None.",
+        next="The MemorySystem instance should not be used again after close().",
+        example=(
+            "system = await MemorySystem.from_config('agent.db')\n"
+            "try:\n"
+            "    await system.learn('...')\n"
+            "finally:\n"
+            "    await system.close()"
+        ),
+    ),
+    "should_dream": AgentGuide(
+        name="should_dream",
+        what="Property: True when the inbox has enough pending blocks to be worth consolidating.",
+        when=(
+            "After remember()/learn() calls, to decide whether this is a natural "
+            "point to dream()."
+        ),
+        when_not=(
+            "As a hard gate — dream() is always safe to call speculatively and returns "
+            "instantly with zero counts if nothing is pending."
+        ),
+        cost="Instant. In-memory check against inbox_threshold; no database access.",
+        returns="bool.",
+        next="If True, call dream() at the next natural pause (not mid-reasoning-step).",
+        example=(
+            "await system.remember('New fact.')\n"
+            "if system.should_dream:\n"
+            "    await system.dream()"
+        ),
+    ),
+    "last_learned_block_id": AgentGuide(
+        name="last_learned_block_id",
+        what="Property: the block id from the most recent learn()/remember() call this session.",
+        when=(
+            "You need to reference the block you just stored without threading its "
+            "id through your own code."
+        ),
+        when_not="You stored multiple blocks and need all of them — use session_block_ids instead.",
+        cost="Instant. In-memory only.",
+        returns="str | None — None if nothing has been learned yet this session.",
+        next="Use it as an argument to connect(), outcome(), edit(), or forget().",
+        example=(
+            "await system.remember('Redis pool size: 20.')\n"
+            "block_id = system.last_learned_block_id\n"
+            "await system.connect(block_id, other_id, relation='supports')"
+        ),
+    ),
+    "last_recall_block_ids": AgentGuide(
+        name="last_recall_block_ids",
+        what="Property: block ids returned by the most recent frame()/recall() call this session.",
+        when=(
+            "You need the ids for outcome() calibration but didn't keep the "
+            "FrameResult/ScoredBlock list around."
+        ),
+        when_not=(
+            "You already have the FrameResult or list[ScoredBlock] in scope — read "
+            ".blocks/[b.id for b in ...] from that directly instead."
+        ),
+        cost="Instant. In-memory only.",
+        returns="list[str] — empty if nothing has been retrieved yet this session.",
+        next="Pass to outcome(block_ids, signal=...) once the outcome is known.",
+        example=(
+            "await system.frame('attention', query='deploy checklist')\n"
+            "block_ids = system.last_recall_block_ids\n"
+            "await system.outcome(block_ids, signal=0.85, source='deploy_fix')"
+        ),
+    ),
+    "session_block_ids": AgentGuide(
+        name="session_block_ids",
+        what="Property: every block id learned or recalled during the current session, in order.",
+        when="End-of-session bookkeeping, logging, or building a session-level outcome batch.",
+        when_not=(
+            "You only need the single most recent id — "
+            "last_learned_block_id/last_recall_block_ids are cheaper to reason about."
+        ),
+        cost="Instant. In-memory only.",
+        returns="list[str]. Resets when a new session begins.",
+        next="(Informational. No action required unless you're batching outcome() calls.)",
+        example=(
+            "async with system.session():\n"
+            "    await system.learn('...')\n"
+            "    await system.frame('attention', query='...')\n"
+            "    print(system.session_block_ids)  # all ids touched, in order"
+        ),
+    ),
+    "visualise": AgentGuide(
+        name="visualise",
+        what="Generate an interactive HTML dashboard of the knowledge graph and write it to disk.",
+        when=(
+            "Debugging retrieval quality, inspecting graph structure, or demoing "
+            "memory state to a human."
+        ),
+        when_not=(
+            "You need programmatic access to the graph — query the database directly or use "
+            "recall()/frame() instead; this is for human visual inspection."
+        ),
+        cost="Fast. Reads the database and renders a static HTML file; no LLM calls.",
+        returns="str — path to the generated HTML file.",
+        next="Open the file in a browser (open_browser=True does this automatically).",
+        example=(
+            "path = system.visualise(include_archived=False, max_nodes=100)\n"
+            "print(f'Dashboard written to {path}')"
+        ),
+    ),
+    "connect_by_query": AgentGuide(
+        name="connect_by_query",
+        what="Find two blocks by natural-language query, then connect them — no block ids needed.",
+        when=(
+            "You know two ideas should be linked but only have descriptions, "
+            "not block ids in hand."
+        ),
+        when_not=(
+            "You already have both block ids — use connect() directly, it's cheaper (no retrieval) "
+            "and doesn't risk matching the wrong block."
+        ),
+        cost="Two retrieval calls (embedding search) plus one connect(). No LLM calls.",
+        returns=(
+            "ConnectByQueryResult with action: 'connected' (edge created/reinforced), "
+            "'insufficient_confidence' (a match fell below min_confidence — nothing connected), "
+            "'dry_run_preview' (dry_run=True — nothing written). Always check "
+            "source_content/target_content before trusting the match was the right block."
+        ),
+        next=(
+            "If action='connected', the edge is live. If 'insufficient_confidence', "
+            "narrow the queries."
+        ),
+        example=(
+            "result = await system.connect_by_query(\n"
+            "    'Redis caching strategy', 'Redis memory management',\n"
+            "    relation='related', min_confidence=0.70,\n"
+            ")\n"
+            "if result.action == 'connected':\n"
+            "    print(result.connect_result)"
+        ),
+    ),
+    "connects": AgentGuide(
+        name="connects",
+        what="Batch edge creation: create or strengthen many edges in one call.",
+        when="You've derived several relationships at once (e.g. from a document or a review pass) "
+        "and want them applied together rather than one connect() call per edge.",
+        when_not="You only have one edge to create — connect() is simpler for a single edge.",
+        cost="Fast. One DB transaction for all edges; no LLM calls.",
+        returns=(
+            "ConnectsResult with results (list[ConnectResult], one per edge), created, reinforced, "
+            "updated, skipped, deferred (counts), and errors (non-fatal per-edge messages — "
+            "one bad edge doesn't fail the whole batch)."
+        ),
+        next="Check .errors for any edges that didn't apply; the rest are already live.",
+        example=(
+            "from elfmem.types import ConnectSpec\n"
+            "result = await system.connects([\n"
+            "    ConnectSpec(source=id_a, target=id_b, relation='supports'),\n"
+            "    ConnectSpec(source=id_b, target=id_c, relation='related'),\n"
+            "])\n"
+            "print(result)  # created=2, reinforced=0, errors=[]"
+        ),
+    ),
+    "peer_remove": AgentGuide(
+        name="peer_remove",
+        what="Unregister a peer from the local roster.",
+        when="A peer relationship has ended, or a peer entry was registered by mistake.",
+        when_not=(
+            "You just want to pause exchange without losing trust history — there's no "
+            "pause primitive; removal is the only option, and it's not reversible from the API."
+        ),
+        cost="Fast. Database delete only; no LLM calls, no network calls.",
+        returns="bool — True if a peer was removed, False if the did wasn't registered.",
+        next=(
+            "Messages already exchanged and imported blocks are unaffected; "
+            "only the roster entry is gone."
+        ),
+        example=(
+            "removed = await system.peer_remove('elf:old-project')\n"
+            "print(removed)  # True"
+        ),
+    ),
 }
 
 # ── Overview ──────────────────────────────────────────────────────────────────
@@ -1215,7 +1870,7 @@ OVERVIEW: str = "\n".join([
     "  outcome(ids, signal)   Fast         Bayesian confidence update from domain result",
     "  connect(src, tgt, ...) Instant      Assert a semantic edge between two blocks",
     "  disconnect(src, tgt)   Instant      Remove a wrong or unwanted edge",
-    "  curate()               Fast         Archive stale blocks, prune weak edges",
+    "  curate()               Fast         Prune weak/decayed edges, reinforce top knowledge",
     "  rescore(max_count?)    LLM call     Deep-sleep: re-evaluate aged blocks vs SELF",
     "  mind_create(subj, ...) Instant      Create a Theory of Mind block for a subject",
     "  mind_predict(id, ...)  Instant      Add a falsifiable prediction to a mind block",

@@ -28,7 +28,7 @@ Set `inbox_threshold=3` (not the default 10) whenever a test runs learn→dream 
 
 ## What NOT to Test
 
-- Private methods and internals (`_stage_5_mmr_diversity`, `_pending`, `_archive_decayed_blocks`)
+- Private methods and internals (`_stage_5_mmr_diversity`, `_pending`, `_reinforce_top_blocks`)
 - Formatting or exact string content (`assert str(r) == "Stored block a1b2…"`)
 - Deprecated wrappers (`SmartMemory`)
 - Third-party library internals

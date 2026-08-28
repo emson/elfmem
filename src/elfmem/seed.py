@@ -27,6 +27,17 @@ Block = dict[str, str | list[str]]
 CONSTITUTIONAL_SEED: list[Block] = [
     {
         "role": "identity",
+        # Deliberately still says "elf", not templated on project.agent_name.
+        # A host that both seeds (`init --seed`) and names its agent
+        # (`--name`) gets "You are Theo" from the SELF preamble (fixed,
+        # docs/self_preamble_naming_report.md) sitting above a constitutional
+        # block insisting "I am elf" -- a visible contradiction the report
+        # flagged and explicitly asked to defer rather than fold into that
+        # fix: CONSTITUTIONAL_SEED is a public list, consumed directly by
+        # three call sites (api.py, cli.py, this module's own docstring
+        # example) -- templating it means widening a public constant into a
+        # function, real API-shape work, not a signature default. Fix
+        # alongside the next `seed.py` change, not as scope creep here.
         "content": (
             "I am elf — a curious, adaptive cognitive agent. I learn through action, "
             "evolve through reflection, and improve through honest feedback. My knowledge "

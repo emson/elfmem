@@ -25,6 +25,9 @@ from elfmem.types import (
     AmendmentRecord,
     AmendmentResult,
     ConstitutionalReviewResult,
+    CorpusProposal,
+    CorpusReviewResult,
+    ForgetResult,
     ProposedAmendment,
 )
 
@@ -379,3 +382,97 @@ class TestReviewList:
         assert result.exit_code == 0
         assert "active" in result.output
         assert "reverted" in result.output
+
+
+# ── review corpus (v2 step 6a) ───────────────────────────────────────────────
+
+
+def _corpus_proposal(block_id: str = "blk-abcdef12") -> CorpusProposal:
+    return CorpusProposal(
+        block_id=block_id,
+        kind="stale",
+        reason="not reinforced in 812h (reinforced 0x, no outcome evidence)",
+        content_preview="Some stale fact.",
+    )
+
+
+def _corpus_result(
+    proposals: list[CorpusProposal] | None = None, *, reviewed: int = 10,
+) -> CorpusReviewResult:
+    return CorpusReviewResult(reviewed_count=reviewed, proposals=proposals or [])
+
+
+class TestReviewCorpus:
+    def test_no_proposals_renders_clean_message(
+        self, mock_mem: AsyncMock, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("elfmem.cli._ttys_attached", lambda: True)
+        mock_mem.review_corpus.return_value = _corpus_result(reviewed=10)
+        result = runner.invoke(app, ["review", "corpus", "--db", "t.db"])
+        assert result.exit_code == 0
+        assert "no proposals" in result.output
+
+    def test_json_flag_emits_machine_readable(self, mock_mem: AsyncMock) -> None:
+        mock_mem.review_corpus.return_value = _corpus_result(
+            proposals=[_corpus_proposal()],
+        )
+        result = runner.invoke(app, ["review", "corpus", "--db", "t.db", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["proposals"][0]["block_id"] == "blk-abcdef12"
+        assert data["proposals"][0]["kind"] == "stale"
+
+    def test_yes_flag_auto_accepts_all_via_forget(
+        self, mock_mem: AsyncMock, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("elfmem.cli._ttys_attached", lambda: True)
+        mock_mem.review_corpus.return_value = _corpus_result(
+            proposals=[_corpus_proposal("blk-1"), _corpus_proposal("blk-2")],
+        )
+        mock_mem.forget.return_value = ForgetResult(block_id="blk-1", status="forgotten")
+        result = runner.invoke(app, ["review", "corpus", "--db", "t.db", "--yes"])
+        assert result.exit_code == 0
+        assert mock_mem.forget.call_count == 2
+        # Accepted proposals apply with reason=DECAYED, not the forget()
+        # default (FORGOTTEN) — distinguishes an accepted review finding
+        # from a direct human decision in the audit trail.
+        from elfmem.types import ArchiveReason
+        args, kwargs = mock_mem.forget.call_args
+        assert kwargs.get("reason") == ArchiveReason.DECAYED
+
+    def test_interactive_quit_aborts_remaining(
+        self, mock_mem: AsyncMock, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("elfmem.cli._ttys_attached", lambda: True)
+        mock_mem.review_corpus.return_value = _corpus_result(
+            proposals=[
+                _corpus_proposal("blk-1"), _corpus_proposal("blk-2"),
+                _corpus_proposal("blk-3"),
+            ],
+        )
+        mock_mem.forget.return_value = ForgetResult(block_id="blk-1", status="forgotten")
+        result = runner.invoke(app, ["review", "corpus", "--db", "t.db"], input="a\nq\n")
+        assert result.exit_code == 0
+        assert mock_mem.forget.call_count == 1
+        assert "abandoned: 2" in result.output
+
+    def test_interactive_reject_does_not_forget(
+        self, mock_mem: AsyncMock, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("elfmem.cli._ttys_attached", lambda: True)
+        mock_mem.review_corpus.return_value = _corpus_result(
+            proposals=[_corpus_proposal("blk-1")],
+        )
+        result = runner.invoke(app, ["review", "corpus", "--db", "t.db"], input="r\n")
+        assert result.exit_code == 0
+        mock_mem.forget.assert_not_called()
+
+    def test_bare_review_still_runs_constitutional_not_corpus(
+        self, mock_mem: AsyncMock,
+    ) -> None:
+        """`elfmem review` (no subcommand) must remain constitutional review
+        — the naming collision this step deliberately avoided."""
+        mock_mem.review_constitutional.return_value = _result(reviewed=3)
+        result = runner.invoke(app, ["review", "--db", "t.db"])
+        assert result.exit_code == 0
+        mock_mem.review_corpus.assert_not_called()

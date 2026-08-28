@@ -109,14 +109,6 @@ class TestDreamSkipLLM:
         assert result is not None
         assert result.promoted > 0
 
-    async def test_dream_skip_contradictions(self, system):
-        """dream(skip_contradictions=True) should skip contradiction detection."""
-        for i in range(3):
-            await system.learn(f"Knowledge item {i}")
-        result = await system.dream(skip_contradictions=True)
-        assert result is not None
-        assert result.promoted > 0
-
     async def test_dream_empty_inbox_returns_none(self, system):
         result = await system.dream(skip_llm=True)
         assert result is None
@@ -143,24 +135,5 @@ class TestConfigWiring:
         await system.learn("The cat sat on the mat")
         await system.learn("The cat sat on the mat today")
         await system.learn("A different topic entirely")
-        result = await system.consolidate()
-        assert result.processed == 3
-
-    async def test_contradiction_threshold_from_config(self, test_engine, mock_llm, mock_embedding):
-        """contradiction_threshold from config should be wired through."""
-        cfg = ElfmemConfig(
-            memory=MemoryConfig(
-                inbox_threshold=3,
-                contradiction_threshold=0.50,
-            ),
-        )
-        system = MemorySystem(
-            engine=test_engine,
-            llm_service=mock_llm,
-            embedding_service=mock_embedding,
-            config=cfg,
-        )
-        for i in range(3):
-            await system.learn(f"Statement {i}")
         result = await system.consolidate()
         assert result.processed == 3

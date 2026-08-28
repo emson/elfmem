@@ -47,6 +47,15 @@ class ConfigError(ElfmemError):
     """Raised when configuration is invalid or references missing resources."""
 
 
+class HostAnalysisError(ElfmemError):
+    """Raised when ``consolidate(host_analyses=...)``/``dream(host_analyses=...)``
+    input fails validation (e.g. a host agent session's own reasoning about
+    a block's alignment_score/tags/summary). Direct structured input, not
+    unreliable external I/O — fail-fast, not a fallback, so the mistake is
+    visible immediately rather than silently degrading to neutral scoring.
+    """
+
+
 class StorageError(ElfmemError):
     """Raised when a database operation fails in an unrecoverable way."""
 
@@ -177,3 +186,23 @@ class EmbeddingLockError(ElfmemError):
     aligns the config with the DB, or runs ``elfmem migrate-embeddings``
     to re-embed everything under the new model.
     """
+
+
+class SubstrateWriteError(ElfmemError):
+    """A block could not be written to the authoritative file substrate.
+
+    The index row created alongside it is rolled back before this is raised,
+    so the two layers do not disagree: nothing claims to remember a block the
+    substrate never accepted.
+    """
+
+    def __init__(self, block_id: str, *, cause: Exception) -> None:
+        super().__init__(
+            f"Could not write block {block_id} to .elfmem/memory/: {cause}",
+            recovery=(
+                "The block was not stored. Check .elfmem/memory/ exists and "
+                "is writable (elfmem doctor), then learn() again. To fall "
+                "back to database-primary storage, set "
+                "substrate.files_authoritative: false in config.yaml."
+            ),
+        )
