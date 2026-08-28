@@ -593,7 +593,12 @@ def init(
                 from importlib.metadata import version as _pkg_version
 
                 from elfmem.agent_docs import get_fragment_hash, render_agent_docs, write_lock_file
-                fragment_path = Path(resolved_config).parent.parent / "AGENT.md"
+                # Beside the config, i.e. .elfmem/AGENT.md — the same path
+                # `doctor` and `agent-docs` read. An extra `.parent` here put
+                # it in the project root instead, so every fresh install wrote
+                # the fragment where nothing looks for it and `doctor` reported
+                # "Fragment missing" on a brand-new instance.
+                fragment_path = Path(resolved_config).parent / "AGENT.md"
                 # Source agent_name from live config — handles both fresh (just-written)
                 # and established (refresh-only) cases identically.
                 fragment_agent_name = _project.read_agent_name_from_config(resolved_config)

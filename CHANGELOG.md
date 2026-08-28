@@ -9,6 +9,27 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **`elfmem init` writes the agent-docs fragment to `.elfmem/AGENT.md`**, the
+  path `elfmem doctor` and `elfmem agent-docs` already read. An extra `.parent`
+  in the path expression put it in the project root instead, so every fresh
+  install left a stray top-level `AGENT.md` and then failed its own health
+  check: `elfmem doctor` reported `✗ Agent docs — Fragment missing` on a
+  brand-new instance and told the user to run `elfmem agent-docs install`. The
+  `.agent-docs.lock` written on the next line already used the correct base,
+  which is what made the mismatch visible. Existing projects with a root
+  `AGENT.md` can delete it; the next `elfmem init` refresh writes the fragment
+  to the right place.
+
+### Changed
+- **README rewritten** around the v2 file substrate. Leads with the three-layer
+  model (Markdown content, append-only ledger, derived SQLite index) rather
+  than the superseded "one SQLite file" framing, and adds sections on the
+  retrieval pipeline, the five scoring signals with per-frame weights, the
+  graph, and how the SELF frame plus constitutional blocks give an agent a
+  personality and domain behaviour. The API reference now points to
+  `elfmem guide` instead of duplicating it, so it cannot drift.
+
 ## [0.20.0] — 2026-08-28
 
 ### Added
