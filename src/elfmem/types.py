@@ -40,16 +40,60 @@ class DecayTier(StrEnum):
 
 @dataclass
 class ScoredBlock:
+    """One block a retrieval returned, with the signals that ranked it.
+
+    The scoring fields are diagnostic — they explain *why* this block ranked
+    where it did within THIS result set. Two of them read like portable,
+    absolute measures and are not; see ``similarity`` and ``score`` below
+    before deriving anything from them, and in particular before deriving
+    ``outcome(weight=...)`` from them.
+    """
+
     id: str
     content: str
     tags: list[str]
+
+    #: NOT a portable relevance score, despite the name. Three regimes:
+    #:
+    #: - ``0.0`` is a SENTINEL meaning "vector search never scored this",
+    #:   not "irrelevant". Two ways to get it: a queryless frame (SELF scores
+    #:   every block 0.0 — there is no query to be similar to), or a block
+    #:   pulled in by 1-hop graph expansion rather than by the query
+    #:   (``was_expanded=True``).
+    #: - When BM25 has signal, this is a Reciprocal-Rank-Fusion score
+    #:   normalised so the top-ranked block is exactly ``1.0``. It is
+    #:   rank-shaped, not magnitude-shaped: measured on a real corpus, a
+    #:   five-block recall spanned 0.905–1.0, so differences here are far
+    #:   smaller than raw relevance differences.
+    #: - Only when BM25 finds nothing is this the raw cosine similarity.
+    #:
+    #: Consequence for weighted credit assignment: ``outcome(weight=b.similarity)``
+    #: is the obvious thing to write and is wrong in all three regimes — it
+    #: raises ``ValueError`` on the sentinel (weight must be > 0.0), collapses
+    #: to a near-uniform weight in the RRF band, and applies a uniform weight
+    #: on a queryless frame. Rank order within ``result.blocks`` is the
+    #: portable signal; this number is not.
     similarity: float
+
     confidence: float
     recency: float
     centrality: float
     reinforcement: float
+
+    #: The composite ranking value that ordered this result set — a blend of
+    #: similarity, confidence, recency, centrality, reinforcement and the
+    #: exploration bonus, weighted per frame. NOT a semantic-similarity score:
+    #: a block can score highly on reinforcement and centrality alone, so a
+    #: high ``score`` against an unrelated query is normal, not a bug. Use it
+    #: to explain ranking, never as a relevance threshold.
     score: float
+
+    #: True when the block reached this result set through graph expansion
+    #: (a 1-hop neighbour of a query hit) rather than by matching the query.
+    #: This is the discriminator that tells a ``similarity`` of 0.0 apart
+    #: from a genuine low score.
     was_expanded: bool = False
+
     status: str = BlockStatus.ACTIVE.value
 
     @property

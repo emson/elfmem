@@ -70,6 +70,32 @@ class FrameDefinition:
     queryless: bool = False
 
 
+# Identity belongs to the frames that ask for it. SELF and SIMULATE both
+# *guarantee* `self/constitutional`; every other frame excludes it, because
+# SELF is queryless and injected on its own, so a principle surfacing anywhere
+# else is served twice, costs budget twice, and takes a slot from what that
+# frame exists to surface.
+#
+# Shared rather than repeated per frame: ATTENTION and TASK hit the identical
+# structural problem for the identical reason, and a third frame added later
+# should inherit the decision rather than rediscover it. Three properties
+# compound to cause it -- principles are written in general epistemic language
+# ("evidence", "premise", "pattern") so they sit close to any reasoning-shaped
+# query; they carry PERMANENT decay so recency never demotes them; and nothing
+# filtered them out.
+IDENTITY_TAGS = ["self/constitutional"]
+
+# ...except where a peer wrote it. Load-bearing and earned by measurement:
+# `self/constitutional` is assigned by the consolidating LLM as well as by the
+# author, and on a mature instance it has accreted onto 7 peer letters that are
+# real knowledge. Excluding those too made a peer-trust query measurably worse.
+# Mirrors SELF's own `guarantee_excludes` -- both encode the same fact from
+# opposite directions: a peer letter is knowledge, not identity. `peer/*` is
+# applied structurally by the peer channel and never inferred, which is what
+# makes it a trustworthy discriminator.
+IDENTITY_EXEMPT_TAGS = ["peer/%"]
+
+
 SELF_FRAME = FrameDefinition(
     name="self",
     weights=SELF_WEIGHTS,
@@ -113,33 +139,17 @@ SELF_FRAME = FrameDefinition(
 ATTENTION_FRAME = FrameDefinition(
     name="attention",
     weights=ATTENTION_WEIGHTS,
-    # ATTENTION answers "what have I learned that bears on this question".
-    # Identity is SELF's job, and SELF is queryless and injected on its own,
-    # so a principle appearing here is served twice, costs budget twice, and
-    # takes a slot from the thing ATTENTION exists to surface.
-    #
-    # This is not a theoretical tidy-up. Three properties compound: principles
-    # are written in general epistemic language ("evidence", "premise",
-    # "pattern") so they are semantically close to any reasoning-shaped query;
-    # they carry PERMANENT decay so recency never demotes them; and nothing
-    # filtered them out. Measured on a seeded ten-principle constitution,
-    # ATTENTION returned 4 of 5 slots as principles and dropped every market
-    # fact including the agent's own open position. Measured on elf's own
-    # mature corpus, 36% of ATTENTION slots, rising to 4 of 5 on a debugging
-    # query where the genuinely relevant block ranked third behind "I am elf"
-    # and "the agent is philosophical".
-    #
-    # The `peer/%` exemption is load-bearing and was earned by measurement:
-    # `self/constitutional` is also assigned by the consolidating LLM, and on
-    # a mature instance it has accreted onto 7 peer letters that are real
-    # knowledge. Excluding them too made the peer-trust query strictly worse.
-    # It mirrors SELF's own `guarantee_excludes=["peer/%"]` -- both encode the
-    # same fact from opposite directions: a peer letter is knowledge, not
-    # identity. `peer/*` is applied structurally by the peer channel and never
-    # inferred, which is what makes it a trustworthy discriminator.
+    # ATTENTION answers "what have I learned that bears on this question", so
+    # identity crowding it out is the whole failure. See IDENTITY_TAGS above
+    # for the shared reasoning. Measured before the fix: on a seeded
+    # ten-principle constitution ATTENTION returned 4 of 5 slots as principles
+    # and dropped every market fact including the agent's own open position;
+    # on elf's own mature corpus, 36% of slots, rising to 4 of 5 on a
+    # debugging query where the genuinely relevant block ranked third behind
+    # "I am elf" and "the agent is philosophical".
     filters=FrameFilters(
-        exclude_tag_patterns=["self/constitutional"],
-        exclude_exempt_patterns=["peer/%"],
+        exclude_tag_patterns=IDENTITY_TAGS,
+        exclude_exempt_patterns=IDENTITY_EXEMPT_TAGS,
     ),
     guarantees=[],
     template="attention",
@@ -151,7 +161,26 @@ ATTENTION_FRAME = FrameDefinition(
 TASK_FRAME = FrameDefinition(
     name="task",
     weights=TASK_WEIGHTS,
-    filters=FrameFilters(),
+    # Same exclusion as ATTENTION, and for the same reason (IDENTITY_TAGS
+    # above) -- TASK shipped without it, and a downstream integration measured
+    # the consequence: every TASK recall returned a strict subset of SELF,
+    # zero unique blocks. Not crowding, total capture.
+    #
+    # Interacts deliberately with `guarantees` below, and the interaction is
+    # why this is safe to add to a live frame. `recall()` resolves
+    # `excluded_ids -= guaranteed_ids`, so a block tagged BOTH `self/goal` and
+    # `self/constitutional` keeps its guaranteed slot: the guarantee is the
+    # more specific, more deliberate declaration. Measured on elf's own
+    # corpus, where the consolidating LLM has tagged `self/goal` broadly, that
+    # makes this change a no-op -- every block TASK returns is goal-tagged and
+    # therefore guaranteed. On a corpus where principles are NOT goal-tagged
+    # (the reporting integration's) it removes them. Both are correct: the
+    # filter only ever removes identity that no `self/goal` declaration is
+    # protecting.
+    filters=FrameFilters(
+        exclude_tag_patterns=IDENTITY_TAGS,
+        exclude_exempt_patterns=IDENTITY_EXEMPT_TAGS,
+    ),
     guarantees=["self/goal"],
     template="task",
     token_budget=800,

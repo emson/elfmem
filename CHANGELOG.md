@@ -84,6 +84,25 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   behaviour, pass a frame definition with empty `exclude_tag_patterns`, or read
   the excluded blocks from `frame("self")` where they were already being
   served.
+- **Breaking: TASK excludes `self/constitutional` too**, sharing one
+  declaration with ATTENTION (`IDENTITY_TAGS` / `IDENTITY_EXEMPT_TAGS` in
+  `context/frames.py`) rather than repeating it, so a third frame added later
+  inherits the decision instead of rediscovering it. TASK shipped with the
+  identical structural vulnerability and no filter; a downstream integration
+  measured the consequence and reported it: every TASK recall returned a
+  *strict subset* of SELF — zero unique blocks. Not crowding, total capture.
+  **This is safe to add to a live frame because guarantees beat exclusions**:
+  `recall()` resolves `excluded_ids -= guaranteed_ids`, so a block tagged both
+  `self/goal` and `self/constitutional` keeps its guaranteed slot. Verified
+  against elf's own corpus, where the consolidating LLM has tagged `self/goal`
+  broadly: the change is a **measured no-op** there — byte-identical TASK
+  output before and after, because every block TASK returns is goal-tagged and
+  therefore protected. On a corpus where principles are *not* goal-tagged (the
+  reporting integration's) it removes them. Both are correct: the filter only
+  ever removes identity that no `self/goal` declaration is protecting.
+  **Migration**: same as ATTENTION above — a `self/goal` tag restores any block
+  you want TASK to keep, which is also the more accurate tag for something the
+  task frame should surface.
 - **Breaking: `outcome()` no longer scores `self/constitutional` blocks** by
   default. A decision's recalled block ids routinely include the principles
   that helped reason about it, so a losing task outcome pushed negative signal
@@ -234,6 +253,36 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   is unaffected and remains in `memory/dedup.py`.
 
 ### Fixed
+- **`ScoredBlock` had no field documentation at all**, and two of its fields
+  read like portable measures that they are not — the root cause of a
+  downstream integration building weighted credit assignment on
+  `outcome(weight=b.similarity)`, the obvious first implementation, which is
+  wrong in every regime. `similarity` now documents that `0.0` is a
+  **sentinel** meaning "vector search never scored this" — a queryless frame
+  (SELF scores every block 0.0; there is no query to be similar to) or a
+  graph-expanded block (`was_expanded=True`) — and that when BM25 has signal
+  the values are Reciprocal-Rank-Fusion scores normalised so the top block is
+  exactly `1.0`, i.e. rank-shaped rather than magnitude-shaped. Measured on a
+  real corpus, a five-block recall spanned 0.905–1.0, so the reporter's
+  mitigation (`0.25 + 0.75 * similarity`, intended to give the best match 4×
+  the worst) actually yields a 1.08× spread there and a *uniform* weight on
+  any queryless frame — silently not the weighting they designed. `score` is
+  documented as the composite ranking blend, so a high score against an
+  unrelated query is normal rather than a bug, and `was_expanded` as the
+  discriminator that tells a sentinel apart from a genuine low score.
+- **`outcome()` did not say that `signal=0.5` is not a neutral no-op.** The
+  update math was already documented precisely enough to derive it, but not
+  the conclusion: `0.5` pulls confidence *toward* 0.5 from wherever the block
+  currently sits, so its direction depends on the block rather than the
+  signal — a block at confidence 1.0 moves DOWN to 0.75 while one at 0.28
+  moves UP to 0.30, and only a block already at 0.5 is unmoved. Reported by an
+  integration that used it to mean "this outcome teaches nothing" and measured
+  the sign coming out backwards. `outcome()`'s docstring and `guide("outcome")`
+  now state the unifying rule both this and the `weight` footgun above are
+  instances of: **to apply no information, do not call `outcome()`** — there is
+  no parameter value meaning "no update", and both candidates (`signal=0.5`,
+  `weight=0.0`) look like one. `weight=0.0` continues to raise deliberately
+  rather than silently no-op'ing; filter the ids instead.
 - **Three merge-readiness gaps found by an independent adversarial review of
   the migration/cutover/agent_name code**, before this branch's PR (none of
   these had shipped or been hit in real use):
@@ -727,14 +776,19 @@ automatically — the file substrate is entirely opt-in via `elfmem migrate`.
   applied — matching the removed wrapper's own math. `operations.*` is
   documented as internal (README "API stability"); this was never
   re-exported from the package root.
-- **ATTENTION no longer returns `self/constitutional` blocks** (peer-authored
-  exempt): if your integration relied on identity content surfacing through
-  `frame("attention")` or `recall(frame="attention")`, it now comes only
-  through `frame("self")`, which is queryless and already injected on every
-  recall — the SELF frame was always the intended source, this closes a gap
-  where the content leaked into ATTENTION too. No config override exists yet
-  (frames are built-in only, Phase 1); open an issue if you have a real need
-  to restore the old behaviour for a specific project.
+- **ATTENTION and TASK no longer return `self/constitutional` blocks**
+  (peer-authored exempt): if your integration relied on identity content
+  surfacing through `frame("attention")`/`frame("task")` or the matching
+  `recall(frame=...)`, it now comes only through `frame("self")`, which is
+  queryless and already injected on every recall — the SELF frame was always
+  the intended source, this closes a gap where the content leaked into the
+  other two. **TASK has an escape hatch ATTENTION does not**: it guarantees
+  `self/goal`, and guarantees beat exclusions, so tagging a block `self/goal`
+  keeps it in TASK regardless — which is also the more accurate tag for
+  anything the task frame should be surfacing. Verified as a no-op on a corpus
+  where `self/goal` is already broadly applied. Otherwise no config override
+  exists yet (frames are built-in only, Phase 1); open an issue if you have a
+  real need to restore the old behaviour for a specific project.
 - **`outcome()` no longer scores `self/constitutional` blocks** by default:
   pass `allow_constitutional=True` to restore the old behaviour for a
   specific call. Skipped ids are now visible on `result.skipped_constitutional`

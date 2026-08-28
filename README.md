@@ -201,6 +201,20 @@ Score = w_similarity    * cosine_similarity(query, block)
 
 The `self` frame heavily weights confidence and reinforcement, because identity is what you've consistently believed. The `attention` frame weights similarity and recency: what's relevant *right now*. The `task` frame balances everything for the goal at hand. The `simulate` frame uses score boosts to prioritise identity, mind models, and predictions — see below.
 
+**Identity stays in the frames that ask for it.** `self` and `simulate` both
+*guarantee* `self/constitutional` blocks; `attention` and `task` exclude them
+(peer-authored ones exempt — a peer's letter is knowledge, not your identity).
+Without that boundary a well-written constitution crowds out everything else:
+principles are phrased in general epistemic language, so they sit close to any
+reasoning-shaped query, and they carry permanent decay so recency never demotes
+them. Measured on a ten-principle constitution before the exclusion, `attention`
+returned 4 of 5 slots as principles and dropped every domain fact; `task`
+returned a strict subset of `self` — zero unique blocks.
+
+A block tagged `self/goal` keeps its guaranteed `task` slot even if it is also
+constitutional: **guarantees beat exclusions**, because the guarantee is the
+more specific declaration.
+
 ### Theory of Mind: modelling other agents
 
 elfmem can model other agents, users, or stakeholders as **mind blocks** — structured representations of their goals, beliefs, fears, and motivations. Attach **falsifiable predictions** to test your model, then close the loop with outcomes to calibrate.
@@ -1238,10 +1252,20 @@ FrameResult(text, blocks, frame_name, cached, edges_promoted, dropped, budget_us
 DroppedBlock(id, content, tags, reason)
 # reason: "top_k" | "token_budget" | "contradiction" (near-duplicate suppressed)
 # excluded_by_filter: count removed by the frame's own exclude_tag_patterns.
-# ATTENTION excludes self/constitutional (peer-authored exempt) — identity is
-# SELF's job, and SELF is injected on its own, so serving it twice costs a slot.
+# ATTENTION and TASK both exclude self/constitutional (peer-authored exempt) —
+# identity is SELF's job, and SELF is injected on its own, so serving it
+# elsewhere costs a slot. A block tagged self/goal keeps its guaranteed TASK
+# slot regardless: guarantees beat exclusions.
 
 ScoredBlock(id, content, score, confidence, similarity, recency, centrality, reinforcement, tags, was_expanded)
+# similarity is NOT a portable relevance score. 0.0 is a SENTINEL for "vector
+# search never scored this" — a queryless frame (SELF), or a graph-expanded
+# block (was_expanded=True). With BM25 signal it is rank-normalised so the top
+# block is exactly 1.0 and the rest sit in a narrow band. Do NOT derive
+# outcome(weight=) from it: it raises on the sentinel and is near-uniform
+# otherwise. Rank order within result.blocks is the portable signal.
+# score is the composite ranking blend, not semantic similarity — a high score
+# against an unrelated query is normal.
 BlockSummary(id, content, category, tags, created_at, reinforcement_count)      # ls()
 InboxBlockSummary(id, content, category, tags, created_at)                     # inbox()
 

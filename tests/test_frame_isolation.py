@@ -60,6 +60,101 @@ async def _seed(system: MemorySystem, *, principles=True, knowledge=True) -> Non
 # ── Issue 1: a constitution must not starve ATTENTION ────────────────────────
 
 
+class TestTaskExcludesIdentity:
+    """TASK shipped without the exclusion ATTENTION got, with the identical
+    structural vulnerability. A downstream integration measured the
+    consequence: every TASK recall returned a strict subset of SELF — zero
+    unique blocks. Not crowding, total capture.
+    """
+
+    async def test_plain_principles_do_not_reach_task(self, system: MemorySystem):
+        """The reporting integration's corpus shape: principles that are NOT
+        goal-tagged, so nothing protects them from the filter."""
+        async with system.session():
+            for i in range(8):
+                await system.remember(
+                    f"Principle {i}: a ratified rule about topic {i}.",
+                    tags=["self/constitutional"], cue=f"principle {i}")
+            await system.remember("Ship the migration cutover by Friday.",
+                                  tags=["self/goal"], cue="current goal")
+            for k in KNOWLEDGE[:2]:
+                await system.remember(k, tags=["market/spy"], cue="spy")
+            for _ in range(14):
+                await system.consolidate()
+
+        result = await system.frame("task", "what should I do next")
+        assert result.blocks, "TASK must still return the goal and real knowledge"
+        assert not any("self/constitutional" in b.tags for b in result.blocks)
+        assert result.excluded_by_filter == 8
+
+    async def test_task_no_longer_a_subset_of_self(self, system: MemorySystem):
+        """The reported symptom itself, stated as the invariant."""
+        async with system.session():
+            for i in range(6):
+                await system.remember(
+                    f"Principle {i}: a ratified rule about topic {i}.",
+                    tags=["self/constitutional"], cue=f"principle {i}")
+            await system.remember("Ship the cutover by Friday.",
+                                  tags=["self/goal"], cue="goal")
+            await system.remember("The SPY spread fills best at 09:45.",
+                                  tags=["market/spy"], cue="spy")
+            for _ in range(12):
+                await system.consolidate()
+
+        task = await system.frame("task", "what next")
+        self_frame = await system.frame("self")
+        task_ids = {b.id for b in task.blocks}
+        assert task_ids, "precondition: TASK returns something"
+        assert not task_ids <= {b.id for b in self_frame.blocks}, (
+            "TASK must not be a strict subset of SELF"
+        )
+
+    async def test_a_goal_tagged_principle_keeps_its_guaranteed_slot(
+        self, system: MemorySystem
+    ):
+        """Why this is safe to add to a live frame. `recall()` resolves
+        `excluded_ids -= guaranteed_ids`, so a block tagged BOTH `self/goal`
+        and `self/constitutional` survives — the guarantee is the more
+        specific, more deliberate declaration. Measured on elf's own corpus,
+        where the consolidating LLM tags `self/goal` broadly, this makes the
+        whole change a verified no-op: identical blocks before and after.
+        """
+        async with system.session():
+            dual = await system.remember(
+                "Improve elfmem's own memory as a standing goal.",
+                tags=["self/constitutional", "self/goal"], cue="standing goal")
+            await system.remember("Principle: prefer the smallest change.",
+                                  tags=["self/constitutional"], cue="principle")
+            for _ in range(6):
+                await system.consolidate()
+
+        result = await system.frame("task", "what next")
+        assert dual.block_id in {b.id for b in result.blocks}, (
+            "a guaranteed self/goal block must survive the identity exclusion"
+        )
+
+    async def test_shares_one_declaration_with_attention(self):
+        """Both frames excluding identity for the same reason should not be
+        able to drift apart by editing only one."""
+        from elfmem.context.frames import (
+            ATTENTION_FRAME,
+            IDENTITY_EXEMPT_TAGS,
+            IDENTITY_TAGS,
+            TASK_FRAME,
+        )
+        for frame in (ATTENTION_FRAME, TASK_FRAME):
+            assert frame.filters.exclude_tag_patterns is IDENTITY_TAGS
+            assert frame.filters.exclude_exempt_patterns is IDENTITY_EXEMPT_TAGS
+
+    async def test_simulate_still_wants_identity(self):
+        """Guard against over-applying: SIMULATE *guarantees*
+        self/constitutional — it blends identity with modelled minds by
+        design and must never inherit the exclusion."""
+        from elfmem.context.frames import SIMULATE_FRAME
+        assert "self/constitutional" in SIMULATE_FRAME.guarantees
+        assert not SIMULATE_FRAME.filters.exclude_tag_patterns
+
+
 class TestAttentionExcludesIdentity:
     async def test_knowledge_wins_its_own_frame_back(self, system: MemorySystem):
         await _seed(system)
@@ -342,3 +437,55 @@ class TestOutcomeNamesEverySkip:
         assert result.to_dict()["skipped"] == [
             {"id": pending.block_id, "reason": "pending_inbox"}
         ]
+
+
+class TestSimilarityIsNotAPortableRelevanceScore:
+    """`ScoredBlock.similarity` reads like a relevance measure and is not.
+    A downstream integration built weighted credit assignment on
+    `outcome(weight=b.similarity)` — the obvious first implementation — and
+    it fails in every regime. These pin the documented semantics.
+    """
+
+    async def test_queryless_frame_scores_every_block_zero(self, system: MemorySystem):
+        """SELF has no query to be similar to, so 0.0 here means "not
+        measured", not "irrelevant". A weight derived from it would be
+        uniform across the whole frame — silently not the weighting the
+        caller designed."""
+        await _seed(system, knowledge=False)
+        result = await system.frame("self")
+        assert result.blocks
+        assert all(b.similarity == 0.0 for b in result.blocks)
+
+    async def test_expanded_blocks_carry_the_same_sentinel(self, system: MemorySystem):
+        """Graph expansion assigns 0.0 because the block never went through
+        vector search. `was_expanded` is the discriminator that tells this
+        apart from a genuine low score."""
+        async with system.session():
+            hit = await system.remember(
+                "The SPY spread fills best between 09:45 and 10:15 ET.",
+                tags=["market/spy"], cue="spy fills")
+            neighbour = await system.remember(
+                "Assignment risk rises inside 5 days to expiry.",
+                tags=["market/spy"], cue="assignment risk")
+            for _ in range(4):
+                await system.consolidate()
+            await system.connect(hit.block_id, neighbour.block_id, relation="similar")
+
+        result = await system.frame("attention", "SPY spread fill timing")
+        expanded = [b for b in result.blocks if b.was_expanded]
+        assert all(b.similarity == 0.0 for b in expanded), (
+            "an expanded block's similarity is a sentinel, not a measurement"
+        )
+
+    async def test_the_obvious_weighting_crashes_on_the_sentinel(
+        self, system: MemorySystem
+    ):
+        """`outcome(weight=b.similarity)` is what an integrator writes first.
+        On any block carrying the sentinel it raises, because weight must be
+        > 0.0 — which is the documented reason to filter ids rather than
+        weight them to nothing."""
+        await _seed(system, knowledge=False)
+        result = await system.frame("self")
+        block = result.blocks[0]
+        with pytest.raises(ValueError, match="weight must be > 0.0"):
+            await system.outcome([block.id], 0.9, weight=block.similarity)

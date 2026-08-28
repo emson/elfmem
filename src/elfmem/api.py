@@ -2091,6 +2091,30 @@ class MemorySystem:
             0.2–0.8  → confidence adjusted, no reinforcement or penalization
             0.0–0.2  → confidence DOWN + decay accelerated automatically
 
+        **To apply no information, do not call this method.** There is no
+        parameter value that means "no update", and the two candidates both
+        look like one:
+
+        - ``signal=0.5`` is NOT a neutral no-op. It pulls every block's
+          confidence *toward* 0.5 from wherever it currently sits, so it is a
+          direction like any other value — and its direction depends on the
+          block, not on the signal. A block at confidence 1.0 moves DOWN to
+          0.75; a block at 0.28 moves UP to 0.30; only a block already at 0.5
+          is unmoved. Reserve 0.5 for genuinely balanced evidence, which is a
+          real claim about the block, not an absence of one.
+        - ``weight=0.0`` raises ``ValueError`` rather than silently no-op'ing,
+          deliberately: a zero-weight call is a caller bug worth failing on,
+          not a way to skip a block. Filter the ids instead.
+
+        Weighting by retrieval relevance: do NOT derive ``weight`` from
+        ``ScoredBlock.similarity``. It is not a portable relevance score —
+        ``0.0`` is a sentinel for "vector search never scored this" (queryless
+        frames, graph-expanded blocks), and when BM25 has signal the values are
+        rank-normalised into a narrow band rather than spread across [0, 1].
+        ``weight=b.similarity`` therefore raises on the sentinel and is close
+        to uniform everywhere else. See ``ScoredBlock.similarity``; rank order
+        within ``result.blocks`` is the portable signal.
+
         Domain signal normalisation (one-liners in agent code)::
 
             signal = 1.0 - brier_score           # trading: 0=worst, 1=perfect
