@@ -230,7 +230,14 @@ class ProjectConfig(BaseModel):
     name: str = ""
     db: str = ""        # path to the database file (may contain ~)
     identity: str = ""  # identity description for display and seeding
-    agent_name: str = ""  # invocation token — when user says this name, host LLM recalls SELF frame
+    # Invocation token, two jobs: (1) when the user addresses the host by
+    # this name, AGENT.md's protocol section tells it to recall SELF; (2)
+    # since v0.20, interpolated into the SELF preamble itself ("You are
+    # {agent_name}") — previously hardcoded to "elf" regardless of this
+    # field, a gap this project's own field-testers hit and reported
+    # (docs/self_preamble_naming_report.md) after naming their agent "Theo"
+    # via `elfmem init --name` and getting "answer as elf" back anyway.
+    agent_name: str = ""
     created: str = ""   # ISO date of initialisation
 
 

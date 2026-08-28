@@ -423,7 +423,11 @@ GUIDES: dict[str, AgentGuide] = {
             "(peer-authored ones exempt): identity is SELF's job, SELF is "
             "queryless and injected on its own, so a principle here would be "
             "served twice and take a slot from learned knowledge. "
-            "result.excluded_by_filter counts what that removed."
+            "result.excluded_by_filter counts what that removed. "
+            "SELF's preamble ('You are <name>') uses project.agent_name if "
+            "set (elfmem init --name), else 'elf' — set it before shipping "
+            "under a different agent name, or every SELF frame will still "
+            "say 'answer as elf'."
         ),
         next=(
             "Inject result.text into your LLM prompt. "

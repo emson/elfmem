@@ -40,6 +40,24 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   directory to read them), leaving no undo path for `forget()`/`edit()`.
 
 ### Fixed
+- **The SELF frame's preamble ignored `project.agent_name`.** Every rendered
+  SELF frame opened with "## You are elf ... answer as elf" regardless of
+  what `elfmem init --name` set — a functional contradiction with the
+  configured identity, not a cosmetic one: SELF is queryless and injected on
+  every recall, so a host that named its agent "Theo" got that instruction
+  back on every single identity render. `agent_name` already existed for
+  exactly this (used extensively by `init`, `doctor`, and `AGENT.md`
+  generation) but never reached this one runtime path — traced hop-by-hop and
+  reported in `docs/self_preamble_naming_report.md`. Fixed by threading
+  `host_name` through `render_blocks()` → `recall()` → `MemorySystem.frame()`,
+  defaulting to `"elf"` everywhere so an unset `agent_name` renders
+  byte-for-byte the same text as before (1561 tests unchanged). Deliberately
+  scoped out: `CONSTITUTIONAL_SEED`'s own "I am elf" identity block is a
+  public constant three call sites depend on directly, so templating it is
+  real API-shape work — tracked with a comment at the seed block rather than
+  folded into this fix. The `--name` CLI help and `project.agent_name`'s
+  doc comment now describe both effects (AGENT.md trigger + SELF rendering);
+  previously only the trigger was documented.
 - **`outcome()` on an un-consolidated block was a silent zero.** A block still
   in the inbox cannot be scored, and the call reported `blocks_updated=0` with
   nothing naming which id or why — indistinguishable from a typo'd id or a

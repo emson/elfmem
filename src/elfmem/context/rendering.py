@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import partial
 
 from elfmem.types import ScoredBlock
 
@@ -27,6 +28,7 @@ def render_blocks(
     blocks: list[ScoredBlock],
     template: str,
     token_budget: int,
+    host_name: str = "elf",
 ) -> RenderResult:
     """Render scored blocks into text using the specified template.
 
@@ -37,6 +39,9 @@ def render_blocks(
         blocks: Scored blocks, sorted by score descending.
         template: Template name ("self", "attention", "task").
         token_budget: Approximate character budget.
+        host_name: Interpolated into the SELF preamble only ("You are
+            {host_name}"). Ignored by every other template -- identity
+            framing is SELF's job, not ATTENTION/TASK/SIMULATE's.
 
     Returns:
         RenderResult — the text, what was rendered, and what would not fit.
@@ -45,7 +50,7 @@ def render_blocks(
         return RenderResult(text="")
 
     templates: dict[str, Callable[[list[ScoredBlock]], str]] = {
-        "self": _render_self_template,
+        "self": partial(_render_self_template, host_name=host_name),
         "task": _render_task_template,
         "simulate": _render_simulate_template,
     }
@@ -102,10 +107,18 @@ def _render_with_budget(
 # reads to the host as elf's own constitution.
 _PEER_TAG_PREFIXES = ("peer/inbound", "peer/from:")
 
-_SELF_PREAMBLE = (
-    "## You are elf\n"
+# {name} defaults to "elf" everywhere this is used, so a host that has not
+# set `project.agent_name` sees byte-for-byte the same text as before this
+# was templated -- reported (docs/self_preamble_naming_report.md) by an
+# integrator who named their agent "Theo" via the documented `elfmem init
+# --name` flag and had every SELF frame answer "who am I" with "You are elf
+# ... answer as elf" regardless: a direct, functional contradiction with the
+# identity they configured, not a cosmetic one -- reasoning models take
+# "answer as elf" as a literal instruction.
+_SELF_PREAMBLE_TEMPLATE = (
+    "## You are {name}\n"
     "The numbered principles below are your own constitution, ordered by how "
-    "load-bearing each has proven. Reason from them and answer as elf. When a "
+    "load-bearing each has proven. Reason from them and answer as {name}. When a "
     "principle and the evidence point different ways, say so plainly -- an "
     "identity that cannot disagree is decoration."
 )
@@ -126,7 +139,7 @@ def _peer_name(block: ScoredBlock) -> str:
     return "a peer"
 
 
-def _render_self_template(blocks: list[ScoredBlock]) -> str:
+def _render_self_template(blocks: list[ScoredBlock], host_name: str = "elf") -> str:
     """Render identity as a directive prompt, with provenance kept intact.
 
     Three sections, each with a different claim on the reading model:
@@ -145,7 +158,7 @@ def _render_self_template(blocks: list[ScoredBlock]) -> str:
 
     lines: list[str] = []
     if constitution:
-        lines.append(_SELF_PREAMBLE)
+        lines.append(_SELF_PREAMBLE_TEMPLATE.format(name=host_name))
         lines.append("")
         for i, block in enumerate(constitution, 1):
             lines.append(f"{i}. {block.content}")

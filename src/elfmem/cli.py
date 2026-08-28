@@ -191,10 +191,12 @@ def init(
         typer.Option(
             "--name",
             help=(
-                "Agent invocation name (e.g. 'elf', 'Nim'). Renders the "
-                "'Agent Identity' section into .elfmem/AGENT.md so the host "
-                "LLM knows to recall SELF when called by name. Empty = no "
-                "named-agent behaviour."
+                "Agent invocation name (e.g. 'elf', 'Nim'). Two effects: "
+                "renders the 'Agent Identity' section into .elfmem/AGENT.md "
+                "so the host LLM knows to recall SELF when called by name, "
+                "and the SELF frame's own preamble addresses the agent by "
+                "this name ('You are <name>') instead of the default 'elf'. "
+                "Empty = no named-agent behaviour."
             ),
         ),
     ] = "",

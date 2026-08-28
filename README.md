@@ -154,6 +154,16 @@ print(identity.text)
 
 Identity blocks use `permanent` decay with a half-life of ~80,000 hours. They anchor the centre of the knowledge graph. Regular knowledge uses `standard` decay (~69 hours) and must be reinforced through use to survive.
 
+**Naming your agent:** `elfmem init --name Theo` sets `project.agent_name`,
+which does two things — renders an "Agent Identity" section into
+`.elfmem/AGENT.md` so a host like Claude Code knows to recall SELF when
+addressed as "Theo," and addresses the SELF frame's own preamble by that name
+("## You are Theo ... reason from them and answer as Theo") instead of the
+library default, "elf." Set it before you seed a constitution under a
+different name — the SELF frame is queryless and injected on every recall, so
+an unset `agent_name` means every identity render says "answer as elf"
+regardless of what your agent is actually called.
+
 | Decay tier | Half-life | Use case |
 |------------|-----------|----------|
 | Permanent | ~80,000 hours | Core identity, constitutional beliefs |

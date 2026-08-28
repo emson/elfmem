@@ -25,6 +25,7 @@ async def recall(
     default_top_k: int = 5,
     cache: FrameCache | None = None,
     reinforce: bool = True,
+    host_name: str = "elf",
 ) -> FrameResult:
     """Execute full retrieval with reinforcement side effects.
 
@@ -154,7 +155,9 @@ async def recall(
     dropped.extend(_as_dropped(b, "top_k") for b in trimmed)
 
     # 8. Render
-    render = render_blocks(final_blocks, frame_def.template, frame_def.token_budget)
+    render = render_blocks(
+        final_blocks, frame_def.template, frame_def.token_budget, host_name,
+    )
     dropped.extend(_as_dropped(b, "token_budget") for b in render.dropped)
     # `blocks` reports what actually reached the text, so that
     # `len(result.blocks)` and the rendered content can never disagree.

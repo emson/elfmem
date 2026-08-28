@@ -9,7 +9,7 @@ tests pin the documented behaviour so it cannot drift back.
 import pytest
 
 from elfmem import ElfmemConfig, MemorySystem
-from elfmem.config import MemoryConfig
+from elfmem.config import MemoryConfig, ProjectConfig
 from elfmem.context.frames import SELF_FRAME, FrameCache
 from elfmem.context.rendering import _render_self_template, render_blocks
 from elfmem.operations.recall import _enforce_guarantees, _resolve_tag_set
@@ -144,6 +144,37 @@ class TestGuarantee:
 class TestSelfTemplate:
     """The render speaks in the imperative, so provenance becomes a boundary."""
 
+    def test_host_name_defaults_to_elf(self):
+        """No regression: a host that never set project.agent_name gets
+        byte-for-byte today's text."""
+        text = _render_self_template([_block("a", "A principle.", ["self/constitutional"])])
+        assert "## You are elf" in text
+        assert "answer as elf" in text
+
+    def test_host_name_is_interpolated(self):
+        """Regression for docs/self_preamble_naming_report.md: a host that
+        named its agent "Theo" via the documented `elfmem init --name` flag
+        got every SELF frame answering "who am I" with "You are elf ...
+        answer as elf" regardless — a functional contradiction with the
+        identity it configured, not a cosmetic one."""
+        text = _render_self_template(
+            [_block("a", "A principle.", ["self/constitutional"])], host_name="Theo",
+        )
+        assert "## You are Theo" in text
+        assert "answer as Theo" in text
+        assert "elf" not in text.lower()
+
+    def test_render_blocks_threads_host_name_for_self_only(self):
+        """The other templates must never see it — identity framing is
+        SELF's job, not ATTENTION's/TASK's/SIMULATE's."""
+        blocks = [_block("a", "A fact.", ["self/constitutional"])]
+        self_result = render_blocks(blocks, "self", 600, "Theo")
+        attention_result = render_blocks(blocks, "attention", 2000, "Theo")
+        assert "You are Theo" in self_result.text
+        assert "Theo" not in attention_result.text
+
+    """The render speaks in the imperative, so provenance becomes a boundary."""
+
     def test_constitution_renders_as_numbered_directive(self):
         text = _render_self_template([
             _block("a", "Apply the minimum force.", ["self/constitutional"]),
@@ -201,3 +232,39 @@ class TestCompose:
     def test_empty_memory_degrades_to_the_bare_question(self):
         result = FrameResult(text="", blocks=[], frame_name="self")
         assert result.compose("why is recall slow?") == "why is recall slow?"
+
+
+class TestHostNameEndToEnd:
+    """Through MemorySystem.frame(), not just the rendering internals —
+    proves the whole wiring path (config -> api.py -> recall() ->
+    render_blocks() -> _render_self_template()) actually connects."""
+
+    async def test_agent_name_reaches_the_rendered_preamble(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            config=ElfmemConfig(
+                memory=MemoryConfig(inbox_threshold=3),
+                project=ProjectConfig(agent_name="Theo"),
+            ),
+        )
+        async with system.session():
+            await system.remember("A principle.", tags=["self/constitutional"], cue="x")
+            await system.consolidate()
+        result = await system.frame("self")
+        assert "You are Theo" in result.text
+        assert "elf" not in result.text.lower()
+
+    async def test_unset_agent_name_preserves_todays_text(
+        self, test_engine, mock_llm, mock_embedding,
+    ):
+        system = MemorySystem(
+            engine=test_engine, llm_service=mock_llm, embedding_service=mock_embedding,
+            config=ElfmemConfig(memory=MemoryConfig(inbox_threshold=3)),
+        )
+        async with system.session():
+            await system.remember("A principle.", tags=["self/constitutional"], cue="x")
+            await system.consolidate()
+        result = await system.frame("self")
+        assert "You are elf" in result.text

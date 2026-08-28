@@ -1897,6 +1897,14 @@ class MemorySystem:
         # a frame guaranteeing ten blocks stops rendering five by default.
         current_hours = self._current_active_hours()
         mem = self._config.memory
+        proj = self._config.project
+        # SELF's "You are X" preamble takes its name from project.agent_name --
+        # the same field elfmem init --name/`--name` writes and AGENT.md
+        # already reads -- so a host that named its agent gets that name back
+        # from the one runtime path that previously never saw it (see
+        # docs/self_preamble_naming_report.md). Empty/unset falls back to
+        # "elf", preserving today's text exactly.
+        host_name = proj.agent_name if proj and proj.agent_name else "elf"
 
         async with self._engine.begin() as conn:
             result = await _recall(
@@ -1909,6 +1917,7 @@ class MemorySystem:
                 default_top_k=mem.top_k,
                 cache=self._frame_cache,
                 reinforce=reinforce,
+                host_name=host_name,
             )
             # Hebbian staging — fires on genuine frame() retrievals only.
             # Skipped on cache hits: a cached result carries no new retrieval signal.
