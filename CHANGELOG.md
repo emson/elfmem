@@ -9,6 +9,8 @@ elfmem uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-08-28
+
 ### Added
 - **`elfmem migrate` offers an `agent_name` step** — a third, independent
   step kind, pending whenever a project-local config has never set
@@ -60,86 +62,6 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   `ledger/`, but a repository-root `.gitignore` with a blanket `.elfmem/` rule
   silences those negations entirely (git never descends into an excluded
   directory to read them), leaving no undo path for `forget()`/`edit()`.
-
-### Fixed
-- **The SELF frame's preamble ignored `project.agent_name`.** Every rendered
-  SELF frame opened with "## You are elf ... answer as elf" regardless of
-  what `elfmem init --name` set — a functional contradiction with the
-  configured identity, not a cosmetic one: SELF is queryless and injected on
-  every recall, so a host that named its agent "Theo" got that instruction
-  back on every single identity render. `agent_name` already existed for
-  exactly this (used extensively by `init`, `doctor`, and `AGENT.md`
-  generation) but never reached this one runtime path — traced hop-by-hop and
-  reported in `docs/self_preamble_naming_report.md`. Fixed by threading
-  `host_name` through `render_blocks()` → `recall()` → `MemorySystem.frame()`,
-  defaulting to `"elf"` everywhere so an unset `agent_name` renders
-  byte-for-byte the same text as before (1561 tests unchanged). Deliberately
-  scoped out: `CONSTITUTIONAL_SEED`'s own "I am elf" identity block is a
-  public constant three call sites depend on directly, so templating it is
-  real API-shape work — tracked with a comment at the seed block rather than
-  folded into this fix. The `--name` CLI help and `project.agent_name`'s
-  doc comment now describe both effects (AGENT.md trigger + SELF rendering);
-  previously only the trigger was documented.
-- **`outcome()` on an un-consolidated block was a silent zero.** A block still
-  in the inbox cannot be scored, and the call reported `blocks_updated=0` with
-  nothing naming which id or why — indistinguishable from a typo'd id or a
-  constitutional skip. Reported from production: theses are remembered at fill
-  time and consolidation runs at end-of-day housekeeping, so any position
-  resolving the same day it opened fired `outcome()` against an inbox block and
-  the credit vanished. `OutcomeResult.skipped` now lists every unscored id with
-  a reason (`pending_inbox`, `unmatched`, `archived`, `constitutional`), read
-  via `result.skipped_for(reason)`; `skipped_constitutional` is kept as a
-  convenience view. Reason-per-item rather than one list per reason, mirroring
-  `FrameResult.dropped` — one call can skip for several reasons at once.
-  `SkippedBlock` is exported from the package root.
-- **`elfmem migrate` scanned the wrong database.** It resolved the path from
-  `ProjectInfo.db`, which *infers* `~/.elfmem/databases/<project>.db` from the
-  project name rather than reading `project.db` out of the config. Any project
-  whose config pointed elsewhere was scanned at a path that did not exist, so
-  `migrate status` reported "No migrations pending" while the real corpus sat
-  untouched — telling users there was nothing to migrate. It now uses the same
-  resolution chain as `doctor`. Same authoritative-state-vs-inferred-default
-  class as the v0.13.3 path-resolution incident: read the configured value,
-  never re-derive it.
-- **`FrameFilters.exclude_tag_patterns` / `.exclude_exempt_patterns`** — the
-  counterpart to `tag_patterns`. SELF could filter *in*; nothing could filter
-  *out*, so a tag that earned a block a permanent home in one frame also let
-  it compete in every other frame — a privilege nobody granted it. Patterns
-  resolve through the same helper as `guarantees`/`guarantee_excludes`, and a
-  guarantee beats an exclusion when a frame declares both.
-- **`FrameResult.excluded_by_filter`** — how many blocks the frame's own
-  filter kept out of the candidate pool. A count rather than a list, because
-  unlike `top_k`/`token_budget`/`contradiction` — which are emergent — a frame
-  filter is declared and readable in the frame definition; the number is the
-  part a caller cannot otherwise know. An empty frame now says *why* it is
-  empty rather than "no blocks found".
-- **`OutcomeResult.skipped_constitutional`** and
-  **`outcome(..., allow_constitutional=False)`**.
-
-### Fixed
-- **Frame exclusions leaked back in through graph expansion.** `exclude_ids`
-  was applied at the stage-1 prefilter, which is not the only way into the
-  candidate pool: stage 3 expands the graph by fetching a seed's neighbours
-  from the database by id, so an excluded block that neighboured a seed walked
-  back in behind the filter. Worst case by construction — a constitutional
-  block is both excluded *and* unusually well connected, which is what puts it
-  in reach of expansion in the first place, and although it arrives with
-  `similarity=0.0` it still ranks on confidence, centrality, and a recency that
-  PERMANENT decay never erodes. Reported from production use: ten principles
-  excluded, four still rendered and five more listed in `dropped` with
-  `reason="top_k"` — and a block dropped for `top_k` was by definition still a
-  candidate, which is what made the count and the contents look like they
-  disagreed. Only the query path was affected, since graph expansion does not
-  run for a queryless frame, which is why SELF stayed correct throughout.
-  The filter now also runs once where the candidate set is final, so a future
-  stage that introduces candidates cannot reopen this; the prefilter stays as
-  an optimisation. Verified by mutation: removing the new choke point restores
-  the leak, while removing the prefilter breaks nothing. The invariant a caller
-  can check — *an excluded block appears in neither `blocks` nor `dropped`* —
-  is now a test, and holds across elf's own 162-block corpus.
-  `FrameResult.excluded_by_filter` is documented more precisely as a property
-  of the corpus and the frame, not a count of what this query would otherwise
-  have returned.
 
 ### Changed
 - **Breaking: ATTENTION no longer returns `self/constitutional` blocks**
@@ -228,8 +150,188 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   later pass meant the configured LLM re-analysed and reworded text the caller
   had supplied `host_analyses` precisely to preserve — substituting generated
   wording for authored wording inverts an explicit instruction.
+- **ADR 0012 — use-aware archival rejected.** Tested against real data before
+  building: 148 active blocks scored against 161 real assistant responses. The
+  rule "archive high-assembly, low-use blocks" inverts — its top 15 candidates
+  are 10 constitutional blocks, including the two most-reinforced blocks in the
+  corpus, because SELF-frame guarantees inflate constitutional reinforcement
+  5× while dispositional wording is never quoted back. `curate()` stays
+  decay-and-graph based, `record_use()` stays reward-only, and the asymmetry is
+  now a documented constraint rather than a conservative default.
+- **Adapter SDKs import lazily.** `make_llm_adapter`/`make_embedding_adapter`
+  import the `anthropic` and `openai` packages inside the branch that uses
+  them rather than at module scope. `import elfmem` drops from ~800ms to
+  ~200ms, and retrieval-only entry points (a queryless frame, `elfmem ls`, a
+  prompt hook) load neither SDK. `elfmem recall --frame self` now returns in
+  ~0.8s where it took ~1.5s.
+- **Breaking**: `elfmem init`'s `--seed` now defaults to off (v2 step 4).
+  Previously a fresh install silently wrote 10 constitutional cognitive-loop
+  blocks into memory before you had expressed any preference, costing 10+
+  LLM calls to consolidate and requiring `--no-seed` to opt out. A fresh
+  `elfmem init` now creates the config and database and writes zero memory
+  blocks; text and JSON output both say so explicitly, with the exact
+  command to opt in. **Migration**: scripts or automation relying on
+  `elfmem init` seeding by default must add `--seed` explicitly.
+  `MemorySystem.setup()`'s `seed` parameter and the `elfmem_setup` MCP tool
+  default the same way, for consistency across all three entry points —
+  callers relying on the old default must now pass `seed=True` explicitly.
+  Established instances (config + DB already present) are unaffected either
+  way: re-running `elfmem init` without `--seed` is the same idempotent
+  no-op refresh it always was.
+
+### Removed
+- **`operations/outcome.py::compute_bayesian_update`** — the legacy
+  confidence-in/confidence-out wrapper, deprecated in v0.17 and marked
+  "scheduled for removal in v0.18+"; still present at v0.20 with zero
+  production callers (only its own dedicated tests). Every block has stored
+  `(α, β)` directly since v0.17, so `compute_bayesian_update_ab` is what
+  every real call site already uses. `operations.*` is documented as
+  internal (README "API stability"), and this was never re-exported from
+  the package root. **Migration**: call `compute_bayesian_update_ab`
+  directly — for the rare caller still holding a bare `confidence` rather
+  than stored `(α, β)`, derive them first: `alpha = confidence * total`,
+  `beta = (1 - confidence) * total` for whatever `total` (prior strength)
+  applied, matching the removed wrapper's own math.
+- **Breaking**: decay-driven block archival (v2 step 7a, ADR 0009).
+  `curate()` no longer archives blocks whose recency falls below
+  `prune_threshold` — in months of self-hosted operation this trigger never
+  fired once (41 blocks archived `superseded`, 0 `decayed`), while
+  `review_corpus()` (step 6a) already covers the same "unused, rarely
+  reinforced" signal deterministically, at zero LLM cost, with human review
+  before anything is archived. `CurateResult.archived` and
+  `MemoryConfig.prune_threshold` are removed. **Migration**: use
+  `elfmem review corpus` / `review_corpus()` for staleness detection, and
+  `forget(reason=ArchiveReason.DECAYED)` to apply an accepted proposal.
+  Decay tier / `decay_lambda` / recency themselves are **not** removed — they
+  remain live inputs to retrieval ranking, edge-decay pruning, and curate's
+  own top-N reinforcement scoring.
+- **Breaking**: pairwise LLM contradiction detection at consolidate-time (v2
+  step 7b, ADR 0010). It was the dominant LLM cost of `consolidate()` (up to
+  10 contradiction calls per 1 alignment-scoring call per inbox block, ADR
+  0007) for a realized yield of 14 lifetime findings, 12 (86%) still
+  unresolved — corroborated by MemoryAgentBench's Conflict Resolution
+  competency, purpose-built to test this mechanism, scoring 4.8% with it
+  fully enabled. Removed: `MemoryConfig.contradiction_threshold` /
+  `.contradiction_similarity_prefilter` / `.contradiction_top_k`,
+  `LLMConfig.contradiction_model`, `dream()`/`consolidate()`'s
+  `skip_contradictions` parameter and the `--skip-contradictions` CLI flag,
+  `LLMService.detect_contradiction()` (and all three adapter
+  implementations), `ConsolidateResult.contradictions_detected` /
+  `.contradictions`, the `ContradictionFinding` type, and
+  `ConsolidationHealthMetrics.contradiction_detection_rate` /
+  `.prefilter_pass_rate` / `.contradiction_cap_rate`. **Migration**: none
+  needed for typical callers (additive fields/flags); custom `LLMService`
+  adapters no longer need to implement `detect_contradiction`. **Kept
+  unchanged**: the `contradictions` table and contradiction *suppression* at
+  recall time (`context/contradiction.py::suppress_contradictions`, live on
+  every `frame()`/`recall()` call) — existing findings keep suppressing; new
+  content simply isn't auto-checked until a corpus-level LLM review (step
+  6b) replaces this write path.
+- `memory/dedup.py::find_near_duplicate` / `resolve_near_duplicate` and the
+  `EXACT_DUP_THRESHOLD`/`NEAR_DUP_THRESHOLD` constants — dead code with no
+  callers; the live near-duplicate/supersede logic has lived in
+  `operations/consolidate.py` since an earlier refactor. `cosine_similarity`
+  is unaffected and remains in `memory/dedup.py`.
 
 ### Fixed
+- **Three merge-readiness gaps found by an independent adversarial review of
+  the migration/cutover/agent_name code**, before this branch's PR (none of
+  these had shipped or been hit in real use):
+  - `apply_agent_name_step()` wrote `config.yaml` with no backup and no
+    read-back verification — inconsistent with every other apply function in
+    `migrate.py` (`apply_cutover_step`'s `shutil.copy2` + re-parse check,
+    `apply_substrate_step`'s `VACUUM INTO`, config-drift's per-step
+    `.elfmem-bak`), and broke the README's own blanket claim that "each apply
+    writes a backup before touching anything." Now backs up first and
+    restores from backup if the written value doesn't read back as chosen.
+  - `cutover_preflight()`'s git checks (up to 6 subprocesses, 2 paths ×
+    tracked-check + clean-check, each with a 10s timeout) ran
+    unconditionally, contradicting the function's own "cheapest-first"
+    docstring — and `scan_cutover()` calls it on every project whose
+    `scan_substrate()` returns `None`, which includes every empty,
+    never-exported project, not just post-export ones. A fresh, non-git
+    `elfmem migrate status` was shelling out to git for no reason on what
+    should be the common case. Now gated on an export actually existing.
+  - `undo_cutover_step()` didn't back up `config.yaml` before writing,
+    asymmetric with `apply_cutover_step`'s forward path — the one place a
+    backup matters most (the "something's wrong, get back to safety" path)
+    was the one place it was missing. Now matches the forward path exactly.
+- **The SELF frame's preamble ignored `project.agent_name`.** Every rendered
+  SELF frame opened with "## You are elf ... answer as elf" regardless of
+  what `elfmem init --name` set — a functional contradiction with the
+  configured identity, not a cosmetic one: SELF is queryless and injected on
+  every recall, so a host that named its agent "Theo" got that instruction
+  back on every single identity render. `agent_name` already existed for
+  exactly this (used extensively by `init`, `doctor`, and `AGENT.md`
+  generation) but never reached this one runtime path — traced hop-by-hop and
+  reported in `docs/self_preamble_naming_report.md`. Fixed by threading
+  `host_name` through `render_blocks()` → `recall()` → `MemorySystem.frame()`,
+  defaulting to `"elf"` everywhere so an unset `agent_name` renders
+  byte-for-byte the same text as before (1561 tests unchanged). Deliberately
+  scoped out: `CONSTITUTIONAL_SEED`'s own "I am elf" identity block is a
+  public constant three call sites depend on directly, so templating it is
+  real API-shape work — tracked with a comment at the seed block rather than
+  folded into this fix. The `--name` CLI help and `project.agent_name`'s
+  doc comment now describe both effects (AGENT.md trigger + SELF rendering);
+  previously only the trigger was documented.
+- **`outcome()` on an un-consolidated block was a silent zero.** A block still
+  in the inbox cannot be scored, and the call reported `blocks_updated=0` with
+  nothing naming which id or why — indistinguishable from a typo'd id or a
+  constitutional skip. Reported from production: theses are remembered at fill
+  time and consolidation runs at end-of-day housekeeping, so any position
+  resolving the same day it opened fired `outcome()` against an inbox block and
+  the credit vanished. `OutcomeResult.skipped` now lists every unscored id with
+  a reason (`pending_inbox`, `unmatched`, `archived`, `constitutional`), read
+  via `result.skipped_for(reason)`; `skipped_constitutional` is kept as a
+  convenience view. Reason-per-item rather than one list per reason, mirroring
+  `FrameResult.dropped` — one call can skip for several reasons at once.
+  `SkippedBlock` is exported from the package root.
+- **`elfmem migrate` scanned the wrong database.** It resolved the path from
+  `ProjectInfo.db`, which *infers* `~/.elfmem/databases/<project>.db` from the
+  project name rather than reading `project.db` out of the config. Any project
+  whose config pointed elsewhere was scanned at a path that did not exist, so
+  `migrate status` reported "No migrations pending" while the real corpus sat
+  untouched — telling users there was nothing to migrate. It now uses the same
+  resolution chain as `doctor`. Same authoritative-state-vs-inferred-default
+  class as the v0.13.3 path-resolution incident: read the configured value,
+  never re-derive it.
+- **`FrameFilters.exclude_tag_patterns` / `.exclude_exempt_patterns`** — the
+  counterpart to `tag_patterns`. SELF could filter *in*; nothing could filter
+  *out*, so a tag that earned a block a permanent home in one frame also let
+  it compete in every other frame — a privilege nobody granted it. Patterns
+  resolve through the same helper as `guarantees`/`guarantee_excludes`, and a
+  guarantee beats an exclusion when a frame declares both.
+- **`FrameResult.excluded_by_filter`** — how many blocks the frame's own
+  filter kept out of the candidate pool. A count rather than a list, because
+  unlike `top_k`/`token_budget`/`contradiction` — which are emergent — a frame
+  filter is declared and readable in the frame definition; the number is the
+  part a caller cannot otherwise know. An empty frame now says *why* it is
+  empty rather than "no blocks found".
+- **`OutcomeResult.skipped_constitutional`** and
+  **`outcome(..., allow_constitutional=False)`**.
+- **Frame exclusions leaked back in through graph expansion.** `exclude_ids`
+  was applied at the stage-1 prefilter, which is not the only way into the
+  candidate pool: stage 3 expands the graph by fetching a seed's neighbours
+  from the database by id, so an excluded block that neighboured a seed walked
+  back in behind the filter. Worst case by construction — a constitutional
+  block is both excluded *and* unusually well connected, which is what puts it
+  in reach of expansion in the first place, and although it arrives with
+  `similarity=0.0` it still ranks on confidence, centrality, and a recency that
+  PERMANENT decay never erodes. Reported from production use: ten principles
+  excluded, four still rendered and five more listed in `dropped` with
+  `reason="top_k"` — and a block dropped for `top_k` was by definition still a
+  candidate, which is what made the count and the contents look like they
+  disagreed. Only the query path was affected, since graph expansion does not
+  run for a queryless frame, which is why SELF stayed correct throughout.
+  The filter now also runs once where the candidate set is final, so a future
+  stage that introduces candidates cannot reopen this; the prefilter stays as
+  an optimisation. Verified by mutation: removing the new choke point restores
+  the leak, while removing the prefilter breaks nothing. The invariant a caller
+  can check — *an excluded block appears in neither `blocks` nor `dropped`* —
+  is now a test, and holds across elf's own 162-block corpus.
+  `FrameResult.excluded_by_filter` is documented more precisely as a property
+  of the corpus and the frame, not a count of what this query would otherwise
+  have returned.
 - **A frame's guarantee no longer loses to `top_k`.** `_enforce_guarantees`
   deliberately allows more than `top_k` blocks through when a frame guarantees
   more slots than that (its `max(0, …)` clamp exists for exactly that case),
@@ -475,38 +577,6 @@ elfmem uses [Semantic Versioning](https://semver.org/).
     base_url: "https://api.together.xyz/v1"
     api_key_env: "TOGETHER_API_KEY"
   ```
-
-### Changed
-- **ADR 0012 — use-aware archival rejected.** Tested against real data before
-  building: 148 active blocks scored against 161 real assistant responses. The
-  rule "archive high-assembly, low-use blocks" inverts — its top 15 candidates
-  are 10 constitutional blocks, including the two most-reinforced blocks in the
-  corpus, because SELF-frame guarantees inflate constitutional reinforcement
-  5× while dispositional wording is never quoted back. `curate()` stays
-  decay-and-graph based, `record_use()` stays reward-only, and the asymmetry is
-  now a documented constraint rather than a conservative default.
-- **Adapter SDKs import lazily.** `make_llm_adapter`/`make_embedding_adapter`
-  import the `anthropic` and `openai` packages inside the branch that uses
-  them rather than at module scope. `import elfmem` drops from ~800ms to
-  ~200ms, and retrieval-only entry points (a queryless frame, `elfmem ls`, a
-  prompt hook) load neither SDK. `elfmem recall --frame self` now returns in
-  ~0.8s where it took ~1.5s.
-- **Breaking**: `elfmem init`'s `--seed` now defaults to off (v2 step 4).
-  Previously a fresh install silently wrote 10 constitutional cognitive-loop
-  blocks into memory before you had expressed any preference, costing 10+
-  LLM calls to consolidate and requiring `--no-seed` to opt out. A fresh
-  `elfmem init` now creates the config and database and writes zero memory
-  blocks; text and JSON output both say so explicitly, with the exact
-  command to opt in. **Migration**: scripts or automation relying on
-  `elfmem init` seeding by default must add `--seed` explicitly.
-  `MemorySystem.setup()`'s `seed` parameter and the `elfmem_setup` MCP tool
-  default the same way, for consistency across all three entry points —
-  callers relying on the old default must now pass `seed=True` explicitly.
-  Established instances (config + DB already present) are unaffected either
-  way: re-running `elfmem init` without `--seed` is the same idempotent
-  no-op refresh it always was.
-
-### Fixed
 - **`frame()` no longer zeroes the decay clock of the blocks it returns.**
   `_current_active_hours()` falls back to a 0.0 baseline until
   `begin_session()` reads the real total, and `frame()` reinforces what it
@@ -616,47 +686,64 @@ elfmem uses [Semantic Versioning](https://semver.org/).
   `remember()` auto-consolidation were tested directly against the source
   and ruled out before finding the actual mechanism.
 
-### Removed
-- **Breaking**: decay-driven block archival (v2 step 7a, ADR 0009).
-  `curate()` no longer archives blocks whose recency falls below
-  `prune_threshold` — in months of self-hosted operation this trigger never
-  fired once (41 blocks archived `superseded`, 0 `decayed`), while
-  `review_corpus()` (step 6a) already covers the same "unused, rarely
-  reinforced" signal deterministically, at zero LLM cost, with human review
-  before anything is archived. `CurateResult.archived` and
-  `MemoryConfig.prune_threshold` are removed. **Migration**: use
-  `elfmem review corpus` / `review_corpus()` for staleness detection, and
-  `forget(reason=ArchiveReason.DECAYED)` to apply an accepted proposal.
-  Decay tier / `decay_lambda` / recency themselves are **not** removed — they
-  remain live inputs to retrieval ranking, edge-decay pruning, and curate's
-  own top-N reinforcement scoring.
-- **Breaking**: pairwise LLM contradiction detection at consolidate-time (v2
-  step 7b, ADR 0010). It was the dominant LLM cost of `consolidate()` (up to
-  10 contradiction calls per 1 alignment-scoring call per inbox block, ADR
-  0007) for a realized yield of 14 lifetime findings, 12 (86%) still
-  unresolved — corroborated by MemoryAgentBench's Conflict Resolution
-  competency, purpose-built to test this mechanism, scoring 4.8% with it
-  fully enabled. Removed: `MemoryConfig.contradiction_threshold` /
-  `.contradiction_similarity_prefilter` / `.contradiction_top_k`,
-  `LLMConfig.contradiction_model`, `dream()`/`consolidate()`'s
-  `skip_contradictions` parameter and the `--skip-contradictions` CLI flag,
-  `LLMService.detect_contradiction()` (and all three adapter
-  implementations), `ConsolidateResult.contradictions_detected` /
-  `.contradictions`, the `ContradictionFinding` type, and
-  `ConsolidationHealthMetrics.contradiction_detection_rate` /
-  `.prefilter_pass_rate` / `.contradiction_cap_rate`. **Migration**: none
-  needed for typical callers (additive fields/flags); custom `LLMService`
-  adapters no longer need to implement `detect_contradiction`. **Kept
-  unchanged**: the `contradictions` table and contradiction *suppression* at
-  recall time (`context/contradiction.py::suppress_contradictions`, live on
-  every `frame()`/`recall()` call) — existing findings keep suppressing; new
-  content simply isn't auto-checked until a corpus-level LLM review (step
-  6b) replaces this write path.
-- `memory/dedup.py::find_near_duplicate` / `resolve_near_duplicate` and the
-  `EXACT_DUP_THRESHOLD`/`NEAR_DUP_THRESHOLD` constants — dead code with no
-  callers; the live near-duplicate/supersede logic has lived in
-  `operations/consolidate.py` since an earlier refactor. `cosine_similarity`
-  is unaffected and remains in `memory/dedup.py`.
+### Migration
+
+The largest release since v0.19.3 (ADRs 0009–0013), but most existing
+callers need to change nothing: everything below defaults to the old
+behaviour except where marked otherwise, and no schema migration runs
+automatically — the file substrate is entirely opt-in via `elfmem migrate`.
+
+- **Automatic action, none required**: `MemorySystem.from_config()` still
+  runs schema migrations on startup as it always has. Nothing about this
+  release requires touching your config or database by hand.
+- **Nothing changes until you opt in**: the file substrate
+  (`.elfmem/memory/**.md`, `substrate.files_authoritative`) only activates
+  through `elfmem migrate` — export, then a separate cutover step. Run
+  `elfmem migrate status` to see if either is offered for your project; see
+  [Migrating between versions](README.md#migrating-between-versions) for the
+  full walkthrough, including the git-history undo path cutover depends on.
+- **`elfmem init --seed` now defaults to off**: scripts or automation
+  relying on the old default (a fresh install seeding 10 constitutional
+  blocks automatically) must add `--seed` explicitly. Same for
+  `MemorySystem.setup(seed=True)` and the `elfmem_setup` MCP tool. Established
+  instances are unaffected — `elfmem init` without `--seed` was always an
+  idempotent no-op refresh for those.
+- **`curate()` no longer archives blocks** (decay-driven archival retired,
+  ADR 0009): use `elfmem review corpus` / `review_corpus()` for staleness
+  detection, and `forget(reason=ArchiveReason.DECAYED)` to apply an accepted
+  proposal. `CurateResult.archived` and `MemoryConfig.prune_threshold` are
+  gone; decay tier / `decay_lambda` / recency themselves are unaffected —
+  they remain live inputs to retrieval ranking and edge-decay pruning.
+- **`consolidate()` no longer auto-detects contradictions** (ADR 0010): no
+  action for typical callers — this is a removed internal write path, not a
+  removed capability, and recall-time contradiction *suppression* is
+  unchanged. A custom `LLMService` adapter no longer needs to implement
+  `detect_contradiction()`.
+- **`compute_bayesian_update()` removed** (deprecated since v0.17, past its
+  own "scheduled for removal in v0.18+"): call `compute_bayesian_update_ab`
+  directly. If you're only holding a bare `confidence` rather than stored
+  `(α, β)`, derive them first — `alpha = confidence * total`,
+  `beta = (1 - confidence) * total` for whatever `total` (prior strength)
+  applied — matching the removed wrapper's own math. `operations.*` is
+  documented as internal (README "API stability"); this was never
+  re-exported from the package root.
+- **ATTENTION no longer returns `self/constitutional` blocks** (peer-authored
+  exempt): if your integration relied on identity content surfacing through
+  `frame("attention")` or `recall(frame="attention")`, it now comes only
+  through `frame("self")`, which is queryless and already injected on every
+  recall — the SELF frame was always the intended source, this closes a gap
+  where the content leaked into ATTENTION too. No config override exists yet
+  (frames are built-in only, Phase 1); open an issue if you have a real need
+  to restore the old behaviour for a specific project.
+- **`outcome()` no longer scores `self/constitutional` blocks** by default:
+  pass `allow_constitutional=True` to restore the old behaviour for a
+  specific call. Skipped ids are now visible on `result.skipped_constitutional`
+  either way, so you can tell whether this changed anything for you.
+- **The SELF frame's preamble now reads `project.agent_name`** instead of
+  hardcoding `"elf"`: no action needed — an unset `agent_name` still renders
+  exactly the same text as before. `elfmem migrate` now offers to record it
+  explicitly (defaulting to `"elf"` if you don't choose otherwise); see
+  [Naming](README.md#naming-elfmem-migrate-makes-it-explicit-not-just-discoverable).
 
 ## [0.19.3] — 2026-07-14
 

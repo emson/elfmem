@@ -1446,6 +1446,14 @@ def _git_tracks(path: Path) -> tuple[bool, str]:
     descend into an excluded directory to read them. The undo path then fails
     silently, which is the one failure mode this whole check exists to
     prevent.
+
+    Despite the name, this does NOT check whether anything has actually been
+    `git add`ed -- only that it *could* be. An all-untracked directory passes
+    here; `_git_is_clean` (called next, only when this passes) is what
+    catches that case, via the `??` porcelain lines an untracked path
+    produces. The two checks are deliberately split this way so a caller
+    sees "not trackable" and "trackable but never committed" as distinct
+    failures with distinct recoveries, not one conflated check.
     """
     import subprocess
 
@@ -1565,22 +1573,34 @@ async def cutover_preflight(
 
     # Git is not a nicety here: under file authority, git history is the ONLY
     # undo for forget() and edit(). Without it a forget is unrecoverable.
-    ledger_dir = memory_dir.parent / "ledger"
-    for label, path in (("memory", memory_dir), ("ledger", ledger_dir)):
-        tracked, detail = _git_tracks(path)
-        checks.append(CutoverPreflight(
-            f"git tracks {label}/", tracked, detail,
-            recovery=(
-                "git init, and make sure no parent .gitignore excludes .elfmem/ — "
-                "git history is the only undo path for forget() and edit()"
-            ),
-        ))
-        if tracked:
-            clean, cdetail = _git_is_clean(path)
+    #
+    # Gated on `marker is not None`, same as the two checks above: without an
+    # export there is nothing to cut over to regardless of git state, so
+    # running up to 6 git subprocesses (2 paths x tracked-check + clean-check,
+    # each with a 10s timeout) to report that would contradict this
+    # function's own "cheapest-first" ordering. `scan_cutover` calls this on
+    # every project whose `scan_substrate` returns None -- which includes
+    # every empty, never-exported project, not just post-export ones -- so
+    # this is the common case, not a rare one: a fresh `elfmem migrate
+    # status` call would otherwise shell out to git for no reason on a
+    # project with nothing to check git for.
+    if marker is not None:
+        ledger_dir = memory_dir.parent / "ledger"
+        for label, path in (("memory", memory_dir), ("ledger", ledger_dir)):
+            tracked, detail = _git_tracks(path)
             checks.append(CutoverPreflight(
-                f"{label}/ committed", clean, cdetail,
-                recovery=f"git add {path} && git commit  # capture the pre-cutover state",
+                f"git tracks {label}/", tracked, detail,
+                recovery=(
+                    "git init, and make sure no parent .gitignore excludes .elfmem/ — "
+                    "git history is the only undo path for forget() and edit()"
+                ),
             ))
+            if tracked:
+                clean, cdetail = _git_is_clean(path)
+                checks.append(CutoverPreflight(
+                    f"{label}/ committed", clean, cdetail,
+                    recovery=f"git add {path} && git commit  # capture the pre-cutover state",
+                ))
     return checks
 
 
@@ -1693,18 +1713,40 @@ async def undo_cutover_step(
     Lossless by construction: file authority never stops writing the database
     row, so the database is current at the moment of rollback. Anything
     written since cutover is in both places.
+
+    Backs up before writing and reads the value back afterward, restoring on
+    mismatch -- the same guarantee `apply_cutover_step` makes on the forward
+    path. Undo is the "something's wrong, get back to safety" path; it is the
+    one place that guarantee matters most, not somewhere it can be skipped.
     """
+    import shutil
+
     from elfmem.config import ElfmemConfig
 
     if not config_path.is_file():
         return StepApplyResult(step.id, "skipped", "no config.yaml to revert")
     if not ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
         return StepApplyResult(step.id, "skipped", "already database-authoritative")
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-cutover-undo-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
     _set_files_authoritative(config_path, value=False)
+
+    if ElfmemConfig.from_yaml(str(config_path)).substrate.files_authoritative:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "files_authoritative still true after undo write; config restored "
+            "from backup",
+            backup=backup,
+        )
     return StepApplyResult(
         step.id, "applied",
         "files_authoritative: false — the database is authoritative again; "
         "the exported files are left in place",
+        backup=backup,
     )
 
 
@@ -1778,9 +1820,18 @@ def apply_agent_name_step(
     """Set `project.agent_name`, defaulting to `"elf"`.
 
     `name` is resolved by the caller (interactively prompted, or defaulted
-    for `--yes`/`--dry-run`/`--json`) -- this function does no I/O beyond
-    the config write itself, matching every other step in this module.
+    for `--yes`/`--dry-run`/`--json`). Backs up before writing and reads the
+    value back afterward, restoring on mismatch -- the same two guarantees
+    every other apply function in this module makes (`apply_cutover_step`'s
+    `shutil.copy2` + `ElfmemConfig.from_yaml(...)` re-check;
+    `apply_substrate_step`'s `VACUUM INTO`; config-drift's
+    `<file>.elfmem-bak-<step_id>-<timestamp>`) and the README's own
+    documented claim ("each apply writes a backup before touching
+    anything"). A regex-based surgical edit (`set_agent_name_in_config`) is
+    exactly the risk profile that pattern exists to cover.
     """
+    import shutil
+
     chosen = name.strip() or "elf"
     if dry_run:
         return StepApplyResult(
@@ -1788,20 +1839,47 @@ def apply_agent_name_step(
             f'dry run — would set project.agent_name: "{chosen}" in {config_path}',
         )
 
+    from elfmem.config import ElfmemConfig
     from elfmem.exceptions import ConfigError
+
+    if not config_path.is_file():
+        # No backup possible -- nothing exists yet to protect.
+        # set_agent_name_in_config's contract is to raise ConfigError for
+        # exactly this case (`.recovery` included), so its failure is
+        # reported here rather than duplicating that message by hand.
+        try:
+            set_agent_name_in_config(config_path, chosen)
+        except ConfigError as exc:
+            return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}")
+
+    backup = config_path.with_suffix(
+        f".yaml.elfmem-bak-agent-name-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    shutil.copy2(config_path, backup)
 
     try:
         action = set_agent_name_in_config(config_path, chosen)
     except ConfigError as exc:
-        return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}")
+        return StepApplyResult(step.id, "failed", f"{exc}. {exc.recovery}", backup=backup)
 
     if action == "unchanged":
         return StepApplyResult(
             step.id, "skipped", f'project.agent_name is already "{chosen}"',
+        )
+
+    reread = ElfmemConfig.from_yaml(str(config_path)).project
+    if reread is None or reread.agent_name != chosen:
+        shutil.copy2(backup, config_path)
+        return StepApplyResult(
+            step.id, "failed",
+            "agent_name did not read back as the chosen value after write; "
+            "config restored from backup",
+            backup=backup,
         )
     return StepApplyResult(
         step.id, "applied",
         f'project.agent_name: "{chosen}" ({action}) — the SELF frame now '
         f'reads "You are {chosen}". Run `elfmem agent-docs install` to '
         f"refresh AGENT.md.",
+        backup=backup,
     )

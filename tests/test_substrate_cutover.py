@@ -26,6 +26,7 @@ from elfmem.migrate import (
     cutover_step_id,
     scan_agent_name,
     scan_cutover,
+    undo_cutover_step,
 )
 
 
@@ -221,6 +222,7 @@ class TestGitPreflight:
 
     async def test_untracked_substrate_is_reported(self, tmp_path: Path):
         db, memory, config = _project(tmp_path)
+        _marker(memory)  # git checks only run once an export exists to cut over to
         checks = await cutover_preflight(db, memory, config)
         git_checks = [c for c in checks if c.name.startswith("git tracks")]
         assert git_checks, "git trackability must be checked"
@@ -234,6 +236,7 @@ class TestGitPreflight:
         — git never descends into an excluded directory to read them — and
         the undo path fails silently."""
         db, memory, config = _project(tmp_path)
+        _marker(memory)
         _git(tmp_path, "init")
         (tmp_path / ".gitignore").write_text(".elfmem/\n")
         (memory / "notes").mkdir(parents=True, exist_ok=True)
@@ -243,6 +246,16 @@ class TestGitPreflight:
         tracked = [c for c in checks if c.name == "git tracks memory/"][0]
         assert not tracked.ok
         assert "gitignored" in tracked.detail
+
+    async def test_no_git_subprocess_without_an_export(self, tmp_path: Path):
+        """The bug this whole class exists to prevent: git checks running
+        unconditionally would mean every `migrate status` on a fresh, never-
+        exported project shells out to git for no reason — the common case,
+        not a rare one, since `scan_cutover` runs whenever `scan_substrate`
+        returns None."""
+        db, memory, config = _project(tmp_path)
+        checks = await cutover_preflight(db, memory, config)
+        assert not any(c.name.startswith("git") for c in checks)
 
 
 # ── Agent naming: make the identity explicit, don't just detect a bug ────────
@@ -367,3 +380,70 @@ class TestAgentNameInThePlan:
             db_path=db, memory_dir=memory,
         )).steps}
         assert "agent_name" not in kinds
+
+
+class TestApplyAgentNameSafety:
+    """Every other apply function in this module backs up before writing and
+    verifies the write took (apply_cutover_step's shutil.copy2 + re-parse,
+    apply_substrate_step's VACUUM INTO, config-drift's per-step .elfmem-bak).
+    apply_agent_name_step must make the same guarantee -- a regex-based
+    surgical edit is exactly the risk profile that pattern exists to cover,
+    and the README documents "each apply writes a backup" as a blanket claim,
+    not one with an unstated exception for this step kind.
+    """
+
+    def test_writes_a_backup_before_editing(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        original = config.read_text()
+        step = scan_agent_name(config)
+
+        result = apply_agent_name_step(step, config_path=config, name="Theo")
+
+        assert result.backup is not None
+        assert result.backup.exists()
+        assert result.backup.read_text() == original
+
+    def test_no_backup_on_dry_run(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        step = scan_agent_name(config)
+        result = apply_agent_name_step(
+            step, config_path=config, name="Theo", dry_run=True,
+        )
+        assert result.backup is None
+        assert not any(config.parent.glob("*.elfmem-bak-agent-name-*"))
+
+    def test_no_backup_when_config_is_missing(self, tmp_path: Path):
+        missing = tmp_path / "gone" / "config.yaml"
+        step = MigrationStep(
+            id="agent-name@x", kind="agent_name", summary="", file=missing,
+            file_sha256="", issues=[], before={}, after={}, json_pointer="",
+        )
+        result = apply_agent_name_step(step, config_path=missing, name="Theo")
+        assert result.status == "failed"
+        assert result.backup is None
+
+
+class TestUndoCutoverSafety:
+    """The forward path (apply_cutover_step) backs up before writing. Undo
+    must make the same guarantee -- it is the "something's wrong, get back
+    to safety" path, and that is the one place a backup matters most."""
+
+    async def test_writes_a_backup_before_reverting(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)
+        _set_files_authoritative(config, value=True)
+        before = config.read_text()
+
+        result = await undo_cutover_step(
+            _step(config), config_path=config,
+        )
+
+        assert result.status == "applied"
+        assert result.backup is not None
+        assert result.backup.exists()
+        assert result.backup.read_text() == before
+
+    async def test_no_backup_when_nothing_to_revert(self, tmp_path: Path):
+        config = _project_with_identity(tmp_path)  # files_authoritative already false
+        result = await undo_cutover_step(_step(config), config_path=config)
+        assert result.status == "skipped"
+        assert result.backup is None

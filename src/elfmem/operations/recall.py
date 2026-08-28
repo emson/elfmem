@@ -243,9 +243,9 @@ def _enforce_guarantees(
 ) -> list[ScoredBlock]:
     """Order guaranteed blocks ahead of the rest, then fill remaining slots.
 
-    Pure: the ids are resolved once by ``_resolve_guaranteed_ids``. Blocks
-    excluded there forfeit the guarantee -- they still compete for the
-    remaining slots on score, they just cannot pre-empt.
+    Pure: the ids are resolved once by ``_resolve_tag_set``. Blocks excluded
+    there forfeit the guarantee -- they still compete for the remaining
+    slots on score, they just cannot pre-empt.
     """
     if not guaranteed_ids:
         return candidates

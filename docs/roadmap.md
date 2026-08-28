@@ -12,9 +12,10 @@
 > **What this is not**: a calendar. elfmem is solo OSS. Dates are illustrative;
 > sequence is what matters.
 >
-> **Last reviewed**: 2026-08-12 (docs/README sync pass — added the v2
-> substrate "In Progress" entry below, previously undocumented here despite
-> being CHANGELOG.md's entire `[Unreleased]` section). Reviewed quarterly.
+> **Last reviewed**: 2026-08-28 (v0.20.0 merge-readiness pass — moved the v2
+> substrate entry from "In Progress" to "Recently Released" now that it's
+> shipping; renumbered the pre-empted "Production signal response" item to
+> v0.21, since v0.20 is now this release). Reviewed quarterly.
 > Open issues at [github.com/emson/elfmem/issues](https://github.com/emson/elfmem/issues).
 
 ---
@@ -48,6 +49,7 @@ These don't change between releases. They constrain what we ship.
 
 | Version | Highlights | Date |
 |---|---|---|
+| ✅ **v0.20.0** | **v2 substrate — file-backed memory, direct edit primitives, review over auto-archival.** The largest release since v0.19.3, spanning ADRs 0009–0013. Direct memory management (`edit()`/`forget()`/`ls()`/`inbox()`, explicit and no-LLM); the markdown file substrate itself (`.elfmem/memory/**.md`, `elfmem migrate` export → cutover with a git-history undo path, `elfmem index rebuild/parity`); corpus & constitutional review replace silent archival (**breaking**: decay-driven archival retired, ADR 0009); pairwise LLM contradiction detection at consolidate-time retired for near-zero realized value (**breaking**, ADR 0010); `elfmem init --seed` now defaults to off (**breaking**); provider flexibility (`api_key_env`, `.env` auto-discovery, `doctor --resolve`); host-supplied analysis (`dream(host_analyses=...)`); frame isolation and credit-assignment protection — ATTENTION no longer returns `self/constitutional` blocks and `outcome()` no longer scores them (`docs/frames_and_credit_assignment_report.md`); write-path visibility — every stage that reduces what the caller asked for now reports it (`FrameResult.dropped`, `elfmem doctor --frames`, `docs/integration_friction_report.md`); the SELF frame's preamble now reads `project.agent_name` instead of hardcoding "elf" (`docs/self_preamble_naming_report.md`), with `elfmem migrate` offering to set it explicitly. See [CHANGELOG.md](CHANGELOG.md) for the full itemized list. | 2026-08-28 |
 | ✅ **v0.19.3** | MCP entry default, drift detection, and migration — `mcp_json_snippet()` now resolves the running `elfmem` executable to an absolute path instead of a bare `"elfmem"` string (broke on project-local `uv` venvs); `elfmem serve --env-file` reliably delivers API keys to the spawned MCP subprocess instead of silently degrading to mock/no-op behaviour; `elfmem migrate`/`doctor --migrate-mcp` now scan the real `~/.claude.json` (previously omitted) and its nested `projects[path].mcpServers` shape, with a new drift check catching an MCP entry wired to a *different* project's config. Unplanned, bug-driven — found via elfmem's own dev instance drifting to an unrelated config/db with peer messaging silently broken ([#81](https://github.com/emson/elfmem/pull/81), [ADR 0008](docs/decisions/0008-mcp-entry-default.md)) | 2026-07-14 |
 | ✅ **v0.19.2** | Bound and checkpoint consolidation for slow LLM adapters — `consolidation.contradiction_top_k` (default 10) caps contradiction-detection LLM calls per inbox block to the K most similar candidates, bounding worst-case cost to O(K) regardless of active-set size; `consolidation.max_inbox_per_run` (default 5) self-terminates `dream()`/`consolidate()` runs, surfaced as `--max` and `ConsolidateResult.inbox_remaining`; `rescore_blocks()` now commits per-block instead of one all-or-nothing transaction. Unplanned, bug-driven (same pattern as v0.19.0) — mitigates but does not fully close the `elfmem dream` kill-and-lose-progress failure mode; per-block commit durability inside `consolidate()` itself is a follow-up ([#78](https://github.com/emson/elfmem/pull/78), [ADR 0007](docs/decisions/0007-bound-and-checkpoint-consolidation.md)) | 2026-07-02 |
 | ✅ **v0.19.1** | `ConsolidationHealthMetrics` on `ConsolidateResult.health` — five diagnostic ratios per cycle (`edge_creation_rate`, `contradiction_detection_rate`, `prefilter_pass_rate`, `promotion_rate`, `deduplication_rate`). Observability only; same additive shape as v0.18.1. Defers multi-parameter self-tuning ([ADR 0006](docs/decisions/0006-defer-multi-parameter-self-tuning.md)) with explicit reopen triggers. Also: CI now enforces ROADMAP↔docs/roadmap.md sync; `AGENTS.md` added with the memory-routing rule earned from Mira's peer message ([#74](https://github.com/emson/elfmem/pull/74), closes [#73](https://github.com/emson/elfmem/issues/73)) | 2026-06-06 |
@@ -65,45 +67,25 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
-## In Progress
-
-### 🚧 v2 substrate — file-backed memory, direct edit primitives, review over auto-archival
-
-Currently `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md); no version number cut yet. The largest wave of work since v0.19.3, spanning several ADRs:
-
-- **Direct memory management**: `edit()`/`forget()`/`ls()`/`inbox()` — explicit, deterministic, no-LLM primitives (CLI: `elfmem edit`/`forget`/`ls`/`inbox`; MCP: `elfmem_edit`/`elfmem_forget`/`elfmem_ls`/`elfmem_inbox`)
-- **Markdown file substrate**: `elfmem export --to-markdown` writes every block to `.elfmem/memory/**.md`; `elfmem index check/rebuild/parity` is migration-rehearsal tooling — read-only against the live DB except the derived index it builds itself (`docs/plans/v2_substrate`)
-- **Corpus & constitutional review replace silent archival**: `review_corpus()` (zero-LLM staleness detection) and the existing `review_constitutional()` now cover what `curate()` used to do automatically. **Breaking**: decay-driven block archival retired ([ADR 0009](docs/decisions/0009-retire-decay-driven-archival.md)) — `curate()` no longer archives, `CurateResult.archived` is gone; use `elfmem review corpus` + `forget(reason=ArchiveReason.DECAYED)`
-- **Breaking**: pairwise LLM contradiction detection at consolidate-time retired ([ADR 0010](docs/decisions/0010-retire-pairwise-contradiction-detection.md)) — near-zero realized value (14 lifetime findings, 86% unresolved) for what had been the dominant LLM cost of `consolidate()`. Recall-time suppression is unchanged
-- **Breaking**: `elfmem init --seed` now defaults to off — a fresh install writes zero memory blocks unless `--seed` is passed
-- **Provider flexibility**: `llm.api_key_env` / `embeddings.api_key_env` name the real env var for non-Anthropic/OpenAI providers (Together, Groq, OpenRouter, ...); `.env` auto-discovery for every CLI command, not just `serve`
-- **`doctor --resolve`**: one real LLM call to confirm a configured key actually works
-- **Host-supplied analysis**: `dream(host_analyses=...)` lets a host agent session (e.g. a Claude Code session) supply its own alignment/tags/summary per block instead of a configured LLM adapter
-- **Edge metabolism, Stage A**: `metabolism_dry_run()` — read-only preview of goal-directed edge proposals judged against the agent's own `self/goal` blocks, never writes
-- **Frame isolation and credit-assignment protection**: ATTENTION no longer returns `self/constitutional` blocks (peer-authored exempt) and `outcome()` no longer scores them, closing two failures a seeded constitution opens up — identity starving the frame that holds learned knowledge, and task P&L silently degrading the constitution's posterior. Driven by a second integration report (`docs/frames_and_credit_assignment_report.md`)
-- **Write-path visibility**: every stage that reduces what the caller asked for now reports it — `FrameResult.dropped` (with a per-block `top_k` / `token_budget` / `contradiction` reason), `ConsolidateResult.analyses_unused`, `LearnResult.pending_consolidation`, and `elfmem doctor --frames` to render every frame and show what the agent actually receives. Driven by a real first-integration report (`docs/integration_friction_report.md`), which found one bug class behind four separate symptoms: stage one returned success while later stages silently delivered less
-
-See CHANGELOG.md's `[Unreleased]` section for the full, itemized list.
-
----
-
 ## Next
 
-### 📋 v0.20 — Production signal response
+### 📋 v0.21 — Production signal response
 
-> Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
-> (an unplanned signal from elf's own peer-messaging usage; see "Recently
-> Released" above and [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)).
-> v0.19.2 (consolidation checkpointing) and v0.19.3 (MCP entry default +
-> drift migration) also slotted in ahead of this without renumbering it —
-> the telemetry gate is unchanged — date-bound, not version-bound.
+> Originally slated as v0.19, then v0.20. Pre-empted twice: first by v0.19.0
+> peer-protocol hardening (an unplanned signal from elf's own peer-messaging
+> usage; see "Recently Released" above and
+> [ADR 0005](docs/decisions/0005-peer-protocol-hardening.md)), then by v0.20.0
+> claiming the number for the v2 substrate release (unplanned in scope,
+> already in flight when this section was last written). v0.19.2/v0.19.3 also
+> slotted in ahead of this without renumbering it — the telemetry gate below
+> is unchanged either time — date-bound, not version-bound.
 
-v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
+v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open (past the ~2026-08-24 gate below as of this release). Concrete v0.21 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in [archived plan](docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50))
 - ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
 - Any newly-observed systematic failure modes — especially around the new amendment loop
 
-Possible v0.20 candidates (each requires its own ADR before committing):
+Possible v0.21 candidates (each requires its own ADR before committing):
 - **Amendment loop tuning** if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
 - **Stronger rescore tuning** if v0.17 defaults need adjustment
 - **Scheduled review triggers** — `dream(review=True)` integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)
@@ -224,10 +206,11 @@ Things we considered and decided **not** to do. Documented so they aren't reliti
 
 Not committed, but where this is heading.
 
-- **v0.19**: peer-protocol hardening (shipped/shipping — unplanned, signal-driven)
-- **v0.20+**: production signal response (originally v0.19; gated on ≥3 months of v0.17/v0.18 telemetry)
-- **v0.21+**: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed
-- **v0.22+**: earned architectural features (only the deferred items that empirical evidence supports)
+- **v0.19**: peer-protocol hardening (shipped — unplanned, signal-driven)
+- **v0.20**: v2 substrate — file-backed memory (shipped — unplanned in scope, see "Recently Released")
+- **v0.21+**: production signal response (originally v0.19, then v0.20; gated on ≥3 months of v0.17/v0.18 telemetry)
+- **v0.22+**: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed
+- **v0.23+**: earned architectural features (only the deferred items that empirical evidence supports)
 - **v1.0**: public API freeze. Stable for years. Backwards-compatible changes only.
 
 **Discipline**: every subsequent layer must be earned with evidence — not designed in advance.

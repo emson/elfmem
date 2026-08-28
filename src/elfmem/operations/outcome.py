@@ -64,8 +64,11 @@ def compute_bayesian_update_ab(
     """Pure Beta-Binomial update on sufficient statistics.
 
     USE WHEN: an outcome has been observed for a block; you need new (α, β).
-    DON'T USE WHEN: you only have ``confidence`` — call ``compute_bayesian_update``
-        (legacy wrapper) which converts to (α, β) and then delegates here.
+    DON'T USE WHEN: you only have ``confidence``, not stored (α, β) — derive
+        them first: ``alpha = confidence * total``, ``beta = (1 - confidence)
+        * total`` for whatever ``total`` (prior strength) applies, then call
+        this. Every block stores (α, β) directly since v0.17, so this
+        conversion is a migration-only path, not a normal call shape.
     COST: pure arithmetic, no I/O.
     RETURNS: ``(new_success, new_failure, new_confidence)`` — α and β are the
         canonical Beta sufficient statistics, ``new_confidence`` is the
@@ -76,38 +79,6 @@ def compute_bayesian_update_ab(
     new_failure = failure_count + (1.0 - signal) * weight
     new_confidence = new_success / (new_success + new_failure)
     return new_success, new_failure, new_confidence
-
-
-def compute_bayesian_update(
-    *,
-    confidence: float,
-    outcome_evidence: float,
-    signal: float,
-    weight: float,
-    prior_strength: float,
-) -> float:
-    """DEPRECATED (v0.17): use ``compute_bayesian_update_ab`` instead.
-
-    Legacy Beta-Binomial confidence update kept as a thin wrapper over the
-    sufficient-statistics form. v0.17 stores (α, β) directly on every block,
-    so reconstituting them from ``(confidence, outcome_evidence,
-    prior_strength)`` is wasteful at best and inconsistent at worst — once a
-    block has had outcomes applied via ``compute_bayesian_update_ab``, this
-    wrapper's ``prior_strength`` argument has no canonical meaning.
-
-    Scheduled for removal in v0.18+. Migrate by replacing
-    ``compute_bayesian_update(confidence=c, outcome_evidence=e, signal=s,
-    weight=w, prior_strength=k)`` with
-    ``compute_bayesian_update_ab(c*(k+e), (1-c)*(k+e), s, w)`` and taking
-    the third element of the returned tuple.
-
-    Returns a value in [0.0, 1.0].
-    """
-    total = prior_strength + outcome_evidence
-    alpha = confidence * total
-    beta = (1.0 - confidence) * total
-    _, _, new_confidence = compute_bayesian_update_ab(alpha, beta, signal, weight)
-    return new_confidence
 
 
 async def record_outcome(

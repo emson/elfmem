@@ -1294,9 +1294,12 @@ OperationRecord(operation, summary, timestamp)                     # history()
 src/elfmem/
 ├── api.py                  # MemorySystem: all public operations
 ├── config.py               # ElfmemConfig: Pydantic configuration
-├── project.py              # Project root detection, config/DB discovery
+├── project.py               # Project root detection, config/DB discovery
+├── lifecycle.py             # Establishment-state detection (fresh / established / orphaned)
 ├── mcp.py                  # FastMCP server: 10 agent tools
 ├── cli.py                  # Typer CLI
+├── migrate.py               # Config-drift + substrate migration: status/plan/apply
+├── agent_docs.py             # Generates .elfmem/AGENT.md from guide.GUIDES
 ├── scoring.py              # Composite scoring formula
 ├── types.py                # Domain types: shared vocabulary
 ├── guide.py                # AgentGuide: runtime documentation
@@ -1304,12 +1307,18 @@ src/elfmem/
 ├── prompts.py              # LLM prompt templates
 ├── session.py              # Session lifecycle, active hours tracking
 ├── token_counter.py        # Token usage accumulator
+├── logging_config.py        # Structured logging setup
+├── policy.py                # ConsolidationPolicy: self-tuning consolidation timing
+├── rescue.py                 # Orphaned-DB detection + rebind plans
+├── seed.py                  # Constitutional seed content + domain templates
 ├── ports/
 │   └── services.py         # LLMService + EmbeddingService protocols
 ├── adapters/
 │   ├── anthropic.py        # Claude via official SDK
 │   ├── openai.py           # OpenAI + any compatible API
 │   ├── factory.py          # Adapter factory from config
+│   ├── locked.py            # Lock-enforcing wrapper (embedding model fixed on first use)
+│   ├── models.py            # Pydantic response models for structured LLM output
 │   └── mock.py             # Deterministic mocks for testing
 ├── db/
 │   ├── models.py           # SQLAlchemy Core tables
@@ -1318,30 +1327,57 @@ src/elfmem/
 │   └── queries.py          # All database operations
 ├── memory/
 │   ├── blocks.py           # Block state, content hashing, decay tiers
-│   ├── dedup.py            # Near-duplicate detection and resolution
-│   ├── graph.py            # Centrality, expansion, edge reinforcement
+│   ├── blockfile.py         # Markdown block file format (frontmatter + content)
+│   ├── file_mutation.py     # File-native learn/edit/forget over .elfmem/memory/
+│   ├── index_rebuild.py     # elfmem index rebuild: derives index.db from files + ledger
+│   ├── ledger.py            # Append-only event history the file substrate can't hold
+│   ├── attribution.py       # Which retrieved blocks the answer actually used
+│   ├── dedup.py             # Near-duplicate detection and resolution
+│   ├── graph.py             # Centrality, expansion, edge reinforcement
 │   └── retrieval.py        # 4-stage hybrid retrieval pipeline
+├── migration/
+│   ├── export.py            # DB-native blocks -> .elfmem/memory/**.md, ledger-seeded
+│   └── parity.py            # Retrieval-parity gate: rebuilt index vs. live database
 ├── context/
 │   ├── frames.py           # Frame definitions, registry, cache
 │   ├── rendering.py        # Blocks → rendered text
 │   └── contradiction.py    # Contradiction suppression
+├── viz/
+│   ├── data.py               # Dashboard data collection (read-only)
+│   └── renderer.py           # HTML dashboard rendering
 └── operations/
     ├── learn.py            # learn(): fast-path ingestion
     ├── consolidate.py      # dream(): batch promotion
-    ├── recall.py           # recall(): retrieval + reinforcement
-    ├── curate.py           # curate(): maintenance
-    ├── mind.py             # mind_create/predict/list/show/outcome
-    └── peer.py             # export, import, send, inbox, peer roster
+    ├── recall.py            # recall(): retrieval + reinforcement
+    ├── curate.py            # curate(): maintenance
+    ├── outcome.py            # outcome(): Bayesian confidence update from domain signals
+    ├── rescore.py            # Deep-sleep rescoring of aged active blocks
+    ├── review.py             # Constitutional review: drift detection + amendments
+    ├── corpus_review.py       # Deterministic staleness detection (non-constitutional)
+    ├── connect.py            # connect()/disconnect(): agent-asserted edges
+    ├── mind.py              # mind_create/predict/list/show/outcome
+    └── peer.py              # export, import, send, inbox, peer roster
 ```
 
-**Four layers, clear boundaries:**
+**Five layers, clear boundaries:**
 
 | Layer | Responsibility | Side effects |
 |-------|---------------|-------------|
 | **Storage** (`db/`) | Tables, queries, engine | Database writes |
-| **Memory** (`memory/`) | Blocks, dedup, graph, retrieval | None (pure) |
+| **Substrate** (`memory/`, `migration/`) | Blocks, dedup, graph, retrieval; the file-native substrate and its migration from the database | `memory/file_mutation.py`, `memory/ledger.py`: file writes. Everything else pure |
 | **Context** (`context/`) | Frames, rendering, contradictions | None (pure) |
 | **Operations** (`operations/`) | Orchestration, lifecycle | All side effects |
+| **Interfaces** (`cli.py`, `mcp.py`, `migrate.py`) | CLI, MCP tools, cross-version migration | Delegates to Operations; `migrate.py` also writes `config.yaml` directly |
+
+**Where memory actually lives** — `substrate.files_authoritative` in config decides which of two
+models is true for a given project, and it is the same `MemorySystem` API either way:
+
+| | `files_authoritative: false` (default) | `files_authoritative: true` |
+|---|---|---|
+| Source of truth | the SQLite database | `.elfmem/memory/**.md` |
+| The database is | everything | a derived index, rebuildable with `elfmem index rebuild` |
+| Undo for `forget()`/`edit()` | none | git history |
+| Getting there | — | `elfmem migrate` (export, then cutover — see [Migrating between versions](#migrating-between-versions)) |
 
 ---
 
@@ -1391,11 +1427,26 @@ embedding = make_mock_embedding(
 
 ## Migrating between versions
 
-elfmem ships a structured migration system for upgrading across releases —
-config drift (env var renames, MCP launch-pattern changes, project config
-updates) and, since [ADR 0011](docs/decisions/0011-substrate-migration-as-a-migrate-step.md),
-exporting to the v2 file substrate. The flow is **plan → review → apply**,
-with backups and atomic writes throughout.
+elfmem ships a structured migration system for upgrading across releases — one
+command, `elfmem migrate`, discovers everything that changed on you and walks
+you through fixing it. The flow is always **plan → review → apply**, with
+backups and atomic writes throughout, whichever of these you're offered:
+
+| Step kind | What it's for | Runs when |
+|---|---|---|
+| `claude_mcp_config` | Config drift — env var renames, MCP launch-pattern changes | An installed MCP entry uses an outdated shape |
+| `substrate_export` | Copy DB-native blocks out to `.elfmem/memory/**.md`, verified | A project's database has content never exported |
+| `substrate_cutover` | Make the exported files the source of truth, not just a copy | An export exists, passed parity, and hasn't been flipped yet |
+| `agent_name` | Record your agent's name as an explicit config fact | `project.agent_name` has never been set |
+
+Only the steps that actually apply to your project are ever offered — a
+project with no database content sees none of the substrate steps, one that
+already named its agent never sees that prompt again. Details on each are
+below; `substrate_export`/`substrate_cutover` are explained in depth in
+[Substrate migration](#substrate-migration-exporting-to-the-file-substrate) and
+[Cutover](#cutover-making-the-files-authoritative), since they're the two
+most consequential (they change where your memory *lives*, not just a config
+value).
 
 ```bash
 elfmem migrate status            # one-line summary; exit 0 if clean
