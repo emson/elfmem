@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2393,18 +2365,18 @@ future, not competing truth claims.</p>
 <p><strong>1. <code>mind_outcome()</code> rejects inbox decision blocks</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># src/elfmem/operations/mind.py:320</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">decision_block</span> <span class="o">=</span> <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">get_block</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">decision_block_id</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">if</span> <span class="n">decision_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">if</span> <span class="n">decision_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">decision_block_id</span><span class="p">)</span>  <span class="c1"># ← The reported bug</span>
 </span></code></pre></div>
 <p><strong>2. <code>predict()</code> rejects inbox mind blocks</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># src/elfmem/operations/mind.py:153</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">mind_block</span> <span class="o">=</span> <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">get_block</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">mind_block_id</span><span class="p">)</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">if</span> <span class="n">mind_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">if</span> <span class="n">mind_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">mind_block_id</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>3. <code>record_outcome()</code> silently skips inbox blocks</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># src/elfmem/operations/outcome.py:103</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">block</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">continue</span>  <span class="c1"># silently skips — no error, but no update either</span>
 </span></code></pre></div>
 <h3 id="design-inconsistency">Design Inconsistency<a class="headerlink" href="#design-inconsistency" title="Permanent link">&para;</a></h3>
@@ -2447,7 +2419,7 @@ and <code>mind_outcome()</code>. The test suite was written to conform to the st
 requirement, masking the bug. No test attempts outcome closure on an
 unconsolidated prediction.</p>
 <p>Example from <code>tests/test_mind.py:292</code>:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">pred</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">mind_predict</span><span class="p">(</span><span class="n">mind_id</span><span class="p">,</span> <span class="s2">&quot;Will pay 49/mo&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">pred</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">mind_predict</span><span class="p">(</span><span class="n">mind_id</span><span class="p">,</span> <span class="s2">"Will pay 49/mo"</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">consolidate</span><span class="p">()</span>  <span class="c1"># ← mandatory consolidation</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">mind_outcome</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">decision_block_id</span><span class="p">,</span> <span class="n">hit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </span></code></pre></div></p>
@@ -2512,35 +2484,35 @@ active blocks that have <code>embedding=NULL</code>.</p>
 <h3 id="what-changes">What Changes<a class="headerlink" href="#what-changes" title="Permanent link">&para;</a></h3>
 <p><strong>File 1: <code>src/elfmem/operations/mind.py</code></strong></p>
 <p>In <code>predict()</code> (line 152-154), replace:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">if</span> <span class="n">mind_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">if</span> <span class="n">mind_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">mind_block_id</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p>With:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span> <span class="n">mind_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">mind_block_id</span><span class="p">)</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;inbox&quot;</span><span class="p">:</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"inbox"</span><span class="p">:</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># Deliberate act of predicting validates the mind model — promote inline</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">tier</span> <span class="o">=</span> <span class="n">determine_decay_tier</span><span class="p">(</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">get_tags</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">mind_block_id</span><span class="p">),</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;category&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"category"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
 </span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="p">)</span>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">lam</span> <span class="o">=</span> <span class="n">decay_lambda_for_tier</span><span class="p">(</span><span class="n">tier</span><span class="p">)</span>
 </span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">update_block_scoring</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">mind_block_id</span><span class="p">,</span> <span class="n">decay_lambda</span><span class="o">=</span><span class="n">lam</span><span class="p">)</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">update_block_status</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">mind_block_id</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">)</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">elif</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">update_block_status</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">mind_block_id</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">elif</span> <span class="n">mind_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">mind_block_id</span><span class="p">)</span>  <span class="c1"># archived blocks still rejected</span>
 </span></code></pre></div></p>
 <p>In <code>mind_outcome()</code> (line 319-321), replace:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">if</span> <span class="n">decision_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">if</span> <span class="n">decision_block</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">decision_block_id</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p>With:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">if</span> <span class="n">decision_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">decision_block_id</span><span class="p">)</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">if</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;inbox&quot;</span><span class="p">:</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">if</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"inbox"</span><span class="p">:</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="c1"># Outcome closure IS the consolidation event for predictions</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">update_block_status</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">decision_block_id</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">)</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">elif</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">update_block_status</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">decision_block_id</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">elif</span> <span class="n">decision_block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"active"</span><span class="p">:</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">raise</span> <span class="n">BlockNotActiveError</span><span class="p">(</span><span class="n">decision_block_id</span><span class="p">)</span>  <span class="c1"># archived blocks still rejected</span>
 </span></code></pre></div></p>
 <p>Note: Decision blocks don't need decay tier adjustment — STANDARD (λ=0.01) is
@@ -2636,11 +2608,11 @@ blocks have already been validated by their lifecycle events.</p>
 <li><code>uv run ruff check src/elfmem/operations/mind.py</code></li>
 <li><code>uv run mypy src/elfmem/operations/mind.py</code></li>
 <li>Manual end-to-end:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>create<span class="w"> </span>alv-test<span class="w"> </span>--goal<span class="w"> </span><span class="s2">&quot;Test goal&quot;</span>
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>create<span class="w"> </span>alv-test<span class="w"> </span>--goal<span class="w"> </span><span class="s2">"Test goal"</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1"># No consolidation needed</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>predict<span class="w"> </span>&lt;mind_id&gt;<span class="w"> </span><span class="s2">&quot;Test prediction&quot;</span><span class="w"> </span>--verify-at<span class="w"> </span><span class="m">2026</span>-05-02
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>predict<span class="w"> </span>&lt;mind_id&gt;<span class="w"> </span><span class="s2">"Test prediction"</span><span class="w"> </span>--verify-at<span class="w"> </span><span class="m">2026</span>-05-02
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># No consolidation needed</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>outcome<span class="w"> </span>&lt;decision_id&gt;<span class="w"> </span>--hit<span class="w"> </span>--reason<span class="w"> </span><span class="s2">&quot;Confirmed&quot;</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>elfmem<span class="w"> </span>mind<span class="w"> </span>outcome<span class="w"> </span>&lt;decision_id&gt;<span class="w"> </span>--hit<span class="w"> </span>--reason<span class="w"> </span><span class="s2">"Confirmed"</span>
 </span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Should succeed without error</span>
 </span></code></pre></div></li>
 </ol>
@@ -2660,35 +2632,35 @@ blocks have already been validated by their lifecycle events.</p>
 <hr />
 <h2 id="simulation-traces">Simulation Traces<a class="headerlink" href="#simulation-traces" title="Permanent link">&para;</a></h2>
 <h3 id="trace-1-current-broken-flow-alvs-bug">Trace 1: Current broken flow (Alv's bug)<a class="headerlink" href="#trace-1-current-broken-flow-alvs-bug" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>mind_create(&quot;alv&quot;)      → M.status=&quot;inbox&quot;
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>consolidate()           → M.status=&quot;active&quot;, M.embedding=vec, M.decay_lambda=0.001
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>mind_predict(M, &quot;...&quot;)  → D.status=&quot;inbox&quot;, D.embedding=NULL
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>mind_outcome(D, hit)    → get_block(D) → status=&quot;inbox&quot; ≠ &quot;active&quot; → RAISES ✗
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>mind_create("alv")      → M.status="inbox"
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>consolidate()           → M.status="active", M.embedding=vec, M.decay_lambda=0.001
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>mind_predict(M, "...")  → D.status="inbox", D.embedding=NULL
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>mind_outcome(D, hit)    → get_block(D) → status="inbox" ≠ "active" → RAISES ✗
 </span></code></pre></div>
 <h3 id="trace-2-option-2-full-zero-consolidation-flow">Trace 2: Option 2 — full zero-consolidation flow<a class="headerlink" href="#trace-2-option-2-full-zero-consolidation-flow" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>mind_create(&quot;alv&quot;)      → M.status=&quot;inbox&quot;, M.decay_lambda=0.01
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>mind_predict(M, &quot;...&quot;)  → promote M: status=&quot;active&quot;, decay_lambda=0.001 (DURABLE)
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>                        → D.status=&quot;inbox&quot;, D.decay_lambda=0.01
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>mind_create("alv")      → M.status="inbox", M.decay_lambda=0.01
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>mind_predict(M, "...")  → promote M: status="active", decay_lambda=0.001 (DURABLE)
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>                        → D.status="inbox", D.decay_lambda=0.01
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>                        → edge M↔D (predicts) ✓
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>mind_outcome(D, hit)    → promote D: status=&quot;active&quot;
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>mind_outcome(D, hit)    → promote D: status="active"
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>                        → record_outcome([D], signal=0.9) → Bayesian update ✓
 </span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>                        → record_outcome([M], signal=0.7) → Bayesian update ✓
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>                        → do_connect(D→M, &quot;validates&quot;) → both active ✓
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>                        → do_connect(D→M, "validates") → both active ✓
 </span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>                        → MindOutcomeResult ✓
 </span></code></pre></div>
 <h3 id="trace-3-consolidation-runs-after-inline-promotion">Trace 3: Consolidation runs after inline promotion<a class="headerlink" href="#trace-3-consolidation-runs-after-inline-promotion" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>mind_create(&quot;alv&quot;)      → M.status=&quot;inbox&quot;
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>mind_predict(M, &quot;...&quot;)  → M promoted to &quot;active&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>mind_create("alv")      → M.status="inbox"
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>mind_predict(M, "...")  → M promoted to "active"
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>dream()                 → get_inbox_blocks() → M is NOT inbox → skipped
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>                        → D is inbox → D gets embedding, dedup, promoted
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>                        → D.embedding=vec ✓ (self-heals if dream runs before outcome)
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>mind_outcome(D, hit)    → D already active → proceeds normally ✓
 </span></code></pre></div>
 <h3 id="trace-4-archived-block-rejection">Trace 4: Archived block rejection<a class="headerlink" href="#trace-4-archived-block-rejection" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>mind_create(&quot;alv&quot;)      → M.status=&quot;inbox&quot;
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>consolidate()           → M.status=&quot;active&quot;
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>curate()                → M.status=&quot;archived&quot; (if decayed)
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>mind_predict(M, &quot;...&quot;)  → M.status=&quot;archived&quot; ≠ &quot;inbox&quot; and ≠ &quot;active&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>mind_create("alv")      → M.status="inbox"
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>consolidate()           → M.status="active"
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>curate()                → M.status="archived" (if decayed)
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>mind_predict(M, "...")  → M.status="archived" ≠ "inbox" and ≠ "active"
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>                        → RAISES BlockNotActiveError ✓ (correct — model was retired)
 </span></code></pre></div>
 
@@ -2770,7 +2742,7 @@ blocks have already been validated by their lifecycle events.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

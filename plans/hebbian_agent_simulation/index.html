@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2314,7 +2286,7 @@
 <h2 id="framing-what-does-an-agent-actually-experience">Framing: What Does an Agent Actually Experience?<a class="headerlink" href="#framing-what-does-an-agent-actually-experience" title="Permanent link">&para;</a></h2>
 <p>An elf agent operates in a tight loop:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>loop:
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  ctx = await system.frame(&quot;attention&quot;, query=current_task)   ← C1 STAGES HERE
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  ctx = await system.frame("attention", query=current_task)   ← C1 STAGES HERE
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  response = llm(ctx.text + user_message)
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  await system.learn(insights_from_response)
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  if should_signal: await system.outcome(block_ids, signal)
@@ -2325,9 +2297,9 @@
 <h2 id="scenario-1-the-agentic-assistant-steady-state">Scenario 1: The Agentic Assistant (Steady-State)<a class="headerlink" href="#scenario-1-the-agentic-assistant-steady-state" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Agent processes user queries all day. Each loop: <code>frame("attention", query=user_msg)</code>.</p>
 <p><strong>Trace:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Query 1: &quot;python list comprehensions&quot; → [A, B, C]  staging: {(A,B):1, (A,C):1, (B,C):1}
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Query 2: &quot;python performance tips&quot;   → [A, B, D]  staging: {(A,B):2, ...}
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Query 3: &quot;optimising python code&quot;    → [A, B, E]  staging: {(A,B):3} → PROMOTED to co_occurs edge
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Query 1: "python list comprehensions" → [A, B, C]  staging: {(A,B):1, (A,C):1, (B,C):1}
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Query 2: "python performance tips"   → [A, B, D]  staging: {(A,B):2, ...}
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Query 3: "optimising python code"    → [A, B, E]  staging: {(A,B):3} → PROMOTED to co_occurs edge
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Query 4+: A and B now connected → graph expansion returns both together even when only A matches
 </span></code></pre></div></p>
 <p><strong>Assessment: Works correctly.</strong> Blocks that consistently co-appear in semantically related queries form edges. The graph learns the agent's domain topology.</p>
@@ -2336,15 +2308,15 @@
 <h2 id="scenario-2-the-identity-loop-critical-bug-found">Scenario 2: The Identity Loop — CRITICAL BUG FOUND<a class="headerlink" href="#scenario-2-the-identity-loop-critical-bug-found" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Agent wraps every LLM call with SELF frame for identity grounding:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">conversation</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">self_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>         <span class="c1"># identity context</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">attn_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">self_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"self"</span><span class="p">)</span>         <span class="c1"># identity context</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">attn_ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">self_ctx</span><span class="o">.</span><span class="n">text</span> <span class="o">+</span> <span class="n">attn_ctx</span><span class="o">.</span><span class="n">text</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>SELF frame has a 1-hour TTL cache</strong> (confirmed in <code>context/frames.py: CachePolicy(ttl_seconds=3600)</code>).</p>
 <p><strong>What actually happens:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Call 1 (t=0):   frame(&quot;self&quot;) → DB query → [A, B, C, D, E]  cached=False → STAGES all pairs
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Call 2 (t=1s):  frame(&quot;self&quot;) → CACHE HIT → [A, B, C, D, E] cached=True  → STAGES AGAIN (bug!)
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Call 3 (t=2s):  frame(&quot;self&quot;) → CACHE HIT → [A, B, C, D, E] cached=True  → (A,B) count=3 → PROMOTE!
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Call 1 (t=0):   frame("self") → DB query → [A, B, C, D, E]  cached=False → STAGES all pairs
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Call 2 (t=1s):  frame("self") → CACHE HIT → [A, B, C, D, E] cached=True  → STAGES AGAIN (bug!)
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Call 3 (t=2s):  frame("self") → CACHE HIT → [A, B, C, D, E] cached=True  → (A,B) count=3 → PROMOTE!
 </span></code></pre></div></p>
 <p><strong>Result:</strong> With threshold=3, the first 3 consecutive calls to <code>frame("self")</code> — happening in literal seconds — promote ALL C(N,2) constitutional block pairs to co_occurs edges via pure cache hits. No genuine independent retrieval occurred. This fires in 3 seconds rather than 3 distinct usage sessions.</p>
 <p><strong>This is a critical bug.</strong> Cached results carry no new signal — they are the same DB query result served from memory. Staging on a cache hit means a loop calling <code>frame("self")</code> every iteration creates the entire constitutional graph within seconds of the first real retrieval.</p>
@@ -2353,14 +2325,14 @@
 <h2 id="scenario-3-the-burst-session-vs-cross-session-signal">Scenario 3: The Burst Session vs. Cross-Session Signal<a class="headerlink" href="#scenario-3-the-burst-session-vs-cross-session-signal" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Two patterns produce identical staging counts:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Pattern A (burst): Same session, 3 calls in 3 seconds
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=1
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=2
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → PROMOTED
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  frame("attention", query="risk") → [A, B] → staging (A,B)=1
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  frame("attention", query="risk") → [A, B] → staging (A,B)=2
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  frame("attention", query="risk") → [A, B] → PROMOTED
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>Pattern B (cross-session): 3 separate day-long sessions
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  Session 1: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=1
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  Session 2: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → staging (A,B)=2
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  Session 3: frame(&quot;attention&quot;, query=&quot;risk&quot;) → [A, B] → PROMOTED
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  Session 1: frame("attention", query="risk") → [A, B] → staging (A,B)=1
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  Session 2: frame("attention", query="risk") → [A, B] → staging (A,B)=2
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  Session 3: frame("attention", query="risk") → [A, B] → PROMOTED
 </span></code></pre></div>
 <p><strong>Pattern B is strongly meaningful.</strong> A and B co-appear across 3 separate agent runs = genuine functional relationship.</p>
 <p><strong>Pattern A is noise.</strong> Three calls in one session = probably the same task iteration, possibly even the same query. The threshold=3 rationale ("once is coincidence, twice is pattern, three times is signal") assumes independence, which burst patterns violate.</p>
@@ -2401,9 +2373,9 @@
 <hr />
 <h2 id="scenario-6-the-multi-frame-loop-cross-frame-blind-spot">Scenario 6: The Multi-Frame Loop — Cross-Frame Blind Spot<a class="headerlink" href="#scenario-6-the-multi-frame-loop-cross-frame-blind-spot" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Agent calls all three frames per loop:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">identity</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>          <span class="c1"># returns constitutional blocks [C1..C10]</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">goals</span>    <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">)</span>          <span class="c1"># returns goal blocks [G1, G2, G3]</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">context</span>  <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>  <span class="c1"># returns knowledge [K1..K5]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">identity</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"self"</span><span class="p">)</span>          <span class="c1"># returns constitutional blocks [C1..C10]</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">goals</span>    <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"task"</span><span class="p">)</span>          <span class="c1"># returns goal blocks [G1, G2, G3]</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">context</span>  <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">task</span><span class="p">)</span>  <span class="c1"># returns knowledge [K1..K5]</span>
 </span></code></pre></div>
 <p><strong>What stages:</strong>
 - <code>frame("self")</code>: pairs among {C1..C10}
@@ -2417,11 +2389,11 @@
 <h2 id="scenario-7-the-agent-that-mostly-uses-recall">Scenario 7: The Agent That Mostly Uses recall()<a class="headerlink" href="#scenario-7-the-agent-that-mostly-uses-recall" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Agent uses <code>recall()</code> for quick lookups and only calls <code>frame()</code> for final context injection before LLM calls.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Exploration phase (no staging)</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;position sizing concepts&quot;</span><span class="p">)</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">specific</span>   <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;Kelly criterion formula&quot;</span><span class="p">)</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">"position sizing concepts"</span><span class="p">)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">specific</span>   <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">"Kelly criterion formula"</span><span class="p">)</span>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Context injection (staging fires here)</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;current trade decision&quot;</span><span class="p">)</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"current trade decision"</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>Result:</strong> C1 correctly doesn't stage on <code>recall()</code> calls. The API contract is clean. Only <code>frame()</code> — the "I am about to use this context for real reasoning" call — triggers staging.</p>
 <p><strong>Assessment: Works as designed.</strong> The distinction between <code>recall()</code> (exploration, no side effects) and <code>frame()</code> (context injection, learning side effects) is meaningful and correctly implemented.</p>
@@ -2451,8 +2423,8 @@ The fix makes this scenario safer. Without the fix, the 8 constitutional blocks 
 <h2 id="scenario-10-observability-the-silent-promotion">Scenario 10: Observability — The Silent Promotion<a class="headerlink" href="#scenario-10-observability-the-silent-promotion" title="Permanent link">&para;</a></h2>
 <p><strong>Setup:</strong> Agent wants to know when its graph changes due to its own behavior.</p>
 <p><strong>Current state:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;risk management&quot;</span><span class="p">)</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># Did this just promote an edge? Unknown. Agent can&#39;t tell.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"risk management"</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># Did this just promote an edge? Unknown. Agent can't tell.</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">()</span>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># staging_count changed from 3 to 0? Agent might notice if polling.</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># But no per-call signal.</span>
@@ -2525,7 +2497,7 @@ Pass to <code>stage_and_promote_co_retrievals()</code> as <code>session_seen</co
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span><span class="p">:</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="n">active</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_active_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">active_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">active</span><span class="p">}</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">active_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">active</span><span class="p">}</span>
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>        <span class="n">pair</span><span class="p">:</span> <span class="n">count</span>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="k">for</span> <span class="n">pair</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_co_retrieval_staging</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -2639,7 +2611,7 @@ Set on result before returning from <code>frame()</code>.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

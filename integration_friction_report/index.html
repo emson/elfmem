@@ -1,0 +1,2766 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/integration_friction_report/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Integration Friction Report — a first-time install, written from the incident record - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#integration-friction-report-a-first-time-install-written-from-the-incident-record" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Integration Friction Report — a first-time install, written from the incident record
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-organising-idea-make-visibility-a-first-class-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The organising idea: make visibility a first-class question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-happened-in-order-the-four-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happened, in order (the four gates)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What happened, in order (the four gates)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gate-1-stored-is-not-visible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gate 1 — stored is not visible
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-2-consolidation-rewrites-content-and-the-rewrite-is-what-renders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gate 2 — consolidation rewrites content, and the rewrite is what renders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-3-the-greedy-renderer-drops-overflow-with-no-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gate 3 — the greedy renderer drops overflow with no signal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-4-top_k-defaults-to-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gate 4 — top_k defaults to 5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-fifth-subtler-one-host_analyses-overflow-is-silently-ignored" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A fifth, subtler one — host_analyses overflow is silently ignored
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations-ranked-by-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations, ranked by value
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommendations, ranked by value">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-frameresult-must-report-what-it-dropped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — FrameResult must report what it dropped
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-ship-elfmem-doctor-frames-or-fold-into-existing-doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — ship elfmem doctor --frames (or fold into existing doctor)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-close-the-remembervisible-gap-explicitly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — close the remember→visible gap explicitly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-let-callers-preserve-authored-wording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — let callers preserve authored wording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-host_analyses-overflow-must-not-be-silent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5 — host_analyses overflow must not be silent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p6-guaranteed-blocks-should-not-lose-to-top_k" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P6 — guaranteed blocks should not lose to top_k
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p7-a-copy-pasteable-quickstart-that-ends-in-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P7 — a copy-pasteable quickstart that ends in verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p8-type-check-from_configdb_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P8 — type-check from_config(db_path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p9-surface-the-load-bearing-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P9 — surface the load-bearing constants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p10-insufficient_history-should-say-what-is-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P10 — insufficient_history should say what is missing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p11-give-seeded-blocks-a-stable-identity-across-consolidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P11 — give seeded blocks a stable identity across consolidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-keep-this-list-matters-as-much-as-the-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to keep — this list matters as much as the fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#making-it-generalisable-elfmem-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Making it generalisable — elfmem init
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-cases-worth-explicit-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge cases worth explicit handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-one-paragraph-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The one-paragraph version
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/integration_friction_report.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="integration-friction-report-a-first-time-install-written-from-the-incident-record">Integration Friction Report — a first-time install, written from the incident record<a class="headerlink" href="#integration-friction-report-a-first-time-install-written-from-the-incident-record" title="Permanent link">&para;</a></h1>
+<p>Field notes from integrating elfmem <code>0.20.0.dev0</code> (<code>elfmem_index</code> @ 8a38bba3) into a live
+trading agent on 2026-08-27, by the agent that did the integrating. Every item below is
+something that actually happened, with the real error text. Nothing here is hypothetical.</p>
+<blockquote>
+<p><strong>Status (2026-08-27): the core is fixed; this document is kept as the incident record,
+not a to-do list.</strong> Shipped in response — see CHANGELOG <code>[Unreleased]</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1 <code>FrameResult.dropped</code> / <code>budget_used</code> / <code>budget_total</code></td>
+<td><strong>shipped</strong>, with a per-block <code>reason</code> rather than one frame-level <code>dropped_reason</code> (a single call can drop for several reasons at once, so a scalar would have to misreport one)</td>
+</tr>
+<tr>
+<td>P2 <code>elfmem doctor --frames</code></td>
+<td><strong>shipped</strong>, folded into <code>doctor</code> rather than a new verb; exits non-zero only when a <em>guaranteed</em> block was dropped</td>
+</tr>
+<tr>
+<td>P3 remember→visible gap</td>
+<td><strong>shipped</strong> as <code>LearnResult.pending_consolidation</code> / <code>.visible</code> (the report's first choice)</td>
+</tr>
+<tr>
+<td>P5 silent <code>host_analyses</code> overflow</td>
+<td><strong>shipped</strong> as <code>ConsolidateResult.analyses_unused</code></td>
+</tr>
+<tr>
+<td>P6 guarantees losing to <code>top_k</code></td>
+<td><strong>shipped</strong>, but <em>not</em> by exempting guarantees — <code>top_k</code> stays a hard ceiling when passed explicitly (silently exceeding it would be P5's bug in a new place); its <strong>default</strong> is now <code>max(memory.top_k, n_guaranteed)</code></td>
+</tr>
+<tr>
+<td>P8 <code>from_config</code> type check</td>
+<td><strong>shipped</strong></td>
+</tr>
+<tr>
+<td>P9 load-bearing constants</td>
+<td><strong>shipped</strong> in <code>guide("frame")</code> and <code>guide("remember")</code>, per the report's "cite them in the guide entry of the method they constrain"</td>
+</tr>
+<tr>
+<td>P7 quickstart ending in verification</td>
+<td><strong>shipped</strong> in README</td>
+</tr>
+<tr>
+<td>Oversized-block edge case</td>
+<td><strong>shipped</strong> — renders rather than returning <code>""</code>, deliberately un-truncated</td>
+</tr>
+<tr>
+<td><strong>A third silent reducer the report did not reach</strong></td>
+<td>contradiction suppression. Found by running the new <code>doctor --frames</code> against a real corpus: eight seeded principles rendered three with <em>nothing</em> reported dropped. Near-duplicate pairs are flagged rather than destroyed (ADR 0010) and retrieval shows only the higher-confidence half. Now reported as <code>reason="contradiction"</code></td>
+</tr>
+<tr>
+<td><strong>P11 <code>slot</code> column</strong></td>
+<td><strong>not built — premise corrected.</strong> The recommendation rests on the <code>frames.py</code> comment saying consolidation re-tags seeded blocks from the LLM's vocabulary. Measured directly: consolidation <em>unions</em> tags and a declared <code>self/role/x</code> survives. Caller-declared tags are already the stable, LLM-proof key P11 asks for. The comment was wrong and has been fixed; the report reasoned correctly from it</td>
+</tr>
+<tr>
+<td>P4 <code>preserve_wording=True</code></td>
+<td><strong>not built.</strong> <code>host_analyses</code> already provides it and its silent-overflow hole (P5) is now closed; the <code>remember</code>/<code>frame</code> guides now warn plainly that consolidation may rewrite text and that the rewrite is what renders</td>
+</tr>
+<tr>
+<td>P10 <code>insufficient_history</code> detail</td>
+<td><strong>not built</strong> — genuine, lower value than the above</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p><strong>Headline:</strong> installation was frictionless. Initialisation was not — and every problem shared
+one shape. The write path has four stages (<code>remember</code> → inbox → <code>consolidate</code> → frame render)
+and <strong>each stage can silently reduce what the caller intended, while stage one returns
+success.</strong> I seeded ten constitutional principles, got ten "created" results, and the agent
+could see <em>none</em> of them. Then five. Then five in someone else's words. Each fix revealed the
+next gate. That is one bug class, not four bugs.</p>
+<hr />
+<h2 id="the-organising-idea-make-visibility-a-first-class-question">The organising idea: make visibility a first-class question<a class="headerlink" href="#the-organising-idea-make-visibility-a-first-class-question" title="Permanent link">&para;</a></h2>
+<p>Every write API should be able to answer:</p>
+<blockquote>
+<p><strong>Is this visible to the agent right now, and will it appear in the words I wrote?</strong></p>
+</blockquote>
+<p>Three distinct states exist today but only the first is observable:</p>
+<table>
+<thead>
+<tr>
+<th>state</th>
+<th>meaning</th>
+<th>currently queryable?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>stored</strong></td>
+<td>the row exists</td>
+<td>yes — <code>ls()</code>, <code>LearnResult.status</code></td>
+</tr>
+<tr>
+<td><strong>consolidated</strong></td>
+<td>promoted out of the inbox, possibly reworded</td>
+<td>only by diffing <code>inbox()</code></td>
+</tr>
+<tr>
+<td><strong>rendered</strong></td>
+<td>actually inside the frame text the agent receives</td>
+<td><strong>no</strong> — you must render and eyeball it</td>
+</tr>
+</tbody>
+</table>
+<p><code>remember()</code> returning <code>status='created'</code> is <em>true</em> and <em>misleading</em>. Almost every
+recommendation below follows from closing that gap. I ended up writing my own
+<code>trdrbot constitution verify</code> command whose entire job is to answer the question above; I
+suspect every serious integrator writes that command, which is a strong argument for shipping
+it.</p>
+<hr />
+<h2 id="what-happened-in-order-the-four-gates">What happened, in order (the four gates)<a class="headerlink" href="#what-happened-in-order-the-four-gates" title="Permanent link">&para;</a></h2>
+<h3 id="gate-1-stored-is-not-visible">Gate 1 — stored is not visible<a class="headerlink" href="#gate-1-stored-is-not-visible" title="Permanent link">&para;</a></h3>
+<p><div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/constitutional"</span><span class="p">],</span> <span class="n">cue</span><span class="o">=...</span><span class="p">)</span>   <span class="c1"># x10, all "created"</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">fr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"self"</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># fr.blocks == []   fr.text == ""</span>
+</span></code></pre></div>
+SELF blocks queue in an inbox until consolidation runs. Nothing in the <code>remember()</code> return
+hints at this. The <code>setup()</code> guide <em>does</em> mention it ("SELF blocks sit in inbox until
+consolidate()"), but <code>remember()</code> is the method an agent-facing integration actually calls.</p>
+<h3 id="gate-2-consolidation-rewrites-content-and-the-rewrite-is-what-renders">Gate 2 — consolidation rewrites content, and the rewrite is what renders<a class="headerlink" href="#gate-2-consolidation-rewrites-content-and-the-rewrite-is-what-renders" title="Permanent link">&para;</a></h3>
+<p>My ratified wording:</p>
+<blockquote>
+<p>"A pattern learned in one regime is a hypothesis in another, not a rule."</p>
+</blockquote>
+<p>What the agent saw after <code>consolidate()</code>:</p>
+<blockquote>
+<p>"The agent treats patterns learned in one regime as hypotheses rather than rules, with
+confidence declining when the regime ends—before P&amp;L impact materializes..."</p>
+</blockquote>
+<p>Faithful, but <strong>~2× the tokens</strong> — which pushed five of ten principles past the SELF frame's
+600-token budget, where they were dropped in silence (gate 3). For a <em>ratified constitution</em>,
+rewriting is not a nice-to-have improvement, it is a correctness failure: the text was agreed
+in those words.</p>
+<h3 id="gate-3-the-greedy-renderer-drops-overflow-with-no-signal">Gate 3 — the greedy renderer drops overflow with no signal<a class="headerlink" href="#gate-3-the-greedy-renderer-drops-overflow-with-no-signal" title="Permanent link">&para;</a></h3>
+<p><code>context/rendering.py::_render_with_budget</code> adds blocks until one overflows, then <code>break</code>s.
+A caller cannot distinguish "five blocks is all I have" from "five of ten fit". Combined with
+<code>_estimate_tokens = len(text)//4</code> and <code>SELF_FRAME.token_budget = 600</code>, this is the single most
+dangerous silent behaviour in the library, because the failure mode is <em>a partial identity the
+agent believes is whole</em>.</p>
+<h3 id="gate-4-top_k-defaults-to-5">Gate 4 — <code>top_k</code> defaults to 5<a class="headerlink" href="#gate-4-top_k-defaults-to-5" title="Permanent link">&para;</a></h3>
+<p>Even after fixing 1–3, <code>frame("self")</code> rendered five principles at 242 tokens — well under
+budget. The limiter was <code>memory.top_k = 5</code>. A ten-block constitution cannot fit a five-slot
+default, and <code>guarantees=["self/constitutional"]</code> did not exempt it.</p>
+<h3 id="a-fifth-subtler-one-host_analyses-overflow-is-silently-ignored">A fifth, subtler one — <code>host_analyses</code> overflow is silently ignored<a class="headerlink" href="#a-fifth-subtler-one-host_analyses-overflow-is-silently-ignored" title="Permanent link">&para;</a></h3>
+<p>Passing ten analyses to <code>consolidate()</code> applies five (the <code>max_inbox_per_run</code> cap, ADR 0007)
+and <strong>silently LLM-analyses the rest on a later pass</strong>, reinstating the rewriting I had used
+<code>host_analyses</code> to prevent. The only way I detected it was noticing that five blocks carried
+inferred <code>self/value</code> tags I never supplied.</p>
+<hr />
+<h2 id="recommendations-ranked-by-value">Recommendations, ranked by value<a class="headerlink" href="#recommendations-ranked-by-value" title="Permanent link">&para;</a></h2>
+<h3 id="p1-frameresult-must-report-what-it-dropped">P1 — <code>FrameResult</code> must report what it dropped<a class="headerlink" href="#p1-frameresult-must-report-what-it-dropped" title="Permanent link">&para;</a></h3>
+<p>The cheapest fix with the highest payoff.
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@dataclass</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">FrameResult</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">blocks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ScoredBlock</span><span class="p">]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">dropped</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BlockSummary</span><span class="p">]</span>        <span class="c1"># eligible but not rendered</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">dropped_reason</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"token_budget"</span><span class="p">,</span> <span class="s2">"top_k"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">budget_used</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">budget_total</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
+<code>dropped_reason</code> turns a silent truncation into a diagnosable one. Everything else in this
+report is a symptom of not having this.</p>
+<h3 id="p2-ship-elfmem-doctor-frames-or-fold-into-existing-doctor">P2 — ship <code>elfmem doctor --frames</code> (or fold into existing <code>doctor</code>)<a class="headerlink" href="#p2-ship-elfmem-doctor-frames-or-fold-into-existing-doctor" title="Permanent link">&para;</a></h3>
+<p>Render every frame and print exactly what the agent will receive:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>SELF     11 blocks stored | 11 rendered | 0 dropped | 501/600 tokens
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>ATTENTION 43 blocks stored |  8 rendered | 6 dropped (top_k) | 1204/2000 tokens
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  dropped: 3f2a1b… "Events to the journal, evolving patterns…"
+</span></code></pre></div>
+I wrote this by hand. It should be one command, because "what does my agent actually see"
+is the first question anyone asks and currently has no answer short of reading source.</p>
+<h3 id="p3-close-the-remembervisible-gap-explicitly">P3 — close the remember→visible gap explicitly<a class="headerlink" href="#p3-close-the-remembervisible-gap-explicitly" title="Permanent link">&para;</a></h3>
+<p>Pick one (I'd take the first):
+- <code>LearnResult</code> gains <code>visible: bool</code> and <code>pending_consolidation: bool</code>
+- <code>await system.remember(..., consolidate_now=True)</code>
+- <code>await system.remember_now(...)</code> convenience wrapper</p>
+<p>Any of these makes the trap self-documenting at the call site.</p>
+<h3 id="p4-let-callers-preserve-authored-wording">P4 — let callers preserve authored wording<a class="headerlink" href="#p4-let-callers-preserve-authored-wording" title="Permanent link">&para;</a></h3>
+<p><code>host_analyses</code> already does this, but it is discoverable only by reading <code>consolidate()</code>'s
+argument list and inferring that <code>summary</code> <em>is</em> the rendered text. Two improvements:
+- <code>remember(..., preserve_wording=True)</code> — sets the summary to the content, no LLM call
+- Document plainly in the <code>remember</code>/<code>setup</code> guides: <strong>"consolidation may rewrite this text;
+  the rewrite is what renders. Pass <code>host_analyses</code> (or <code>preserve_wording=True</code>) for text that
+  must survive verbatim — constitutions, quotes, legal or safety wording."</strong></p>
+<p>Rewriting is right for observations. It is wrong for anything ratified, quoted, or legally
+exact, and the library currently gives no signal about which is which.</p>
+<h3 id="p5-host_analyses-overflow-must-not-be-silent">P5 — <code>host_analyses</code> overflow must not be silent<a class="headerlink" href="#p5-host_analyses-overflow-must-not-be-silent" title="Permanent link">&para;</a></h3>
+<p><div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">ConsolidateResult</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">analyses_unused</span><span class="o">=</span><span class="p">[</span><span class="s2">"3f2a1b…"</span><span class="p">,</span> <span class="err">…</span><span class="p">])</span>
+</span></code></pre></div>
+…or raise when <code>len(host_analyses) &gt; max_inbox_per_run</code>, with the recovery hint ("submit in
+batches of N, or raise consolidation.max_inbox_per_run"). Silently substituting LLM analysis
+for caller-supplied analysis inverts an explicit instruction.</p>
+<h3 id="p6-guaranteed-blocks-should-not-lose-to-top_k">P6 — guaranteed blocks should not lose to <code>top_k</code><a class="headerlink" href="#p6-guaranteed-blocks-should-not-lose-to-top_k" title="Permanent link">&para;</a></h3>
+<p>If a frame declares <code>guarantees=["self/constitutional"]</code>, guaranteed blocks arguably should be
+exempt from <code>top_k</code>, or <code>top_k</code> should default to <code>max(configured, n_guaranteed)</code>. Failing
+that, <code>frame()</code> should warn when guaranteed blocks are excluded — that is precisely the case
+the guarantee exists to prevent.</p>
+<h3 id="p7-a-copy-pasteable-quickstart-that-ends-in-verification">P7 — a copy-pasteable quickstart that ends in verification<a class="headerlink" href="#p7-a-copy-pasteable-quickstart-that-ends-in-verification" title="Permanent link">&para;</a></h3>
+<p>The missing final line is the whole point:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">system</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MemorySystem</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"agent.db"</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">identity</span><span class="o">=</span><span class="s2">"I am a trading agent..."</span><span class="p">)</span>     <span class="c1"># optional</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"..."</span><span class="p">,</span> <span class="n">cue</span><span class="o">=</span><span class="s2">"when deciding whether to..."</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">dream</span><span class="p">()</span>                                        <span class="c1"># &lt;- makes it visible</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nb">print</span><span class="p">((</span><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"self"</span><span class="p">))</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>                    <span class="c1"># &lt;- SEE what the agent sees</span>
+</span></code></pre></div>
+Most quickstarts stop at line 3. Lines 4–5 are where the mental model actually forms.</p>
+<h3 id="p8-type-check-from_configdb_path">P8 — type-check <code>from_config(db_path)</code><a class="headerlink" href="#p8-type-check-from_configdb_path" title="Permanent link">&para;</a></h3>
+<p>My mistake produced:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>OSError: [Errno 63] File name too long: "Config(raw={'llm': {'model': 'anthropic:claude-opus-5'…
+</span></code></pre></div>
+A <code>TypeError: db_path must be str | PathLike, got trdrbot.config.Config</code> costs one line and
+saves a genuinely baffling minute. Any string long enough to be an obvious non-path is worth
+rejecting early.</p>
+<h3 id="p9-surface-the-load-bearing-constants">P9 — surface the load-bearing constants<a class="headerlink" href="#p9-surface-the-load-bearing-constants" title="Permanent link">&para;</a></h3>
+<p>These five decided my entire design and all were found by reading source:</p>
+<table>
+<thead>
+<tr>
+<th>constant</th>
+<th>value</th>
+<th>where I found it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SELF_FRAME.token_budget</code></td>
+<td>600</td>
+<td><code>context/frames.py</code></td>
+</tr>
+<tr>
+<td><code>_estimate_tokens</code></td>
+<td><code>len(text)//4</code></td>
+<td><code>context/rendering.py</code></td>
+</tr>
+<tr>
+<td><code>memory.top_k</code></td>
+<td>5</td>
+<td><code>config.py</code></td>
+</tr>
+<tr>
+<td><code>consolidation.max_inbox_per_run</code></td>
+<td>5</td>
+<td>ADR 0007, via docstring</td>
+</tr>
+<tr>
+<td><code>ReviewConfig.min_age_days</code></td>
+<td>30</td>
+<td><code>config.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Export them (several already are) and, more importantly, cite them <strong>in the guide entry of the
+method they constrain</strong>. <code>guide("frame")</code> should state the budget and the estimator.</p>
+<h3 id="p10-insufficient_history-should-say-what-is-missing">P10 — <code>insufficient_history</code> should say what is missing<a class="headerlink" href="#p10-insufficient_history-should-say-what-is-missing" title="Permanent link">&para;</a></h3>
+<p>Current behaviour is good (a flag, not a crash). Better:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>insufficient_history: need &gt;=20 recently-reinforced blocks (have 3),
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>and &gt;=1 constitutional block older than 30 days (oldest is 0 days).
+</span></code></pre></div>
+I had to read <code>ReviewConfig</code> to learn why my review returned nothing, and to establish that it
+<strong>cannot fire within an 8-day project</strong> — which is correct behaviour, but I needed the source
+to know it was correct rather than broken.</p>
+<h3 id="p11-give-seeded-blocks-a-stable-identity-across-consolidation">P11 — give seeded blocks a stable identity across consolidation<a class="headerlink" href="#p11-give-seeded-blocks-a-stable-identity-across-consolidation" title="Permanent link">&para;</a></h3>
+<p>This is the deepest issue and the least obvious. <code>frames.py</code> already documents it honestly:</p>
+<blockquote>
+<p><code>self/role/%</code> would be the better guarantee … it does not survive: consolidation rewrites a
+seeded block and re-tags it from the LLM's own vocabulary.</p>
+</blockquote>
+<p>Consequence: <strong>there is no stable key for "the block that holds principle 7".</strong> My re-seed
+had to match on content, which fails the moment content is rewritten — my <code>purge</code> missed
+LLM-retagged blocks and left duplicates. Anything wanting idempotent, updatable seeds (every
+constitution, every template) needs a <code>slot</code>/<code>role</code> field that consolidation is forbidden to
+touch. I'd suggest a first-class <code>slot: str | None</code> column, unique, never LLM-editable, with
+<code>remember(..., slot="principle/regimes")</code> upserting by it.</p>
+<hr />
+<h2 id="what-to-keep-this-list-matters-as-much-as-the-fixes">What to keep — this list matters as much as the fixes<a class="headerlink" href="#what-to-keep-this-list-matters-as-much-as-the-fixes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>guide()</code> is outstanding.</strong> The What / Use when / Don't use / Cost / Returns / Next
+  structure is the best in-library agent documentation I have used. <code>guide("remember")</code> told me
+  to always pass <code>cue=</code> <em>and why</em>, which directly shaped a design decision. Extend it, never
+  replace it.</li>
+<li><strong>ADR citations inside docstrings</strong> (ADR 0003, ADR 0007). Being told <em>why</em> a limit exists
+  meant I designed with it rather than around it. Rare and excellent.</li>
+<li><strong>Honest "why not X" comments in source.</strong> The <code>self/role/%</code> comment in <code>frames.py</code> saved me
+  from a wrong design and became recommendation P11. Keep writing those.</li>
+<li><strong><code>insufficient_history=True</code> instead of a crash or a lie.</strong> Right call.</li>
+<li><strong>Idempotent <code>setup()</code></strong>, and <code>blocks_created=0 means all were duplicates — safe, not an
+  error</code>. Good semantics, clearly stated.</li>
+<li><strong>Rich return strings</strong>: <em>"Consolidated 5: 5 promoted, 2 edges, 1 near-duplicate pair kept
+  and flagged — 6 remaining, run dream() again to continue."</em> That sentence told me the state,
+  the outcome, and the next action. More of this.</li>
+<li><strong>The tag→tier model</strong> (<code>self/constitutional</code> → PERMANENT, ~34yr). Declarative, discoverable
+  in one function, easy to reason about.</li>
+<li><strong>Manual amendment (propose ≠ accept).</strong> Backed by evidence from your own ADR 0003. Do not
+  soften this.</li>
+</ul>
+<hr />
+<h2 id="making-it-generalisable-elfmem-init">Making it generalisable — <code>elfmem init</code><a class="headerlink" href="#making-it-generalisable-elfmem-init" title="Permanent link">&para;</a></h2>
+<p>For "anybody on any project", the single highest-leverage addition is one scaffolding command
+that does the whole first-run arc and <em>proves</em> it worked:</p>
+<p><div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>elfmem init ./agent.db --identity "..." [--seed constitutional] [--template coding]
+</span></code></pre></div>
+which would: create the db → apply identity/values/seed → <strong>consolidate to completion</strong>
+(looping past <code>max_inbox_per_run</code>, which callers should never have to hand-roll — I did, and
+got it wrong first time) → <strong>render every frame and print it</strong> → exit non-zero if any block is
+stored-but-not-rendered.</p>
+<p>That single command collapses gates 1–4 into something a newcomer cannot get wrong, and its
+output <em>is</em> the mental model.</p>
+<p>Second: a short <strong>integration checklist</strong> in the docs, which is really the six questions this
+report answers —</p>
+<ol>
+<li>Is it stored? 2. Is it consolidated? 3. Does it render? 4. In whose words? 5. Within budget
+and <code>top_k</code>? 6. Can I re-run this safely tomorrow?</li>
+</ol>
+<hr />
+<h2 id="edge-cases-worth-explicit-handling">Edge cases worth explicit handling<a class="headerlink" href="#edge-cases-worth-explicit-handling" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>edge case</th>
+<th>today</th>
+<th>suggested</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>never calling <code>dream()</code>/<code>consolidate()</code></td>
+<td>inbox grows invisibly, forever</td>
+<td><code>should_dream</code> exists — also surface <code>inbox_depth</code> in <code>status()</code> and warn past a threshold</td>
+</tr>
+<tr>
+<td>re-seeding after wording changes</td>
+<td>duplicates; content-matching fails post-rewrite</td>
+<td><code>slot</code> upsert (P11)</td>
+</tr>
+<tr>
+<td>block longer than the whole frame budget</td>
+<td>renders nothing at all (<code>if not selected: return ""</code>)</td>
+<td>render it truncated, or raise — silently empty identity is the worst outcome</td>
+</tr>
+<tr>
+<td>two frames wanting the same block</td>
+<td>fine</td>
+<td>no change</td>
+</tr>
+<tr>
+<td>very small <code>top_k</code> with many guarantees</td>
+<td>guarantees silently lose</td>
+<td>P6</td>
+</tr>
+<tr>
+<td><code>db_path</code> on a network/Dropbox volume</td>
+<td>works, but SQLite locking is a hazard</td>
+<td>one line in docs</td>
+</tr>
+<tr>
+<td>multiple projects, one machine</td>
+<td>works</td>
+<td>document the per-project db convention</td>
+</tr>
+<tr>
+<td>async-only API</td>
+<td>correct choice</td>
+<td>state it in the first line of the quickstart</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="the-one-paragraph-version">The one-paragraph version<a class="headerlink" href="#the-one-paragraph-version" title="Permanent link">&para;</a></h2>
+<p>Installation is already easy. Initialisation is hard for exactly one reason: <strong>the library
+knows the difference between stored, consolidated and rendered, and the caller cannot see it.</strong>
+Ship <code>FrameResult.dropped</code>, an <code>elfmem doctor --frames</code>, and an <code>elfmem init</code> that ends by
+printing what the agent will actually receive — and the four gates I hit stop being discoverable
+only by reading <code>context/rendering.py</code>. Keep <code>guide()</code>, the ADR citations, and the honest
+source comments exactly as they are; they are the reason I could diagnose all of this in an
+afternoon rather than filing a vague bug.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

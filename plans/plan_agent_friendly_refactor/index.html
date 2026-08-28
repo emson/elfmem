@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2389,7 +2361,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>api.learn(content, tags, category, source)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  └─ engine.begin() → conn
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  └─ operations.learn(conn, ...) → LearnResult(block_id, status)  [+ __str__, to_dict()]
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  └─ self._record_op(&quot;learn&quot;, result.summary)          ← 1 new line
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  └─ self._record_op("learn", result.summary)          ← 1 new line
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  └─ return LearnResult
 </span></code></pre></div>
 <h3 id="consolidate-before"><code>consolidate()</code> — Before<a class="headerlink" href="#consolidate-before" title="Permanent link">&para;</a></h3>
@@ -2406,8 +2378,8 @@
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  └─ engine.begin() → conn
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  └─ operations.consolidate(conn, ...) → ConsolidateResult  [+ __str__, to_dict()]
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  └─ should_curate? → operations.curate(conn, ...)
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  └─ set_config(conn, &quot;last_consolidated_at&quot;, _now_iso())   ← 1 new line (façade layer)
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  └─ self._record_op(&quot;consolidate&quot;, result.summary)         ← 1 new line
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  └─ set_config(conn, "last_consolidated_at", _now_iso())   ← 1 new line (façade layer)
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  └─ self._record_op("consolidate", result.summary)         ← 1 new line
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  └─ return ConsolidateResult
 </span></code></pre></div>
 <h3 id="status-new-flow"><code>status()</code> — New flow<a class="headerlink" href="#status-new-flow" title="Permanent link">&para;</a></h3>
@@ -2415,7 +2387,7 @@
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  └─ engine.connect() → conn  (read-only, no transaction)
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  └─ db.queries.get_block_counts(conn)
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>       → {inbox: N, active: N, archived: N}            ← 1 new query
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  └─ db.queries.get_config(conn, &quot;last_consolidated_at&quot;)  (existing query)
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  └─ db.queries.get_config(conn, "last_consolidated_at")  (existing query)
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  └─ session_active = self._session_id is not None
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  └─ session_hours = session._elapsed_hours() if active
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  └─ suggestion = _derive_suggestion(counts, session_active, threshold)
@@ -2425,7 +2397,7 @@
 <p><div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>api.guide(method_name=None)                            ← new method
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  └─ if None: return overview string (static)
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  └─ elif method_name in GUIDES: return AgentGuide     ← static dict lookup
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  └─ else: return &quot;Unknown method. Available: [list]&quot;
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  └─ else: return "Unknown method. Available: [list]"
 </span></code></pre></div>
 No DB access. No async required. Synchronous. Zero cost.</p>
 <h3 id="history-new-flow"><code>history()</code> — New flow<a class="headerlink" href="#history-new-flow" title="Permanent link">&para;</a></h3>
@@ -2468,8 +2440,8 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">active_count</span><span class="p">:</span> <span class="nb">int</span>
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">archived_count</span><span class="p">:</span> <span class="nb">int</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">total_active_hours</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">last_consolidated</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># ISO string or &quot;never&quot;</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">health</span><span class="p">:</span> <span class="nb">str</span>                   <span class="c1"># &quot;good&quot; | &quot;attention&quot; | &quot;degraded&quot;</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">last_consolidated</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># ISO string or "never"</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">health</span><span class="p">:</span> <span class="nb">str</span>                   <span class="c1"># "good" | "attention" | "degraded"</span>
 </span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">suggestion</span><span class="p">:</span> <span class="nb">str</span>               <span class="c1"># one actionable sentence</span>
 </span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
@@ -2478,7 +2450,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 - Add <code>OperationRecord</code> dataclass (used by <code>history()</code> in Phase 3):
   <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@dataclass</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">OperationRecord</span><span class="p">:</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># &quot;learn&quot;, &quot;consolidate&quot;, etc.</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># "learn", "consolidate", etc.</span>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># str(result) at call time</span>
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># ISO string</span>
 </span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
@@ -2496,10 +2468,10 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElfmemConfig</span>
 </span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
 </span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="s2">&quot;MemorySystem&quot;</span><span class="p">,</span> <span class="s2">&quot;ElfmemConfig&quot;</span><span class="p">,</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="s2">&quot;LearnResult&quot;</span><span class="p">,</span> <span class="s2">&quot;ConsolidateResult&quot;</span><span class="p">,</span> <span class="s2">&quot;FrameResult&quot;</span><span class="p">,</span> <span class="s2">&quot;CurateResult&quot;</span><span class="p">,</span>
-</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="s2">&quot;ScoredBlock&quot;</span><span class="p">,</span> <span class="s2">&quot;SystemStatus&quot;</span><span class="p">,</span> <span class="s2">&quot;OperationRecord&quot;</span><span class="p">,</span>
-</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    <span class="s2">&quot;ElfmemError&quot;</span><span class="p">,</span> <span class="s2">&quot;SessionError&quot;</span><span class="p">,</span> <span class="s2">&quot;ConfigError&quot;</span><span class="p">,</span> <span class="s2">&quot;StorageError&quot;</span><span class="p">,</span> <span class="s2">&quot;FrameError&quot;</span><span class="p">,</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="s2">"MemorySystem"</span><span class="p">,</span> <span class="s2">"ElfmemConfig"</span><span class="p">,</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="s2">"LearnResult"</span><span class="p">,</span> <span class="s2">"ConsolidateResult"</span><span class="p">,</span> <span class="s2">"FrameResult"</span><span class="p">,</span> <span class="s2">"CurateResult"</span><span class="p">,</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="s2">"ScoredBlock"</span><span class="p">,</span> <span class="s2">"SystemStatus"</span><span class="p">,</span> <span class="s2">"OperationRecord"</span><span class="p">,</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    <span class="s2">"ElfmemError"</span><span class="p">,</span> <span class="s2">"SessionError"</span><span class="p">,</span> <span class="s2">"ConfigError"</span><span class="p">,</span> <span class="s2">"StorageError"</span><span class="p">,</span> <span class="s2">"FrameError"</span><span class="p">,</span>
 </span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="p">]</span>
 </span></code></pre></div></p>
 <p><strong>Tests: <code>tests/test_result_types.py</code></strong> — New file
@@ -2521,15 +2493,15 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 <p><em>Scope: New query, new module, new methods on MemorySystem</em></p>
 <p><strong><code>src/elfmem/db/queries.py</code></strong> — Add one function
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_block_counts</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {inbox, active, archived} block counts in a single query.&quot;&quot;&quot;</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="sd">"""Return {inbox, active, archived} block counts in a single query."""</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="n">select</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s2">&quot;n&quot;</span><span class="p">))</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="n">select</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s2">"n"</span><span class="p">))</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        <span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="p">)</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inbox&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;archived&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"inbox"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"active"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"archived"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
 </span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">mappings</span><span class="p">():</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>            <span class="n">counts</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>            <span class="n">counts</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span>
 </span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="k">return</span> <span class="n">counts</span>
 </span></code></pre></div></p>
 <p><strong><code>src/elfmem/guide.py</code></strong> — New file
@@ -2539,35 +2511,35 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">what</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># one sentence</span>
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">when</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># decision criteria</span>
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">when_not</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># anti-patterns</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">cost</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># &quot;Instant&quot; | &quot;Fast&quot; | &quot;LLM call&quot; | &quot;Slow (batch)&quot;</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">cost</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># "Instant" | "Fast" | "LLM call" | "Slow (batch)"</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">returns</span><span class="p">:</span> <span class="nb">str</span>     <span class="c1"># what comes back + possible values</span>
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="nb">next</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># typical follow-up</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">example</span><span class="p">:</span> <span class="nb">str</span>     <span class="c1"># minimal working code snippet</span>
 </span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
 </span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="c1"># Static dict: method name → AgentGuide</span>
 </span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="n">GUIDES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AgentGuide</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="s2">&quot;learn&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span>
-</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;learn&quot;</span><span class="p">,</span>
-</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>        <span class="n">what</span><span class="o">=</span><span class="s2">&quot;Store a knowledge block for future retrieval.&quot;</span><span class="p">,</span>
-</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>        <span class="n">when</span><span class="o">=</span><span class="s2">&quot;The agent discovers a fact, preference, decision, or observation &quot;</span>
-</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>             <span class="s2">&quot;worth remembering across sessions.&quot;</span><span class="p">,</span>
-</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>        <span class="n">when_not</span><span class="o">=</span><span class="s2">&quot;Transient context that only matters in the current turn, or &quot;</span>
-</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>                 <span class="s2">&quot;information already in the active prompt.&quot;</span><span class="p">,</span>
-</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>        <span class="n">cost</span><span class="o">=</span><span class="s2">&quot;Instant. No LLM calls.&quot;</span><span class="p">,</span>
-</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>        <span class="n">returns</span><span class="o">=</span><span class="s2">&quot;LearnResult. status values: &#39;created&#39; (new block stored in inbox), &quot;</span>
-</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>                <span class="s2">&quot;&#39;duplicate_rejected&#39; (exact content already exists), &quot;</span>
-</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>                <span class="s2">&quot;&#39;near_duplicate_superseded&#39; (similar block replaced).&quot;</span><span class="p">,</span>
-</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>        <span class="nb">next</span><span class="o">=</span><span class="s2">&quot;Blocks queue in inbox until consolidate() runs. Session context &quot;</span>
-</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>             <span class="s2">&quot;manager auto-consolidates on exit when inbox &gt;= threshold.&quot;</span><span class="p">,</span>
-</span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>        <span class="n">example</span><span class="o">=</span><span class="s2">&quot;result = await system.learn(&#39;User prefers dark mode&#39;)</span><span class="se">\n</span><span class="s2">print(result)&quot;</span><span class="p">,</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="s2">"learn"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>        <span class="n">name</span><span class="o">=</span><span class="s2">"learn"</span><span class="p">,</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>        <span class="n">what</span><span class="o">=</span><span class="s2">"Store a knowledge block for future retrieval."</span><span class="p">,</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>        <span class="n">when</span><span class="o">=</span><span class="s2">"The agent discovers a fact, preference, decision, or observation "</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>             <span class="s2">"worth remembering across sessions."</span><span class="p">,</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>        <span class="n">when_not</span><span class="o">=</span><span class="s2">"Transient context that only matters in the current turn, or "</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>                 <span class="s2">"information already in the active prompt."</span><span class="p">,</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>        <span class="n">cost</span><span class="o">=</span><span class="s2">"Instant. No LLM calls."</span><span class="p">,</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>        <span class="n">returns</span><span class="o">=</span><span class="s2">"LearnResult. status values: 'created' (new block stored in inbox), "</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>                <span class="s2">"'duplicate_rejected' (exact content already exists), "</span>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>                <span class="s2">"'near_duplicate_superseded' (similar block replaced)."</span><span class="p">,</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>        <span class="nb">next</span><span class="o">=</span><span class="s2">"Blocks queue in inbox until consolidate() runs. Session context "</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>             <span class="s2">"manager auto-consolidates on exit when inbox &gt;= threshold."</span><span class="p">,</span>
+</span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>        <span class="n">example</span><span class="o">=</span><span class="s2">"result = await system.learn('User prefers dark mode')</span><span class="se">\n</span><span class="s2">print(result)"</span><span class="p">,</span>
 </span><span id="__span-12-28"><a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a>    <span class="p">),</span>
-</span><span id="__span-12-29"><a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>    <span class="s2">&quot;consolidate&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-30"><a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a>    <span class="s2">&quot;frame&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-31"><a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a>    <span class="s2">&quot;recall&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-32"><a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a>    <span class="s2">&quot;curate&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-33"><a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a>    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-34"><a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a>    <span class="s2">&quot;history&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-</span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>    <span class="s2">&quot;guide&quot;</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-29"><a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>    <span class="s2">"consolidate"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-30"><a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a>    <span class="s2">"frame"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-31"><a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a>    <span class="s2">"recall"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-32"><a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a>    <span class="s2">"curate"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-33"><a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a>    <span class="s2">"status"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-34"><a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a>    <span class="s2">"history"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>    <span class="s2">"guide"</span><span class="p">:</span> <span class="n">AgentGuide</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
 </span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a><span class="p">}</span>
 </span><span id="__span-12-37"><a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a>
 </span><span id="__span-12-38"><a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a><span class="n">OVERVIEW</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># compact table: name | cost | one-line description</span>
@@ -2575,7 +2547,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 <p><strong><code>src/elfmem/api.py</code></strong> — Add <code>guide()</code> and <code>status()</code> methods; update docstrings</p>
 <p><code>guide()</code>:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">guide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return agent-friendly documentation for this library or a specific method.</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="sd">"""Return agent-friendly documentation for this library or a specific method.</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="sd">    USE WHEN: An agent needs to understand what methods are available or how</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="sd">    a specific method should be used.</span>
@@ -2585,11 +2557,11 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="sd">    RETURNS: String. With no argument: compact overview of all operations.</span>
 </span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="sd">    With a method name: full AgentGuide for that method.</span>
 </span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="sd">    Unknown method name: list of valid names.</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="sd">    """</span>
 </span></code></pre></div></p>
 <p><code>status()</code>:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SystemStatus</span><span class="p">:</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a snapshot of current system state with a suggested next action.</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="sd">"""Return a snapshot of current system state with a suggested next action.</span>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
 </span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="sd">    USE WHEN: An agent needs to decide whether to consolidate, curate, or</span>
 </span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="sd">    start a session, or wants to understand memory health.</span>
@@ -2597,8 +2569,8 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="sd">    COST: Fast. One database read (no LLM calls).</span>
 </span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
 </span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="sd">    RETURNS: SystemStatus with inbox_count, active_count, session_active,</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="sd">    health (&#39;good&#39;|&#39;attention&#39;|&#39;degraded&#39;), and a suggestion string.</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="sd">    health ('good'|'attention'|'degraded'), and a suggestion string.</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="sd">    """</span>
 </span></code></pre></div></p>
 <p>Health derivation logic (pure, in <code>guide.py</code> or <code>api.py</code>):
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_derive_health_and_suggestion</span><span class="p">(</span>
@@ -2607,16 +2579,16 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">fill_ratio</span> <span class="o">=</span> <span class="n">inbox_count</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">inbox_threshold</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="k">if</span> <span class="n">fill_ratio</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="k">return</span> <span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="s2">&quot;Inbox full. Call consolidate() to process pending blocks.&quot;</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="k">return</span> <span class="s2">"attention"</span><span class="p">,</span> <span class="s2">"Inbox full. Call consolidate() to process pending blocks."</span>
 </span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="k">if</span> <span class="n">fill_ratio</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>        <span class="k">return</span> <span class="s2">&quot;good&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Inbox </span><span class="si">{</span><span class="n">inbox_count</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">inbox_threshold</span><span class="si">}</span><span class="s2">. Consolidation approaching.&quot;</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>        <span class="k">return</span> <span class="s2">"good"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Inbox </span><span class="si">{</span><span class="n">inbox_count</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">inbox_threshold</span><span class="si">}</span><span class="s2">. Consolidation approaching."</span>
 </span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="k">if</span> <span class="n">active_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">inbox_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>        <span class="k">return</span> <span class="s2">&quot;good&quot;</span><span class="p">,</span> <span class="s2">&quot;Memory empty. Call learn() to add knowledge.&quot;</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    <span class="k">return</span> <span class="s2">&quot;good&quot;</span><span class="p">,</span> <span class="s2">&quot;Memory healthy. No action required.&quot;</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>        <span class="k">return</span> <span class="s2">"good"</span><span class="p">,</span> <span class="s2">"Memory empty. Call learn() to add knowledge."</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    <span class="k">return</span> <span class="s2">"good"</span><span class="p">,</span> <span class="s2">"Memory healthy. No action required."</span>
 </span></code></pre></div></p>
 <p>Also update <code>consolidate()</code> to record <code>last_consolidated_at</code> in system_config:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># At the end of api.consolidate(), inside the same transaction:</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">await</span> <span class="n">set_config</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;last_consolidated_at&quot;</span><span class="p">,</span> <span class="n">_now_iso</span><span class="p">())</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">await</span> <span class="n">set_config</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">"last_consolidated_at"</span><span class="p">,</span> <span class="n">_now_iso</span><span class="p">())</span>
 </span></code></pre></div></p>
 <p>Update all public method docstrings to follow the agent contract template:
 <code>USE WHEN / DON'T USE WHEN / COST / RETURNS / NEXT</code></p>
@@ -2649,7 +2621,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 <p>Add <code>_record_op(...)</code> as the final line in: <code>learn()</code>, <code>consolidate()</code>, <code>curate()</code>, <code>frame()</code>, <code>recall()</code>, <code>begin_session()</code>, <code>end_session()</code>.</p>
 <p>Add <code>history()</code> public method:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">last_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">OperationRecord</span><span class="p">]:</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the most recent operations performed by this MemorySystem.</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="sd">"""Return the most recent operations performed by this MemorySystem.</span>
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="sd">    USE WHEN: An agent gets unexpected results and needs to understand</span>
 </span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="sd">    what operations have run in the current process session.</span>
@@ -2658,7 +2630,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
 </span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="sd">    RETURNS: List of OperationRecord (operation, summary, timestamp),</span>
 </span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="sd">    most recent last. Empty list if no operations have run.</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="sd">    """</span>
 </span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>    <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="p">)</span>
 </span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>    <span class="k">return</span> <span class="n">records</span><span class="p">[</span><span class="o">-</span><span class="n">last_n</span><span class="p">:]</span> <span class="k">if</span> <span class="n">last_n</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">records</span><span class="p">)</span> <span class="k">else</span> <span class="n">records</span>
 </span></code></pre></div></p>
@@ -2718,9 +2690,9 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 <p>All tool return values are <strong>strings</strong> — MCP tool results go directly into the agent's context window. No JSON objects.</p>
 <p>Tool description format (each):
 <div class="language-json highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="p">{</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elfmem_learn&quot;</span><span class="p">,</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Store something worth remembering. Use when the agent discovers information that should persist across sessions.&quot;</span><span class="p">,</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="nt">&quot;inputSchema&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="err">mi</span><span class="kc">n</span><span class="err">imal</span><span class="p">,</span><span class="w"> </span><span class="err">well</span><span class="mi">-</span><span class="err">described</span><span class="w"> </span><span class="err">parame</span><span class="kc">ters</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"elfmem_learn"</span><span class="p">,</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Store something worth remembering. Use when the agent discovers information that should persist across sessions."</span><span class="p">,</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="nt">"inputSchema"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="err">mi</span><span class="kc">n</span><span class="err">imal</span><span class="p">,</span><span class="w"> </span><span class="err">well</span><span class="mi">-</span><span class="err">described</span><span class="w"> </span><span class="err">parame</span><span class="kc">ters</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p>Entry point:
@@ -2729,7 +2701,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
 </span></code></pre></div></p>
 <p>Optional dependency in <code>pyproject.toml</code>:
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">[project.optional-dependencies]</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">mcp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mcp&gt;=1.0&quot;</span><span class="p">]</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">mcp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"mcp&gt;=1.0"</span><span class="p">]</span>
 </span></code></pre></div></p>
 <p>Install: <code>uv add elfmem[mcp]</code></p>
 <p><strong>New files for Phase 5:</strong>
@@ -2912,7 +2884,7 @@ Each exception stores <code>message</code> + <code>recovery</code>. <code>__str_
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

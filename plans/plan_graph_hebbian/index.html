@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2585,8 +2557,8 @@
 <p><code>recall.py</code> already calls <code>reinforce_co_retrieved_edges()</code> for all returned block pairs (step 9 in the recall pipeline). This increments <code>reinforcement_count</code> and updates <code>last_active_hours</code> for existing edges.</p>
 <p>Staging logic skips pairs already in <code>existing</code> (built from <code>get_edges_for_block()</code>). No double-counting. No collision between reinforcement and staging.</p>
 <h3 id="27-edge-properties-for-promoted-pairs">2.7 Edge properties for promoted pairs<a class="headerlink" href="#27-edge-properties-for-promoted-pairs" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>relation_type = &quot;co_occurs&quot;    # semantically neutral — pattern-observed, not classified
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>origin        = &quot;co_retrieval&quot; # provenance: Hebbian learning, not similarity or agent
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>relation_type = "co_occurs"    # semantically neutral — pattern-observed, not classified
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>origin        = "co_retrieval" # provenance: Hebbian learning, not similarity or agent
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>weight        = 0.55           # above similarity floor (0.40), below outcome-confirmed (0.80)
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>last_active_hours = current    # starts temporal decay clock from first creation
 </span></code></pre></div>
@@ -2621,8 +2593,8 @@
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    3. For each pair NOT in existing:
 </span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>       count = staging.get(pair, 0) + 1
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>       if count &gt;= threshold:
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>         insert_edge(from_id, to_id, weight=0.55, relation_type=&quot;co_occurs&quot;,
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>                     origin=&quot;co_retrieval&quot;, last_active_hours=current_hours)
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>         insert_edge(from_id, to_id, weight=0.55, relation_type="co_occurs",
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>                     origin="co_retrieval", last_active_hours=current_hours)
 </span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>         staging.pop(pair)
 </span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>         promoted += 1
 </span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>       else:
@@ -2721,7 +2693,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Hebbian co-retrieval edge creation</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">co_retrieval_edge_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Minimum co-retrievals for a pair to be promoted to a co_occurs edge.</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># &quot;Once is coincidence, twice is pattern, three times is signal.&quot;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># "Once is coincidence, twice is pattern, three times is signal."</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">co_retrieval_edge_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.55</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Weight for Hebbian-promoted co_retrieval edges.</span>
@@ -2743,10 +2715,10 @@
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">current_active_hours</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">staging_max</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Increment staging counts for co-retrieved pairs without existing edges.</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">"""Increment staging counts for co-retrieved pairs without existing edges.</span>
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="sd">    Promotes pairs that reach `threshold` to permanent co_occurs edges</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="sd">    (origin=&quot;co_retrieval&quot;). Promoted pairs are removed from staging.</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="sd">    (origin="co_retrieval"). Promoted pairs are removed from staging.</span>
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="sd">    Only stages pairs WITHOUT an existing edge — pairs with edges are</span>
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="sd">    already reinforced by reinforce_co_retrieved_edges() before this call.</span>
@@ -2755,7 +2727,7 @@
 </span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
 </span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="sd">    Must be called after reinforce_co_retrieved_edges() so that existing-edge</span>
 </span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="sd">    check reflects the current graph state.</span>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="sd">    """</span>
 </span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">block_ids</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
 </span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>        <span class="k">return</span> <span class="mi">0</span>
 </span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
@@ -2774,7 +2746,7 @@
 </span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>            <span class="k">continue</span>
 </span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bid</span><span class="p">)</span>
 </span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">queries</span><span class="o">.</span><span class="n">get_edges_for_block</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">bid</span><span class="p">):</span>
-</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>            <span class="n">existing</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">edge</span><span class="p">[</span><span class="s2">&quot;from_id&quot;</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="s2">&quot;to_id&quot;</span><span class="p">]))</span>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>            <span class="n">existing</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">edge</span><span class="p">[</span><span class="s2">"from_id"</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="s2">"to_id"</span><span class="p">]))</span>
 </span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>
 </span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a>    <span class="c1"># Stage pairs without existing edges; promote at threshold</span>
 </span><span id="__span-4-45"><a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a>    <span class="n">promoted</span> <span class="o">=</span> <span class="mi">0</span>
@@ -2789,8 +2761,8 @@
 </span><span id="__span-4-54"><a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>                <span class="n">from_id</span><span class="o">=</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
 </span><span id="__span-4-55"><a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a>                <span class="n">to_id</span><span class="o">=</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
 </span><span id="__span-4-56"><a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a>                <span class="n">weight</span><span class="o">=</span><span class="n">edge_weight</span><span class="p">,</span>
-</span><span id="__span-4-57"><a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a>                <span class="n">relation_type</span><span class="o">=</span><span class="s2">&quot;co_occurs&quot;</span><span class="p">,</span>
-</span><span id="__span-4-58"><a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>                <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;co_retrieval&quot;</span><span class="p">,</span>
+</span><span id="__span-4-57"><a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a>                <span class="n">relation_type</span><span class="o">=</span><span class="s2">"co_occurs"</span><span class="p">,</span>
+</span><span id="__span-4-58"><a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>                <span class="n">origin</span><span class="o">=</span><span class="s2">"co_retrieval"</span><span class="p">,</span>
 </span><span id="__span-4-59"><a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>                <span class="n">last_active_hours</span><span class="o">=</span><span class="n">current_active_hours</span><span class="p">,</span>
 </span><span id="__span-4-60"><a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a>            <span class="p">)</span>
 </span><span id="__span-4-61"><a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a>            <span class="n">staging</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -2864,7 +2836,7 @@
 </span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="k">for</span> <span class="n">bid</span> <span class="ow">in</span> <span class="n">recalled_ids</span><span class="p">:</span>
 </span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>    <span class="k">if</span> <span class="n">bid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_block_ids</span><span class="p">:</span>
 </span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session_block_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bid</span><span class="p">)</span>
-</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="bp">self</span><span class="o">.</span><span class="n">_record_op</span><span class="p">(</span><span class="s2">&quot;frame&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="p">)</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="bp">self</span><span class="o">.</span><span class="n">_record_op</span><span class="p">(</span><span class="s2">"frame"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="p">)</span>
 </span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="k">return</span> <span class="n">result</span>
 </span></code></pre></div></p>
 <p><strong>Note:</strong> <code>recalled_ids</code> is defined inside the <code>async with</code> block but accessible after (Python scoping). Safe because exceptions from the block propagate before <code>self._last_recall_block_ids</code> is assigned.</p>
@@ -2876,28 +2848,28 @@
 <p><strong>Add field to <code>SystemStatus</code>:</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">co_retrieval_staging_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># Pairs building toward Hebbian co_retrieval edges.</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Non-zero means the agent&#39;s frame() usage is forming new graph connections.</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Non-zero means the agent's frame() usage is forming new graph connections.</span>
 </span></code></pre></div>
 <p><strong>Update <code>__str__</code></strong> (add Hebbian line between pending_count and tokens):
 <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        <span class="sa">f</span><span class="s2">&quot;Hebbian staging: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span><span class="si">}</span><span class="s2"> pairs building toward co_retrieval edges.&quot;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        <span class="sa">f</span><span class="s2">"Hebbian staging: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span><span class="si">}</span><span class="s2"> pairs building toward co_retrieval edges."</span>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="p">)</span>
 </span></code></pre></div></p>
 <p><strong>Update <code>to_dict()</code></strong>:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="s2">&quot;co_retrieval_staging_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span><span class="p">,</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="s2">"co_retrieval_staging_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span><span class="p">,</span>
 </span></code></pre></div></p>
 <hr />
 <h2 id="7-tests">7. Tests<a class="headerlink" href="#7-tests" title="Permanent link">&para;</a></h2>
 <p><strong>New file: <code>tests/test_hebbian.py</code></strong></p>
 <p>Tests use <code>MemorySystem</code> public API with <code>co_retrieval_edge_threshold=2</code> (low for fast cycles) and an explicit <code>similarity_overrides</code> that sets cosine(alpha, beta)=0.10 (below <code>MINIMUM_COSINE_FOR_EDGE=0.30</code>) to prevent consolidation from creating a similarity edge between the two test blocks.</p>
 <h3 id="test-fixture">Test fixture<a class="headerlink" href="#test-fixture" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">ALPHA</span> <span class="o">=</span> <span class="s2">&quot;hebbian alpha&quot;</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">BETA</span> <span class="o">=</span> <span class="s2">&quot;hebbian beta&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">ALPHA</span> <span class="o">=</span> <span class="s2">"hebbian alpha"</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">BETA</span> <span class="o">=</span> <span class="s2">"hebbian beta"</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">system</span><span class="p">(</span><span class="n">test_engine</span><span class="p">,</span> <span class="n">mock_llm</span><span class="p">):</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;MemorySystem with threshold=2 and no similarity edge between test blocks.&quot;&quot;&quot;</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="sd">"""MemorySystem with threshold=2 and no similarity edge between test blocks."""</span>
 </span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">emb</span> <span class="o">=</span> <span class="n">MockEmbeddingService</span><span class="p">(</span>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="n">similarity_overrides</span><span class="o">=</span><span class="p">{</span><span class="nb">frozenset</span><span class="p">({</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">BETA</span><span class="p">}):</span> <span class="mf">0.10</span><span class="p">}</span>
 </span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="p">)</span>
@@ -2910,7 +2882,7 @@
 </span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="k">return</span> <span class="n">s</span>
 </span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>
 </span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">:</span> <span class="n">MemorySystem</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Learn and consolidate 2 blocks guaranteed to have no similarity edge.&quot;&quot;&quot;</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">    </span><span class="sd">"""Learn and consolidate 2 blocks guaranteed to have no similarity edge."""</span>
 </span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>    <span class="n">r1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">ALPHA</span><span class="p">)</span>
 </span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>    <span class="n">r2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">BETA</span><span class="p">)</span>
 </span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">dream</span><span class="p">()</span>
@@ -2922,43 +2894,43 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestHebbianCoRetrieval</span><span class="p">:</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_staging_count_increments_on_co_retrieval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;TC-H-001: After first frame() with 2 unconnected blocks, staging_count == 1.&quot;&quot;&quot;</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">        </span><span class="sd">"""TC-H-001: After first frame() with 2 unconnected blocks, staging_count == 1."""</span>
 </span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>        <span class="k">await</span> <span class="n">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">)</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
 </span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>        <span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">())</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span> <span class="o">==</span> <span class="mi">1</span>
 </span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
 </span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_co_retrieval_edge_promoted_at_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">test_engine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;TC-H-002: At threshold frame() calls, co_occurs edge with co_retrieval origin created.&quot;&quot;&quot;</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">        </span><span class="sd">"""TC-H-002: At threshold frame() calls, co_occurs edge with co_retrieval origin created."""</span>
 </span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        <span class="n">b1</span><span class="p">,</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">)</span>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
 </span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span> <span class="o">=</span> <span class="n">Edge</span><span class="o">.</span><span class="n">canonical</span><span class="p">(</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>
 </span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="k">async</span> <span class="k">with</span> <span class="n">test_engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
 </span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>            <span class="n">edge</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_edge</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="p">)</span>
 </span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        <span class="k">assert</span> <span class="n">edge</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>        <span class="k">assert</span> <span class="n">edge</span><span class="p">[</span><span class="s2">&quot;origin&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;co_retrieval&quot;</span>
-</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>        <span class="k">assert</span> <span class="n">edge</span><span class="p">[</span><span class="s2">&quot;relation_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;co_occurs&quot;</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>        <span class="k">assert</span> <span class="n">edge</span><span class="p">[</span><span class="s2">"origin"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"co_retrieval"</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>        <span class="k">assert</span> <span class="n">edge</span><span class="p">[</span><span class="s2">"relation_type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"co_occurs"</span>
 </span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
 </span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_staging_cleared_after_promotion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;TC-H-003: Staging count drops to 0 after promotion.&quot;&quot;&quot;</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="w">        </span><span class="sd">"""TC-H-003: Staging count drops to 0 after promotion."""</span>
 </span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>        <span class="k">await</span> <span class="n">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">)</span>
-</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
-</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
 </span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>        <span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">())</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span> <span class="o">==</span> <span class="mi">0</span>
 </span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>
 </span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_existing_edge_pair_not_staged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">,</span> <span class="n">test_engine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;TC-H-004: Pair with pre-existing edge is not incremented in staging.&quot;&quot;&quot;</span>
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="w">        </span><span class="sd">"""TC-H-004: Pair with pre-existing edge is not incremented in staging."""</span>
 </span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>        <span class="n">b1</span><span class="p">,</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">)</span>
 </span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>        <span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span> <span class="o">=</span> <span class="n">Edge</span><span class="o">.</span><span class="n">canonical</span><span class="p">(</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>
 </span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>        <span class="k">async</span> <span class="k">with</span> <span class="n">test_engine</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
 </span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>            <span class="k">await</span> <span class="n">insert_edge</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">from_id</span><span class="o">=</span><span class="n">from_id</span><span class="p">,</span> <span class="n">to_id</span><span class="o">=</span><span class="n">to_id</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">0.70</span><span class="p">)</span>
-</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
+</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
 </span><span id="__span-14-35"><a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>        <span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">())</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span> <span class="o">==</span> <span class="mi">0</span>
 </span><span id="__span-14-36"><a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>
 </span><span id="__span-14-37"><a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_raw_recall_does_not_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-14-38"><a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;TC-H-005: MemorySystem.recall() does not trigger Hebbian staging.&quot;&quot;&quot;</span>
+</span><span id="__span-14-38"><a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="w">        </span><span class="sd">"""TC-H-005: MemorySystem.recall() does not trigger Hebbian staging."""</span>
 </span><span id="__span-14-39"><a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>        <span class="k">await</span> <span class="n">_two_active_no_edge</span><span class="p">(</span><span class="n">system</span><span class="p">)</span>
-</span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;hebbian&quot;</span><span class="p">)</span>
+</span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>        <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">"hebbian"</span><span class="p">)</span>
 </span><span id="__span-14-41"><a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>        <span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">status</span><span class="p">())</span><span class="o">.</span><span class="n">co_retrieval_staging_count</span> <span class="o">==</span> <span class="mi">0</span>
 </span></code></pre></div>
 <hr />
@@ -3226,7 +3198,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

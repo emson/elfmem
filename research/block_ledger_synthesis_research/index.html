@@ -1,0 +1,3891 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/research/block_ledger_synthesis_research/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Block-Ledger Synthesis - evaluating the "text is the store, everything else is a derived view" proposal against elfmem as built - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#block-ledger-synthesis-evaluating-the-text-is-the-store-everything-else-is-a-derived-view-proposal-against-elfmem-as-built" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Block-Ledger Synthesis - evaluating the "text is the store, everything else is a derived view" proposal against elfmem as built
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#verdict-up-front" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verdict, up front
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-proposal-restated-as-fourteen-separable-mechanisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The proposal, restated as fourteen separable mechanisms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-where-elfmem-actually-is-measured-this-branch-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Where elfmem actually is (measured, this branch, today)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Where elfmem actually is (measured, this branch, today)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-corpus-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Corpus scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-substrate-migration-built-verified-and-stopped-one-step-short" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The substrate migration: built, verified, and stopped one step short
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-why-the-gate-cannot-pass-as-currently-constructed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Why the gate cannot pass as currently constructed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-the-four-other-things-worth-knowing-before-evaluating-the-proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 The four other things worth knowing before evaluating the proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-collisions-where-the-proposal-meets-measured-rejections-already-recorded-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Collisions: where the proposal meets measured rejections already recorded here
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Collisions: where the proposal meets measured rejections already recorded here">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-p5-act-r-salience-collides-with-adr-0001" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 P5 (ACT-R salience) collides with ADR 0001
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-p13-calibration-collides-with-the-evidence-supply-not-with-an-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 P13 (calibration) collides with the evidence supply, not with an ADR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-p7-gist-collapse-collides-with-adr-0009-and-with-the-corpus-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 P7 (gist collapse) collides with ADR 0009 and with the corpus size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-the-hardest-objection-event-log-tables-were-already-rejected-by-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 The hardest objection: event log tables were already rejected, by name
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-three-gaps-the-proposal-closes-that-elfmem-has-named-and-left-unassigned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Three gaps the proposal closes that elfmem has named and left unassigned
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-disposition-of-all-fourteen-mechanisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Disposition of all fourteen mechanisms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-synthesis-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The synthesis design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The synthesis design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-one-invariant-that-resolves-most-of-the-ambiguity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 One invariant that resolves most of the ambiguity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-the-ledger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 The ledger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-block-format-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Block format v2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-the-cue-collision-test-this-documents-own-contribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 The cue-collision test - this document's own contribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-usage-labels-without-agent-cooperation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Usage labels without agent cooperation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Assembly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-where-reasoning-lives-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Where reasoning lives - unchanged
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Simulation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Simulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-fitness-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Fitness dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-frozen-scenario-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Frozen scenario set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-two-scenarios-worth-walking-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Two scenarios worth walking step by step
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-edge-cases-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Edge cases and mitigations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-evaluation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Evaluation plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Evaluation plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-the-parity-gate-needs-redefining-not-just-unblocking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 The parity gate needs redefining, not just unblocking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-sequencing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Sequencing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Sequencing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-pre-committed-reopen-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Pre-committed reopen triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-risks-and-honest-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Risks and honest caveats
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-open-decisions-bens-not-this-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Open decisions - Ben's, not this document's
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-what-this-means-for-the-two-research-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. What this means for the two research notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/research/block_ledger_synthesis_research.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="block-ledger-synthesis-evaluating-the-text-is-the-store-everything-else-is-a-derived-view-proposal-against-elfmem-as-built">Block-Ledger Synthesis - evaluating the "text is the store, everything else is a derived view" proposal against elfmem as built<a class="headerlink" href="#block-ledger-synthesis-evaluating-the-text-is-the-store-everything-else-is-a-derived-view-proposal-against-elfmem-as-built" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: research document - under review, not yet a plan
+<strong>Author</strong>: elf (with Ben Emson)
+<strong>Date</strong>: 2026-08-24
+<strong>Branch audited</strong>: <code>elfmem_index</code> @ <code>4de47cd</code> (+ uncommitted substrate-migrate work)
+<strong>Driver</strong>: two external research notes proposing a block-level, ledger-derived, frame-pluggable
+memory architecture. The question put: does this improve elfmem, or should elfmem become this?</p>
+<p><strong>Companion documents</strong> (read these first if you have not):
+- <a href="../v2_substrate_and_reasoning_ownership_research/"><code>docs/research/v2_substrate_and_reasoning_ownership_research.md</code></a> - the 2026-08-08 substrate + reasoning-ownership research this document extends
+- <a href="../../plans/plan_v2_substrate_reevaluation/"><code>docs/plans/plan_v2_substrate_reevaluation.md</code></a> - block format, mutation API, six-phase migration
+- <a href="../plans/v2_substrate/plan/"><code>docs/plans/v2_substrate/plan/</code></a> - the build plan, model, and dry-run results for Waves 1-4</p>
+<hr />
+<h2 id="verdict-up-front">Verdict, up front<a class="headerlink" href="#verdict-up-front" title="Permanent link">&para;</a></h2>
+<p><strong>Neither pivot nor reject. The proposal is best read as the missing back half of elfmem's own
+v2 plan, and three of its mechanisms should be adopted now because they close gaps elfmem has
+already named, assigned to nobody, and become blocked on.</strong></p>
+<p>Three findings drive this:</p>
+<ol>
+<li>
+<p><strong>There is no substrate disagreement to resolve.</strong> The proposal's load-bearing decision -
+   markdown blocks are truth, the database is a derived, rebuildable view - is the decision
+   elfmem already made on 2026-08-08, corroborated by three independent 2026 systems, and has
+   already built four of six migration waves for. Pivoting would discard ~6,600 lines of
+   tested migration machinery in order to re-derive the same conclusion.</p>
+</li>
+<li>
+<p><strong>elfmem's migration is stuck, and the proposal's central mechanism is exactly what
+   unsticks it.</strong> The Phase 4 retrieval-parity gate reports <code>GATE PASSED: False</code> with 5/5
+   queries diverging, and it is <em>structurally unpassable</em>: rebuild zeroes <code>reinforcement_count</code>,
+   <code>last_reinforced_at</code>, <code>decay_lambda</code>, <code>created_at</code>, and the entire <code>edges</code> table, and three
+   of those are live terms in the ranking formula. An <strong>append-only event ledger makes every
+   one of them replayable</strong>. This is the highest-value idea in the notes for elfmem
+   specifically, and neither note frames it that way.</p>
+</li>
+<li>
+<p><strong>Three of the proposal's most-loved mechanisms walk directly into measured rejections
+   already recorded in this repo.</strong> ACT-R base-level activation is power-law decay, which
+   ADR 0001 rejected on simulation showing -53pp plasticity. Learned score calibration
+   requires "used" labels, of which the live instance has produced <strong>six in four months</strong>.
+   Representation-degrading collapse is decay-driven archival wearing a better hat, and
+   ADR 0009 retired that on the finding that it <strong>never fired in production</strong>.</p>
+</li>
+</ol>
+<p>The synthesis below adopts five mechanisms, measures three, defers three behind explicit
+triggers, and rejects two. It also proposes one mechanism that appears in neither note - the
+<strong>cue-collision test</strong> - which turns the silent-supersession path that motivated the whole v2
+programme from a guarded exception into a structural impossibility. Section 9 proposes the
+retrodictive experiment that would confirm or kill it before it ships.</p>
+<hr />
+<h2 id="1-the-proposal-restated-as-fourteen-separable-mechanisms">1. The proposal, restated as fourteen separable mechanisms<a class="headerlink" href="#1-the-proposal-restated-as-fourteen-separable-mechanisms" title="Permanent link">&para;</a></h2>
+<p>The two notes are one design. Separating it into mechanisms is the only way to evaluate it,
+because they have wildly different costs and wildly different evidence behind them.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mechanism</th>
+<th>One-line summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>Files are truth, index is derived</td>
+<td>Markdown blocks are the source of truth; every score is a materialised view</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Dual-hash identity</td>
+<td>Permanent birth-hash ID + per-version content hash</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Simhash fingerprint</td>
+<td>64-bit locality-sensitive hash for dedup, move/orphan reconciliation, clustering</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>Append-only event ledger</td>
+<td>One line per write/read/link/use/contradiction; all scores derived from it</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>ACT-R salience</td>
+<td><code>A ~= ln(n/(1-d)) - d*ln(L)</code>, O(1) from access count <code>n</code> and age <code>L</code></td>
+</tr>
+<tr>
+<td>P6</td>
+<td>Confidence by volatility class</td>
+<td>Separate exponential half-life per class (identity / project / status)</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>Degradation as representation change</td>
+<td>vivid -&gt; fading -&gt; collapsed -&gt; archived; LLM rewrites to gist, git holds the original</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>Surprise-gated writes</td>
+<td>Write only if the memory would have changed the last response</td>
+</tr>
+<tr>
+<td>P9</td>
+<td>Mandatory cue line</td>
+<td>Every block states when a future agent should recall it</td>
+</tr>
+<tr>
+<td>P10</td>
+<td>Typed links, small vocabulary</td>
+<td>supports / contradicts / refines / derived-from / requires / supersedes</td>
+</tr>
+<tr>
+<td>P11</td>
+<td>Spreading activation / personalised PageRank</td>
+<td>Query-seeded graph walk instead of static centrality</td>
+</tr>
+<tr>
+<td>P12</td>
+<td>Frames as text-defined plugins</td>
+<td>Frame = a file declaring trigger / filter / rank / budget</td>
+</tr>
+<tr>
+<td>P13</td>
+<td>Calibration to P(used)</td>
+<td>Per-frame logistic regression makes frame scores comparable</td>
+</tr>
+<tr>
+<td>P14</td>
+<td>Knapsack + MMR assembly</td>
+<td>Maximise calibrated value under a token budget, with diversity and <code>requires</code> closure</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-where-elfmem-actually-is-measured-this-branch-today">2. Where elfmem actually is (measured, this branch, today)<a class="headerlink" href="#2-where-elfmem-actually-is-measured-this-branch-today" title="Permanent link">&para;</a></h2>
+<p>Everything in this section is read from code or queried from the live database, not estimated.</p>
+<h3 id="21-corpus-scale">2.1 Corpus scale<a class="headerlink" href="#21-corpus-scale" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>active blocks     145        (knowledge 126, message 33, self 11, decision 8,
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>archived           42         attention 5, mind 3, task 1)
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>corpus tokens  ~33,574
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>edges              93
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>outcome records     6        &lt;- lifetime, four months
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>amendments          0        &lt;- lifetime
+</span></code></pre></div>
+<p><strong>The whole corpus fits in a single context window with room to spare.</strong> This is the single
+most important number in this document, and almost every sophisticated mechanism in the
+proposal is designed for a corpus two to three orders of magnitude larger.</p>
+<h3 id="22-the-substrate-migration-built-verified-and-stopped-one-step-short">2.2 The substrate migration: built, verified, and stopped one step short<a class="headerlink" href="#22-the-substrate-migration-built-verified-and-stopped-one-step-short" title="Permanent link">&para;</a></h3>
+<p>Waves 1-4 shipped. <code>export --to-markdown</code>, the block-file parser, <code>index check|rebuild|parity</code>,
+file-native mutation primitives, and an <code>elfmem migrate</code> substrate step that runs backup -&gt;
+export -&gt; rebuild -&gt; parity -&gt; marker file. All of it tested. <strong>None of it is wired into the
+live system.</strong> Every runtime path - <code>learn()</code>, <code>edit()</code>, <code>forget()</code>, <code>ls()</code>, <code>recall()</code> - is
+still DB-native. <code>src/elfmem/memory/file_mutation.py:9-12</code> says so outright: <em>"the live system
+is still DB-primary until migration completes."</em></p>
+<p>The stop is at Phase 4, the retrieval-parity gate. From the real-data dry run
+(<code>docs/plans/v2_substrate/plan/dry_run_2026-08-10.md:41-48</code>):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Baseline: active=140 inbox=3 archived=42 (185 total)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Exported: 185 blocks -&gt; 11 files
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Rebuilt:  143 blocks written
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Block count: before=140 after=140  MATCH
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Query parity: 5/5 DIVERGE
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>GATE PASSED: False
+</span></code></pre></div>
+<h3 id="23-why-the-gate-cannot-pass-as-currently-constructed">2.3 Why the gate cannot pass as currently constructed<a class="headerlink" href="#23-why-the-gate-cannot-pass-as-currently-constructed" title="Permanent link">&para;</a></h3>
+<p>Retrieval ranks on a five-term composite (<code>src/elfmem/scoring.py:113-152</code>):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>score = w_sim*similarity + w_conf*confidence + w_rec*recency
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      + w_cent*centrality + w_reinf*reinforcement + kappa*sqrt(variance)
+</span></code></pre></div>
+<p>Rebuild from markdown reconstructs <code>similarity</code> (re-embedded) and <code>confidence</code> (from
+frontmatter, since ADR 0011). It <strong>structurally zeroes the other three</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Source</th>
+<th>State after rebuild</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recency</code> = <code>exp(-decay_lambda * (now_ah - last_reinforced_at))</code></td>
+<td><code>blocks.last_reinforced_at</code></td>
+<td>forced to <code>0.0</code> (<code>db/queries.py:91</code>)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>blocks.decay_lambda</code></td>
+<td>forced to <code>0.01</code> STANDARD (<code>determine_decay_tier</code> never called on the rebuild path)</td>
+</tr>
+<tr>
+<td><code>reinforcement</code> = <code>log(1+n)/log(1+n_max)</code></td>
+<td><code>blocks.reinforcement_count</code></td>
+<td>forced to <code>0</code> (<code>db/queries.py:89</code>)</td>
+</tr>
+<tr>
+<td><code>centrality</code> = weighted degree / max degree</td>
+<td><code>edges</code> table</td>
+<td><strong>entire table lost</strong> - no frontmatter encoding for an edge exists</td>
+</tr>
+</tbody>
+</table>
+<p>Plus one silent loss nobody has written down: <code>created_at</code> is written to the file as <code>created:</code>,
+parsed into <code>Block.created</code>, and then <strong>dropped on the floor</strong> - <code>_write_block</code> never passes it
+to <code>insert_block</code>, which hardcodes <code>_now_iso()</code>. Every rebuilt block is dated at rebuild time.</p>
+<p>The gate demands top-5 identity on frames whose ranking depends on three terms the rebuild
+destroys. It is not a tuning problem. <strong>It cannot pass until those terms round-trip.</strong></p>
+<h3 id="24-the-four-other-things-worth-knowing-before-evaluating-the-proposal">2.4 The four other things worth knowing before evaluating the proposal<a class="headerlink" href="#24-the-four-other-things-worth-knowing-before-evaluating-the-proposal" title="Permanent link">&para;</a></h3>
+<p><strong>(a) Retrieval already does more than the notes assume.</strong> RRF fusion of BM25 and cosine
+already exists (<code>retrieval.py:219-268</code>). MMR already exists at stage 5 with <code>lambda = 0.7</code>
+(<code>retrieval.py:392-447</code>). One-hop graph expansion already exists. The proposal's "fuse three
+cheap signals" is largely shipped.</p>
+<p><strong>(b) The weak link is assembly, not retrieval.</strong> <code>_render_with_budget</code>
+(<code>context/rendering.py:41-58</code>) is a greedy prefix scan that <strong><code>break</code>s on first overflow</strong>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">candidate</span> <span class="o">=</span> <span class="n">selected</span> <span class="o">+</span> <span class="p">[</span><span class="n">block</span><span class="p">]</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">if</span> <span class="n">_estimate_tokens</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">candidate</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">token_budget</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">selected</span> <span class="o">=</span> <span class="n">candidate</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="k">break</span>          <span class="c1"># &lt;- one oversized block truncates everything after it</span>
+</span></code></pre></div>
+<p>One long block discards every smaller block behind it, however valuable. Token estimation is
+<code>len(text) // 4</code>. This is where P14's knapsack framing lands squarely on a real defect.</p>
+<p><strong>(c) Retrieval and usage are the same event, by fiat.</strong> <code>recall()</code> unconditionally calls
+<code>reinforce_blocks()</code> on everything it returns (<code>operations/recall.py:101-104</code>). A block that
+was retrieved and ignored is indistinguishable from one that was retrieved and acted on. This
+is precisely the conflation the proposal attacks - and elfmem's own data shows why the
+proposal's fix (explicit <code>use</code> events) will not work unaided: the one explicit feedback verb
+that exists, <code>outcome()</code>, has been called <strong>six times in four months</strong>.</p>
+<p><strong>(d) There is no ledger, no audit trail, and no undo.</strong> <code>MemorySystem._history</code> is an
+in-memory <code>deque(maxlen=100)</code>, lost on exit. <code>reinforce_blocks</code> is destructive aggregation -
+it increments a counter and overwrites a timestamp; no row records <em>when</em> or <em>why</em>. The v2
+plan's answer is "git is the audit trail" - but <code>.gitignore:17</code> is a bare <code>.elfmem</code>, and
+<code>elfmem init</code> creates neither <code>.elfmem/memory/</code>, nor <code>self.md</code>, nor <code>.elfmem/.gitignore</code>.
+<strong>Today, <code>forget()</code> destroys text with no recovery path whatsoever.</strong></p>
+<hr />
+<h2 id="3-collisions-where-the-proposal-meets-measured-rejections-already-recorded-here">3. Collisions: where the proposal meets measured rejections already recorded here<a class="headerlink" href="#3-collisions-where-the-proposal-meets-measured-rejections-already-recorded-here" title="Permanent link">&para;</a></h2>
+<p>These are not objections of taste. Each is a controlled result already recorded in this repo.</p>
+<h3 id="31-p5-act-r-salience-collides-with-adr-0001">3.1 P5 (ACT-R salience) collides with ADR 0001<a class="headerlink" href="#31-p5-act-r-salience-collides-with-adr-0001" title="Permanent link">&para;</a></h3>
+<p>ACT-R base-level activation is power-law decay. <a href="../../decisions/0001-power-law-decay-rejected/">ADR 0001</a>
+tested power-law against exponential across four scenarios and two seeds:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>scenario          exponential   power-law
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>baseline             80.7%        75.3%   (-5.4pp)
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uncertain_mix        78.4%        70.7%   (-7.6pp)
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>recent reach (plasticity):
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>baseline             78.4%        25.2%   (-53pp)
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>weekly_rescore       78.0%        13.6%   (-64pp)
+</span></code></pre></div>
+<p>Mechanism: at t=1000 active hours, exponential gives recency <code>4.5e-5</code>; power-law gives <code>0.41</code>.
+A 10,000-fold difference at the long end. Year-old blocks become competitive with day-old
+blocks and top-K fills with stale content.</p>
+<p><strong>The sharper point</strong>: elfmem <em>already stores ACT-R's sufficient statistics</em>.
+<code>blocks.reinforcement_count</code> is <code>n</code>. <code>blocks.last_reinforced_at</code> is <code>L</code> (in session-aware
+active hours, which is strictly better than wall time for this purpose). The proposal's
+"one line of state, constant time" is already how elfmem works. The only delta P5 offers is
+the functional form - and that form lost a controlled test in this codebase.</p>
+<p><strong>Disposition: reject the formula, keep the state model (already present).</strong> ADR 0001's
+revisit trigger stands unchanged: a benchmark result showing power-law wins on agent workloads.</p>
+<h3 id="32-p13-calibration-collides-with-the-evidence-supply-not-with-an-adr">3.2 P13 (calibration) collides with the evidence supply, not with an ADR<a class="headerlink" href="#32-p13-calibration-collides-with-the-evidence-supply-not-with-an-adr" title="Permanent link">&para;</a></h3>
+<p>The proposal's own recommended first experiment is <em>"the calibration loop on a single task
+frame versus raw scores, because if that shows a measurable lift in used-block rate, the whole
+frame architecture is justified."</em></p>
+<p>That experiment cannot be run. Fitting a logistic regression from frame score to P(used)
+requires "used" labels. The live instance has produced <strong>6 in four months</strong>, all from
+voluntary <code>outcome()</code> calls. <a href="../../decisions/0006-defer-multi-parameter-self-tuning/">ADR 0006</a>
+disqualified the closest architectural sibling (option B, "replace each threshold with a
+learned weighted sum") on the grounds that it <em>"trades 1 parameter for 5 weights; same
+attribution problem; loses grep-ability and reviewability of constants."</em></p>
+<p>But the honest reading is that P13 is <strong>blocked on a prerequisite, not wrong</strong>. The
+prerequisite is P4, the ledger. Section 6.5 proposes a three-tier label scheme that produces
+labels <em>without agent cooperation</em>, which is the actual fix.</p>
+<p><strong>Disposition: defer behind an explicit accrual trigger. Build the prerequisite now.</strong></p>
+<h3 id="33-p7-gist-collapse-collides-with-adr-0009-and-with-the-corpus-size">3.3 P7 (gist collapse) collides with ADR 0009 and with the corpus size<a class="headerlink" href="#33-p7-gist-collapse-collides-with-adr-0009-and-with-the-corpus-size" title="Permanent link">&para;</a></h3>
+<p><a href="../../decisions/0009-retire-decay-driven-archival/">ADR 0009</a> retired decay-driven archival on
+this evidence: <code>superseded = 41, decayed = 0</code> (the earlier research doc's query counted 1).
+Either way, the mechanism built to gracefully retire stale content retired at most one block in
+four months, because the session-aware clock reads 3.69 total
+active hours across 370 sessions and recency at STANDARD is still 0.96 after the instance's
+entire lifetime.</p>
+<p>P7 is the same trigger with a better payload: instead of archiving on low activation, rewrite
+to gist on low activation. The trigger is the part that was measured inert. Layered on top:</p>
+<ul>
+<li>The corpus is 33.6k tokens. There is nothing to compress <em>for</em>.</li>
+<li>Each collapse is an LLM call producing an irreversible-in-the-index rewrite, on a system
+  whose entire v2 programme exists because irreversible LLM rewrites destroyed the
+  constitution.</li>
+<li>The stated recovery path ("git holds the original") does not exist yet; <code>.elfmem</code> is
+  gitignored.</li>
+</ul>
+<p><strong>Disposition: defer the mechanism, reserve the format slot now</strong> (see 6.3). Format changes are
+free before authority flips and expensive after; mechanisms are expensive whenever built.</p>
+<h3 id="34-the-hardest-objection-event-log-tables-were-already-rejected-by-name">3.4 The hardest objection: event log tables were already rejected, by name<a class="headerlink" href="#34-the-hardest-objection-event-log-tables-were-already-rejected-by-name" title="Permanent link">&para;</a></h3>
+<p>This is the objection that most deserves an answer, and it is the one neither note anticipates.</p>
+<p><a href="../../decisions/0003-defer-constitutional-evolution/">ADR 0003</a> records that the reviewing
+Critic <em>"rejected ... FSRS-5 mechanics, </em><em>event log tables</em><em>, hierarchical tiers, and
+Zettelkasten auto-linking - all on the same grounds: 'complexity without measured benefit.'"</em>
+and then adds the sentence that should be read as aimed directly at documents like this one:</p>
+<blockquote>
+<p><strong>Re-proposing them under different vocabulary doesn't change the underlying judgment.</strong></p>
+</blockquote>
+<p>So: is P4 an event log table under different vocabulary? Partly yes, and the burden is on this
+document to show what changed.</p>
+<p><strong>What changed is the premise, not the reasoning.</strong> When the event log was rejected, the
+database was authoritative. In that world a log is pure redundancy: <code>reinforcement_count</code> and
+<code>last_reinforced_at</code> already live durably in <code>blocks</code>, the log would only re-derive what SQLite
+already guarantees, and "complexity without measured benefit" is exactly right.</p>
+<p>Under files-as-truth, that state has <strong>nowhere else to live</strong>. It is not redundant with the
+files, because the files cannot express it; it is not redundant with the index, because the
+index is by design disposable. And the cost of it having nowhere to live is not hypothetical -
+it is <code>GATE PASSED: False</code>, 5/5 queries diverging, measured against a copy of the real
+production corpus on 2026-08-10.</p>
+<p>That is the same move the v2 research document already made for four other ADRs:</p>
+<blockquote>
+<p>Each ADR governing a removed subsystem (0001, 0003, 0006, 0007) was sound given its premises;
+what changed is the evidence, not the reasoning.</p>
+</blockquote>
+<p>Two further disciplines borrowed from the same ADRs, so this does not become the thin end of a
+wedge:</p>
+<ul>
+<li><strong>The ledger buys a measured benefit or it does not ship.</strong> The benefit is falsifiable and
+  the measurement already exists: re-run the Phase 4 dry run. If parity does not materially
+  improve, the ledger has not earned its place and this document is wrong.</li>
+<li><strong>The ledger is evidence-gathering machinery, not adaptation machinery</strong> - ADR 0006's own
+  distinction. It records what happened. It does not tune anything. Everything in the proposal
+  that <em>would</em> tune something (P13) stays deferred behind an accrual trigger.</li>
+</ul>
+<hr />
+<hr />
+<h2 id="4-three-gaps-the-proposal-closes-that-elfmem-has-named-and-left-unassigned">4. Three gaps the proposal closes that elfmem has named and left unassigned<a class="headerlink" href="#4-three-gaps-the-proposal-closes-that-elfmem-has-named-and-left-unassigned" title="Permanent link">&para;</a></h2>
+<p>From <code>docs/plans/v2_substrate/plan/build-plan.md:344-351</code> ("Coverage table - genuine unassigned
+gaps") and <code>model.md:261-283</code> ("Model drift log"):</p>
+<table>
+<thead>
+<tr>
+<th>elfmem's own words</th>
+<th>Proposal mechanism that answers it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>"Graph-edge reconstruction on rebuild - descoped; needs a U-001 frontmatter-format decision not yet made"</em></td>
+<td><strong>P10</strong> - typed inline links are the frontmatter encoding for an edge</td>
+</tr>
+<tr>
+<td><em>"the block format (U-001) has no way to encode an edge in frontmatter"</em> (<code>model.md:279</code>)</td>
+<td><strong>P10</strong></td>
+</tr>
+<tr>
+<td>Reinforcement count and recency <em>"do NOT round-trip"</em> (<code>index_rebuild.py:20-25</code>)</td>
+<td><strong>P4</strong> - the ledger replays both exactly</td>
+</tr>
+<tr>
+<td><em>"stable identity across moves is genuinely unsolved"</em> (research doc §4.2), and content-hash-as-ID breaks on every edit</td>
+<td><strong>P2 + P3</strong> - permanent ID (built) plus simhash tombstone matching for orphan recovery (not built)</td>
+</tr>
+<tr>
+<td>§5.4 Iteration 5: dropping embeddings <em>"regresses silently on vocabulary-mismatch queries"</em></td>
+<td><strong>P9</strong> - a cue line is a lexical index of <em>retrieval situations</em>, which is what vocabulary mismatch actually breaks</td>
+</tr>
+<tr>
+<td>ADR 0010's disclosed coverage gap: new content is not contradiction-checked at all until step 6b ships, and 6b is not built</td>
+<td><strong>P10's <code>supersedes</code></strong> - the write carries the resolution, so most contradictions never arise</td>
+</tr>
+</tbody>
+</table>
+<p>The model drift log already flagged the pattern:</p>
+<blockquote>
+<p>The generative core treats the block format (U-001) as settled infrastructure that later
+units simply use. Three times now, a later unit has instead discovered a real constraint the
+format didn't anticipate. The format is not wrong, but it is <strong>less finished than "generative
+core" implied</strong>.</p>
+</blockquote>
+<p>This document is the fourth instance, and it argues the format is not finished because it is
+missing exactly the fields P4, P9, and P10 supply.</p>
+<hr />
+<h2 id="5-disposition-of-all-fourteen-mechanisms">5. Disposition of all fourteen mechanisms<a class="headerlink" href="#5-disposition-of-all-fourteen-mechanisms" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mechanism</th>
+<th>Verdict</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>Files are truth</td>
+<td><strong>Already decided</strong></td>
+<td>Same conclusion, 2026-08-08; Waves 1-4 built. Confirmation, not news.</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Permanent ID + version hash</td>
+<td><strong>Half built, finish it</strong></td>
+<td>Permanent <code>id</code> shipped (<code>blockfile.py</code> invariant 3). Version hash specified in <code>model.md:42-44</code>, never built - rebuild re-embeds every block, every time.</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Simhash fingerprint</td>
+<td><strong>ADOPT</strong></td>
+<td>Embedding-free near-dup; the only mechanism that recovers a block cut-and-pasted without its ID. Cheap.</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>Append-only ledger</td>
+<td><strong>ADOPT - highest value</strong></td>
+<td>Unblocks the parity gate; delivers the audit trail RC3 needs; makes <code>why</code> free; degrades gracefully with zero agent cooperation.</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>ACT-R salience</td>
+<td><strong>REJECT (formula)</strong></td>
+<td>ADR 0001, measured. State model already present.</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>Confidence half-life by class</td>
+<td><strong>MEASURE</strong></td>
+<td>elfmem has volatility classes (<code>DecayTier</code>) but applies them to <em>use</em>-decay only. Separating <em>truth</em>-decay is a real distinction, cheaply tested.</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>Gist collapse</td>
+<td><strong>DEFER (trigger)</strong></td>
+<td>ADR 0009 trigger was inert; corpus is 33.6k tokens; recovery path unbuilt. Reserve the format slot.</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>Surprise gate</td>
+<td><strong>MEASURE (cheap form)</strong></td>
+<td>SAGE evidence already in elfmem's research doc §4.4 supports it. The LLM-judged form costs a call per write, defeating the purpose. Use the cue-collision test (6.4) instead.</td>
+</tr>
+<tr>
+<td>P9</td>
+<td>Mandatory cue line</td>
+<td><strong>ADOPT - best cost/benefit</strong></td>
+<td>Zero marginal LLM cost (written in the same breath as the block). Attacks vocabulary mismatch, the one failure grep cannot cover. Enables 6.4.</td>
+</tr>
+<tr>
+<td>P10</td>
+<td>Typed links</td>
+<td><strong>ADOPT</strong></td>
+<td>Closes the named unassigned gap. Six-word vocabulary; elfmem already has four of the six as edge relation types.</td>
+</tr>
+<tr>
+<td>P11</td>
+<td>PPR / spreading activation</td>
+<td><strong>MEASURE</strong></td>
+<td>Static centrality ranks hubs high regardless of query; PPR is query-conditional. ~20 lines at 145 blocks / 93 edges. Ship only if it wins on the harness.</td>
+</tr>
+<tr>
+<td>P12</td>
+<td>Pluggable text-defined frames</td>
+<td><strong>DEFER (trigger)</strong></td>
+<td>Zero demand for a fifth frame. Note the <code>frames</code> DB table exists, is seeded, is stale, and <strong>is read by nothing</strong> - dead schema. Restructure frames declaratively; do not ship a plugin loader.</td>
+</tr>
+<tr>
+<td>P13</td>
+<td>Calibration to P(used)</td>
+<td><strong>DEFER (accrual trigger)</strong></td>
+<td>6 labels in 4 months. Blocked on P4 + 6.5, not wrong.</td>
+</tr>
+<tr>
+<td>P14</td>
+<td>Knapsack + MMR assembly</td>
+<td><strong>ADOPT (assembly half)</strong></td>
+<td>MMR already exists at retrieval. The assembly half lands on a live defect: <code>break</code>-on-first-overflow. Greedy value/token, ~30 lines, deterministic, no learning.</td>
+</tr>
+</tbody>
+</table>
+<p>Five adopt, three measure, three defer, one reject, two already-done.</p>
+<hr />
+<h2 id="6-the-synthesis-design">6. The synthesis design<a class="headerlink" href="#6-the-synthesis-design" title="Permanent link">&para;</a></h2>
+<h3 id="61-one-invariant-that-resolves-most-of-the-ambiguity">6.1 One invariant that resolves most of the ambiguity<a class="headerlink" href="#61-one-invariant-that-resolves-most-of-the-ambiguity" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Declared state lives in files. Derived state lives in the ledger and the index.
+Nothing derived is ever hand-edited, and nothing declared is ever computed.</strong></p>
+</blockquote>
+<p>This is not currently true. <code>export --to-markdown</code> writes <code>confidence</code>, <code>alpha</code>, and <code>beta</code>
+into every block's frontmatter (<code>migration/export.py:57-61</code>) because that was the only way to
+make them survive rebuild (the ADR 0011 fix). Under a ledger they survive by replay instead,
+which is strictly better - you get the full audit, not just the aggregate.</p>
+<p><strong>Consequence: block format v2 has fewer fields than v1, not more.</strong> Three derived fields
+leave; <code>cue</code>, <code>cls</code>, and typed links arrive. This is worth stating plainly because "adopt a
+richer proposal" usually means "adopt a heavier format", and here it does not.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Declared (in the file)</th>
+<th>Derived (ledger + index)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><code>id</code>, <code>cls</code>, <code>tags</code>, <code>pinned</code>, <code>cue::</code>, typed links, body</td>
+<td><code>confidence</code>, alpha, beta, <code>reinforcement_count</code>, <code>last_reinforced_at</code>, <code>decay_lambda</code>, centrality, embedding, <code>created_at</code>, simhash, edge weights</td>
+</tr>
+</tbody>
+</table>
+<p>Note that simhash is <strong>derived</strong>, and therefore does <em>not</em> go in frontmatter - correcting the
+proposal, which puts a fingerprint in the block. A fingerprint stored beside hand-editable text
+goes stale the moment someone edits the text. Recompute it at index time (it is cheap), and
+store the fingerprint of <em>removed</em> blocks in the ledger's tombstone events, which is the only
+place it is genuinely needed (orphan recovery).</p>
+<h3 id="62-the-ledger">6.2 The ledger<a class="headerlink" href="#62-the-ledger" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>.elfmem/ledger/2026-08.jsonl          append-only, git-committed, one JSON object per line
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>.elfmem/ledger/.checkpoint.json       regenerable aggregate snapshot, gitignored
+</span></code></pre></div>
+<p>Event kinds, all short:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>{"t":"2026-08-24T09:14:22.031Z","s":7,"ah":3.71,"k":"birth","id":"8f3a2b1c","f":"notes/self.md","fp":"3a7e91c4","cls":"identity"}
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>{"t":"...","s":8,"ah":3.71,"k":"edit","id":"8f3a2b1c","vh":"9c11ab40"}
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>{"t":"...","s":9,"ah":3.72,"k":"remove","id":"8f3a2b1c","fp":"3a7e91c4","why":"superseded","by":"b7e2c4d1"}
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>{"t":"...","s":10,"ah":3.80,"k":"asm","frame":"attention","q":"a91f","ids":["8f3a2b1c","b7e2c4d1"],"sid":"s-042"}
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>{"t":"...","s":11,"ah":3.81,"k":"use","ids":["b7e2c4d1"],"sid":"s-042","src":"host"}
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>{"t":"...","s":12,"ah":3.82,"k":"out","id":"b7e2c4d1","sig":1.0,"w":1.0,"src":"agent"}
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>{"t":"...","s":13,"ah":3.90,"k":"link","from":"8f3a2b1c","to":"b7e2c4d1","rel":"refines","o":"declared"}
+</span></code></pre></div>
+<p>Four design decisions that make this robust rather than merely appealing:</p>
+<ol>
+<li>
+<p><strong><code>ah</code> (cumulative active hours) is recorded on every event.</strong> Without it, replay cannot
+   reconstruct <code>last_reinforced_at</code>, which is measured in session-aware active hours, not wall
+   time (<code>db/models.py:40</code>). Wall-clock timestamps alone would silently break the decay clock
+   on replay. This is the non-obvious requirement and it is easy to miss.</p>
+</li>
+<li>
+<p><strong>Every line stays under 4096 bytes.</strong> POSIX guarantees atomic <code>O_APPEND</code> writes below
+   <code>PIPE_BUF</code>, which makes concurrent multi-process appends safe with no locking. Enforce it
+   by never inlining content - IDs only - and by chunking any <code>ids</code> array over ~100 entries
+   across multiple lines. This is what makes S18 (two agents writing at once) a non-event, and
+   it is the same property that makes the ledger merge cleanly in git.</p>
+</li>
+<li>
+<p><strong>One <code>asm</code> line per frame call, not per block.</strong> An autonomous loop calling <code>frame()</code> every
+   turn would otherwise write one row per block per turn. Frame-granularity keeps the ledger
+   proportional to <em>calls</em>, not to <em>calls x top_k</em>.</p>
+</li>
+<li>
+<p><strong>Log plus snapshot, not log alone.</strong> The proposal says compute every score from the ledger
+   and never store it. That is <code>O(history)</code> per query. The synthesis keeps the ledger as truth,
+   the index as the materialised view, and adds a checkpoint so <code>index rebuild</code> is
+   <code>O(checkpoint + tail)</code> rather than <code>O(all history)</code>. The checkpoint is regenerable and
+   therefore gitignored.</p>
+</li>
+</ol>
+<p><strong>Replay derives</strong>: <code>created_at</code> (from <code>birth.t</code>), <code>reinforcement_count</code>, <code>last_reinforced_at</code>,
+alpha/beta, learned edge weights (co-occurrence over <code>asm</code> events), and the full provenance
+chain behind <code>why</code>. <strong>Declared edges come from files</strong>, learned weights from the ledger - a
+clean split that keeps hand-authored structure hand-authored.</p>
+<p><strong>Failure handling</strong>: a malformed line is skipped, counted, and reported by <code>index check</code>. It
+never aborts a rebuild. Fail-soft is correct here specifically because the ledger is an input
+to derived state, not truth about content - the opposite of the fail-fast rule that governs
+block parsing.</p>
+<h3 id="63-block-format-v2">6.3 Block format v2<a class="headerlink" href="#63-block-format-v2" title="Permanent link">&para;</a></h3>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gu">## Minimum force</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>&lt;!-- id: 8f3a2b1c9d0e4f17  cls: identity  tags: [self/value, self/constitutional]  pinned: true --&gt;
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>cue:: deciding whether to add a new command or extend an existing one
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>refines:: [[coding-principles#^b7e2c4d1]]
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>Apply the minimum force that solves the problem. Complexity is debt.
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>Before adding a new top-level command, apply the test: does this extend an
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>existing verb? If yes, extend it.
+</span></code></pre></div>
+<ul>
+<li><code>cls</code> is the volatility class driving <em>truth</em>-decay (P6): <code>identity</code> / <code>project</code> / <code>status</code>.
+  Distinct from <code>DecayTier</code>, which drives <em>use</em>-decay. A block can be highly salient and
+  low-confidence at once - that is the "important, verify first" case, and it should be
+  surfaced with a flag rather than silently down-ranked.</li>
+<li><code>cue::</code> is mandatory for new blocks, lint-checked, and indexed in its own FTS column with its
+  own weight. Cap its length so BM25 length normalisation cannot be gamed by verbosity.</li>
+<li>Typed links use the existing Dataview inline convention so Obsidian renders them without
+  plugins. Closed vocabulary of six; <code>index check</code> rejects unknown types (fail-fast). Dangling
+  targets are a warning, not an error - link-before-write is normal in a vault.</li>
+<li><strong>Reserved but unimplemented</strong>: <code>collapsed_from::</code> and a <code>state:: collapsed</code> value, so P7's
+  format exists before P7's mechanism is earned.</li>
+</ul>
+<p>Two format bugs must be fixed at the same time, because they undercut the "just edit the file"
+promise:</p>
+<ul>
+<li><strong>The <code>##</code> boundary heuristic silently swallows hand-appended blocks.</strong> A <code>##</code> line only
+  starts a new block if the preceding block has no frontmatter, or the candidate is itself
+  followed by frontmatter (<code>blockfile.py:159-242</code>). Hand-append <code>## New note</code> after an exported
+  block and it disappears into the previous block's body. Fix: treat a <code>##</code> at column 0
+  following a blank line as a boundary and mint an ID for it, rather than absorbing it.</li>
+<li><strong><code>pinned:</code> is inert.</strong> No DB column, no reader anywhere in <code>src/</code>. Invariant 5 ("a pinned
+  block is never proposed for removal and is always included in its frame") is unimplemented.
+  Fix: real column, enforced at the assembly tier (6.6) and in every removal path.</li>
+</ul>
+<h3 id="64-the-cue-collision-test-this-documents-own-contribution">6.4 The cue-collision test - this document's own contribution<a class="headerlink" href="#64-the-cue-collision-test-this-documents-own-contribution" title="Permanent link">&para;</a></h3>
+<p>Neither note proposes this. It falls out of P9 and it is the piece that turns a nice-to-have
+field into a mechanism.</p>
+<p>The proposal frames the write gate as <strong>surprise</strong>: "would this memory have changed the last
+response?" That question needs an LLM, which costs a call per write and defeats the purpose of
+gating writes to save calls.</p>
+<p>Reframe it. The novelty that matters for a <em>memory</em> system is not "is this content new" but
+<strong>"is this retrieval situation new"</strong> - and the cue line states the retrieval situation
+explicitly, in lexical form, for free. So compare cues, not content:</p>
+<table>
+<thead>
+<tr>
+<th>cue similar?</th>
+<th>content similar?</th>
+<th>Action</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no</td>
+<td>no</td>
+<td><strong>WRITE</strong> - genuinely novel</td>
+<td>0 LLM</td>
+</tr>
+<tr>
+<td>no</td>
+<td>yes</td>
+<td><strong>WRITE + <code>derived-from::</code></strong> - same fact, new situation; legitimately additive</td>
+<td>0 LLM</td>
+</tr>
+<tr>
+<td>yes</td>
+<td>yes</td>
+<td><strong>EDIT the existing block</strong> - true duplicate</td>
+<td>0 LLM</td>
+</tr>
+<tr>
+<td>yes</td>
+<td>no</td>
+<td><strong>COLLISION</strong> - same situation, different answer. Propose <code>supersedes::</code> or <code>contradicts::</code>. Never auto-write.</td>
+<td>0 LLM to detect</td>
+</tr>
+</tbody>
+</table>
+<p>Two consequences worth being explicit about:</p>
+<p><strong>(a) It converts a guard into a structure.</strong> v2 step 1 shipped the constitutional pin guard
+(<code>operations/consolidate.py:318-329</code>, <code>blocked_supersessions</code>), so <code>self/constitutional</code> blocks
+are no longer silently overwritten - the specific 2026 data loss is stopped. But the guard is a
+tag-scoped exception around a mechanism that is still, for every <em>other</em> block, a silent
+irreversible overwrite at 0.90 cosine with no audit row. Under the cue-collision test, high
+<em>content</em> similarity with <em>dissimilar cues</em> means "keep both" (row 2), and the only
+destructive-looking case is the cue collision, which is routed to a proposal and never applied
+automatically. The destructive default stops needing a guard, because it stops being the
+default. Any block can then be pinned or not without that being what stands between it and
+deletion.</p>
+<p><strong>(b) It partially closes ADR 0010's disclosed coverage gap at zero LLM cost.</strong> ADR 0010
+retired pairwise LLM contradiction detection (14 findings, 12 unresolved, two-thirds of all LLM
+calls) and accepted that new content would not be contradiction-checked until corpus-level
+review (step 6b) ships. Row 4 is a contradiction detector that costs two lexical comparisons.
+It will not find every contradiction - only the ones that share a retrieval situation - but
+those are exactly the ones that matter, because they are the ones that will be retrieved
+together.</p>
+<p><strong>Test it retrodictively before shipping it.</strong> See E3 in §9.</p>
+<h3 id="65-usage-labels-without-agent-cooperation">6.5 Usage labels without agent cooperation<a class="headerlink" href="#65-usage-labels-without-agent-cooperation" title="Permanent link">&para;</a></h3>
+<p>The design constraint elfmem's data proves and the proposal misses: <strong>the architecture must
+degrade gracefully to zero usage signal.</strong> Six voluntary outcome calls in four months is the
+realistic case, not the pathological one.</p>
+<p>Three tiers of label, in descending volume and ascending quality:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Event</th>
+<th>Who supplies it</th>
+<th>Expected volume</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>assembled</strong></td>
+<td><code>asm</code></td>
+<td>the system, automatically</td>
+<td>every frame call - free</td>
+</tr>
+<tr>
+<td><strong>inferred</strong></td>
+<td><code>use</code> with <code>src:"overlap"</code></td>
+<td>lexical overlap between the host's output and the block text</td>
+<td>frequent, noisy, opt-in</td>
+</tr>
+<tr>
+<td><strong>declared</strong></td>
+<td><code>use</code> / <code>out</code> with <code>src:"agent"</code></td>
+<td>explicit <code>outcome()</code> or a <code>use(ids)</code> verb</td>
+<td>rare, clean</td>
+</tr>
+</tbody>
+</table>
+<p>The inferred tier follows a precedent that already exists in this codebase:
+<code>dream(host_analyses=...)</code> lets a host agent session supply its own analysis instead of a
+configured LLM adapter. The same seam supplies usage.</p>
+<p>Critically: <strong>reinforcement should move off <code>asm</code> and onto <code>use</code>-if-present-else-<code>asm</code></strong>. Today
+<code>recall()</code> reinforces everything it returns, which is why <code>reinforcement_count</code> measures how
+often a block <em>won a ranking</em> rather than how often it <em>helped</em>. That is a feedback loop that
+rewards its own past decisions. With a ledger, the fix is a replay rule, not a schema change.</p>
+<p>If the inferred and declared tiers never materialise, everything still works - the system
+behaves exactly as it does today, on <code>asm</code> alone. That is the graceful-degradation property
+P13 needs and does not state.</p>
+<h3 id="66-assembly">6.6 Assembly<a class="headerlink" href="#66-assembly" title="Permanent link">&para;</a></h3>
+<p>Replace <code>_render_with_budget</code>'s break-on-first-overflow with a three-tier greedy fill:</p>
+<ol>
+<li><strong>Pinned floor</strong> - constitutional and <code>pinned: true</code> blocks are allocated first, up to a
+   declared floor. Never subject to diversity pruning or budget eviction.</li>
+<li><strong>Hot</strong> - top blocks by salience regardless of query (this is where P5's <em>intent</em> is
+   honoured, using elfmem's existing exponential recency rather than ACT-R's power law).</li>
+<li><strong>Retrieved</strong> - query-ranked candidates, filled greedily by <strong>value per token</strong> rather than
+   by rank order. This is the fractional-knapsack relaxation, ~30 lines, deterministic, and it
+   needs no learned weights - <code>value</code> is the existing composite score.</li>
+</ol>
+<p>Then a <strong>closure pass</strong>: any selected block with a <code>requires::</code> edge pulls its dependency in,
+charges its tokens, and re-runs the fill. Bound to two iterations, then hard-truncate and
+report the truncation in the result object rather than silently.</p>
+<p>Two guards on determinism, because the parity gate depends on it: break greedy ties by block
+ID, and replace <code>len(text) // 4</code> with the real tokenizer already available via <code>TokenCounter</code>.</p>
+<p>MMR stays where it is (retrieval stage 5, <code>lambda = 0.7</code> - which is close enough to the
+canonical Carbonell and Goldstein default to be defensible from literature rather than from a
+fit).</p>
+<h3 id="67-where-reasoning-lives-unchanged">6.7 Where reasoning lives - unchanged<a class="headerlink" href="#67-where-reasoning-lives-unchanged" title="Permanent link">&para;</a></h3>
+<p>The 2026-08-08 research doc's §5 conclusion stands and this proposal does not disturb it:
+<code>elf-review</code> and <code>elf-recall</code> borrow the host agent's model; the index-backed <code>frame()</code>/
+<code>recall()</code> path stays reasoning-free for the autonomous loop; the LLM gateway shrinks to
+headless operation only.</p>
+<p>Note the pleasant consequence: <strong>every mechanism adopted in §5 is zero-LLM.</strong> The ledger,
+cue-collision test, typed links, simhash, and assembly are all arithmetic and string
+comparison. The only LLM cost in the whole synthesis is a one-time backfill of cue lines over
+145 existing blocks, and the host agent can do that in a single session without an API key.</p>
+<hr />
+<h2 id="7-simulation">7. Simulation<a class="headerlink" href="#7-simulation" title="Permanent link">&para;</a></h2>
+<p>Method follows this repo's own convention (<code>docs/design_simulation_guide.md</code>): a frozen
+scenario set, fitness dimensions ranked in advance, iterate until the last iterations only
+confirm boundaries rather than finding improvements.</p>
+<h3 id="71-fitness-dimensions">7.1 Fitness dimensions<a class="headerlink" href="#71-fitness-dimensions" title="Permanent link">&para;</a></h3>
+<p>Inherited from the 2026-08-08 research doc, plus one earned by this evidence base:</p>
+<ol>
+<li><strong>Control</strong> - can the operator deterministically change or remove any memory?</li>
+<li><strong>Integrity</strong> - can memory be silently destroyed?</li>
+<li><strong>Cost</strong> - LLM calls to maintain steady state</li>
+<li><strong>Simplicity</strong></li>
+<li><strong>Scale headroom</strong></li>
+<li><strong>Signal independence</strong> <em>(new)</em> - does the design degrade gracefully when usage labels
+   never arrive? Earned by: 6 outcome records and 0 amendments in four months.</li>
+</ol>
+<p>Dimension 6 is the one that disqualifies most of the proposal's cleverness and it is not
+optional. A design that only works when the agent volunteers feedback is a design that does
+not work here.</p>
+<h3 id="72-frozen-scenario-set">7.2 Frozen scenario set<a class="headerlink" href="#72-frozen-scenario-set" title="Permanent link">&para;</a></h3>
+<p>S1-S11 are carried forward unchanged from the 2026-08-08 document so results stay comparable.
+S12-S18 are new and specific to this proposal.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Reword one constitutional principle</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Delete 3 unwanted seeded blocks</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>New block lands at 0.91 cosine to a pinned constitutional block</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>10 blocks learned in a batch; steady-state maintenance cost</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Fresh install, new machine, local model only</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>API key absent; MCP server starts anyway</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Corpus grows 145 -&gt; 14,000 blocks</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>Two agents write concurrently</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Audit "what changed in memory last month"</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Does the constitution survive 6 months?</td>
+</tr>
+<tr>
+<td>S11</td>
+<td><code>elf-recall</code> (unranked grep) and <code>frame()</code> (ranked index) disagree</td>
+</tr>
+<tr>
+<td><strong>S12</strong></td>
+<td><strong>Rebuild the index from files and pass the Phase 4 parity gate</strong></td>
+</tr>
+<tr>
+<td><strong>S13</strong></td>
+<td>Vocabulary-mismatch query ("swallow exceptions silently" vs a block phrased "error handling")</td>
+</tr>
+<tr>
+<td><strong>S14</strong></td>
+<td>Cold start: a folder of hand-written markdown, no ledger, no IDs</td>
+</tr>
+<tr>
+<td><strong>S15</strong></td>
+<td>The agent never reports usage - only <code>asm</code> events ever accrue</td>
+</tr>
+<tr>
+<td><strong>S16</strong></td>
+<td>A non-constitutional block lands at 0.91 cosine to an existing one</td>
+</tr>
+<tr>
+<td><strong>S17</strong></td>
+<td>A ledger line is truncated by a crash mid-append</td>
+</tr>
+<tr>
+<td><strong>S18</strong></td>
+<td>Two processes append to the ledger in the same millisecond</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-iterations">7.3 Iterations<a class="headerlink" href="#73-iterations" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Iter</th>
+<th>Design under test</th>
+<th>Outcome</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Baseline: <code>elfmem_index</code> @ <code>4de47cd</code> as built</td>
+<td>S12 fails structurally (three ranking terms zeroed). S9 fails (<code>.gitignore:17</code> is a bare <code>.elfmem</code>; <code>init</code> creates no memory dir; <code>forget()</code> has no recovery path). S13 depends entirely on embeddings. S16 fails (silent 0.90-cosine supersession, no audit row). S14 fails (<code>created_at</code> silently reset; <code>##</code>-boundary heuristic swallows hand-appended blocks).</td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>+ Phase 0 hygiene: round-trip <code>created_at</code>; derive <code>decay_lambda</code> on rebuild; make <code>pinned</code> a real column with real enforcement; align <code>index check</code>/<code>rebuild</code> on <code>archive/</code>; un-gitignore <code>.elfmem/memory</code> + ledger; <code>init</code> writes the memory dir, <code>self.md</code>, and <code>.elfmem/.gitignore</code></td>
+<td>S9 -&gt; partial (git history now exists). S14 -&gt; partial. S12 unchanged - <strong>recency, reinforcement, and centrality are still zeroed</strong>.</td>
+<td>kept, insufficient</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>+ <strong>P4 ledger with checkpoint</strong> (6.2)</td>
+<td>S12 -&gt; the three zeroed terms replay exactly, including the session-aware <code>ah</code> clock. S9 -&gt; full (<code>git log -p</code> for text, <code>ledger/2026-07.jsonl</code> for behaviour). S15 -&gt; holds: <code>asm</code> events are recorded by the system with no agent cooperation, so the system behaves exactly as today in the worst case. S17/S18 -&gt; handled by design (skip-and-count on malformed lines; sub-<code>PIPE_BUF</code> atomic appends). Cost: one small append per write and per frame call. Simplicity: +1 file format, -3 frontmatter fields.</td>
+<td><strong>kept - the load-bearing iteration</strong></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>+ <strong>Format v2</strong>: <code>cue::</code>, typed links, <code>cls</code>, derived fields removed (6.3)</td>
+<td>S13 -&gt; fixed without embeddings; the cue states the retrieval situation lexically. S16 -&gt; fixed structurally by the cue-collision test (6.4). S3 -&gt; now over-determined (pin guard <em>and</em> cue-collision <em>and</em> ledger audit). S7 -&gt; improves; simhash clustering makes corpus review chunkable. New cost: a lint surface, and a one-time cue backfill over 145 blocks.</td>
+<td>kept</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>+ <strong>Assembly</strong>: three-tier greedy value/token fill replacing break-on-first-overflow, plus <code>requires::</code> closure and a real tokenizer (6.6)</td>
+<td>Fixes a live defect: today one oversized block discards every smaller block behind it. S7 improves. Determinism preserved by ID tie-breaking, which S12 depends on.</td>
+<td>kept</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>Test <strong>P5 (ACT-R salience)</strong> in place of exponential recency</td>
+<td>Plasticity regresses per ADR 0001 (-53pp recent reach on the baseline scenario). S15 unaffected. No dimension improves.</td>
+<td><strong>rejected - confirms boundary</strong></td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>Test <strong>P13 (calibration)</strong> now</td>
+<td>Untrainable: 6 labels in 4 months. Under S15 the regression has no data at all and silently degenerates to a constant, which is worse than the current explicit weights because it <em>looks</em> adaptive. Fails dimension 6.</td>
+<td><strong>rejected as premature; trigger-gated</strong></td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td>Test <strong>P7 (gist collapse)</strong> now</td>
+<td>At 33.6k corpus tokens the trigger never fires (ADR 0009's measured inertness). Adds LLM cost and an irreversible rewrite to a system whose v2 programme exists because of irreversible rewrites. Fails dimensions 2 and 3 for zero gain on 5.</td>
+<td><strong>rejected now; format slot reserved</strong></td>
+</tr>
+<tr>
+<td><strong>9</strong></td>
+<td>Test <strong>P12 (frame plugin loader)</strong> now</td>
+<td>No demand. Note the <code>frames</code> DB table already exists, is seeded, is stale relative to the Python registry, and is <strong>read by nothing</strong> - a prior attempt at exactly this, now dead schema. Shipping a loader would add a second dead surface.</td>
+<td><strong>rejected; delete the dead table instead</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Winner: Iteration 5.</strong> <strong>Stopping reason</strong>: iterations 6-9 each confirmed a boundary rather
+than finding an improvement, which is this repo's own convergence criterion.</p>
+<h3 id="74-two-scenarios-worth-walking-step-by-step">7.4 Two scenarios worth walking step by step<a class="headerlink" href="#74-two-scenarios-worth-walking-step-by-step" title="Permanent link">&para;</a></h3>
+<p><strong>S16 - a non-constitutional block lands at 0.91 cosine (the common case of the failure that
+motivated v2):</strong></p>
+<ul>
+<li><em>Today</em>: <code>_collect_decisions</code> sees <code>best_sim &gt;= 0.90</code>, the pin guard does not fire because the
+  target is not <code>self/constitutional</code>, and the existing block is archived with
+  <code>archive_reason='superseded'</code>. No audit row records what the old content said. 41 blocks have
+  taken this path; 6 of them were constitutional before the guard shipped.</li>
+<li><em>Iteration 5</em>: the cue-collision test asks first whether the two blocks answer the same
+  retrieval situation. If the cues differ, both are kept and a <code>derived-from::</code> edge is written -
+  the same fact usefully indexed under two situations. If the cues collide, the write is
+  suspended and a <code>supersedes::</code> proposal is surfaced. Either way a <code>birth</code>/<code>link</code>/<code>remove</code>
+  event lands in the ledger, and the old text is one <code>git show</code> away.</li>
+</ul>
+<p><strong>S15 - the agent never reports usage (the realistic case):</strong></p>
+<ul>
+<li>Every <code>frame()</code> call writes one <code>asm</code> line. <code>reinforcement_count</code> and <code>last_reinforced_at</code>
+  replay from those, exactly as they are maintained today.</li>
+<li>The <code>use</code> and <code>out</code> tiers stay empty. P13 stays deferred. Nothing else notices.</li>
+<li>The system's behaviour is <strong>identical to today's</strong>, with the addition of a replayable history.
+  That is the property that makes the ledger safe to adopt before the labels exist: it is not a
+  bet on the labels arriving.</li>
+</ul>
+<hr />
+<h2 id="8-edge-cases-and-mitigations">8. Edge cases and mitigations<a class="headerlink" href="#8-edge-cases-and-mitigations" title="Permanent link">&para;</a></h2>
+<p>Each row is a failure the synthesis must survive, not a hypothetical.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Edge case</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1</td>
+<td>Ledger grows unboundedly under an autonomous every-turn loop</td>
+<td>One <code>asm</code> line per frame call, not per block; monthly file rotation; checkpoint compaction so rebuild is <code>O(checkpoint + tail)</code></td>
+</tr>
+<tr>
+<td>E2</td>
+<td>Two processes append simultaneously</td>
+<td>Every line under 4096 bytes so <code>O_APPEND</code> is atomic under POSIX; enforced by never inlining content and chunking long <code>ids</code> arrays</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>A crash truncates a line mid-write</td>
+<td>One JSON object per line; malformed lines are skipped, counted, and reported by <code>index check</code>; a rebuild never aborts on ledger damage. Fail-soft here, unlike block parsing, because the ledger feeds derived state rather than asserting content</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>Replay is non-deterministic, so the parity gate flickers</td>
+<td>Sort by <code>(t, s, id)</code> with a per-process sequence counter <code>s</code>; break greedy-assembly ties by block ID</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>Ledger references a block that no longer exists in files</td>
+<td>Dropped at rebuild, counted, surfaced. Normal after a hand-delete</td>
+</tr>
+<tr>
+<td>E6</td>
+<td>Wall-clock timestamps cannot reconstruct the session-aware decay clock</td>
+<td>Record cumulative active hours <code>ah</code> on <strong>every</strong> event. This is the non-obvious requirement; omitting it silently breaks recency on replay</td>
+</tr>
+<tr>
+<td>E7</td>
+<td>Clock skew when merging peer histories</td>
+<td>Do not merge ledgers across peers. Peer merge stays on the existing arithmetic alpha/beta path (ADR 0002)</td>
+</tr>
+<tr>
+<td>E8</td>
+<td>Agents write lazy cues ("cue:: when relevant")</td>
+<td><code>index check</code> lints: minimum length, and reject a cue that is a substring of the block's first line. <code>elf-review</code> re-checks cue quality as part of its taxonomy pass</td>
+</tr>
+<tr>
+<td>E9</td>
+<td>Verbose cues game BM25 length normalisation</td>
+<td>Index cues in a separate FTS column with its own weight and a hard length cap</td>
+</tr>
+<tr>
+<td>E10</td>
+<td>145 existing blocks have no cue</td>
+<td>One-time backfill by the host agent in a single session. No API key needed, no adapter involved</td>
+</tr>
+<tr>
+<td>E11</td>
+<td>Simhash is unreliable on short text</td>
+<td>Only trust it above a minimum token count; below it, fall back to exact content hash. Block median is ~230 tokens, so this bites only on log entries</td>
+</tr>
+<tr>
+<td>E12</td>
+<td>The simhash Hamming threshold is a new magic number (violates axiom 1)</td>
+<td><strong>Use simhash only as a recall-oriented prefilter, never as the decider</strong> - cosine or exact-hash confirms. A prefilter threshold then trades compute, not correctness, so it is not load-bearing</td>
+</tr>
+<tr>
+<td>E13</td>
+<td>Agents invent link types outside the vocabulary</td>
+<td>Closed vocabulary of six; <code>index check</code> fails fast on unknown types</td>
+</tr>
+<tr>
+<td>E14</td>
+<td>Dangling link targets</td>
+<td>Warning, not error. Link-before-write is normal in a vault</td>
+</tr>
+<tr>
+<td>E15</td>
+<td><code>supersedes</code> chains break because <code>archive/</code> is never re-read on rebuild</td>
+<td>Make <code>rebuild</code> read <code>archive/</code> as <code>status='archived'</code>. This also removes the existing <code>check</code>/<code>rebuild</code> scope asymmetry</td>
+</tr>
+<tr>
+<td>E16</td>
+<td>MMR or budget eviction drops a block that a <code>requires::</code> chain needs</td>
+<td>Closure pass after selection; bounded to two iterations; then hard-truncate and <strong>report</strong> the truncation in the result object rather than silently</td>
+</tr>
+<tr>
+<td>E17</td>
+<td>Pinned blocks evicted by budget pressure</td>
+<td>Pinned floor allocated first, exempt from diversity pruning. Requires making <code>pinned</code> real - it is currently inert</td>
+</tr>
+<tr>
+<td>E18</td>
+<td><code>similarity</code> changes meaning depending on whether <code>rank_bm25</code> is installed</td>
+<td>Pre-existing defect (<code>retrieval.py:219-268</code> overwrites cosine with normalised RRF for all seeds when BM25 fires). Make BM25 a hard dependency or a declared config choice, not a silent soft import - especially once cue lines make lexical signal load-bearing</td>
+</tr>
+<tr>
+<td>E19</td>
+<td>Format v2 invalidates the markdown already exported</td>
+<td>Files are not authoritative yet, so this is a re-export, not a migration. <strong>Format changes are free before the authority flip and expensive after</strong> - which is the argument for doing this now rather than after U-006</td>
+</tr>
+<tr>
+<td>E20</td>
+<td>Ledger writes add I/O to the recall hot path</td>
+<td>One short line-buffered append per call. At 36-second average sessions this is not measurable. Do not batch: buffering trades a real durability property for an unmeasurable saving</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-evaluation-plan">9. Evaluation plan<a class="headerlink" href="#9-evaluation-plan" title="Permanent link">&para;</a></h2>
+<p>The proposal's stated first experiment - calibration on one frame - cannot be run, because it
+needs labels that do not exist. Replace it with a ladder in dependency order. Each rung is a
+gate: if it fails, the rungs above it do not get built.</p>
+<p>The harness already exists: <code>scripts/longitudinal_sim/</code> (in-memory only, safety-asserted
+against touching a real DB), plus LoCoMo and MemoryAgentBench adapters under <code>benchmarks/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Experiment</th>
+<th>Metric</th>
+<th>Decision it settles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>E0</strong></td>
+<td>Re-run the substrate dry run after Phase 0 hygiene + the ledger, against a read-only copy of the production DB</td>
+<td>Rank-Biased Overlap (see 9.1) vs the current <code>5/5 DIVERGE</code></td>
+<td><strong>Does the ledger earn its place?</strong> If parity does not materially improve, this document is wrong and the ledger should not ship</td>
+</tr>
+<tr>
+<td><strong>E1</strong></td>
+<td>Cue ablation: backfill cues on 145 blocks, then run a vocabulary-mismatch query set with embeddings <strong>off</strong></td>
+<td>recall@5 with cue vs without</td>
+<td>Whether cue lines close the gap embeddings currently cover - which settles open decision 6 ("should embeddings default on?") with data instead of judgement</td>
+</tr>
+<tr>
+<td><strong>E2</strong></td>
+<td>Assembly ablation: break-on-overflow vs three-tier greedy value/token</td>
+<td>tokens used / budget; count of blocks dropped that would have fitted</td>
+<td>Whether 6.6 is worth 30 lines</td>
+</tr>
+<tr>
+<td><strong>E3</strong></td>
+<td><strong>Retrodiction</strong>: replay the 41 historical supersessions through the cue-collision test (needs E1's cues first)</td>
+<td>How many of the 41 would have been kept-both; how many of the 6 constitutional losses would have been prevented</td>
+<td>Whether 6.4 is a real mechanism or a plausible story. <strong>This is the strongest available test because it runs against the actual damage</strong></td>
+</tr>
+<tr>
+<td><strong>E4</strong></td>
+<td>Personalised PageRank vs static centrality</td>
+<td>LoCoMo / MemoryAgentBench, plus the longitudinal harness</td>
+<td>Whether P11 ships</td>
+</tr>
+<tr>
+<td><strong>E5</strong></td>
+<td>Confidence half-life by volatility class, separated from use-decay</td>
+<td>Longitudinal harness, <code>uncertain_mix</code> and <code>long_horizon</code> scenarios</td>
+<td>Whether P6 ships</td>
+</tr>
+<tr>
+<td><strong>E6</strong></td>
+<td><em>Gated</em>: frame calibration to P(used)</td>
+<td>used-block rate vs raw score, per frame</td>
+<td>Whether P13 ships. <strong>Cannot start</strong> until the accrual trigger in §10 is met</td>
+</tr>
+</tbody>
+</table>
+<h3 id="91-the-parity-gate-needs-redefining-not-just-unblocking">9.1 The parity gate needs redefining, not just unblocking<a class="headerlink" href="#91-the-parity-gate-needs-redefining-not-just-unblocking" title="Permanent link">&para;</a></h3>
+<p>The current gate is exact top-5 ID-set equality across four queryless frame calls. Two problems:
+it is stricter than "retrieval is equivalent", and four queryless calls is a thin sample.</p>
+<p>Proposed replacement, three parts:</p>
+<ul>
+<li><strong>Gate A (hard, unchanged in spirit)</strong>: block count matches; every pinned and constitutional
+  block is present in both; zero parse errors.</li>
+<li><strong>Gate B (ranking)</strong>: <strong>Rank-Biased Overlap</strong> (Webber, Moffat and Zobel, 2010) at <code>p = 0.9</code>,
+  averaged <code>&gt;= 0.90</code> over the query set, <strong>and</strong> top-5 set overlap <code>&gt;= 4/5</code> on every individual
+  query. RBO is the published metric for comparing top-weighted indefinite rankings; <code>p = 0.9</code>
+  is the paper's own conventional setting, so this is defensible from literature rather than
+  fitted - which matters under axiom 1.</li>
+<li><strong>Gate C (regression)</strong>: no statistically significant drop on the existing benchmark adapters.</li>
+</ul>
+<p>Expand the query set from 4 queryless frame calls to roughly 20, including real queries drawn
+from the ledger's own <code>asm</code> history once it exists - which is a pleasant second-order benefit:
+<strong>the ledger supplies the gate's own test set.</strong></p>
+<hr />
+<h2 id="10-sequencing">10. Sequencing<a class="headerlink" href="#10-sequencing" title="Permanent link">&para;</a></h2>
+<p>Ordered by dependency, and by the principle that each phase must be independently valuable so
+the programme can stop at any phase boundary without leaving a half-built thing.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Ship</th>
+<th>Closes</th>
+<th>Risk</th>
+<th>Gate to proceed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td>Hygiene: round-trip <code>created_at</code>; derive <code>decay_lambda</code> on rebuild; <code>pinned</code> becomes a real column with real enforcement; <code>check</code>/<code>rebuild</code> agree on <code>archive/</code>; fix the <code>##</code>-boundary swallow; un-gitignore <code>.elfmem/memory</code> + ledger; <code>init</code> writes memory dir + <code>self.md</code> + <code>.elfmem/.gitignore</code></td>
+<td>Five undocumented losses; the "git is the audit trail" claim that currently has no implementation</td>
+<td>trivial</td>
+<td>none - do this regardless of everything else in this document</td>
+</tr>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Ledger + checkpoint</strong> (6.2); <code>index rebuild</code> replays it; <code>why(block_id)</code> verb</td>
+<td>S9, S12; ADR 0003's "measured benefit" burden</td>
+<td>low</td>
+<td><strong>E0.</strong> If parity does not materially improve, stop here</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Format v2</strong> (6.3): <code>cue::</code>, typed links, <code>cls</code>; derived fields removed from frontmatter; <code>index check</code> lints; one-time cue backfill</td>
+<td>S13, the named unassigned edge-representation gap, ADR 0010's coverage gap</td>
+<td>medium</td>
+<td><strong>E1</strong></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>Cue-collision test</strong> (6.4) at the write gate</td>
+<td>S16; the destructive default</td>
+<td>medium</td>
+<td><strong>E3</strong> - retrodict against the 41 historical supersessions before enabling</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Redefined parity gate (9.1); re-run; if it passes, <strong>U-006 flip authority</strong></td>
+<td>the actual v2 cutover</td>
+<td>high</td>
+<td>Gates A + B + C</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>Assembly</strong> (6.6): three-tier greedy value/token, <code>requires::</code> closure, real tokenizer</td>
+<td>the break-on-first-overflow defect</td>
+<td>low</td>
+<td><strong>E2</strong></td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>Measure tier: P11 (PPR), P6 (confidence half-life)</td>
+<td>-</td>
+<td>low</td>
+<td><strong>E4</strong>, <strong>E5</strong>; ship only what wins</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>Deferred, trigger-gated: P7 gist collapse, P13 calibration, P12 frame plugins</td>
+<td>-</td>
+<td>-</td>
+<td>see triggers below</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Phases 0 and 1 are worth doing whether or not anything else in this document is accepted.</strong>
+Phase 0 fixes five real losses. Phase 1 is the only thing that makes the migration completable.</p>
+<h3 id="101-pre-committed-reopen-triggers">10.1 Pre-committed reopen triggers<a class="headerlink" href="#101-pre-committed-reopen-triggers" title="Permanent link">&para;</a></h3>
+<p>Following the discipline of ADRs 0006, 0007, and 0009 - every deferral states what evidence
+would reopen it, and what the smallest correct fix would then be.</p>
+<table>
+<thead>
+<tr>
+<th>Deferred</th>
+<th>Trigger to revisit</th>
+<th>Smallest correct fix when triggered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P5 ACT-R salience</strong></td>
+<td>Unchanged from ADR 0001: a benchmark result showing power-law wins on agent workloads with statistical significance</td>
+<td>Nothing smaller than a new ADR; ADR 0001 rejected even the opt-in flag</td>
+</tr>
+<tr>
+<td><strong>P13 calibration</strong></td>
+<td><code>&gt;= 200</code> non-<code>asm</code> usage labels accrued in the ledger over <code>&gt;= 3</code> consecutive months on a real instance</td>
+<td>Calibrate <strong>one</strong> frame (the proposal's own experiment), measure used-block rate, and stop there</td>
+</tr>
+<tr>
+<td><strong>P7 gist collapse</strong></td>
+<td>Corpus exceeds ~150k tokens, <strong>or</strong> corpus-level review no longer fits one context window. Plus ADR 0009's standing trigger: real evidence <code>review_corpus()</code> + human review is insufficient</td>
+<td>Collapse the single largest low-activation cluster, by hand, once, and measure whether anything breaks before automating</td>
+</tr>
+<tr>
+<td><strong>P12 frame plugins</strong></td>
+<td>A second concrete consumer needs a frame that the four built-ins cannot express</td>
+<td>Add the fifth frame to the Python registry. A loader only when there are two such consumers</td>
+</tr>
+<tr>
+<td><strong>P8 LLM surprise gate</strong></td>
+<td>The cue-collision test (6.4) demonstrably under-blocks: measured write volume of blocks that are never subsequently assembled</td>
+<td>Tighten the cue-similarity threshold before adding an LLM call</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-risks-and-honest-caveats">11. Risks and honest caveats<a class="headerlink" href="#11-risks-and-honest-caveats" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Assessment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>This document over-fits one instance</strong></td>
+<td>Inherited from the 2026-08-08 research doc and not resolved. Every number is from the maintainer's own dev DB: 145 blocks, 370 sessions averaging 36 seconds, 3.69 total active hours. The "labels never arrive" finding is the most instance-dependent claim here and it is load-bearing for rejecting P13. Its precondition - pulling the same breakdown from the Alv and Mira instances - was consciously waived once already (<code>model.md:17-23</code>). It is cheaper to satisfy now than it was then, and it should be satisfied before Phase 3</td>
+</tr>
+<tr>
+<td><strong>The ledger is a new failure surface</strong></td>
+<td>Mitigated by E2/E3/E4 above, but it is genuinely new code on the write path of every operation. The mitigation for the mitigation: Phase 1 gates on E0, so it ships only if it demonstrably buys the parity result</td>
+</tr>
+<tr>
+<td><strong>The cue-collision test is unvalidated</strong></td>
+<td>It is this document's own invention. It has no external citation and no measurement. E3 exists precisely because it should not ship on elegance. If E3 shows it would not have prevented the historical losses, drop 6.4 and keep the cue line for retrieval only - the cue line stands on E1 alone</td>
+</tr>
+<tr>
+<td><strong>ADR 0003's judgement may simply still apply</strong></td>
+<td>§3.4 argues the premise changed. A reader who thinks the premise did not change should reject Phase 1, and the honest test is E0, not argument</td>
+</tr>
+<tr>
+<td><strong>Convergence between the notes and elfmem's own conclusion could be confirmation bias</strong></td>
+<td>The 2026-08-08 document flagged this about its own external sources. It applies again, more sharply: two independent research passes agreeing on files-as-truth is weaker evidence than it feels, because both were reasoning from similar priors about markdown and git</td>
+</tr>
+<tr>
+<td><strong>Format v2 is a breaking change to an unreleased format</strong></td>
+<td>Low cost now, high cost after U-006. This asymmetry is the main argument for sequencing Phase 2 before Phase 4, and it will not be available again</td>
+</tr>
+<tr>
+<td><strong>The proposal's scale assumptions may become right</strong></td>
+<td>Most of what is deferred here is deferred because the corpus is 33.6k tokens. If elfmem grows two orders of magnitude, P7, P11, P12, and P13 all become live again. The triggers in 10.1 are written so that growth reopens them automatically rather than requiring someone to notice</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-open-decisions-bens-not-this-documents">12. Open decisions - Ben's, not this document's<a class="headerlink" href="#12-open-decisions-bens-not-this-documents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Does Phase 0 ship immediately, independent of everything else?</strong> Recommendation: yes. It is
+   five small fixes to losses nobody has written down, and one of them (<code>forget()</code> having no
+   recovery path because <code>.elfmem</code> is gitignored) is live data-loss exposure of exactly the kind
+   step 1 was shipped to stop.</li>
+<li><strong>Is the ledger accepted as a premise change rather than a re-proposal?</strong> (§3.4.) This is the
+   single decision the rest of the document hangs from. If no, Phases 1-4 do not happen and the
+   substrate migration needs a different answer to the parity problem - or an explicit decision
+   to abandon the flip and keep the DB authoritative.</li>
+<li><strong>Does the parity gate get redefined (RBO) or stay exact-match?</strong> Redefining a gate you are
+   failing deserves scrutiny. The counter-argument: the current gate demands bit-identical
+   ranking from a rebuild, which is a stronger claim than "retrieval is equivalent", and no
+   system in the cited literature holds itself to it.</li>
+<li><strong>Do we satisfy the Alv/Mira precondition before Phase 3</strong>, having waived it once already?
+   Recommendation: yes, and it is cheap - one query per instance.</li>
+<li><strong>Cue backfill: host agent, or leave old blocks cue-less?</strong> Backfilling 145 blocks is one
+   session. Leaving them cue-less means E1 measures a mixed corpus and E3 cannot run at all.</li>
+<li><strong>Delete the dead <code>frames</code> table?</strong> It exists, is seeded, is stale relative to the Python
+   registry, and is read by nothing. It is a prior attempt at P12. Recommendation: delete it, so
+   that if P12 is ever earned it starts from a clean decision rather than from stale rows.</li>
+<li><strong>Does this document's disposition of P5 close ADR 0001 for good, or does ADR 0002's
+   four-part gate change anything?</strong> Worth noting: that gate required "v0.17 in production for<blockquote>
+<p>= 3 months", which ROADMAP.md dates as "not before ~2026-08-24" - i.e. it matures now. The
+   gate's other three parts (Dmitry's DB, N&gt;=5 seeds, real-instance evidence) are not met, so
+   nothing here reopens, but somebody should say so deliberately rather than by omission.</p>
+</blockquote>
+</li>
+</ol>
+<hr />
+<h2 id="13-what-this-means-for-the-two-research-notes">13. What this means for the two research notes<a class="headerlink" href="#13-what-this-means-for-the-two-research-notes" title="Permanent link">&para;</a></h2>
+<p>Stated plainly, because the notes deserve a direct answer:</p>
+<ul>
+<li><strong>The substrate half is right and elfmem already agrees.</strong> Files as truth, index as a derived
+  view, block-level units with permanent IDs. Independently re-derived, externally corroborated,
+  four of six waves built. No action needed beyond finishing.</li>
+<li><strong>The ledger is the best idea in either note</strong>, and neither note identifies why: it is the
+  thing that makes a derived index actually derivable. elfmem discovered that the hard way, in a
+  dry run, on real data.</li>
+<li><strong>The cue line is the best cost/benefit idea</strong>, and it does more than the notes claim - it
+  reframes the write gate from a semantic question (needs an LLM) to a lexical one (free).</li>
+<li><strong>The scoring half is the weak half.</strong> ACT-R, calibration, and gist collapse are each
+  well-argued and each collide with a controlled result already recorded here. The common root
+  is that all three assume a corpus and a usage signal that this deployment does not have and
+  may never have.</li>
+<li><strong>The frame-plugin half is unearned.</strong> Not wrong, just answering a question nobody has asked
+  yet, with a dead table in this codebase already marking the last time it was asked.</li>
+</ul>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p><strong>Internal</strong>
+- <a href="../v2_substrate_and_reasoning_ownership_research/"><code>docs/research/v2_substrate_and_reasoning_ownership_research.md</code></a> - substrate + reasoning-ownership research, 2026-08-08
+- <a href="../../plans/plan_v2_substrate_reevaluation/"><code>docs/plans/plan_v2_substrate_reevaluation.md</code></a> - block format, mutation API, six-phase migration
+- <a href="../../plans/v2_substrate/plan/build-plan/"><code>docs/plans/v2_substrate/plan/build-plan.md</code></a> - Waves 1-6, coverage table of unassigned gaps
+- <a href="../../plans/v2_substrate/plan/model/"><code>docs/plans/v2_substrate/plan/model.md</code></a> - generative core, model drift log
+- <a href="../../plans/v2_substrate/plan/dry_run_2026-08-10/"><code>docs/plans/v2_substrate/plan/dry_run_2026-08-10.md</code></a> - the <code>GATE PASSED: False</code> result
+- ADRs <a href="../../decisions/0001-power-law-decay-rejected/">0001</a> (power-law rejected), <a href="../../decisions/0002-v017-scope/">0002</a> (four-part reopen gate), <a href="../../decisions/0003-defer-constitutional-evolution/">0003</a> (event log tables rejected by name), <a href="../../decisions/0006-defer-multi-parameter-self-tuning/">0006</a> (learned weights disqualified), <a href="../../decisions/0007-bound-and-checkpoint-consolidation/">0007</a>, <a href="../../decisions/0009-retire-decay-driven-archival/">0009</a> (decay archival retired), <a href="../../decisions/0010-retire-pairwise-contradiction-detection/">0010</a> (contradiction write-side retired), <a href="../../decisions/0011-substrate-migration-as-a-migrate-step/">0011</a> (cutover deferred)
+- Live production database: <code>~/.elfmem/databases/elfmem.db</code>, queried 2026-08-24</p>
+<p><strong>Code cited</strong>
+<code>src/elfmem/scoring.py:113-152</code> (composite score) · <code>src/elfmem/memory/retrieval.py:219-268</code> (RRF), <code>:392-447</code> (MMR) · <code>src/elfmem/context/rendering.py:41-58</code> (break-on-overflow budgeter) · <code>src/elfmem/operations/recall.py:101-104</code> (unconditional reinforcement) · <code>src/elfmem/operations/consolidate.py:318-329</code> (constitutional pin guard) · <code>src/elfmem/memory/blockfile.py:159-242</code> (<code>##</code> boundary heuristic), <code>:16-19</code> (permanent-ID invariant) · <code>src/elfmem/memory/index_rebuild.py:20-25</code> (round-trip trade-offs) · <code>src/elfmem/migration/export.py:55-79</code> (frontmatter fields) · <code>src/elfmem/db/queries.py:89-92</code> (the forced-zero rebuild fields) · <code>src/elfmem/memory/file_mutation.py:9-12</code> (DB-primary until migration completes) · <code>.gitignore:17</code></p>
+<p><strong>External</strong>
+- Webber, Moffat and Zobel, "A Similarity Measure for Indefinite Rankings", ACM TOIS 2010 - Rank-Biased Overlap, proposed in 9.1
+- Carbonell and Goldstein, "The Use of MMR, Diversity-Based Reranking", SIGIR 1998 - the source of the <code>lambda = 0.7</code> default already in <code>retrieval.py</code>
+- SAGE (<a href="https://arxiv.org/pdf/2605.30711">arXiv 2605.30711</a>) - cheap novelty gate before LLM curation wins on quality <em>and</em> cost; already cited in the 2026-08-08 doc §4.4 and the strongest external support for 6.4
+- Zhou et al., <a href="https://arxiv.org/html/2607.26637v1">"Filesystem-Based Memory for LLM Agents"</a> - Taxonomy Contract P1-P5; relevant to <code>cls</code> and to file organisation
+- MOSS (<a href="https://arxiv.org/pdf/2607.04391">arXiv 2607.04391</a>), markdown-vault-mcp, Vault-LD - the three independent files-as-truth corroborations from the 2026-08-08 sweep</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

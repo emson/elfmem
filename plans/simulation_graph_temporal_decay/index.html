@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2437,8 +2409,8 @@ it returns to Python, the signal is gone.</p>
 tally in <code>system_config</code> — something the agent can query later.</p>
 <p><strong>Mitigation B (immediate):</strong> Make <code>CurateResult.summary</code> include a next-step tip
 when significant edges decay:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>&quot;Curated: 5 edges decayed. If working across topics, consider running consolidate()
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>to rebuild connections for recently active blocks.&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>"Curated: 5 edges decayed. If working across topics, consider running consolidate()
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>to rebuild connections for recently active blocks."
 </span></code></pre></div></p>
 <p><strong>Mitigation C (proactive):</strong> When <code>recall()</code> returns blocks with <code>was_expanded=False</code>
 and the blocks have high <code>confidence</code> (should have neighbours), surface a hint:
@@ -2498,7 +2470,7 @@ on BOTH insert (new edge) and update (existing edge reinforcement).</p>
 <strong>Setup:</strong> Agent runs curate() and receives:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">curate</span><span class="p">()</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># → &quot;Curated: 3 archived, 12 edges decayed, 5 reinforced.&quot;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># → "Curated: 3 archived, 12 edges decayed, 5 reinforced."</span>
 </span></code></pre></div></p>
 <p>The agent sees 12 edges decayed. It wants to reason about this:
 - Were these important connections?
@@ -2524,7 +2496,7 @@ This is a single <code>SELECT COUNT(*) FROM edges</code> added after pruning. Tr
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">total_edges_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># NEW — denominator for observability</span>
 </span></code></pre></div>
 <p>Updated summary:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>&quot;Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced.&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>"Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced."
 </span></code></pre></div></p>
 <p><strong>Fix B (future / C3):</strong> <code>CurateResult</code> includes a <code>decayed_sample: list[str]</code> —
 3-5 one-line summaries of what was lost: <code>"async patterns ↔ database-optimization (was 0.45)"</code>.
@@ -2699,7 +2671,7 @@ More biologically accurate but harder to reason about. Defer to a future scoring
 <p>Edge created by <code>insert_agent_edge()</code>: <code>origin="agent"</code>, <code>last_active_hours=h_current</code>.</p>
 <p>After 800 active hours of non-use, curate() runs. Does this edge decay?</p>
 <p><strong>Trace:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">if</span> <span class="n">edge</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;origin&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;agent&quot;</span><span class="p">:</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">if</span> <span class="n">edge</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"origin"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"agent"</span><span class="p">:</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="k">continue</span>  <span class="c1"># PROTECTED — temporal decay skipped</span>
 </span></code></pre></div></p>
 <p><strong>Outcome:</strong> ✅ Agent-asserted connections never temporally decay. Correct.</p>
@@ -2746,9 +2718,9 @@ For a 10 hr/day agent, that's 40 days. For a 24 hr/day agent (hypothetical), 17 
 - Are the decayed edges from important topic clusters or noise?
 - Should it run <code>consolidate()</code> now to rebuild?</p>
 <p><strong>Ideal agent interaction after C2 with improvements:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>&quot;Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>"Curated: 3 archived, 12 edges decayed (35 remain), 5 reinforced.
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>Graph: 35 edges across 47 active blocks.
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>Tip: If working across topics, run consolidate() to rebuild lost connections.&quot;
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>Tip: If working across topics, run consolidate() to rebuild lost connections."
 </span></code></pre></div></p>
 <p><strong>Required improvements from this scenario:</strong>
 1. <code>total_edges_after: int</code> in <code>CurateResult</code> (denominator)
@@ -2909,32 +2881,32 @@ behavior is preserved; agents can opt into protection by setting it in config.</
 </span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">,</span>
 </span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">]):</span>
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>            <span class="k">return</span> <span class="s2">&quot;Curated: nothing required.&quot;</span>
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>            <span class="k">return</span> <span class="s2">"Curated: nothing required."</span>
 </span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>        <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="p">:</span>
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="si">}</span><span class="s2"> archived&quot;</span><span class="p">)</span>
+</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">archived</span><span class="si">}</span><span class="s2"> archived"</span><span class="p">)</span>
 </span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">:</span>
-</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="si">}</span><span class="s2"> edges pruned&quot;</span><span class="p">)</span>
+</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="si">}</span><span class="s2"> edges pruned"</span><span class="p">)</span>
 </span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="p">:</span>
-</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>            <span class="n">edge_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="si">}</span><span class="s2"> edges decayed&quot;</span>
+</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>            <span class="n">edge_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span><span class="si">}</span><span class="s2"> edges decayed"</span>
 </span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>                <span class="n">edge_info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span><span class="si">}</span><span class="s2"> remain)&quot;</span>
+</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>                <span class="n">edge_info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span><span class="si">}</span><span class="s2"> remain)"</span>
 </span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge_info</span><span class="p">)</span>
 </span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="p">:</span>
-</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="si">}</span><span class="s2"> reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reinforced</span><span class="si">}</span><span class="s2"> reinforced"</span><span class="p">)</span>
 </span><span id="__span-23-27"><a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="p">:</span>
-</span><span id="__span-23-28"><a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="si">}</span><span class="s2"> constitutional reinforced&quot;</span><span class="p">)</span>
+</span><span id="__span-23-28"><a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">constitutional_reinforced</span><span class="si">}</span><span class="s2"> constitutional reinforced"</span><span class="p">)</span>
 </span><span id="__span-23-29"><a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a>
-</span><span id="__span-23-30"><a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a>        <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Curated: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+</span><span id="__span-23-30"><a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a>        <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Curated: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
 </span><span id="__span-23-31"><a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a>
 </span><span id="__span-23-32"><a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a>        <span class="c1"># Escalation: significant graph decay</span>
 </span><span id="__span-23-33"><a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
 </span><span id="__span-23-34"><a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a>            <span class="n">total_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_edges_after</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span>
 </span><span id="__span-23-35"><a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a>            <span class="n">decay_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_pruned</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">total_before</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-23-36"><a id="__codelineno-23-36" name="__codelineno-23-36" href="#__codelineno-23-36"></a>            <span class="k">if</span> <span class="n">decay_fraction</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
-</span><span id="__span-23-37"><a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">&quot; Graph connections reduced significantly — consider running consolidate() to rebuild.&quot;</span>
+</span><span id="__span-23-37"><a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">" Graph connections reduced significantly — consider running consolidate() to rebuild."</span>
 </span><span id="__span-23-38"><a id="__codelineno-23-38" name="__codelineno-23-38" href="#__codelineno-23-38"></a>            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_decayed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-23-39"><a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">&quot; Tip: run consolidate() to rebuild connections for recently active blocks.&quot;</span>
+</span><span id="__span-23-39"><a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a>                <span class="n">summary</span> <span class="o">+=</span> <span class="s2">" Tip: run consolidate() to rebuild connections for recently active blocks."</span>
 </span><span id="__span-23-40"><a id="__codelineno-23-40" name="__codelineno-23-40" href="#__codelineno-23-40"></a>
 </span><span id="__span-23-41"><a id="__codelineno-23-41" name="__codelineno-23-41" href="#__codelineno-23-41"></a>        <span class="k">return</span> <span class="n">summary</span>
 </span></code></pre></div>
@@ -3045,7 +3017,7 @@ the agent-facing surface without adding complexity to the implementation.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

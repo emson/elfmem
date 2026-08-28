@@ -16,14 +16,14 @@
         <link rel="prev" href="../SETUP_AND_CONFIG/">
       
       
-        <link rel="next" href="../MCP_SERVER_SETUP/">
+        <link rel="next" href="../MULTIPLE_MCP_QUICK_REFERENCE/">
       
       
         
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -737,45 +737,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Setup">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-install-elf-with-mcp-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Install elf with MCP support
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-claude-code-is-already-configured" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Claude Code is already configured
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-create-an-elf-database-first-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Create an elf database (first time)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -787,14 +748,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="How It Works">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-memory-hooks-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Memory: Hooks (recommended)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automatic Memory: Hooks (recommended)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#when-claude-encounters-a-design-decision" class="md-nav__link">
+  <a href="#elf_contextpy-automatic-retrieval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When Claude Encounters a Design Decision
+        elf_context.py — automatic retrieval
       
     </span>
   </a>
@@ -802,10 +774,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#query-examples" class="md-nav__link">
+  <a href="#elf_outcomepy-automatic-use-recording-and-engagement-gates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Examples
+        elf_outcome.py — automatic use-recording and engagement gates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elf_distillpy-session-pause-distillation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        elf_distill.py — session-pause distillation
       
     </span>
   </a>
@@ -814,211 +797,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#whats-stored-in-elfs-identity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What's Stored in elf's Identity
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="What&#39;s Stored in elf&#39;s Identity">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-constitutional-principles-10-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Constitutional Principles (10 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-agent-usage-patterns-26-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Agent Usage Patterns (26 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-cognitive-loop-operations-21-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Cognitive Loop Operations (21+ blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-design-simulation-methodology-12-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Design Simulation Methodology (12 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-building-consolidationpolicy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Building ConsolidationPolicy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#viewing-elfs-identity-manually" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing elf's Identity Manually
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tips-for-best-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tips for Best Results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tips for Best Results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-be-specific-in-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Be Specific in Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-use-the-right-frame" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Use the Right Frame
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-reference-your-elf-queries-in-commits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Reference Your elf Queries in Commits
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-keep-elfs-identity-fresh" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Keep elf's Identity Fresh
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mcp-server-not-starting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MCP server not starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#identity-queries-returning-empty" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Identity queries returning empty
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#claude-not-using-mcp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Claude not using MCP
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1027,56 +805,6 @@
     <span class="md-ellipsis">
       
         Agent Discipline: Self-Calibrating Memory
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Agent Discipline: Self-Calibrating Memory">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#three-tiers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three Tiers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resources
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-start-add-discipline-to-a-team-agent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Start: Add Discipline to a Team Agent
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-four-rhythms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Four Rhythms
       
     </span>
   </a>
@@ -1094,49 +822,10 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2504,45 +2193,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Setup">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-install-elf-with-mcp-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Install elf with MCP support
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-claude-code-is-already-configured" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Claude Code is already configured
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-create-an-elf-database-first-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Create an elf database (first time)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2554,14 +2204,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="How It Works">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-memory-hooks-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Memory: Hooks (recommended)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automatic Memory: Hooks (recommended)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#when-claude-encounters-a-design-decision" class="md-nav__link">
+  <a href="#elf_contextpy-automatic-retrieval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When Claude Encounters a Design Decision
+        elf_context.py — automatic retrieval
       
     </span>
   </a>
@@ -2569,10 +2230,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#query-examples" class="md-nav__link">
+  <a href="#elf_outcomepy-automatic-use-recording-and-engagement-gates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Examples
+        elf_outcome.py — automatic use-recording and engagement gates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elf_distillpy-session-pause-distillation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        elf_distill.py — session-pause distillation
       
     </span>
   </a>
@@ -2581,211 +2253,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#whats-stored-in-elfs-identity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What's Stored in elf's Identity
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="What&#39;s Stored in elf&#39;s Identity">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-constitutional-principles-10-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Constitutional Principles (10 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-agent-usage-patterns-26-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Agent Usage Patterns (26 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-cognitive-loop-operations-21-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Cognitive Loop Operations (21+ blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-design-simulation-methodology-12-blocks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Design Simulation Methodology (12 blocks)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-building-consolidationpolicy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Building ConsolidationPolicy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#viewing-elfs-identity-manually" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing elf's Identity Manually
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tips-for-best-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tips for Best Results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tips for Best Results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-be-specific-in-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Be Specific in Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-use-the-right-frame" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Use the Right Frame
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-reference-your-elf-queries-in-commits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Reference Your elf Queries in Commits
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-keep-elfs-identity-fresh" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Keep elf's Identity Fresh
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mcp-server-not-starting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MCP server not starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#identity-queries-returning-empty" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Identity queries returning empty
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#claude-not-using-mcp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Claude not using MCP
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2798,56 +2265,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Agent Discipline: Self-Calibrating Memory">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#three-tiers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three Tiers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resources
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-start-add-discipline-to-a-team-agent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Start: Add Discipline to a Team Agent
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-four-rhythms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Four Rhythms
-      
-    </span>
-  </a>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2855,17 +2272,6 @@
     <span class="md-ellipsis">
       
         Simulation-Based Calibration (simulate frame)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
       
     </span>
   </a>
@@ -2899,315 +2305,139 @@
 
 <h1 id="claude-code-elf-integration-guide">Claude Code + elf Integration Guide<a class="headerlink" href="#claude-code-elf-integration-guide" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Claude Code now has direct access to elf's identity via MCP. This means Claude can:
-- Query elf's identity before major decisions
+<p>Claude Code gets persistent, evolving memory via elfmem's MCP server. Claude can:
+- Query elf's identity before major decisions (<code>frame="self"</code>)
 - Learn new concepts by remembering them
-- Access the full 100+ concept library (agent patterns, cognitive loops, etc.)
+- Access the full knowledge base built up across sessions
 - Make decisions guided by elf's constitutional principles</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
-<h3 id="1-install-elf-with-mcp-support">1. Install elf with MCP support<a class="headerlink" href="#1-install-elf-with-mcp-support" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>~/Dropbox/devel/projects/ai/elf0_mem_sim
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>mcp<span class="w"> </span>--extra<span class="w"> </span>cli
+<p>Setup and MCP configuration are covered in full in <a href="../SETUP_AND_CONFIG/"><code>docs/SETUP_AND_CONFIG.md</code></a> and the README's <a href="../README.md#mcp-for-ai-agents-with-mcp-support">MCP section</a>. In short:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>mcp<span class="w"> </span>--extra<span class="w"> </span>cli<span class="w">   </span><span class="c1"># never `uv add elfmem[mcp]` — self-dependency, fails</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>elfmem<span class="w"> </span>init<span class="w">                       </span><span class="c1"># writes .elfmem/config.yaml and the elfmem section in CLAUDE.md/AGENTS.md</span>
 </span></code></pre></div>
-<h3 id="2-claude-code-is-already-configured">2. Claude Code is already configured<a class="headerlink" href="#2-claude-code-is-already-configured" title="Permanent link">&para;</a></h3>
-<p>The MCP configuration is at:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>~/.claude/projects/-Users-emson-Dropbox-devel-projects-ai-elf0-mem-sim/system_prompt.md
-</span></code></pre></div></p>
-<p>This system prompt tells Claude to:
-- Use <code>elfmem_recall(query, frame="self")</code> to access elf's identity
-- Respect elf's constitutional principles
-- Guide all decisions through elf's identity</p>
-<h3 id="3-create-an-elf-database-first-time">3. Create an elf database (first time)<a class="headerlink" href="#3-create-an-elf-database-first-time" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Initialize the memory database</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>elfmem<span class="w"> </span>init<span class="w"> </span>~/.elfmem/default.db
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Populate with elf&#39;s constitutional knowledge (optional but recommended)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>elfmem<span class="w"> </span>init<span class="w"> </span>--seed<span class="w"> </span>~/.elfmem/default.db
-</span></code></pre></div>
+<p><code>elfmem init</code> prints the exact MCP JSON snippet to paste into <code>~/.claude.json</code> (Claude Code's per-project MCP config) — including an absolute path to the <code>elfmem</code> executable and, if a <code>.env</code> exists at the project root, an <code>--env-file</code> flag so the spawned server process gets your API keys (<a href="../decisions/0008-mcp-entry-default/">ADR 0008</a>). <code>elfmem doctor --migrate-mcp</code> detects drift in an existing entry; <code>elfmem migrate apply</code> fixes it.</p>
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<h3 id="when-claude-encounters-a-design-decision">When Claude Encounters a Design Decision<a class="headerlink" href="#when-claude-encounters-a-design-decision" title="Permanent link">&para;</a></h3>
-<p>Claude's system prompt tells it to ask: <strong>"What does elf say about this?"</strong></p>
-<p>Example workflow:</p>
-<ol>
-<li>
-<p><strong>You:</strong> "Implement ConsolidationPolicy"</p>
-</li>
-<li>
-<p><strong>Claude thinks:</strong> "This is about consolidation timing. Let me query elf's identity for guidance."</p>
-</li>
-<li>
-<p><strong>Claude (via MCP):</strong>
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>elfmem_recall(
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    query=&quot;consolidation timing principles and heuristics&quot;,
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    frame=&quot;self&quot;,
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    top_k=5
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>)
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>elf responds</strong> with identity blocks about consolidation:</p>
-</li>
-<li>"Consolidation should be self-driven, not manual"</li>
-<li>"Pre-filter contradictions by similarity to save LLM calls"</li>
-<li>
-<p>"Consolidation is the 'dream' phase: deep processing, bounded time"</p>
-</li>
-<li>
-<p><strong>Claude uses this context</strong> to inform implementation decisions</p>
-</li>
-</ol>
-<h3 id="query-examples">Query Examples<a class="headerlink" href="#query-examples" title="Permanent link">&para;</a></h3>
-<p><strong>For architecture questions:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>elfmem_recall(&quot;identity principles for distributed caching&quot;, frame=&quot;self&quot;)
-</span></code></pre></div></p>
-<p><strong>For performance guidance:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>elfmem_recall(&quot;optimization strategy for retrieval at scale&quot;, frame=&quot;self&quot;)
-</span></code></pre></div></p>
-<p><strong>For API design:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>elfmem_recall(&quot;agent patterns for handling contradictions&quot;, frame=&quot;self&quot;)
-</span></code></pre></div></p>
-<p><strong>For decision-making:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>elfmem_recall(&quot;how should I decide when to curate&quot;, frame=&quot;self&quot;)
-</span></code></pre></div></p>
-<h2 id="whats-stored-in-elfs-identity">What's Stored in elf's Identity<a class="headerlink" href="#whats-stored-in-elfs-identity" title="Permanent link">&para;</a></h2>
-<p>The "self" frame (elf's identity) contains:</p>
-<h3 id="1-constitutional-principles-10-blocks">1. Constitutional Principles (10 blocks)<a class="headerlink" href="#1-constitutional-principles-10-blocks" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Purpose and values</li>
-<li>Design philosophy</li>
-<li>Decision-making framework</li>
-</ul>
-<h3 id="2-agent-usage-patterns-26-blocks">2. Agent Usage Patterns (26 blocks)<a class="headerlink" href="#2-agent-usage-patterns-26-blocks" title="Permanent link">&para;</a></h3>
-<ul>
-<li>When to remember, recall, reinforce, curate</li>
-<li>How to handle contradictions, silence, signals</li>
-<li>Multi-domain reasoning patterns</li>
-</ul>
-<h3 id="3-cognitive-loop-operations-21-blocks">3. Cognitive Loop Operations (21+ blocks)<a class="headerlink" href="#3-cognitive-loop-operations-21-blocks" title="Permanent link">&para;</a></h3>
-<ul>
-<li>8-step feedback loop</li>
-<li>Decision trees (frame selection, timing, thresholds)</li>
-<li>Reflection protocols</li>
-</ul>
-<h3 id="4-design-simulation-methodology-12-blocks">4. Design Simulation Methodology (12 blocks)<a class="headerlink" href="#4-design-simulation-methodology-12-blocks" title="Permanent link">&para;</a></h3>
-<ul>
-<li>How to document architecture decisions</li>
-<li>Scoring formulas and derivations</li>
-<li>Edge case handling</li>
-</ul>
-<h2 id="example-building-consolidationpolicy">Example: Building ConsolidationPolicy<a class="headerlink" href="#example-building-consolidationpolicy" title="Permanent link">&para;</a></h2>
-<p>When you ask Claude to implement ConsolidationPolicy:</p>
-<ol>
-<li>
-<p><strong>Claude queries elf:</strong>
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>&quot;timing heuristics for consolidation, what triggers dream phase&quot;
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>elf returns blocks like:</strong></p>
-</li>
-<li>"Consolidation is bounded—should complete in minutes, not hours"</li>
-<li>"Pre-filter reduces LLM calls by 95%, enabling more frequent consolidation"</li>
-<li>
-<p>"Self-driven timing means learning from success/failure metrics"</p>
-</li>
-<li>
-<p><strong>Claude implements with elf's guidance:</strong>
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConsolidationPolicy</span><span class="p">:</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">should_consolidate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        <span class="c1"># Query elf for timing principles</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">elf_context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">&quot;consolidation timing&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="c1"># Make decision informed by elf + metrics</span>
-</span></code></pre></div></p>
-</li>
-</ol>
-<h2 id="viewing-elfs-identity-manually">Viewing elf's Identity Manually<a class="headerlink" href="#viewing-elfs-identity-manually" title="Permanent link">&para;</a></h2>
-<p>You can inspect elf's identity directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Recall elf&#39;s identity for a topic</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;my identity and values&quot;</span><span class="w"> </span>--frame<span class="w"> </span>self
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># See what&#39;s in the database</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>elfmem<span class="w"> </span>status
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Remember something into elf&#39;s identity</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;New principle: X&quot;</span><span class="w"> </span>--tag<span class="w"> </span>self/principle
+<p>Ask Claude to query elf's identity before a design decision:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>elfmem_recall(query="consolidation timing principles and heuristics", frame="self", top_k=5)
 </span></code></pre></div>
-<h2 id="tips-for-best-results">Tips for Best Results<a class="headerlink" href="#tips-for-best-results" title="Permanent link">&para;</a></h2>
-<h3 id="1-be-specific-in-queries">1. Be Specific in Queries<a class="headerlink" href="#1-be-specific-in-queries" title="Permanent link">&para;</a></h3>
-<p>❌ Bad: "help with optimization"
-✅ Good: "how should I optimize consolidation for 1000 blocks"</p>
-<h3 id="2-use-the-right-frame">2. Use the Right Frame<a class="headerlink" href="#2-use-the-right-frame" title="Permanent link">&para;</a></h3>
+<p>elf responds with whatever's actually been learned and reinforced in that project's memory — not a fixed prompt. Query examples:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>elfmem_recall("identity principles for distributed caching", frame="self")
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>elfmem_recall("optimization strategy for retrieval at scale", frame="self")
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>elfmem_recall("how should I decide when to curate", frame="self")
+</span></code></pre></div>
+<p>Use <code>frame="self"</code> for identity/principles/values, <code>frame="attention"</code> for specific problems and patterns, <code>frame="task"</code> for goal-directed work. See the README's <a href="../README.md#four-frames-retrieval-shaped-by-intent">Four frames</a> section for the full scoring model.</p>
+<p>You can also inspect elf's identity directly from the shell:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"my identity and values"</span><span class="w"> </span>--frame<span class="w"> </span>self
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>elfmem<span class="w"> </span>status
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"New principle: X"</span><span class="w"> </span>--tags<span class="w"> </span>self/principle
+</span></code></pre></div>
+<p><strong>Before trusting any of it, check what the agent actually receives:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>elfmem<span class="w"> </span>doctor<span class="w"> </span>--frames
+</span></code></pre></div>
+<p>This renders every frame and prints rendered-vs-dropped counts, the reason for
+each drop (<code>top_k</code>, <code>token_budget</code>, or <code>contradiction</code>), the token budget used,
+and how many blocks are still in the inbox invisible to all of them. It is the
+one-command answer to "is the identity I stored the identity the agent sees" —
+a partial identity the agent believes is whole is the most damaging thing this
+library can produce. Read-only (it previews with <code>reinforce=False</code>, so it never
+inflates the scores it reports), and it exits non-zero if a <em>guaranteed</em> block
+was dropped, so it is safe to put in CI.</p>
+<p>Everything above depends on the agent choosing to call a tool — reliable most of the time, silently skipped some of the time. That gap is real: it was found and fixed in this project's own usage (an agent answered a direct question about its own memory without ever consulting it). The hooks below close it structurally instead of relying on discipline.</p>
+<h2 id="automatic-memory-hooks-recommended">Automatic Memory: Hooks (recommended)<a class="headerlink" href="#automatic-memory-hooks-recommended" title="Permanent link">&para;</a></h2>
+<p>Three personal scripts in <code>scripts/hooks/</code> turn retrieval, use-tracking, and capture from <em>voluntary</em> (the agent has to remember to call a tool) into <em>automatic</em> (the harness does it regardless). They're project-agnostic — each resolves its own config/db via <code>elfmem.project.find_local_config()</code>, so they work unmodified in any elfmem project, not just this one. Wire them once in <code>.claude/settings.local.json</code> (personal, gitignored — never checked in) and they run silently from then on.</p>
+<table>
+<thead>
+<tr>
+<th>Hook</th>
+<th>Fires on</th>
+<th>Cost</th>
+<th>Job</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>elf_context.py</code></td>
+<td><code>UserPromptSubmit</code></td>
+<td>Fast — one embedding call</td>
+<td>Injects memory before the model reads the prompt</td>
+</tr>
+<tr>
+<td><code>elf_outcome.py</code></td>
+<td><code>Stop</code></td>
+<td>Instant — no LLM</td>
+<td>Records what the answer actually used; enforces engagement</td>
+</tr>
+<tr>
+<td><code>elf_distill.py</code></td>
+<td><code>PreCompact</code> / <code>SessionEnd</code></td>
+<td>Slow — one LLM call (~30s locally)</td>
+<td>Catches capture-worthy content no per-turn trigger fires on</td>
+</tr>
+</tbody>
+</table>
+<p>Full wiring (all four hook events used across the three scripts):</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">"UserPromptSubmit"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"command"</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;project&gt;/.venv/bin/python"</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"&lt;project&gt;/scripts/hooks/elf_context.py"</span><span class="p">],</span><span class="w"> </span><span class="nt">"timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">}]}],</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">"Stop"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"command"</span><span class="p">,</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;project&gt;/.venv/bin/python"</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"&lt;project&gt;/scripts/hooks/elf_outcome.py"</span><span class="p">],</span><span class="w"> </span><span class="nt">"timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">}]}],</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">"PreCompact"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"command"</span><span class="p">,</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;project&gt;/.venv/bin/python"</span><span class="p">,</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"&lt;project&gt;/scripts/hooks/elf_distill.py"</span><span class="p">],</span><span class="w"> </span><span class="nt">"timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">}]}],</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">"SessionEnd"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"hooks"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"command"</span><span class="p">,</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;project&gt;/.venv/bin/python"</span><span class="p">,</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"&lt;project&gt;/scripts/hooks/elf_distill.py"</span><span class="p">],</span><span class="w"> </span><span class="nt">"timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">}]}]</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="elf_contextpy-automatic-retrieval"><code>elf_context.py</code> — automatic retrieval<a class="headerlink" href="#elf_contextpy-automatic-retrieval" title="Permanent link">&para;</a></h3>
+<p>Runs before the model ever sees the prompt. Two frames, deliberately asymmetric: ATTENTION (query-driven, one embedding call) on every substantive prompt (<code>MIN_PROMPT_CHARS = 25</code>, and never on <code>/</code> slash-commands or <code>!</code> bash-passthrough); SELF (identity) once per session only — re-injecting it every turn would reinforce the same constitutional blocks on every keystroke, a runaway feedback loop with no counterweight. Both frames return <code>top_k=5</code> by default.</p>
+<p>Two lightweight regex detectors run against the prompt text and shape what gets injected:
+- <strong>Address detection</strong> — <code>"as elf, ..."</code>, <code>"hey elf,"</code> — marks the turn as directly addressed. The injected <code>&lt;elfmem&gt;</code> block gets an extra line: <em>"this prompt addresses elf directly: ground the answer in this context where it applies, or say plainly that it does not."</em> Priming happens before the answer is written, which is what keeps the <code>elf_outcome.py</code> gate below a rare event rather than a constant correction loop.
+- <strong>Capture-worthy detection</strong> — explicit memory requests ("remember that", "worth remembering", "make a note") and correction/rule language ("that's outdated", "no longer true", "from now on"). Deliberately narrow and high-precision: bare "actually," and prose-conclusion phrasing are excluded on purpose, since both fire on ordinary technical back-and-forth far too often. The injected block gets primed the same way: <em>"store it with elfmem_remember and a real cue — or decide explicitly that it doesn't belong."</em></p>
+<p>Both flags ride a per-turn pending file (<code>.elfmem/.hook/{session_id}.pending.json</code>) for <code>elf_outcome.py</code> to judge — never a session-sticky flag. A sticky version was built, reviewed, and rejected: in a long mechanical session it would nudge every turn, and its remedy ("call elfmem_recall") would manufacture ritual retrievals the use ledger can't distinguish from genuine engagement.</p>
+<h3 id="elf_outcomepy-automatic-use-recording-and-engagement-gates"><code>elf_outcome.py</code> — automatic use-recording and engagement gates<a class="headerlink" href="#elf_outcomepy-automatic-use-recording-and-engagement-gates" title="Permanent link">&para;</a></h3>
+<p>Reads the pending file, compares the turn's answer text against what was injected (lexical attribution — does the answer's vocabulary actually overlap with a retrieved block's distinctive terms), and calls <code>record_use()</code> on whatever genuinely shows through. This closes the loop <code>record_assembly</code>'s own docstring names: a block retrieved constantly and never drawn on used to rise in ranking exactly like one doing real work. Attribution never penalizes non-detection — it under-detects paraphrase by design, so failing to match costs a block nothing.</p>
+<p>Two gates layer on top, both <strong>per-turn, one-shot</strong> (a block forces one retry; the pending file is already consumed by then, so a second attempt this turn always passes), and both designed so the fix is never "make another tool call to satisfy the gate" — that would be Goodharting the exact signal the gate is meant to protect:</p>
 <ul>
-<li><code>frame="self"</code> → Ask about identity, principles, values, timing</li>
-<li><code>frame="attention"</code> → Ask about specific problems, patterns</li>
-<li><code>frame="task"</code> → Ask about goals and task-specific knowledge</li>
+<li><strong>Engagement gate</strong> — an addressed turn (from <code>elf_context.py</code>'s detector) whose answer shows neither attributed use nor an active elfmem call (MCP tool <em>or</em> a Bash-invoked <code>elfmem</code> CLI command — both count) gets blocked once, pointed back at the context already in the conversation.</li>
+<li><strong>Capture gate</strong> — a capture-worthy turn with no <code>remember</code>/<code>learn</code> call gets blocked once. The remedy explicitly allows "no, this doesn't belong in memory" as a valid, unverifiable-but-correct outcome — requiring a write as the only way through would just trade ritual retrievals for ritual (junk) memories, the same pathology one level over.</li>
 </ul>
-<h3 id="3-reference-your-elf-queries-in-commits">3. Reference Your elf Queries in Commits<a class="headerlink" href="#3-reference-your-elf-queries-in-commits" title="Permanent link">&para;</a></h3>
-<p>If you implement something guided by elf, mention it:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>feat: Implement ConsolidationPolicy
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>Queried elf for: &quot;consolidation timing principles&quot;
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>Decision: Self-tune prefilter threshold based on success rate
-</span></code></pre></div></p>
-<h3 id="4-keep-elfs-identity-fresh">4. Keep elf's Identity Fresh<a class="headerlink" href="#4-keep-elfs-identity-fresh" title="Permanent link">&para;</a></h3>
-<p>When you discover a pattern, have Claude remember it:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>elfmem_remember(
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    &quot;Consolidation succeeds fastest when inbox &lt; 50 blocks&quot;,
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    tags=[&quot;self/principle&quot;, &quot;consolidation/heuristic&quot;]
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>)
-</span></code></pre></div></p>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="mcp-server-not-starting">MCP server not starting<a class="headerlink" href="#mcp-server-not-starting" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Check that extras are installed</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>mcp<span class="w"> </span>--extra<span class="w"> </span>cli<span class="w"> </span>--all-extras
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Check that the MCP entry point works</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>python<span class="w"> </span>-m<span class="w"> </span>elfmem.mcp<span class="w"> </span>--help
+<h3 id="elf_distillpy-session-pause-distillation"><code>elf_distill.py</code> — session-pause distillation<a class="headerlink" href="#elf_distillpy-session-pause-distillation" title="Permanent link">&para;</a></h3>
+<p>The per-turn capture gate only fires on an explicit trigger phrase. Real capture-worthy content often has none — a fact stated in passing, a decision that emerges across several turns. Catching that needs judgement a regex can't do, so this is the one hook that makes its own LLM call (the configured <code>llm.base_url</code>/<code>model</code> — same adapter <code>dream()</code> uses) rather than staying zero-cost.</p>
+<p>Fires at <code>PreCompact</code> (right before context compaction would otherwise silently lose detail — the actual threat this exists to prevent) and <code>SessionEnd</code> (backstop for a session that ends, including <code>/clear</code>, before ever compacting). A per-session marker (<code>.elfmem/.hook/{session_id}.distilled</code>, a line-count offset) means repeated firings only ever send the <em>new</em> transcript slice — never redundant, and the offset only advances after a slice is successfully distilled, so a network failure gets retried next time rather than losing that slice. Below <code>MIN_NEW_CHARS = 200</code> of new content, it skips without advancing the marker (accumulates for next time); above that, it sends the tail (<code>MAX_TRANSCRIPT_CHARS = 8000</code> characters) plus the SELF frame, asks for durable facts/decisions/preferences as a JSON array, and writes up to <code>MAX_CANDIDATES = 5</code> via <code>remember()</code>.</p>
+<p>Three invocation modes, one script, one write path:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Hook mode (above): automatic, LM Studio (or whatever's configured) judges.</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Manual-CLI mode: trigger by hand instead of waiting for a hook —</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># same LLM judgement, on demand.</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>elf_distill.py<span class="w"> </span>--session-id<span class="w"> </span>&lt;id&gt;<span class="w"> </span>--cwd<span class="w"> </span>&lt;project&gt;<span class="w"> </span>--transcript-path<span class="w"> </span>&lt;path/to/transcript.jsonl&gt;
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Host mode: skip the LLM call entirely. Whoever's already reasoning —</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># a live Claude Code session, most naturally — supplies its own</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># conclusions directly. Mirrors dream()'s existing host_analyses pattern</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># (a host session supplying judgement instead of the configured adapter)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># rather than spawning a second LLM process for it.</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">'[{"content": "...", "cue": "...", "tags": [...]}]'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>elf_distill.py<span class="w"> </span>--host<span class="w"> </span>--cwd<span class="w"> </span>&lt;project&gt;<span class="w"> </span><span class="o">[</span>--session-id<span class="w"> </span>&lt;id&gt;<span class="w"> </span>--transcript-path<span class="w"> </span>&lt;path&gt;<span class="o">]</span>
 </span></code></pre></div>
-<h3 id="identity-queries-returning-empty">Identity queries returning empty<a class="headerlink" href="#identity-queries-returning-empty" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Initialize the database with elf&#39;s identity blocks</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>elfmem<span class="w"> </span>init<span class="w"> </span>--seed<span class="w"> </span>~/.elfmem/default.db
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># Verify blocks are there</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>elfmem<span class="w"> </span>status
-</span></code></pre></div>
-<h3 id="claude-not-using-mcp">Claude not using MCP<a class="headerlink" href="#claude-not-using-mcp" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Check that <code>~/.claude/claude_code_config.json</code> exists</li>
-<li>Verify system_prompt.md is in the project folder</li>
-<li>Restart Claude Code for config changes to take effect</li>
-</ul>
-<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Claude Code (System Prompt)
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>       ↓ (asks &quot;What does elf say?&quot;)
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>       ↓
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>MCP Protocol
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>       ↓
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>elf MCP Server
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>       ↓
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>elf Recall (identity frame)
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>       ↓
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>SQLite DB (Constitutional blocks)
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>       ↓
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>Result → Claude&#39;s Decision-Making
-</span></code></pre></div>
-<p>elf's identity flows into Claude's reasoning without requiring project changes or hardcoded prompts.</p>
-<hr />
+<p>Host mode's <code>--session-id</code>/<code>--transcript-path</code> are optional: without them the write still happens, just without advancing the marker. A later automatic pass might then redundantly re-surface similar content — an acceptable cost, since <code>dream()</code>'s existing dedup absorbs it, the same trade-off accepted elsewhere in this design rather than building bespoke de-duplication for a rare, self-correcting case.</p>
+<p><strong>Known limitation, not silently hidden:</strong> the local-model path doesn't perfectly follow "skip small talk" — a live test captured a genuine preference statement alongside two load-bearing facts, and <code>dream()</code>'s downstream alignment scoring didn't cleanly separate them either (a pre-existing characteristic of a small local model's judgement quality, not something this hook introduced). Low-value captures decay unreinforced over time rather than being actively filtered — acceptable given how infrequently this fires (a handful of times a day at most; <code>PreCompact</code> only on real auto-compaction, <code>SessionEnd</code> once per sitting), not acceptable if it were a hot path.</p>
 <h2 id="agent-discipline-self-calibrating-memory">Agent Discipline: Self-Calibrating Memory<a class="headerlink" href="#agent-discipline-self-calibrating-memory" title="Permanent link">&para;</a></h2>
-<p>Static prompts tell agents what to do. <strong>Agent discipline</strong> teaches agents to
-improve their own memory through use. The discipline loop:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>RECALL → EXPECT → ACT → OBSERVE → CALIBRATE → ENCODE
-</span></code></pre></div>
-<p>The critical step most agents skip is <strong>calibration</strong> — telling elfmem which
-recalled blocks actually helped (<code>outcome(signal=0.85)</code>), which were noise
-(<code>signal=0.45</code>), and which misled (<code>signal=0.15</code>). Without this, all knowledge
-decays equally and memory never improves.</p>
-<h3 id="three-tiers">Three Tiers<a class="headerlink" href="#three-tiers" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>Instructions</th>
-<th>Best for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Basic (2 instructions)</td>
-<td>Recall before acting, remember surprises</td>
-<td>Simple agents, quick tasks</td>
-</tr>
-<tr>
-<td>Standard (6 instructions)</td>
-<td>+ frame selection + inline calibration</td>
-<td>Team agents, recurring tasks</td>
-</tr>
-<tr>
-<td>Full (12 instructions)</td>
-<td>+ session metrics + reflection + meta-learning</td>
-<td>Long-running agents</td>
-</tr>
-</tbody>
-</table>
-<h3 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>examples/agent_discipline.md</code></strong> — Copy-pasteable prompt instructions for all three tiers</li>
-<li><strong><code>examples/calibrating_agent.py</code></strong> — Python reference implementation (36 tests)</li>
-<li><strong><code>examples/decision_maker.py</code></strong> — Simpler example focused on multi-frame decisions</li>
-<li><strong><code>scripts/seed_team_memory.py</code></strong> — Seed elfmem with project conventions for team agents</li>
-</ul>
-<h3 id="quick-start-add-discipline-to-a-team-agent">Quick Start: Add Discipline to a Team Agent<a class="headerlink" href="#quick-start-add-discipline-to-a-team-agent" title="Permanent link">&para;</a></h3>
-<p>Add this to any team agent's system prompt (Tier 2 — standard discipline):</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Before each task:
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  1. Select frame: novel→attention, execution→task, identity→self
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  2. elfmem_recall(&quot;&lt;task description&gt;&quot;, frame=&lt;selected&gt;)
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  3. Set expectation: &quot;I expect &lt;prediction&gt;.&quot;
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>After each task:
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  4. For each recalled block: elfmem_outcome([id], signal based on usefulness)
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>  5. If surprised: elfmem_remember(&quot;Expected X, observed Y. Pattern: Z&quot;)
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>  6. At pauses: elfmem_dream()
-</span></code></pre></div>
-<p>Over cycles, useful blocks rise in confidence. Noise decays. The memory
-self-tunes toward what actually works for your team.</p>
-<hr />
-<h2 id="the-four-rhythms">The Four Rhythms<a class="headerlink" href="#the-four-rhythms" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Rhythm</th>
-<th>Direction</th>
-<th>What it does</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Heartbeat (learn)</td>
-<td>Past → Memory</td>
-<td>Fast ingestion</td>
-</tr>
-<tr>
-<td>Breathing (dream)</td>
-<td>Memory → Structure</td>
-<td>Deep consolidation</td>
-</tr>
-<tr>
-<td>Sleep (curate)</td>
-<td>Structure → Health</td>
-<td>Decay archival + edge pruning</td>
-</tr>
-<tr>
-<td><strong>Deep Sleep (<code>dream --rescore</code>)</strong></td>
-<td><strong>Memory → Identity</strong></td>
-<td><strong>Re-evaluate aged blocks vs current SELF</strong> (v0.13.3)</td>
-</tr>
-</tbody>
-</table>
-<p>Deep sleep is the rhythm that keeps a long-lived memory honest with itself: as new evidence shifts the SELF frame, older blocks are progressively re-scored so their alignment / summary / tags stay current.</p>
+<p>Static prompts tell agents what to do. <strong>Agent discipline</strong> teaches agents to improve their own memory through use — the full <code>RECALL → EXPECT → ACT → OBSERVE → CALIBRATE → ENCODE</code> loop, at three tiers (2 / 6 / 12 instructions), is documented in the README's <a href="../README.md#building-agents-with-elfmem">Building agents with elfmem</a> section and <code>examples/agent_discipline.md</code>. <code>scripts/seed_team_memory.py</code> seeds elfmem with project conventions for a team agent.</p>
+<p>The critical step most agents skip is <strong>calibration</strong> — telling elfmem which recalled blocks actually helped (<code>outcome(signal=0.85)</code>), which were noise (<code>signal=0.45</code>), and which misled (<code>signal=0.15</code>). Without it, all knowledge decays equally and memory never improves.</p>
 <h2 id="simulation-based-calibration-simulate-frame">Simulation-Based Calibration (<code>simulate</code> frame)<a class="headerlink" href="#simulation-based-calibration-simulate-frame" title="Permanent link">&para;</a></h2>
-<p><code>simulate</code> is a <strong>frame</strong>, not a rhythm — a Theory-of-Mind retrieval mode that blends the SELF constitution with <code>mind/*</code> blocks to reason about other agents, users, or hypothetical scenarios. For high-stakes or novel-domain decisions, agents can use the simulate frame to surface predictions, decisions, and identity context together, supporting pre-calibration without waiting for reality.</p>
-<p>Key concepts:
-- <strong>Brier scores</strong> track prediction accuracy over time
-- <strong>Fragility scores</strong> reveal when predictions rest on too few blocks
-- <strong>Adversarial scenarios</strong> prevent echo chambers
-- <strong>Wildcard tracking</strong> detects when the simulation framework is too narrow
-- <strong>Tiered simulation</strong> matches depth to decision stakes (1-10 LLM calls)</p>
-<p>See <code>examples/simulation_calibration.md</code> for the full design, edge cases,
-global politics worked example, and implementation outline.</p>
-<hr />
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<ol>
-<li>✅ System prompt is in place</li>
-<li>✅ MCP server is configured</li>
-<li>✅ Agent discipline documented (<code>examples/agent_discipline.md</code>)</li>
-<li>✅ Self-calibrating agent example (<code>examples/calibrating_agent.py</code>)</li>
-<li>✅ Team memory seeding script (<code>scripts/seed_team_memory.py</code>)</li>
-<li>✅ Simulation calibration designed (<code>examples/simulation_calibration.md</code>)</li>
-<li>⏳ Add discipline instructions to team agent prompts</li>
-<li>⏳ Implement SimulatingAgent (extends CalibratingAgent)</li>
-<li>⏳ Monitor calibration metrics and Brier scores across sessions</li>
-<li>⏳ Expand knowledge base as patterns emerge from use</li>
-</ol>
+<p><code>simulate</code> is a <strong>frame</strong>, not a rhythm — a Theory-of-Mind retrieval mode that blends the SELF constitution with <code>mind/*</code> blocks to reason about other agents, users, or hypothetical scenarios (see the README's <a href="../README.md#theory-of-mind-modelling-other-agents">Theory of Mind</a> section for the shipped <code>mind_create</code>/<code>mind_predict</code>/<code>mind_outcome</code> mechanics).</p>
+<p>Beyond what's shipped, <code>examples/simulation_calibration.md</code> explores a deeper calibration design for high-stakes or novel-domain decisions:
+- <strong>Brier scores</strong> to track prediction accuracy over time
+- <strong>Fragility scores</strong> to reveal when predictions rest on too few blocks
+- <strong>Adversarial scenarios</strong> to prevent echo chambers
+- <strong>Wildcard tracking</strong> to detect when the simulation framework is too narrow
+- <strong>Tiered simulation</strong> matching depth to decision stakes (1-10 LLM calls)</p>
+<p>This is exploratory design material, not a description of shipped behaviour — check <code>ROADMAP.md</code> for what's actually implemented versus proposed.</p>
 
 
 
@@ -3287,7 +2517,7 @@ global politics worked example, and implementation outline.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

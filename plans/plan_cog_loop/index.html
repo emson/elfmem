@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2658,9 +2630,9 @@ in curate(). The architecture was designed for this; we just need to use it.</p>
 <p><strong>File:</strong> <code>src/elfmem/memory/blocks.py:20-37</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">determine_decay_tier</span><span class="p">(</span><span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">category</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecayTier</span><span class="p">:</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">tag_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">if</span> <span class="s2">&quot;self/constitutional&quot;</span> <span class="ow">in</span> <span class="n">tag_set</span><span class="p">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">if</span> <span class="s2">"self/constitutional"</span> <span class="ow">in</span> <span class="n">tag_set</span><span class="p">:</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="k">return</span> <span class="n">DecayTier</span><span class="o">.</span><span class="n">PERMANENT</span>          <span class="c1"># &lt;-- lambda = 0.00001</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">durable_tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;self/value&quot;</span><span class="p">,</span> <span class="s2">&quot;self/constraint&quot;</span><span class="p">,</span> <span class="s2">&quot;self/goal&quot;</span><span class="p">}</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">durable_tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"self/value"</span><span class="p">,</span> <span class="s2">"self/constraint"</span><span class="p">,</span> <span class="s2">"self/goal"</span><span class="p">}</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">if</span> <span class="n">tag_set</span> <span class="o">&amp;</span> <span class="n">durable_tags</span><span class="p">:</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">return</span> <span class="n">DecayTier</span><span class="o">.</span><span class="n">DURABLE</span>            <span class="c1"># &lt;-- lambda = 0.001</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="o">...</span>
@@ -2671,11 +2643,11 @@ by curate() for decades. This is already coded and tested.</p>
 <h3 id="2-guarantee-enforcement-already-implemented">2. Guarantee Enforcement — ALREADY IMPLEMENTED<a class="headerlink" href="#2-guarantee-enforcement-already-implemented" title="Permanent link">&para;</a></h3>
 <p><strong>File:</strong> <code>src/elfmem/context/frames.py:45-57</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">SELF_FRAME</span> <span class="o">=</span> <span class="n">FrameDefinition</span><span class="p">(</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">,</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"self"</span><span class="p">,</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">weights</span><span class="o">=</span><span class="n">SELF_WEIGHTS</span><span class="p">,</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">filters</span><span class="o">=</span><span class="n">FrameFilters</span><span class="p">(</span><span class="n">tag_patterns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/%&quot;</span><span class="p">]),</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">guarantees</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">],</span>       <span class="c1"># &lt;-- constitutional blocks guaranteed</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">template</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">filters</span><span class="o">=</span><span class="n">FrameFilters</span><span class="p">(</span><span class="n">tag_patterns</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/%"</span><span class="p">]),</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">guarantees</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/constitutional"</span><span class="p">],</span>       <span class="c1"># &lt;-- constitutional blocks guaranteed</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">template</span><span class="o">=</span><span class="s2">"self"</span><span class="p">,</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">token_budget</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="o">...</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
@@ -2876,9 +2848,9 @@ have reserved seats; everything else competes by relevance.</p>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│   └── [whichever constitutionals score highest for this query]
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>│
 </span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>└── COMPETITIVE SLOTS (remaining capacity)
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    ├── self/value: &quot;Cut losses early in momentum trades&quot; (if trading)
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    ├── self/value: &quot;Progressive overload requires deload weeks&quot; (if fitness)
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    └── self/value: &quot;Test in isolation before integrating&quot; (if coding)
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    ├── self/value: "Cut losses early in momentum trades" (if trading)
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    ├── self/value: "Progressive overload requires deload weeks" (if fitness)
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    └── self/value: "Test in isolation before integrating" (if coding)
 </span></code></pre></div>
 <p><strong>The flow over time:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Week 1:  elfmem init → 10 constitutional blocks (all guaranteed)
@@ -2900,11 +2872,11 @@ have reserved seats; everything else competes by relevance.</p>
 <p>The cognitive loop improves the agent through three mechanisms:</p>
 <p><strong>Mechanism 1: Value Discovery</strong>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Agent works in trading domain
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  → Curiosity block surfaces: &quot;form a hypothesis, test it&quot;
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  → Curiosity block surfaces: "form a hypothesis, test it"
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  → Agent hypothesises a trading principle
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  → Agent tests it → outcome signal recorded
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  → Feedback block surfaces: &quot;encode patterns as self-knowledge&quot;
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  → Agent calls remember(&quot;principle X&quot;, tags=[&quot;self/value&quot;])
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  → Feedback block surfaces: "encode patterns as self-knowledge"
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  → Agent calls remember("principle X", tags=["self/value"])
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>  → New DURABLE block enters the SELF frame
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>  → On subsequent trading queries, this block competes for non-guaranteed slots
 </span></code></pre></div></p>
@@ -2919,9 +2891,9 @@ have reserved seats; everything else competes by relevance.</p>
 </span></code></pre></div></p>
 <p><strong>Mechanism 3: Reflection-Driven Pruning</strong>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Agent hits session transition
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  → Reflection Protocol block surfaces: &quot;which principles did I neglect?&quot;
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  → Reflection Protocol block surfaces: "which principles did I neglect?"
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  → Agent reviews its recent work against SELF principles
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>  → Notices it hasn&#39;t used &quot;Balance&quot; — recalibrates intensity
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>  → Notices it hasn't used "Balance" — recalibrates intensity
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  → Records outcome on underperforming belief → accelerated decay
 </span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  → This is the HUMAN-LIKE mechanism: self-awareness corrects drift
 </span></code></pre></div></p>
@@ -3077,9 +3049,9 @@ reinforce all blocks tagged <code>self/constitutional</code>.</p>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">conn</span><span class="p">:</span> <span class="n">AsyncConnection</span><span class="p">,</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">current_active_hours</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Auto-reinforce all constitutional blocks regardless of score.&quot;&quot;&quot;</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="sd">"""Auto-reinforce all constitutional blocks regardless of score."""</span>
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.db.queries</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_blocks_by_tag_pattern</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_blocks_by_tag_pattern</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;self/constitutional&quot;</span><span class="p">)</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_blocks_by_tag_pattern</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">"self/constitutional"</span><span class="p">)</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="k">if</span> <span class="n">ids</span><span class="p">:</span>
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="k">await</span> <span class="n">reinforce_blocks</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">current_active_hours</span><span class="p">)</span>
 </span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
@@ -3094,16 +3066,16 @@ so the agent can see that constitutional maintenance occurred.</p>
 <p><strong>File:</strong> <code>src/elfmem/seed.py</code> (new file)</p>
 <p><strong>Why:</strong> The 10 constitutional blocks should be defined in code, not in docs. This
 makes them available to <code>elfmem init</code>, <code>elfmem_setup</code>, and <code>MemorySystem.from_config()</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="sd">&quot;&quot;&quot;Default constitutional SELF seed — ships with every elfmem instance.&quot;&quot;&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="sd">"""Default constitutional SELF seed — ships with every elfmem instance."""</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">CONSTITUTIONAL_SEED</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[</span>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="p">{</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;I am elf — a curious, adaptive cognitive agent. ...&quot;</span><span class="p">,</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">,</span> <span class="s2">&quot;self/context&quot;</span><span class="p">],</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"I am elf — a curious, adaptive cognitive agent. ..."</span><span class="p">,</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="s2">"tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"self/constitutional"</span><span class="p">,</span> <span class="s2">"self/context"</span><span class="p">],</span>
 </span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="p">},</span>
 </span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="p">{</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Nature wastes nothing. ...&quot;</span><span class="p">,</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;self/constitutional&quot;</span><span class="p">,</span> <span class="s2">&quot;self/value&quot;</span><span class="p">],</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Nature wastes nothing. ..."</span><span class="p">,</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="s2">"tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"self/constitutional"</span><span class="p">,</span> <span class="s2">"self/value"</span><span class="p">],</span>
 </span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="p">},</span>
 </span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="c1"># ... all 10 blocks</span>
 </span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">]</span>
@@ -3119,7 +3091,7 @@ controls semantic categorisation.</p>
 10 constitutional blocks from <code>seed.py</code>. The existing <code>--self</code> flag adds an
 additional <code>self/context</code> block on top.</p>
 <p><strong>Before:</strong>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>elfmem init --self &quot;I am a trading assistant&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>elfmem init --self "I am a trading assistant"
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>  → Creates config
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  → Seeds 1 self/context block
 </span></code></pre></div></p>
@@ -3128,10 +3100,10 @@ additional <code>self/context</code> block on top.</p>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  → Creates config
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>  → Seeds 10 constitutional blocks (if none exist yet)
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>elfmem init --self &quot;I am a trading assistant&quot;
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>elfmem init --self "I am a trading assistant"
 </span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>  → Creates config
 </span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>  → Seeds 10 constitutional blocks (if none exist yet)
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>  → Adds 1 additional self/context block: &quot;I am a trading assistant&quot;
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>  → Adds 1 additional self/context block: "I am a trading assistant"
 </span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
 </span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>elfmem init --no-seed
 </span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>  → Creates config only (no constitutional seed)
@@ -3147,7 +3119,7 @@ then adds identity/values as before.</p>
 <p><strong>Before:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">elfmem_setup</span><span class="p">(</span><span class="n">identity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">identity_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/context&quot;</span><span class="p">])</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">identity_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/context"</span><span class="p">])</span>
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="o">...</span>
 </span></code></pre></div></p>
 <p><strong>After:</strong>
@@ -3156,19 +3128,19 @@ then adds identity/values as before.</p>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">seed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="p">):</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap agent identity. Seeds constitutional blocks on first call.&quot;&quot;&quot;</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="sd">"""Bootstrap agent identity. Seeds constitutional blocks on first call."""</span>
 </span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="k">if</span> <span class="n">seed</span><span class="p">:</span>
 </span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">elfmem.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONSTITUTIONAL_SEED</span>
 </span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">CONSTITUTIONAL_SEED</span><span class="p">:</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">tags</span><span class="o">=</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">])</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">"content"</span><span class="p">],</span> <span class="n">tags</span><span class="o">=</span><span class="n">block</span><span class="p">[</span><span class="s2">"tags"</span><span class="p">])</span>
 </span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
 </span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>    <span class="k">if</span> <span class="n">identity</span><span class="p">:</span>
-</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/context&quot;</span><span class="p">])</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/context"</span><span class="p">])</span>
 </span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
 </span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>    <span class="k">if</span> <span class="n">values</span><span class="p">:</span>
 </span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
-</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;self/value&quot;</span><span class="p">])</span>
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>            <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_mem</span><span class="p">()</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/value"</span><span class="p">])</span>
 </span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
 </span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>    <span class="o">...</span>
 </span></code></pre></div></p>
@@ -3257,11 +3229,11 @@ explanation of the three-tier self-knowledge model.</p>
 <h2 id="how-this-evolves-across-domains">How This Evolves Across Domains<a class="headerlink" href="#how-this-evolves-across-domains" title="Permanent link">&para;</a></h2>
 <h3 id="trading-agent-week-1-12">Trading Agent (Week 1-12)<a class="headerlink" href="#trading-agent-week-1-12" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>Week 1:  elfmem init → 10 constitutional blocks
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>         Agent queries SELF: &quot;What should I consider for risk management?&quot;
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>         Agent queries SELF: "What should I consider for risk management?"
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>         Retrieved: Uncertainty, Economy, Focus + 2 guaranteed constitutional
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>         Agent starts learning trading principles
 </span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>Week 4:  Agent has learned: &quot;Cut losing positions early; the market owes nothing&quot;
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>Week 4:  Agent has learned: "Cut losing positions early; the market owes nothing"
 </span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>         This is tagged self/value (DURABLE decay, ~29 day half-life)
 </span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>         SELF retrieval for trading queries: 3 constitutional + 2 trading values
 </span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>         Constitutional principles guide HOW to trade; values guide WHAT to trade
@@ -3273,11 +3245,11 @@ explanation of the three-tier self-knowledge model.</p>
 </span></code></pre></div>
 <h3 id="fitness-agent-week-1-12">Fitness Agent (Week 1-12)<a class="headerlink" href="#fitness-agent-week-1-12" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Week 1:  Same 10 constitutional blocks (elfmem init)
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>         Agent queries SELF: &quot;How should I program training?&quot;
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>         Agent queries SELF: "How should I program training?"
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>         Retrieved: Balance (rhythm/recovery), Economy (minimum dose), Curiosity
 </span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>         Different constitutional blocks surface for different domain!
 </span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Week 4:  Agent learns: &quot;Progressive overload requires periodic deload&quot;
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Week 4:  Agent learns: "Progressive overload requires periodic deload"
 </span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>         Tagged self/value. Competes for non-guaranteed SELF slots.
 </span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>         Balance constitutional block + domain value = complete training philosophy
 </span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>
@@ -3381,7 +3353,7 @@ The context cost is ~180 tokens per retrieval, well within the 600-token SELF bu
 </span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>
 </span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a># Already correct, no changes needed:
 </span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>src/elfmem/scoring.py      ← PERMANENT lambda already defined
-</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>src/elfmem/context/frames.py ← guarantees: [&quot;self/constitutional&quot;] already set
+</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>src/elfmem/context/frames.py ← guarantees: ["self/constitutional"] already set
 </span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>src/elfmem/operations/recall.py ← _enforce_guarantees() already works
 </span></code></pre></div>
 
@@ -3463,7 +3435,7 @@ The context cost is ~180 tokens per retrieval, well within the 600-token SELF bu
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

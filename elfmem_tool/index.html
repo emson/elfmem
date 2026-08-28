@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -661,34 +661,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -3652,10 +3624,10 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># In your agent config, add the MCP transport:</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">{</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="s2">&quot;mcpServers&quot;</span>:<span class="w"> </span><span class="o">{</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="s2">&quot;elfmem&quot;</span>:<span class="w"> </span><span class="o">{</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="s2">&quot;command&quot;</span>:<span class="w"> </span><span class="s2">&quot;elfmem&quot;</span>,
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="s2">&quot;args&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;serve&quot;</span>,<span class="w"> </span><span class="s2">&quot;--db&quot;</span>,<span class="w"> </span><span class="s2">&quot;/absolute/path/to/agent_memory.db&quot;</span><span class="o">]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="s2">"mcpServers"</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="s2">"elfmem"</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="s2">"command"</span>:<span class="w"> </span><span class="s2">"elfmem"</span>,
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="s2">"args"</span>:<span class="w"> </span><span class="o">[</span><span class="s2">"serve"</span>,<span class="w"> </span><span class="s2">"--db"</span>,<span class="w"> </span><span class="s2">"/absolute/path/to/agent_memory.db"</span><span class="o">]</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="o">}</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="o">}</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">}</span>
@@ -3668,10 +3640,10 @@
 <h3 id="option-2-cli-fallback-universal">Option 2: CLI (Fallback, Universal)<a class="headerlink" href="#option-2-cli-fallback-universal" title="Permanent link">&para;</a></h3>
 <p>If your agent has bash access but no MCP:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Store knowledge</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;User prefers dark mode&quot;</span><span class="w"> </span>--tags<span class="w"> </span>ui,preferences
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"User prefers dark mode"</span><span class="w"> </span>--tags<span class="w"> </span>ui,preferences
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Retrieve context</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;What UI settings does the user prefer?&quot;</span><span class="w"> </span>--json
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"What UI settings does the user prefer?"</span><span class="w"> </span>--json
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Check status</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json
@@ -3680,10 +3652,10 @@
 <p>If you're building an application:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">elfmem</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemorySystem</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">system</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MemorySystem</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;agent.db&quot;</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">system</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MemorySystem</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"agent.db"</span><span class="p">)</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">async</span> <span class="k">with</span> <span class="n">system</span><span class="o">.</span><span class="n">session</span><span class="p">():</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="s2">&quot;User prefers dark mode&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ui&quot;</span><span class="p">,</span> <span class="s2">&quot;preferences&quot;</span><span class="p">])</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;UI preferences&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="s2">"User prefers dark mode"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"ui"</span><span class="p">,</span> <span class="s2">"preferences"</span><span class="p">])</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"UI preferences"</span><span class="p">)</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>  <span class="c1"># inject into prompt</span>
 </span></code></pre></div>
 <p>See <a href="../quickstart/">QUICKSTART.md</a> for the full guide.</p>
@@ -3692,7 +3664,7 @@
 <h3 id="three-core-operations">Three Core Operations<a class="headerlink" href="#three-core-operations" title="Permanent link">&para;</a></h3>
 <h4 id="1-remember-store-knowledge">1. <strong>Remember</strong> — Store knowledge<a class="headerlink" href="#1-remember-store-knowledge" title="Permanent link">&para;</a></h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>MCP:  elfmem_remember(content, tags?)
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>CLI:  elfmem remember &quot;content&quot; --tags tag1,tag2
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>CLI:  elfmem remember "content" --tags tag1,tag2
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Py:   await system.learn(content, tags=tags)
 </span></code></pre></div>
 <p>Store a fact, preference, decision, or observation.</p>
@@ -3706,14 +3678,14 @@
 - No LLM calls yet — learning is instant</p>
 <p><strong>Example:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User prefers explicit error handling with try/except blocks&quot;</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;code_style&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;error_handling&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;preference&quot;</span><span class="p">]</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User prefers explicit error handling with try/except blocks"</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">"tags"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"code_style"</span><span class="p">,</span><span class="w"> </span><span class="s2">"error_handling"</span><span class="p">,</span><span class="w"> </span><span class="s2">"preference"</span><span class="p">]</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <h4 id="2-recall-retrieve-relevant-knowledge">2. <strong>Recall</strong> — Retrieve relevant knowledge<a class="headerlink" href="#2-recall-retrieve-relevant-knowledge" title="Permanent link">&para;</a></h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>MCP:  elfmem_recall(query, top_k=5)
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>CLI:  elfmem recall &quot;query&quot; --top-k 5 --json
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Py:   await system.frame(&quot;attention&quot;, query=query, top_k=5)
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>CLI:  elfmem recall "query" --top-k 5 --json
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Py:   await system.frame("attention", query=query, top_k=5)
 </span></code></pre></div>
 <p>Get rendered context ready to inject into your LLM prompt.</p>
 <p><strong>When to use:</strong>
@@ -3729,8 +3701,8 @@
 - No additional calls needed — just use the returned text</p>
 <p><strong>Example:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What are the user&#39;s code style preferences?&quot;</span><span class="p">,</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"What are the user's code style preferences?"</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">"top_k"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p>Returns:
@@ -3758,41 +3730,41 @@
 - Token usage this session and lifetime</p>
 <p><strong>Example:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;session_active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;session_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;inbox_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;inbox_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">&quot;active_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="nt">&quot;health&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;good&quot;</span><span class="p">,</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Inbox nearly full. Consolidation approaching.&quot;</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">"session_active"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">"session_hours"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">"inbox_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">"inbox_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">"active_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="nt">"health"</span><span class="p">:</span><span class="w"> </span><span class="s2">"good"</span><span class="p">,</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">"suggestion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Inbox nearly full. Consolidation approaching."</span>
 </span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <hr />
 <h2 id="common-workflows">Common Workflows<a class="headerlink" href="#common-workflows" title="Permanent link">&para;</a></h2>
 <h3 id="workflow-1-single-turn-agent-stateless">Workflow 1: Single-Turn Agent (Stateless)<a class="headerlink" href="#workflow-1-single-turn-agent-stateless" title="Permanent link">&para;</a></h3>
 <p>Agent: I need to generate code. Let me check user preferences first.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>1. recall(&quot;code style preferences&quot;)  → get context
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>1. recall("code style preferences")  → get context
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>2. [generate code using context]
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>3. Done — memory is managed automatically
 </span></code></pre></div>
 <p><strong>No session management needed.</strong> The MCP server manages lifecycle automatically.</p>
 <h3 id="workflow-2-multi-turn-conversation-stateful">Workflow 2: Multi-Turn Conversation (Stateful)<a class="headerlink" href="#workflow-2-multi-turn-conversation-stateful" title="Permanent link">&para;</a></h3>
 <p>Agent: I'm starting a long conversation. I'll remember things along the way.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>1. remember(&quot;User said they prefer async/await&quot;)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>1. remember("User said they prefer async/await")
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>2. [respond to user]
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>3. remember(&quot;User tested the code, all tests passed&quot;)
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>3. remember("User tested the code, all tests passed")
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>4. [generate next response]
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>5. Session ends → auto-consolidate if inbox full
 </span></code></pre></div>
 <p><strong>Memory accumulates</strong> and can be retrieved in the same session or future sessions.</p>
 <h3 id="workflow-3-feedback-loop-learning">Workflow 3: Feedback Loop (Learning)<a class="headerlink" href="#workflow-3-feedback-loop-learning" title="Permanent link">&para;</a></h3>
 <p>Agent: The user is testing my work. I should record the outcome.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>1. recall(&quot;my recent code suggestions&quot;)  → get block IDs
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>1. recall("my recent code suggestions")  → get block IDs
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>2. [run tests]
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>3. if tests_passed:
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>     outcome(block_ids, signal=1.0)  # &quot;that advice was great&quot;
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>     outcome(block_ids, signal=1.0)  # "that advice was great"
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>   else:
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>     outcome(block_ids, signal=0.0)  # &quot;that advice was wrong&quot;
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>     outcome(block_ids, signal=0.0)  # "that advice was wrong"
 </span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>4. Memory confidence updates automatically
 </span></code></pre></div>
 <p><strong>After ~10 outcomes, evidence dominates over the LLM prior.</strong> Your memory learns what actually works.</p>
@@ -3801,9 +3773,9 @@
 <h3 id="outcome-feedback-learning-from-results">Outcome Feedback (Learning from Results)<a class="headerlink" href="#outcome-feedback-learning-from-results" title="Permanent link">&para;</a></h3>
 <p>Update block confidence based on real-world signals.</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;block_ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;block_a1b2c3&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;block_d4e5f6&quot;</span><span class="p">],</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;signal&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span><span class="p">,</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test_suite&quot;</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">"block_ids"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"block_a1b2c3"</span><span class="p">,</span><span class="w"> </span><span class="s2">"block_d4e5f6"</span><span class="p">],</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">"signal"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test_suite"</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><strong>Signal spectrum (default thresholds):</strong>
@@ -3825,9 +3797,9 @@
 </span></code></pre></div></p>
 <h3 id="multiple-frames-different-context-views">Multiple Frames (Different Context Views)<a class="headerlink" href="#multiple-frames-different-context-views" title="Permanent link">&para;</a></h3>
 <p>Retrieve different views of your memory:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>MCP:  elfmem_recall(query, frame=&quot;self&quot; | &quot;attention&quot; | &quot;task&quot; | &quot;simulate&quot;)
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>CLI:  elfmem recall &quot;query&quot; --frame attention
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Py:   await system.frame(&quot;attention&quot;, query=query)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>MCP:  elfmem_recall(query, frame="self" | "attention" | "task" | "simulate")
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>CLI:  elfmem recall "query" --frame attention
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Py:   await system.frame("attention", query=query)
 </span></code></pre></div>
 <p><strong>Four frames:</strong>
 - <strong><code>self</code></strong> — Identity context (queryless). Agent's personality, values, long-term goals
@@ -3838,7 +3810,7 @@
 <h3 id="curate-explicit-maintenance">Curate (Explicit Maintenance)<a class="headerlink" href="#curate-explicit-maintenance" title="Permanent link">&para;</a></h3>
 <p>Manually trigger memory maintenance:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;curate&quot;</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"curate"</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Runs automatically on a schedule, but you can trigger it explicitly:
@@ -3858,28 +3830,28 @@
 <p>Learn and store knowledge. <strong>Auto-manages session and consolidation.</strong></p>
 <p><strong>Parameters:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (required) — the knowledge to store&quot;</span><span class="p">,</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string[] (optional) — labels for categorization&quot;</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string (required) — the knowledge to store"</span><span class="p">,</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">"tags"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string[] (optional) — labels for categorization"</span>
 </span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Returns:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">&quot;block_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string — unique ID of stored block&quot;</span><span class="p">,</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;created | duplicate_rejected | near_duplicate_superseded&quot;</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">"block_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string — unique ID of stored block"</span><span class="p">,</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"created | duplicate_rejected | near_duplicate_superseded"</span>
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Cost:</strong> Instant (no LLM calls)</p>
 <p><strong>Typical usage:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># After discovering a user preference</span>
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_remember</span><span class="p">(</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">content</span><span class="o">=</span><span class="s2">&quot;User prefers async/await over callbacks&quot;</span><span class="p">,</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;code_style&quot;</span><span class="p">,</span> <span class="s2">&quot;javascript&quot;</span><span class="p">,</span> <span class="s2">&quot;preference&quot;</span><span class="p">]</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">content</span><span class="o">=</span><span class="s2">"User prefers async/await over callbacks"</span><span class="p">,</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"code_style"</span><span class="p">,</span> <span class="s2">"javascript"</span><span class="p">,</span> <span class="s2">"preference"</span><span class="p">]</span>
 </span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="p">)</span>
 </span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
 </span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="c1"># After test results</span>
 </span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_remember</span><span class="p">(</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">content</span><span class="o">=</span><span class="s2">&quot;test_my_function passes with current implementation&quot;</span><span class="p">,</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;testing&quot;</span><span class="p">,</span> <span class="s2">&quot;code_quality&quot;</span><span class="p">]</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">content</span><span class="o">=</span><span class="s2">"test_my_function passes with current implementation"</span><span class="p">,</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"testing"</span><span class="p">,</span> <span class="s2">"code_quality"</span><span class="p">]</span>
 </span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="p">)</span>
 </span></code></pre></div></p>
 <hr />
@@ -3887,40 +3859,40 @@
 <p>Retrieve relevant knowledge, rendered for prompt injection.</p>
 <p><strong>Parameters:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (required) — what to search for&quot;</span><span class="p">,</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer (optional, default 5) — how many blocks&quot;</span><span class="p">,</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="nt">&quot;frame&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional, default &#39;attention&#39;) — &#39;self&#39; | &#39;attention&#39; | &#39;task&#39;&quot;</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string (required) — what to search for"</span><span class="p">,</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">"top_k"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer (optional, default 5) — how many blocks"</span><span class="p">,</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="nt">"frame"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string (optional, default 'attention') — 'self' | 'attention' | 'task'"</span>
 </span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Returns:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string — rendered markdown ready for prompt injection&quot;</span><span class="p">,</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">&quot;blocks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string — rendered markdown ready for prompt injection"</span><span class="p">,</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">"blocks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 </span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">    </span><span class="p">{</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">      </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">      </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">],</span>
-</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">      </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number (0–1)&quot;</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">      </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">      </span><span class="nt">"tags"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"string"</span><span class="p">],</span>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">      </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number (0–1)"</span>
 </span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">    </span><span class="p">}</span>
 </span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">  </span><span class="p">],</span>
-</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">  </span><span class="nt">&quot;frame_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">  </span><span class="nt">&quot;cached&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">  </span><span class="nt">"frame_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span>
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">  </span><span class="nt">"cached"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 </span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Cost:</strong> Fast (embedding call only, no LLM)</p>
 <p><strong>Typical usage:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Before generating code</span>
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_recall</span><span class="p">(</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;code style preferences&quot;</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">"code style preferences"</span>
 </span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="p">)</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">User: Write a function to...&quot;</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">User: Write a function to..."</span>
 </span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
 </span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="c1"># Check identity context</span>
 </span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="n">self_context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_recall</span><span class="p">(</span>
 </span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>    <span class="n">query</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;self&quot;</span>
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    <span class="n">frame</span><span class="o">=</span><span class="s2">"self"</span>
 </span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="p">)</span>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="c1"># Returns agent&#39;s personality, values, goals</span>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="c1"># Returns agent's personality, values, goals</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem_status"><code>elfmem_status</code><a class="headerlink" href="#elfmem_status" title="Permanent link">&para;</a></h3>
@@ -3930,75 +3902,75 @@
 </span></code></pre></div></p>
 <p><strong>Returns:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="p">{</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="nt">&quot;session_active&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span><span class="nt">&quot;session_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number | null&quot;</span><span class="p">,</span>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="nt">&quot;inbox_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="nt">&quot;inbox_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">  </span><span class="nt">&quot;active_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">  </span><span class="nt">&quot;archived_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span><span class="nt">&quot;health&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;good | attention&quot;</span><span class="p">,</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string — recommended next action&quot;</span><span class="p">,</span>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">  </span><span class="nt">&quot;session_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">    </span><span class="nt">&quot;llm_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">    </span><span class="nt">&quot;llm_total_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="w">    </span><span class="nt">&quot;embedding_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="w">    </span><span class="nt">&quot;embedding_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="nt">"session_active"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span><span class="p">,</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span><span class="nt">"session_hours"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number | null"</span><span class="p">,</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="nt">"inbox_count"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="nt">"inbox_threshold"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">  </span><span class="nt">"active_count"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">  </span><span class="nt">"archived_count"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span><span class="nt">"health"</span><span class="p">:</span><span class="w"> </span><span class="s2">"good | attention"</span><span class="p">,</span>
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span><span class="nt">"suggestion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string — recommended next action"</span><span class="p">,</span>
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">  </span><span class="nt">"session_tokens"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">    </span><span class="nt">"llm_calls"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">    </span><span class="nt">"llm_total_tokens"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="w">    </span><span class="nt">"embedding_calls"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="w">    </span><span class="nt">"embedding_tokens"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 </span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a><span class="w">  </span><span class="nt">&quot;lifetime_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{ same structure }&quot;</span>
+</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a><span class="w">  </span><span class="nt">"lifetime_tokens"</span><span class="p">:</span><span class="w"> </span><span class="s2">"{ same structure }"</span>
 </span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Cost:</strong> Fast (one database read, no LLM)</p>
 <p><strong>Typical usage:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># At session start</span>
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_status</span><span class="p">()</span>
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="k">if</span> <span class="n">status</span><span class="p">[</span><span class="s2">&quot;health&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;attention&quot;</span><span class="p">:</span>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;suggestion&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="k">if</span> <span class="n">status</span><span class="p">[</span><span class="s2">"health"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"attention"</span><span class="p">:</span>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">'suggestion'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>
 </span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="c1"># Monitor token usage</span>
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;This session: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;session_tokens&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All-time: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;lifetime_tokens&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"This session: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">'session_tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All-time: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">'lifetime_tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem_outcome-advanced"><code>elfmem_outcome</code> (Advanced)<a class="headerlink" href="#elfmem_outcome-advanced" title="Permanent link">&para;</a></h3>
 <p>Record a domain outcome signal to update block confidence.</p>
 <p><strong>Parameters:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="p">{</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="nt">&quot;block_ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string[] (required) — which blocks contributed&quot;</span><span class="p">,</span>
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span><span class="nt">&quot;signal&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number (required, 0.0–1.0) — outcome quality&quot;</span><span class="p">,</span>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="nt">&quot;weight&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number (optional, default 1.0) — observation weight&quot;</span><span class="p">,</span>
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional) — audit label&quot;</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="nt">"block_ids"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string[] (required) — which blocks contributed"</span><span class="p">,</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span><span class="nt">"signal"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number (required, 0.0–1.0) — outcome quality"</span><span class="p">,</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="nt">"weight"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number (optional, default 1.0) — observation weight"</span><span class="p">,</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">  </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string (optional) — audit label"</span>
 </span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Returns:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="p">{</span>
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="nt">&quot;blocks_updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="nt">&quot;mean_confidence_delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="nt">&quot;edges_reinforced&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span>
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">  </span><span class="nt">&quot;blocks_penalized&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="nt">"blocks_updated"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="nt">"mean_confidence_delta"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span><span class="p">,</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="nt">"edges_reinforced"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">  </span><span class="nt">"blocks_penalized"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
 </span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Cost:</strong> Fast (no LLM calls)</p>
 <p><strong>Typical usage:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># After tests pass</span>
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="n">blocks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_recall</span><span class="p">(</span>
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;my recent code suggestions&quot;</span>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">"my recent code suggestions"</span>
 </span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="p">)</span>
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]]</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">[</span><span class="s2">"blocks"</span><span class="p">]]</span>
 </span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
 </span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_outcome</span><span class="p">(</span>
 </span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>    <span class="n">block_ids</span><span class="o">=</span><span class="n">block_ids</span><span class="p">,</span>
 </span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>    <span class="n">signal</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># all tests passed</span>
-</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;test_suite&quot;</span>
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"test_suite"</span>
 </span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="p">)</span>
-</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;blocks_updated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> blocks&quot;</span><span class="p">)</span>
+</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Updated </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'blocks_updated'</span><span class="p">]</span><span class="si">}</span><span class="s2"> blocks"</span><span class="p">)</span>
 </span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>
 </span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a><span class="c1"># After tests fail</span>
 </span><span id="__span-28-15"><a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_outcome</span><span class="p">(</span>
 </span><span id="__span-28-16"><a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>    <span class="n">block_ids</span><span class="o">=</span><span class="n">block_ids</span><span class="p">,</span>
 </span><span id="__span-28-17"><a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>    <span class="n">signal</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>  <span class="c1"># tests failed</span>
-</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;test_suite&quot;</span>
+</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"test_suite"</span>
 </span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a><span class="p">)</span>
-</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Penalized </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;blocks_penalized&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> blocks&quot;</span><span class="p">)</span>
+</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Penalized </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'blocks_penalized'</span><span class="p">]</span><span class="si">}</span><span class="s2"> blocks"</span><span class="p">)</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem_curate-advanced"><code>elfmem_curate</code> (Advanced)<a class="headerlink" href="#elfmem_curate-advanced" title="Permanent link">&para;</a></h3>
@@ -4008,9 +3980,9 @@
 </span></code></pre></div></p>
 <p><strong>Returns:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="p">{</span>
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="nt">&quot;archived&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer — decayed blocks removed&quot;</span><span class="p">,</span>
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="nt">&quot;edges_pruned&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer — weak graph edges removed&quot;</span><span class="p">,</span>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="nt">&quot;reinforced&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer — top-N blocks boosted&quot;</span>
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="nt">"archived"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer — decayed blocks removed"</span><span class="p">,</span>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="nt">"edges_pruned"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer — weak graph edges removed"</span><span class="p">,</span>
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="nt">"reinforced"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer — top-N blocks boosted"</span>
 </span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Cost:</strong> Fast (database operations only)</p>
@@ -4023,7 +3995,7 @@
 <p>Get detailed documentation for a specific operation.</p>
 <p><strong>Parameters:</strong>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="p">{</span>
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string (optional) — method name or None for overview&quot;</span>
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string (optional) — method name or None for overview"</span>
 </span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="p">}</span>
 </span></code></pre></div></p>
 <p><strong>Returns:</strong></p>
@@ -4034,27 +4006,28 @@
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="n">guide</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_guide</span><span class="p">()</span>
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
 </span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="c1"># Deep dive into specific method</span>
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="n">guide</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_guide</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;outcome&quot;</span><span class="p">)</span>
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="n">guide</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_guide</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"outcome"</span><span class="p">)</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem_dream-flags-v0133-mcp-parity-added-0140"><code>elfmem_dream</code> flags (v0.13.3 / MCP parity added 0.14.0)<a class="headerlink" href="#elfmem_dream-flags-v0133-mcp-parity-added-0140" title="Permanent link">&para;</a></h3>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="p">{</span>
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">  </span><span class="nt">&quot;rescore&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">              </span><span class="c1">// Deep-sleep: re-evaluate aged active blocks vs current SELF</span>
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">  </span><span class="nt">&quot;rescore_max&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">           </span><span class="c1">// Cap rescore work per call (null = use config default)</span>
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="w">  </span><span class="nt">&quot;no_llm&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">               </span><span class="c1">// Bypass LLM scoring (embed + promote only)</span>
-</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="w">  </span><span class="nt">&quot;skip_contradictions&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">   </span><span class="c1">// Skip O(n²) contradiction detection</span>
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">  </span><span class="nt">"rescore"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">              </span><span class="c1">// Deep-sleep: re-evaluate aged active blocks vs current SELF</span>
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">  </span><span class="nt">"rescore_max"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">           </span><span class="c1">// Cap rescore work per call (null = use config default)</span>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="w">  </span><span class="nt">"no_llm"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">               </span><span class="c1">// Bypass LLM scoring (embed + promote only)</span>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="w">  </span><span class="nt">"host_analyses"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">          </span><span class="c1">// {block_id: {alignment_score, tags, summary}} supplied by the host session</span>
 </span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Default invocation <code>elfmem_dream()</code> with no args is unchanged from prior versions. Use the flags when:
 - <code>rescore=True</code> — periodically (e.g. weekly) to keep aged blocks aligned with the agent's current SELF
-- <code>no_llm=True</code> — during LLM outages, or for bulk ingestion where alignment can be rescored later
-- <code>skip_contradictions=True</code> — when ingesting trusted, pre-deduplicated data</p>
+- <code>no_llm=True</code> — during LLM outages, or for bulk ingestion where alignment can be rescored later — degrades SELF-frame coherence over time, not for default use
+- <code>host_analyses={...}</code> — the host agent session (e.g. this Claude Code session) supplies its own per-block alignment/tags/summary instead of a configured LLM adapter — no local model or API key needed for the covered blocks</p>
+<p>Pairwise LLM contradiction detection at consolidate-time was retired (<a href="../decisions/0010-retire-pairwise-contradiction-detection/">ADR 0010</a>) — there is no <code>skip_contradictions</code> flag any more. Recall-time contradiction suppression (using existing records) is unaffected.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Deep-sleep — rescore up to 20 aged blocks</span>
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_dream</span><span class="p">(</span><span class="n">rescore</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rescore_max</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="c1"># Returns: {&quot;processed&quot;: 0, &quot;promoted&quot;: 0, &quot;rescored&quot;: 18, &quot;rescore_failed&quot;: 0, ...}</span>
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="c1"># Returns: {"processed": 0, "promoted": 0, "rescored": 18, "rescore_failed": 0, ...}</span>
 </span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>
-</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="c1"># Bulk ingestion — embed + promote, skip LLM and contradiction work</span>
-</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_dream</span><span class="p">(</span><span class="n">no_llm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skip_contradictions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="c1"># Bulk ingestion — embed + promote, skip LLM work</span>
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_dream</span><span class="p">(</span><span class="n">no_llm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h3 id="theory-of-mind-tools-elfmem_mind_">Theory of Mind tools (<code>elfmem_mind_*</code>)<a class="headerlink" href="#theory-of-mind-tools-elfmem_mind_" title="Permanent link">&para;</a></h3>
@@ -4064,25 +4037,25 @@ close the loop with outcomes to calibrate the model. The <code>simulate</code> f
 retrieves these together with your SELF constitution.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># 1. Create a mind model</span>
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="n">mind</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_mind_create</span><span class="p">(</span>
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>    <span class="n">goals</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ship the API refactor by Friday&quot;</span><span class="p">],</span>
-</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>    <span class="n">beliefs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Microservices are overengineered for our scale&quot;</span><span class="p">],</span>
-</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>    <span class="n">fears</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Breaking the mobile app integration&quot;</span><span class="p">],</span>
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>    <span class="n">subject</span><span class="o">=</span><span class="s2">"Alice"</span><span class="p">,</span>
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>    <span class="n">goals</span><span class="o">=</span><span class="p">[</span><span class="s2">"Ship the API refactor by Friday"</span><span class="p">],</span>
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>    <span class="n">beliefs</span><span class="o">=</span><span class="p">[</span><span class="s2">"Microservices are overengineered for our scale"</span><span class="p">],</span>
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>    <span class="n">fears</span><span class="o">=</span><span class="p">[</span><span class="s2">"Breaking the mobile app integration"</span><span class="p">],</span>
 </span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="p">)</span>
-</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="n">mind_id</span> <span class="o">=</span> <span class="n">mind</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]</span>
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="n">mind_id</span> <span class="o">=</span> <span class="n">mind</span><span class="p">[</span><span class="s2">"block_id"</span><span class="p">]</span>
 </span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>
 </span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a><span class="c1"># 2. Add a falsifiable prediction</span>
 </span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="n">pred</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_mind_predict</span><span class="p">(</span>
 </span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>    <span class="n">mind_block_id</span><span class="o">=</span><span class="n">mind_id</span><span class="p">,</span>
-</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>    <span class="n">prediction</span><span class="o">=</span><span class="s2">&quot;Alice will push back on splitting the monolith&quot;</span><span class="p">,</span>
-</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>    <span class="n">verify_at</span><span class="o">=</span><span class="s2">&quot;2026-06-01&quot;</span><span class="p">,</span>
-</span><span id="__span-35-15"><a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>    <span class="n">reasoning</span><span class="o">=</span><span class="s2">&quot;microservices belief + mobile-integration fear&quot;</span><span class="p">,</span>
+</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>    <span class="n">prediction</span><span class="o">=</span><span class="s2">"Alice will push back on splitting the monolith"</span><span class="p">,</span>
+</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>    <span class="n">verify_at</span><span class="o">=</span><span class="s2">"2026-06-01"</span><span class="p">,</span>
+</span><span id="__span-35-15"><a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>    <span class="n">reasoning</span><span class="o">=</span><span class="s2">"microservices belief + mobile-integration fear"</span><span class="p">,</span>
 </span><span id="__span-35-16"><a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a><span class="p">)</span>
-</span><span id="__span-35-17"><a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a><span class="n">decision_id</span> <span class="o">=</span> <span class="n">pred</span><span class="p">[</span><span class="s2">&quot;decision_block_id&quot;</span><span class="p">]</span>
+</span><span id="__span-35-17"><a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a><span class="n">decision_id</span> <span class="o">=</span> <span class="n">pred</span><span class="p">[</span><span class="s2">"decision_block_id"</span><span class="p">]</span>
 </span><span id="__span-35-18"><a id="__codelineno-35-18" name="__codelineno-35-18" href="#__codelineno-35-18"></a>
 </span><span id="__span-35-19"><a id="__codelineno-35-19" name="__codelineno-35-19" href="#__codelineno-35-19"></a><span class="c1"># 3. Retrieve perspective via the simulate frame</span>
 </span><span id="__span-35-20"><a id="__codelineno-35-20" name="__codelineno-35-20" href="#__codelineno-35-20"></a><span class="n">ctx</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_recall</span><span class="p">(</span>
-</span><span id="__span-35-21"><a id="__codelineno-35-21" name="__codelineno-35-21" href="#__codelineno-35-21"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;how will Alice react to the proposal?&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;simulate&quot;</span>
+</span><span id="__span-35-21"><a id="__codelineno-35-21" name="__codelineno-35-21" href="#__codelineno-35-21"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">"how will Alice react to the proposal?"</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">"simulate"</span>
 </span><span id="__span-35-22"><a id="__codelineno-35-22" name="__codelineno-35-22" href="#__codelineno-35-22"></a><span class="p">)</span>
 </span><span id="__span-35-23"><a id="__codelineno-35-23" name="__codelineno-35-23" href="#__codelineno-35-23"></a><span class="c1"># ctx.text combines SELF constitution + mind/* blocks + decisions</span>
 </span><span id="__span-35-24"><a id="__codelineno-35-24" name="__codelineno-35-24" href="#__codelineno-35-24"></a>
@@ -4090,7 +4063,7 @@ retrieves these together with your SELF constitution.</p>
 </span><span id="__span-35-26"><a id="__codelineno-35-26" name="__codelineno-35-26" href="#__codelineno-35-26"></a><span class="k">await</span> <span class="n">agent_tools</span><span class="o">.</span><span class="n">elfmem_mind_outcome</span><span class="p">(</span>
 </span><span id="__span-35-27"><a id="__codelineno-35-27" name="__codelineno-35-27" href="#__codelineno-35-27"></a>    <span class="n">decision_block_id</span><span class="o">=</span><span class="n">decision_id</span><span class="p">,</span>
 </span><span id="__span-35-28"><a id="__codelineno-35-28" name="__codelineno-35-28" href="#__codelineno-35-28"></a>    <span class="n">hit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-35-29"><a id="__codelineno-35-29" name="__codelineno-35-29" href="#__codelineno-35-29"></a>    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Alice vetoed the split in Thursday&#39;s meeting, as predicted&quot;</span><span class="p">,</span>
+</span><span id="__span-35-29"><a id="__codelineno-35-29" name="__codelineno-35-29" href="#__codelineno-35-29"></a>    <span class="n">reason</span><span class="o">=</span><span class="s2">"Alice vetoed the split in Thursday's meeting, as predicted"</span><span class="p">,</span>
 </span><span id="__span-35-30"><a id="__codelineno-35-30" name="__codelineno-35-30" href="#__codelineno-35-30"></a><span class="p">)</span>
 </span><span id="__span-35-31"><a id="__codelineno-35-31" name="__codelineno-35-31" href="#__codelineno-35-31"></a><span class="c1"># Bayesian-calibrates both the decision block and the mind block</span>
 </span><span id="__span-35-32"><a id="__codelineno-35-32" name="__codelineno-35-32" href="#__codelineno-35-32"></a>
@@ -4107,29 +4080,29 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 <hr />
 <h2 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h2>
 <h3 id="elfmem-remember"><code>elfmem remember</code><a class="headerlink" href="#elfmem-remember" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;content&quot;</span><span class="w"> </span><span class="o">[</span>--tags<span class="w"> </span>tag1,tag2<span class="o">]</span><span class="w"> </span><span class="o">[</span>--category<span class="w"> </span>knowledge<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"content"</span><span class="w"> </span><span class="o">[</span>--tags<span class="w"> </span>tag1,tag2<span class="o">]</span><span class="w"> </span><span class="o">[</span>--category<span class="w"> </span>knowledge<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options:</strong>
 - <code>--tags TAG1,TAG2</code> — comma-separated labels
 - <code>--category CATEGORY</code> — block category (default: knowledge)
 - <code>--json</code> — output JSON instead of text</p>
 <p><strong>Examples:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;User prefers dark mode&quot;</span>
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;test_my_function passes&quot;</span><span class="w"> </span>--tags<span class="w"> </span>testing<span class="w"> </span>--json
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">&quot;Always use explicit error handling&quot;</span><span class="w"> </span>--category<span class="w"> </span>preference<span class="w"> </span>--tags<span class="w"> </span>code_style
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"User prefers dark mode"</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"test_my_function passes"</span><span class="w"> </span>--tags<span class="w"> </span>testing<span class="w"> </span>--json
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>elfmem<span class="w"> </span>remember<span class="w"> </span><span class="s2">"Always use explicit error handling"</span><span class="w"> </span>--category<span class="w"> </span>preference<span class="w"> </span>--tags<span class="w"> </span>code_style
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem-recall"><code>elfmem recall</code><a class="headerlink" href="#elfmem-recall" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;query&quot;</span><span class="w"> </span><span class="o">[</span>--top-k<span class="w"> </span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--frame<span class="w"> </span>attention<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"query"</span><span class="w"> </span><span class="o">[</span>--top-k<span class="w"> </span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--frame<span class="w"> </span>attention<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options:</strong>
 - <code>--top-k N</code> — number of blocks (default: 5)
 - <code>--frame FRAME</code> — self | attention | task (default: attention)
 - <code>--json</code> — output JSON instead of text</p>
 <p><strong>Examples:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;code style preferences&quot;</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;error handling patterns&quot;</span><span class="w"> </span>--top-k<span class="w"> </span><span class="m">10</span><span class="w"> </span>--json
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span>--frame<span class="w"> </span>self<span class="w">  </span><span class="c1"># queryless recall — uses identity weights</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"code style preferences"</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"error handling patterns"</span><span class="w"> </span>--top-k<span class="w"> </span><span class="m">10</span><span class="w"> </span>--json
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">""</span><span class="w"> </span>--frame<span class="w"> </span>self<span class="w">  </span><span class="c1"># queryless recall — uses identity weights</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem-status"><code>elfmem status</code><a class="headerlink" href="#elfmem-status" title="Permanent link">&para;</a></h3>
@@ -4139,7 +4112,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 - <code>--json</code> — output JSON</p>
 <p><strong>Examples:</strong>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>elfmem<span class="w"> </span>status
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.session_tokens&#39;</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.session_tokens'</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem-outcome"><code>elfmem outcome</code><a class="headerlink" href="#elfmem-outcome" title="Permanent link">&para;</a></h3>
@@ -4154,7 +4127,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 - <code>--json</code> — output JSON</p>
 <p><strong>Examples:</strong>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>elfmem<span class="w"> </span>outcome<span class="w"> </span>abc123,def456<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>--source<span class="w"> </span>test_suite
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>elfmem<span class="w"> </span>outcome<span class="w"> </span>abc123<span class="w"> </span><span class="m">0</span>.0<span class="w"> </span>--source<span class="w"> </span><span class="s2">&quot;wrong_prediction&quot;</span><span class="w"> </span>--weight<span class="w"> </span><span class="m">2</span>.0<span class="w"> </span>--json
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>elfmem<span class="w"> </span>outcome<span class="w"> </span>abc123<span class="w"> </span><span class="m">0</span>.0<span class="w"> </span>--source<span class="w"> </span><span class="s2">"wrong_prediction"</span><span class="w"> </span>--weight<span class="w"> </span><span class="m">2</span>.0<span class="w"> </span>--json
 </span></code></pre></div></p>
 <hr />
 <h3 id="elfmem-curate"><code>elfmem curate</code><a class="headerlink" href="#elfmem-curate" title="Permanent link">&para;</a></h3>
@@ -4258,13 +4231,13 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 - Token budget: unlimited</p>
 <h3 id="custom-config-yaml">Custom Config (YAML)<a class="headerlink" href="#custom-config-yaml" title="Permanent link">&para;</a></h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nt">llm</span><span class="p">:</span>
-</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;claude-sonnet-4-6&quot;</span>
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">"claude-sonnet-4-6"</span>
 </span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="w">  </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
 </span><span id="__span-49-4"><a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a><span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
 </span><span id="__span-49-5"><a id="__codelineno-49-5" name="__codelineno-49-5" href="#__codelineno-49-5"></a><span class="w">  </span><span class="nt">max_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 </span><span id="__span-49-6"><a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>
 </span><span id="__span-49-7"><a id="__codelineno-49-7" name="__codelineno-49-7" href="#__codelineno-49-7"></a><span class="nt">embeddings</span><span class="p">:</span>
-</span><span id="__span-49-8"><a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;text-embedding-3-small&quot;</span>
+</span><span id="__span-49-8"><a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">"text-embedding-3-small"</span>
 </span><span id="__span-49-9"><a id="__codelineno-49-9" name="__codelineno-49-9" href="#__codelineno-49-9"></a><span class="w">  </span><span class="nt">dimensions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1536</span>
 </span><span id="__span-49-10"><a id="__codelineno-49-10" name="__codelineno-49-10" href="#__codelineno-49-10"></a>
 </span><span id="__span-49-11"><a id="__codelineno-49-11" name="__codelineno-49-11" href="#__codelineno-49-11"></a><span class="nt">memory</span><span class="p">:</span>
@@ -4280,10 +4253,10 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 </span><span id="__span-49-21"><a id="__codelineno-49-21" name="__codelineno-49-21" href="#__codelineno-49-21"></a><span class="w">    </span><span class="nt">search_window_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">  </span><span class="c1"># all time</span>
 </span></code></pre></div>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span><span class="s2">&quot;agent_memory.db&quot;</span>
-</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_CONFIG</span><span class="o">=</span><span class="s2">&quot;elfmem.yaml&quot;</span>
-</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span>
-</span><span id="__span-50-4"><a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-ant-...&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_DB</span><span class="o">=</span><span class="s2">"agent_memory.db"</span>
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ELFMEM_CONFIG</span><span class="o">=</span><span class="s2">"elfmem.yaml"</span>
+</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">"sk-..."</span>
+</span><span id="__span-50-4"><a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="s2">"sk-ant-..."</span>
 </span></code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -4295,7 +4268,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 3. Blocks are in inbox (not consolidated yet) — call <code>consolidate()</code> or wait for session exit
 4. Blocks were archived — check <code>status()</code> for archived count</p>
 <p><strong>Solution:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="c1"># Check what&#39;s in memory</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="c1"># Check what's in memory</span>
 </span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json
 </span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>
 </span><span id="__span-51-4"><a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a><span class="c1"># Consolidation runs automatically when inbox fills or on session exit</span>
@@ -4303,7 +4276,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 </span><span id="__span-51-6"><a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json
 </span><span id="__span-51-7"><a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a>
 </span><span id="__span-51-8"><a id="__codelineno-51-8" name="__codelineno-51-8" href="#__codelineno-51-8"></a><span class="c1"># Try recall again with broader query</span>
-</span><span id="__span-51-9"><a id="__codelineno-51-9" name="__codelineno-51-9" href="#__codelineno-51-9"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">&quot;general knowledge&quot;</span>
+</span><span id="__span-51-9"><a id="__codelineno-51-9" name="__codelineno-51-9" href="#__codelineno-51-9"></a>elfmem<span class="w"> </span>recall<span class="w"> </span><span class="s2">"general knowledge"</span>
 </span></code></pre></div></p>
 <h3 id="memory-using-too-much-space">Memory Using Too Much Space<a class="headerlink" href="#memory-using-too-much-space" title="Permanent link">&para;</a></h3>
 <p><strong>Problem:</strong> Database file is growing quickly.</p>
@@ -4319,7 +4292,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 </span><span id="__span-52-5"><a id="__codelineno-52-5" name="__codelineno-52-5" href="#__codelineno-52-5"></a>elfmem<span class="w"> </span>curate
 </span><span id="__span-52-6"><a id="__codelineno-52-6" name="__codelineno-52-6" href="#__codelineno-52-6"></a>
 </span><span id="__span-52-7"><a id="__codelineno-52-7" name="__codelineno-52-7" href="#__codelineno-52-7"></a><span class="c1"># Check inbox size</span>
-</span><span id="__span-52-8"><a id="__codelineno-52-8" name="__codelineno-52-8" href="#__codelineno-52-8"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.inbox_count&#39;</span>
+</span><span id="__span-52-8"><a id="__codelineno-52-8" name="__codelineno-52-8" href="#__codelineno-52-8"></a>elfmem<span class="w"> </span>status<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.inbox_count'</span>
 </span><span id="__span-52-9"><a id="__codelineno-52-9" name="__codelineno-52-9" href="#__codelineno-52-9"></a>
 </span><span id="__span-52-10"><a id="__codelineno-52-10" name="__codelineno-52-10" href="#__codelineno-52-10"></a><span class="c1"># If large, reduce threshold in config</span>
 </span><span id="__span-52-11"><a id="__codelineno-52-11" name="__codelineno-52-11" href="#__codelineno-52-11"></a><span class="c1"># inbox_threshold: 5  # was 10</span>
@@ -4329,7 +4302,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 <p><strong>Cause:</strong> MCP server process hung or disconnected abnormally.</p>
 <p><strong>Solution:</strong>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="c1"># Kill the hung process</span>
-</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>pkill<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;elfmem serve&quot;</span>
+</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>pkill<span class="w"> </span>-f<span class="w"> </span><span class="s2">"elfmem serve"</span>
 </span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a>
 </span><span id="__span-53-4"><a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a><span class="c1"># Restart the MCP server</span>
 </span><span id="__span-53-5"><a id="__codelineno-53-5" name="__codelineno-53-5" href="#__codelineno-53-5"></a>elfmem<span class="w"> </span>serve<span class="w"> </span>--db<span class="w"> </span>agent_memory.db
@@ -4337,41 +4310,41 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 <h3 id="token-usage-unexpectedly-high">Token Usage Unexpectedly High<a class="headerlink" href="#token-usage-unexpectedly-high" title="Permanent link">&para;</a></h3>
 <p><strong>Problem:</strong> Consolidation uses more tokens than expected.</p>
 <p><strong>Causes:</strong>
-1. Large inbox (one LLM call per block)
-2. Multiple models (alignment, tags, contradiction detection)
+1. Large inbox (one <code>process_block</code> LLM call per block — combines alignment scoring, tag inference, and summary generation)
+2. Rescoring a large aged-block backlog (<code>dream(rescore=True)</code>)
 3. Tall knowledge graph (expansion checks)</p>
 <p><strong>Optimization tips:</strong>
-1. Consolidate more frequently (smaller batches) — set <code>inbox_threshold: 5</code>
-2. Use a cheaper model for alignment scoring — set <code>alignment_model: "gpt-4o-mini"</code>
+1. Consolidate more frequently (smaller batches) — set <code>inbox_threshold: 5</code>, or bound each call with <code>max_inbox_per_run</code> / <code>--max</code>
+2. Use a cheaper model for block analysis specifically — set <code>llm.process_block_model: "gpt-4o-mini"</code>
 3. Batch multiple <code>remember()</code> calls before consolidation</p>
 <hr />
 <h2 id="best-practices-for-ai-agents">Best Practices for AI Agents<a class="headerlink" href="#best-practices-for-ai-agents" title="Permanent link">&para;</a></h2>
 <h3 id="1-remember-decisions-not-data">1. Remember Decisions, Not Data<a class="headerlink" href="#1-remember-decisions-not-data" title="Permanent link">&para;</a></h3>
 <p>❌ Bad:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"""</span>
 </span><span id="__span-54-2"><a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a><span class="s2">{</span>
-</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="s2">  &quot;filename&quot;: &quot;api.ts&quot;,</span>
-</span><span id="__span-54-4"><a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a><span class="s2">  &quot;content&quot;: &quot;[500 lines of code]&quot;,</span>
-</span><span id="__span-54-5"><a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a><span class="s2">  &quot;error&quot;: &quot;Cannot find module &#39;express&#39;&quot;</span>
+</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="s2">  "filename": "api.ts",</span>
+</span><span id="__span-54-4"><a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a><span class="s2">  "content": "[500 lines of code]",</span>
+</span><span id="__span-54-5"><a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a><span class="s2">  "error": "Cannot find module 'express'"</span>
 </span><span id="__span-54-6"><a id="__codelineno-54-6" name="__codelineno-54-6" href="#__codelineno-54-6"></a><span class="s2">}</span>
-</span><span id="__span-54-7"><a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a><span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+</span><span id="__span-54-7"><a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p>✅ Good:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span>
-</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>    <span class="s2">&quot;User is using TypeScript. Project has missing Express dependency in api.ts&quot;</span><span class="p">,</span>
-</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;typescript&quot;</span><span class="p">,</span> <span class="s2">&quot;dependencies&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">]</span>
+</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>    <span class="s2">"User is using TypeScript. Project has missing Express dependency in api.ts"</span><span class="p">,</span>
+</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"typescript"</span><span class="p">,</span> <span class="s2">"dependencies"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">]</span>
 </span><span id="__span-55-4"><a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a><span class="p">)</span>
 </span></code></pre></div></p>
 <p><strong>Why:</strong> Summaries compress context, are more retrievable, and don't waste space.</p>
 <h3 id="2-tag-consistently">2. Tag Consistently<a class="headerlink" href="#2-tag-consistently" title="Permanent link">&para;</a></h3>
 <p>❌ Bad:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;User likes dark mode&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dark&quot;</span><span class="p">])</span>
-</span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;User prefers dark UI&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ui-theme&quot;</span><span class="p">])</span>
-</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;Prefers dark background&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;appearance&quot;</span><span class="p">])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"User likes dark mode"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"dark"</span><span class="p">])</span>
+</span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"User prefers dark UI"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"ui-theme"</span><span class="p">])</span>
+</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"Prefers dark background"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"appearance"</span><span class="p">])</span>
 </span></code></pre></div></p>
 <p>✅ Good:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;User prefers dark mode&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ui_theme&quot;</span><span class="p">,</span> <span class="s2">&quot;preference&quot;</span><span class="p">])</span>
-</span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;User prefers dark background on all screens&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ui_theme&quot;</span><span class="p">,</span> <span class="s2">&quot;preference&quot;</span><span class="p">])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"User prefers dark mode"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"ui_theme"</span><span class="p">,</span> <span class="s2">"preference"</span><span class="p">])</span>
+</span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"User prefers dark background on all screens"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"ui_theme"</span><span class="p">,</span> <span class="s2">"preference"</span><span class="p">])</span>
 </span></code></pre></div></p>
 <p><strong>Why:</strong> Consistent tags improve recall precision.</p>
 <h3 id="3-batch-memory-operations">3. Batch Memory Operations<a class="headerlink" href="#3-batch-memory-operations" title="Permanent link">&para;</a></h3>
@@ -4387,29 +4360,29 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 <p><strong>Why:</strong> One consolidation pass is cheaper than N.</p>
 <h3 id="4-use-outcome-feedback">4. Use Outcome Feedback<a class="headerlink" href="#4-use-outcome-feedback" title="Permanent link">&para;</a></h3>
 <p>❌ Bad:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">&quot;User&#39;s code patterns&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="s2">"User's code patterns"</span><span class="p">)</span>
 </span><span id="__span-60-2"><a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a><span class="c1"># [generate code]</span>
 </span><span id="__span-60-3"><a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a><span class="c1"># [ignore test results]</span>
 </span></code></pre></div></p>
 <p>✅ Good:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="n">blocks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">&quot;code generation guidelines&quot;</span><span class="p">)</span>
-</span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a><span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="n">blocks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">"code generation guidelines"</span><span class="p">)</span>
+</span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a><span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">[</span><span class="s2">"blocks"</span><span class="p">]]</span>
 </span><span id="__span-61-3"><a id="__codelineno-61-3" name="__codelineno-61-3" href="#__codelineno-61-3"></a><span class="c1"># [generate code]</span>
 </span><span id="__span-61-4"><a id="__codelineno-61-4" name="__codelineno-61-4" href="#__codelineno-61-4"></a><span class="c1"># [run tests]</span>
 </span><span id="__span-61-5"><a id="__codelineno-61-5" name="__codelineno-61-5" href="#__codelineno-61-5"></a><span class="k">if</span> <span class="n">tests_passed</span><span class="p">:</span>
-</span><span id="__span-61-6"><a id="__codelineno-61-6" name="__codelineno-61-6" href="#__codelineno-61-6"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;test_suite&quot;</span><span class="p">)</span>
+</span><span id="__span-61-6"><a id="__codelineno-61-6" name="__codelineno-61-6" href="#__codelineno-61-6"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"test_suite"</span><span class="p">)</span>
 </span><span id="__span-61-7"><a id="__codelineno-61-7" name="__codelineno-61-7" href="#__codelineno-61-7"></a><span class="k">else</span><span class="p">:</span>
-</span><span id="__span-61-8"><a id="__codelineno-61-8" name="__codelineno-61-8" href="#__codelineno-61-8"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;test_suite&quot;</span><span class="p">)</span>
+</span><span id="__span-61-8"><a id="__codelineno-61-8" name="__codelineno-61-8" href="#__codelineno-61-8"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"test_suite"</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p><strong>Why:</strong> Feedback teaches your memory what actually works. After ~10 signals, evidence dominates the LLM prior.</p>
 <h3 id="5-respect-context-budgets">5. Respect Context Budgets<a class="headerlink" href="#5-respect-context-budgets" title="Permanent link">&para;</a></h3>
 <p>❌ Bad:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">&quot;everything&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</span><span id="__span-62-2"><a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">"everything"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-62-2"><a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">"</span>
 </span></code></pre></div></p>
 <p>✅ Good:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">&quot;user preferences&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-</span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">"user preferences"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">context</span><span class="p">[</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">"</span>
 </span></code></pre></div></p>
 <p><strong>Why:</strong> Injecting too much context dilutes the signal. Focus on what's relevant.</p>
 <hr />
@@ -4466,56 +4439,56 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 <hr />
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="example-1-code-generation-assistant">Example 1: Code Generation Assistant<a class="headerlink" href="#example-1-code-generation-assistant" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="c1"># Agent: I&#39;ll generate code for the user, remembering their style</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="c1"># Agent: I'll generate code for the user, remembering their style</span>
 </span><span id="__span-64-2"><a id="__codelineno-64-2" name="__codelineno-64-2" href="#__codelineno-64-2"></a>
 </span><span id="__span-64-3"><a id="__codelineno-64-3" name="__codelineno-64-3" href="#__codelineno-64-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">system</span><span class="o">.</span><span class="n">session</span><span class="p">():</span>
 </span><span id="__span-64-4"><a id="__codelineno-64-4" name="__codelineno-64-4" href="#__codelineno-64-4"></a>    <span class="c1"># Check user preferences</span>
-</span><span id="__span-64-5"><a id="__codelineno-64-5" name="__codelineno-64-5" href="#__codelineno-64-5"></a>    <span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">&quot;code style preferences&quot;</span><span class="p">)</span>
+</span><span id="__span-64-5"><a id="__codelineno-64-5" name="__codelineno-64-5" href="#__codelineno-64-5"></a>    <span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="s2">"code style preferences"</span><span class="p">)</span>
 </span><span id="__span-64-6"><a id="__codelineno-64-6" name="__codelineno-64-6" href="#__codelineno-64-6"></a>
 </span><span id="__span-64-7"><a id="__codelineno-64-7" name="__codelineno-64-7" href="#__codelineno-64-7"></a>    <span class="c1"># Generate code</span>
-</span><span id="__span-64-8"><a id="__codelineno-64-8" name="__codelineno-64-8" href="#__codelineno-64-8"></a>    <span class="n">code</span> <span class="o">=</span> <span class="n">generate_code_with_context</span><span class="p">(</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+</span><span id="__span-64-8"><a id="__codelineno-64-8" name="__codelineno-64-8" href="#__codelineno-64-8"></a>    <span class="n">code</span> <span class="o">=</span> <span class="n">generate_code_with_context</span><span class="p">(</span><span class="n">context</span><span class="p">[</span><span class="s2">"text"</span><span class="p">])</span>
 </span><span id="__span-64-9"><a id="__codelineno-64-9" name="__codelineno-64-9" href="#__codelineno-64-9"></a>
 </span><span id="__span-64-10"><a id="__codelineno-64-10" name="__codelineno-64-10" href="#__codelineno-64-10"></a>    <span class="c1"># Remember the code pattern</span>
 </span><span id="__span-64-11"><a id="__codelineno-64-11" name="__codelineno-64-11" href="#__codelineno-64-11"></a>    <span class="k">await</span> <span class="n">remember</span><span class="p">(</span>
-</span><span id="__span-64-12"><a id="__codelineno-64-12" name="__codelineno-64-12" href="#__codelineno-64-12"></a>        <span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s2"> code using </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> pattern&quot;</span><span class="p">,</span>
-</span><span id="__span-64-13"><a id="__codelineno-64-13" name="__codelineno-64-13" href="#__codelineno-64-13"></a>        <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="n">language</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="s2">&quot;generated&quot;</span><span class="p">]</span>
+</span><span id="__span-64-12"><a id="__codelineno-64-12" name="__codelineno-64-12" href="#__codelineno-64-12"></a>        <span class="sa">f</span><span class="s2">"Generated </span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s2"> code using </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2"> pattern"</span><span class="p">,</span>
+</span><span id="__span-64-13"><a id="__codelineno-64-13" name="__codelineno-64-13" href="#__codelineno-64-13"></a>        <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="n">language</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="s2">"generated"</span><span class="p">]</span>
 </span><span id="__span-64-14"><a id="__codelineno-64-14" name="__codelineno-64-14" href="#__codelineno-64-14"></a>    <span class="p">)</span>
 </span><span id="__span-64-15"><a id="__codelineno-64-15" name="__codelineno-64-15" href="#__codelineno-64-15"></a>
 </span><span id="__span-64-16"><a id="__codelineno-64-16" name="__codelineno-64-16" href="#__codelineno-64-16"></a>    <span class="c1"># Run tests</span>
 </span><span id="__span-64-17"><a id="__codelineno-64-17" name="__codelineno-64-17" href="#__codelineno-64-17"></a>    <span class="n">tests_passed</span> <span class="o">=</span> <span class="n">run_tests</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
 </span><span id="__span-64-18"><a id="__codelineno-64-18" name="__codelineno-64-18" href="#__codelineno-64-18"></a>
 </span><span id="__span-64-19"><a id="__codelineno-64-19" name="__codelineno-64-19" href="#__codelineno-64-19"></a>    <span class="c1"># Record outcome</span>
-</span><span id="__span-64-20"><a id="__codelineno-64-20" name="__codelineno-64-20" href="#__codelineno-64-20"></a>    <span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]]</span>
+</span><span id="__span-64-20"><a id="__codelineno-64-20" name="__codelineno-64-20" href="#__codelineno-64-20"></a>    <span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">context</span><span class="p">[</span><span class="s2">"blocks"</span><span class="p">]]</span>
 </span><span id="__span-64-21"><a id="__codelineno-64-21" name="__codelineno-64-21" href="#__codelineno-64-21"></a>    <span class="n">signal</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">tests_passed</span> <span class="k">else</span> <span class="mf">0.0</span>
-</span><span id="__span-64-22"><a id="__codelineno-64-22" name="__codelineno-64-22" href="#__codelineno-64-22"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signal</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;test_suite&quot;</span><span class="p">)</span>
+</span><span id="__span-64-22"><a id="__codelineno-64-22" name="__codelineno-64-22" href="#__codelineno-64-22"></a>    <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signal</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"test_suite"</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="example-2-conversational-agent">Example 2: Conversational Agent<a class="headerlink" href="#example-2-conversational-agent" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="c1"># Agent: I&#39;m having a multi-turn conversation. I remember what I learn.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="c1"># Agent: I'm having a multi-turn conversation. I remember what I learn.</span>
 </span><span id="__span-65-2"><a id="__codelineno-65-2" name="__codelineno-65-2" href="#__codelineno-65-2"></a>
 </span><span id="__span-65-3"><a id="__codelineno-65-3" name="__codelineno-65-3" href="#__codelineno-65-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">system</span><span class="o">.</span><span class="n">session</span><span class="p">():</span>
 </span><span id="__span-65-4"><a id="__codelineno-65-4" name="__codelineno-65-4" href="#__codelineno-65-4"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
 </span><span id="__span-65-5"><a id="__codelineno-65-5" name="__codelineno-65-5" href="#__codelineno-65-5"></a>        <span class="n">user_input</span> <span class="o">=</span> <span class="n">get_user_input</span><span class="p">()</span>
 </span><span id="__span-65-6"><a id="__codelineno-65-6" name="__codelineno-65-6" href="#__codelineno-65-6"></a>
 </span><span id="__span-65-7"><a id="__codelineno-65-7" name="__codelineno-65-7" href="#__codelineno-65-7"></a>        <span class="c1"># Inject user context</span>
-</span><span id="__span-65-8"><a id="__codelineno-65-8" name="__codelineno-65-8" href="#__codelineno-65-8"></a>        <span class="n">self_context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>  <span class="c1"># identity</span>
-</span><span id="__span-65-9"><a id="__codelineno-65-9" name="__codelineno-65-9" href="#__codelineno-65-9"></a>        <span class="n">attention</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="n">user_input</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>  <span class="c1"># relevant knowledge</span>
+</span><span id="__span-65-8"><a id="__codelineno-65-8" name="__codelineno-65-8" href="#__codelineno-65-8"></a>        <span class="n">self_context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="s2">"self"</span><span class="p">)</span>  <span class="c1"># identity</span>
+</span><span id="__span-65-9"><a id="__codelineno-65-9" name="__codelineno-65-9" href="#__codelineno-65-9"></a>        <span class="n">attention</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="n">user_input</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">"attention"</span><span class="p">)</span>  <span class="c1"># relevant knowledge</span>
 </span><span id="__span-65-10"><a id="__codelineno-65-10" name="__codelineno-65-10" href="#__codelineno-65-10"></a>
 </span><span id="__span-65-11"><a id="__codelineno-65-11" name="__codelineno-65-11" href="#__codelineno-65-11"></a>        <span class="c1"># Generate response</span>
 </span><span id="__span-65-12"><a id="__codelineno-65-12" name="__codelineno-65-12" href="#__codelineno-65-12"></a>        <span class="n">response</span> <span class="o">=</span> <span class="n">generate_response</span><span class="p">(</span>
 </span><span id="__span-65-13"><a id="__codelineno-65-13" name="__codelineno-65-13" href="#__codelineno-65-13"></a>            <span class="n">user_input</span><span class="p">,</span>
-</span><span id="__span-65-14"><a id="__codelineno-65-14" name="__codelineno-65-14" href="#__codelineno-65-14"></a>            <span class="n">self_context</span><span class="o">=</span><span class="n">self_context</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
-</span><span id="__span-65-15"><a id="__codelineno-65-15" name="__codelineno-65-15" href="#__codelineno-65-15"></a>            <span class="n">knowledge</span><span class="o">=</span><span class="n">attention</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+</span><span id="__span-65-14"><a id="__codelineno-65-14" name="__codelineno-65-14" href="#__codelineno-65-14"></a>            <span class="n">self_context</span><span class="o">=</span><span class="n">self_context</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span>
+</span><span id="__span-65-15"><a id="__codelineno-65-15" name="__codelineno-65-15" href="#__codelineno-65-15"></a>            <span class="n">knowledge</span><span class="o">=</span><span class="n">attention</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span>
 </span><span id="__span-65-16"><a id="__codelineno-65-16" name="__codelineno-65-16" href="#__codelineno-65-16"></a>        <span class="p">)</span>
 </span><span id="__span-65-17"><a id="__codelineno-65-17" name="__codelineno-65-17" href="#__codelineno-65-17"></a>
 </span><span id="__span-65-18"><a id="__codelineno-65-18" name="__codelineno-65-18" href="#__codelineno-65-18"></a>        <span class="c1"># If user reveals a preference, remember it</span>
 </span><span id="__span-65-19"><a id="__codelineno-65-19" name="__codelineno-65-19" href="#__codelineno-65-19"></a>        <span class="k">if</span> <span class="n">preference</span> <span class="o">:=</span> <span class="n">extract_preference</span><span class="p">(</span><span class="n">user_input</span><span class="p">):</span>
-</span><span id="__span-65-20"><a id="__codelineno-65-20" name="__codelineno-65-20" href="#__codelineno-65-20"></a>            <span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="n">preference</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;user_preference&quot;</span><span class="p">])</span>
+</span><span id="__span-65-20"><a id="__codelineno-65-20" name="__codelineno-65-20" href="#__codelineno-65-20"></a>            <span class="k">await</span> <span class="n">remember</span><span class="p">(</span><span class="n">preference</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"user_preference"</span><span class="p">])</span>
 </span><span id="__span-65-21"><a id="__codelineno-65-21" name="__codelineno-65-21" href="#__codelineno-65-21"></a>
 </span><span id="__span-65-22"><a id="__codelineno-65-22" name="__codelineno-65-22" href="#__codelineno-65-22"></a>        <span class="n">send_response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 </span><span id="__span-65-23"><a id="__codelineno-65-23" name="__codelineno-65-23" href="#__codelineno-65-23"></a>    <span class="c1"># Session auto-consolidates on exit</span>
 </span></code></pre></div>
 <h3 id="example-3-autonomous-agent-with-learning-loop">Example 3: Autonomous Agent with Learning Loop<a class="headerlink" href="#example-3-autonomous-agent-with-learning-loop" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-66-1"><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a><span class="c1"># Agent: I&#39;m autonomous. I learn from outcomes over time.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-66-1"><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a><span class="c1"># Agent: I'm autonomous. I learn from outcomes over time.</span>
 </span><span id="__span-66-2"><a id="__codelineno-66-2" name="__codelineno-66-2" href="#__codelineno-66-2"></a>
 </span><span id="__span-66-3"><a id="__codelineno-66-3" name="__codelineno-66-3" href="#__codelineno-66-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">system</span><span class="o">.</span><span class="n">session</span><span class="p">():</span>
 </span><span id="__span-66-4"><a id="__codelineno-66-4" name="__codelineno-66-4" href="#__codelineno-66-4"></a>    <span class="c1"># Get current task</span>
@@ -4525,12 +4498,12 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
 </span><span id="__span-66-8"><a id="__codelineno-66-8" name="__codelineno-66-8" href="#__codelineno-66-8"></a>    <span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">recall</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
 </span><span id="__span-66-9"><a id="__codelineno-66-9" name="__codelineno-66-9" href="#__codelineno-66-9"></a>
 </span><span id="__span-66-10"><a id="__codelineno-66-10" name="__codelineno-66-10" href="#__codelineno-66-10"></a>    <span class="c1"># Execute task</span>
-</span><span id="__span-66-11"><a id="__codelineno-66-11" name="__codelineno-66-11" href="#__codelineno-66-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">execute_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">knowledge</span><span class="o">=</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+</span><span id="__span-66-11"><a id="__codelineno-66-11" name="__codelineno-66-11" href="#__codelineno-66-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">execute_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">knowledge</span><span class="o">=</span><span class="n">context</span><span class="p">[</span><span class="s2">"text"</span><span class="p">])</span>
 </span><span id="__span-66-12"><a id="__codelineno-66-12" name="__codelineno-66-12" href="#__codelineno-66-12"></a>
 </span><span id="__span-66-13"><a id="__codelineno-66-13" name="__codelineno-66-13" href="#__codelineno-66-13"></a>    <span class="c1"># Observe outcome (maybe days later via webhook)</span>
 </span><span id="__span-66-14"><a id="__codelineno-66-14" name="__codelineno-66-14" href="#__codelineno-66-14"></a>    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">has_outcome</span><span class="p">():</span>
 </span><span id="__span-66-15"><a id="__codelineno-66-15" name="__codelineno-66-15" href="#__codelineno-66-15"></a>        <span class="n">signal</span> <span class="o">=</span> <span class="n">normalize_outcome</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">metric</span><span class="p">)</span>
-</span><span id="__span-66-16"><a id="__codelineno-66-16" name="__codelineno-66-16" href="#__codelineno-66-16"></a>        <span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]]</span>
+</span><span id="__span-66-16"><a id="__codelineno-66-16" name="__codelineno-66-16" href="#__codelineno-66-16"></a>        <span class="n">block_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">context</span><span class="p">[</span><span class="s2">"blocks"</span><span class="p">]]</span>
 </span><span id="__span-66-17"><a id="__codelineno-66-17" name="__codelineno-66-17" href="#__codelineno-66-17"></a>        <span class="k">await</span> <span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signal</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
 </span><span id="__span-66-18"><a id="__codelineno-66-18" name="__codelineno-66-18" href="#__codelineno-66-18"></a>
 </span><span id="__span-66-19"><a id="__codelineno-66-19" name="__codelineno-66-19" href="#__codelineno-66-19"></a>        <span class="c1"># Memory now remembers which knowledge was correct</span>
@@ -4631,7 +4604,7 @@ that generate falsifiable predictions*, not as a category of free-text notes.</p
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -655,34 +655,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -3060,7 +3032,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Is the task small/focused?
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → YES → Solo session
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Can work be parallelised but workers don&#39;t need to talk?
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Can work be parallelised but workers don't need to talk?
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  → YES → Subagents (Task tool without team_name)
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Do workers need to share findings, challenge each other, or coordinate?
@@ -3123,8 +3095,8 @@
 <p>Add to your <code>settings.json</code> (or shell environment):</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// ~/.claude/settings.json</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="p">{</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">&quot;CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1"</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p">}</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
 </span></code></pre></div>
@@ -3272,9 +3244,9 @@
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>[TEAM STRUCTURE]
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>Create an agent team with:
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>- Teammate &quot;name-1&quot; focusing on [scope/files]
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>- Teammate &quot;name-2&quot; focusing on [scope/files]
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>- Teammate &quot;name-3&quot; focusing on [scope/files]
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>- Teammate "name-1" focusing on [scope/files]
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>- Teammate "name-2" focusing on [scope/files]
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>- Teammate "name-3" focusing on [scope/files]
 </span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
 </span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>[COORDINATION]
 </span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>They should coordinate on [shared interface/API contract/data schema].
@@ -3291,12 +3263,12 @@
 <p><strong>Research &amp; Debate:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Users report the app exits after one message instead of staying connected.
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Spawn 5 agent teammates to investigate different hypotheses. Have them
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>talk to each other to try to disprove each other&#39;s theories, like a
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>talk to each other to try to disprove each other's theories, like a
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>scientific debate. Update the findings doc with whatever consensus emerges.
 </span></code></pre></div>
 <p><strong>Feature Build:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Create an agent team with two teammates. Teammate &quot;backend&quot; should
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>implement the new /api/users endpoint in src/routes/. Teammate &quot;frontend&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Create an agent team with two teammates. Teammate "backend" should
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>implement the new /api/users endpoint in src/routes/. Teammate "frontend"
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>should build the user profile component in src/components/. They should
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>coordinate on the API contract.
 </span></code></pre></div>
@@ -3307,9 +3279,9 @@
 </span></code></pre></div>
 <p><strong>Code Review (Parallel Specialists):</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Review this PR from multiple perspectives. Create an agent team with:
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>- &quot;security&quot; reviewing for vulnerabilities (SQL injection, XSS, auth bypass)
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>- &quot;performance&quot; reviewing for N+1 queries, memory leaks, inefficiencies
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>- &quot;architecture&quot; reviewing for SOLID principles and design patterns
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>- "security" reviewing for vulnerabilities (SQL injection, XSS, auth bypass)
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>- "performance" reviewing for N+1 queries, memory leaks, inefficiencies
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>- "architecture" reviewing for SOLID principles and design patterns
 </span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>Synthesise all findings into a prioritised review.
 </span></code></pre></div>
 <h3 id="53-how-to-write-teammate-spawn-prompts">5.3 How to Write Teammate Spawn Prompts<a class="headerlink" href="#53-how-to-write-teammate-spawn-prompts" title="Permanent link">&para;</a></h3>
@@ -3344,15 +3316,15 @@
 </span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>- Include: what you found, what you changed, any issues for other teammates
 </span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
 </span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>COORDINATION:
-</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>- If you need [X], message teammate &quot;[name]&quot;
-</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>- If you discover issues in [other area], message the lead, don&#39;t fix it yourself
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>- If you need [X], message teammate "[name]"
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>- If you discover issues in [other area], message the lead, don't fix it yourself
 </span></code></pre></div>
 <h4 id="bad-vs-good-teammate-prompts">Bad vs Good Teammate Prompts<a class="headerlink" href="#bad-vs-good-teammate-prompts" title="Permanent link">&para;</a></h4>
 <p><strong>BAD — Too vague:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>prompt: &quot;Review the code&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>prompt: "Review the code"
 </span></code></pre></div>
 <p><strong>BAD — No reporting instructions:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>prompt: &quot;Check the authentication module for security issues&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>prompt: "Check the authentication module for security issues"
 </span></code></pre></div>
 <p><strong>GOOD — Complete context:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>prompt: `
@@ -3372,30 +3344,30 @@
 </span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>  - Suggested fix
 </span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>
 </span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>  Send your findings to team-lead via:
-</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>  Teammate({ operation: &quot;write&quot;, target_agent_id: &quot;team-lead&quot;, 
-</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>    value: &quot;Your structured findings here&quot; })
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>  Teammate({ operation: "write", target_agent_id: "team-lead", 
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>    value: "Your structured findings here" })
 </span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>`
 </span></code></pre></div>
 <h3 id="54-designing-task-descriptions">5.4 Designing Task Descriptions<a class="headerlink" href="#54-designing-task-descriptions" title="Permanent link">&para;</a></h3>
 <p>Task descriptions are prompts for the agent that claims them. Pack in detail.</p>
 <p><strong>BAD:</strong></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fix auth&quot;</span><span class="p">,</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fix the authentication&quot;</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">"subject"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fix auth"</span><span class="p">,</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fix the authentication"</span>
 </span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><strong>GOOD:</strong></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Refactor User model: extract auth concern&quot;</span><span class="p">,</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extract authentication methods from app/models/user.rb into a new AuthenticatableUser concern at app/models/concerns/authenticatable_user.rb. Methods to extract: #authenticate, #generate_token, #refresh_token, #revoke_all_tokens. Ensure User model includes the concern. Run existing auth specs to verify nothing breaks. Mark task complete and notify team-lead with a summary of extracted methods.&quot;</span><span class="p">,</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">&quot;activeForm&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extracting auth concern from User model...&quot;</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">"subject"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Refactor User model: extract auth concern"</span><span class="p">,</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Extract authentication methods from app/models/user.rb into a new AuthenticatableUser concern at app/models/concerns/authenticatable_user.rb. Methods to extract: #authenticate, #generate_token, #refresh_token, #revoke_all_tokens. Ensure User model includes the concern. Run existing auth specs to verify nothing breaks. Mark task complete and notify team-lead with a summary of extracted methods."</span><span class="p">,</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">"activeForm"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Extracting auth concern from User model..."</span>
 </span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="55-advanced-prompt-techniques">5.5 Advanced Prompt Techniques<a class="headerlink" href="#55-advanced-prompt-techniques" title="Permanent link">&para;</a></h3>
 <h4 id="technique-1-the-debate-pattern">Technique 1: The Debate Pattern<a class="headerlink" href="#technique-1-the-debate-pattern" title="Permanent link">&para;</a></h4>
 <p>Force teammates to challenge each other's findings for higher quality results:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>Spawn 5 agent teammates to investigate [problem]. Have them talk to
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>each other to try to disprove each other&#39;s theories, like a scientific
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>each other to try to disprove each other's theories, like a scientific
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>debate. The theory that survives active challenge is more likely correct.
 </span></code></pre></div>
 <p>This works because sequential investigation suffers from <strong>anchoring bias</strong> — once one theory is explored, subsequent investigation is biased toward it. Parallel independent investigators with active disproval produce better results.</p>
@@ -3403,7 +3375,7 @@
 <p>For pools of independent tasks, use this self-organising worker prompt:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>You are a swarm worker. Your job:
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>1. Call TaskList to see available tasks
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>2. Find a task with status &#39;pending&#39; and no owner
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>2. Find a task with status 'pending' and no owner
 </span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>3. Claim it with TaskUpdate (set owner to your name)
 </span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>4. Start it with TaskUpdate (set status to in_progress)
 </span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>5. Do the work
@@ -3417,13 +3389,13 @@
 <h4 id="technique-3-model-selection-in-prompts">Technique 3: Model Selection in Prompts<a class="headerlink" href="#technique-3-model-selection-in-prompts" title="Permanent link">&para;</a></h4>
 <p>Use expensive models for coordination, cheap models for execution:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Create an agent team. Use Opus for the team lead (coordination matters).
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>Use Sonnet for all teammates (they&#39;re doing focused execution work).
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>Use Sonnet for all teammates (they're doing focused execution work).
 </span></code></pre></div>
 <p>In spawn calls:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Task({
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>  team_name: &quot;my-team&quot;,
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>  name: &quot;worker-1&quot;,
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  model: &quot;sonnet&quot;,    // Cheaper model for focused work
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>  team_name: "my-team",
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>  name: "worker-1",
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  model: "sonnet",    // Cheaper model for focused work
 </span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>  ...
 </span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>})
 </span></code></pre></div>
@@ -3449,7 +3421,7 @@
 <h2 id="6-the-six-orchestration-patterns">6. The Six Orchestration Patterns<a class="headerlink" href="#6-the-six-orchestration-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="pattern-1-parallel-specialists-leader-pattern">Pattern 1: Parallel Specialists (Leader Pattern)<a class="headerlink" href="#pattern-1-parallel-specialists-leader-pattern" title="Permanent link">&para;</a></h3>
 <p>Multiple specialists work simultaneously on different aspects of the same codebase.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>YOU: &quot;Review this PR from security, performance, and architecture angles&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>YOU: "Review this PR from security, performance, and architecture angles"
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>LEAD spawns:
 </span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>  security-reviewer  → focuses on vulnerabilities
@@ -3463,10 +3435,10 @@
 <p>Each stage depends on the previous, work flows through a pipeline.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Research → Plan → Implement → Test → Review
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>TaskUpdate({ taskId: &quot;2&quot;, addBlockedBy: [&quot;1&quot;] })
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>TaskUpdate({ taskId: &quot;3&quot;, addBlockedBy: [&quot;2&quot;] })
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>TaskUpdate({ taskId: &quot;4&quot;, addBlockedBy: [&quot;3&quot;] })
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>TaskUpdate({ taskId: &quot;5&quot;, addBlockedBy: [&quot;4&quot;] })
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>TaskUpdate({ taskId: "2", addBlockedBy: ["1"] })
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>TaskUpdate({ taskId: "3", addBlockedBy: ["2"] })
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>TaskUpdate({ taskId: "4", addBlockedBy: ["3"] })
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>TaskUpdate({ taskId: "5", addBlockedBy: ["4"] })
 </span></code></pre></div>
 <p><strong>Best for:</strong> Feature development with clear phases, migration workflows.</p>
 <h3 id="pattern-3-swarm-self-organising-workers">Pattern 3: Swarm (Self-Organising Workers)<a class="headerlink" href="#pattern-3-swarm-self-organising-workers" title="Permanent link">&para;</a></h3>
@@ -3493,7 +3465,7 @@
 <h3 id="pattern-6-competing-hypotheses-debate">Pattern 6: Competing Hypotheses (Debate)<a class="headerlink" href="#pattern-6-competing-hypotheses-debate" title="Permanent link">&para;</a></h3>
 <p>Multiple agents investigate independently and challenge each other.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>5 agents investigate a bug → each proposes a theory
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>→ agents try to disprove each other&#39;s theories
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>→ agents try to disprove each other's theories
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>→ surviving theory is likely the root cause
 </span></code></pre></div>
 <p><strong>Best for:</strong> Complex debugging, root cause analysis, design decisions.</p>
@@ -3547,7 +3519,7 @@
 </span><span id="__span-34-44"><a id="__codelineno-34-44" name="__codelineno-34-44" href="#__codelineno-34-44"></a><span class="k">-</span><span class="w"> </span>Before coding: propose a plan in bullets; wait for approval
 </span><span id="__span-34-45"><a id="__codelineno-34-45" name="__codelineno-34-45" href="#__codelineno-34-45"></a><span class="k">-</span><span class="w"> </span>Avoid over-engineering
 </span><span id="__span-34-46"><a id="__codelineno-34-46" name="__codelineno-34-46" href="#__codelineno-34-46"></a><span class="k">-</span><span class="w"> </span>When you complete work, send a structured summary to the lead
-</span><span id="__span-34-47"><a id="__codelineno-34-47" name="__codelineno-34-47" href="#__codelineno-34-47"></a><span class="k">-</span><span class="w"> </span>If you discover issues outside your scope, message the lead — don&#39;t fix it yourself
+</span><span id="__span-34-47"><a id="__codelineno-34-47" name="__codelineno-34-47" href="#__codelineno-34-47"></a><span class="k">-</span><span class="w"> </span>If you discover issues outside your scope, message the lead — don't fix it yourself
 </span></code></pre></div>
 <h3 id="key-principles-for-claudemd-in-team-context">Key Principles for CLAUDE.md in Team Context<a class="headerlink" href="#key-principles-for-claudemd-in-team-context" title="Permanent link">&para;</a></h3>
 <ol>
@@ -3704,48 +3676,48 @@
 <hr />
 <h2 id="12-quick-reference-cheat-sheet">12. Quick Reference Cheat Sheet<a class="headerlink" href="#12-quick-reference-cheat-sheet" title="Permanent link">&para;</a></h2>
 <h3 id="enable-agent-teams_1">Enable Agent Teams<a class="headerlink" href="#enable-agent-teams_1" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="spawn-a-subagent-no-team">Spawn a Subagent (No Team)<a class="headerlink" href="#spawn-a-subagent-no-team" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>Task({ subagent_type: &quot;Explore&quot;, description: &quot;Find files&quot;, prompt: &quot;...&quot; })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>Task({ subagent_type: "Explore", description: "Find files", prompt: "..." })
 </span></code></pre></div>
 <h3 id="create-a-team-spawn-teammate">Create a Team + Spawn Teammate<a class="headerlink" href="#create-a-team-spawn-teammate" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Teammate({ operation: &quot;spawnTeam&quot;, team_name: &quot;my-team&quot; })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Teammate({ operation: "spawnTeam", team_name: "my-team" })
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>Task({
-</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>  team_name: &quot;my-team&quot;,
-</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>  name: &quot;worker-1&quot;,
-</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>  subagent_type: &quot;general-purpose&quot;,
-</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>  model: &quot;sonnet&quot;,
-</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>  prompt: &quot;Your detailed instructions here...&quot;,
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>  team_name: "my-team",
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>  name: "worker-1",
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>  subagent_type: "general-purpose",
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>  model: "sonnet",
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>  prompt: "Your detailed instructions here...",
 </span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>  run_in_background: true
 </span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>})
 </span></code></pre></div>
 <h3 id="create-task-with-dependencies">Create Task with Dependencies<a class="headerlink" href="#create-task-with-dependencies" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>TaskCreate({ subject: &quot;Step 1: Research&quot;, description: &quot;...&quot; })
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>TaskCreate({ subject: &quot;Step 2: Implement&quot;, description: &quot;...&quot; })
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>TaskUpdate({ taskId: &quot;2&quot;, addBlockedBy: [&quot;1&quot;] })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>TaskCreate({ subject: "Step 1: Research", description: "..." })
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>TaskCreate({ subject: "Step 2: Implement", description: "..." })
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>TaskUpdate({ taskId: "2", addBlockedBy: ["1"] })
 </span></code></pre></div>
 <h3 id="message-a-teammate">Message a Teammate<a class="headerlink" href="#message-a-teammate" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Teammate({ operation: &quot;write&quot;, target_agent_id: &quot;worker-1&quot;, value: &quot;...&quot; })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Teammate({ operation: "write", target_agent_id: "worker-1", value: "..." })
 </span></code></pre></div>
 <h3 id="broadcast-to-all">Broadcast to All<a class="headerlink" href="#broadcast-to-all" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Teammate({ operation: &quot;broadcast&quot;, name: &quot;team-lead&quot;, value: &quot;Status check&quot; })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Teammate({ operation: "broadcast", name: "team-lead", value: "Status check" })
 </span></code></pre></div>
 <h3 id="shutdown-sequence">Shutdown Sequence<a class="headerlink" href="#shutdown-sequence" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Teammate({ operation: &quot;requestShutdown&quot;, target_agent_id: &quot;worker-1&quot; })
+<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Teammate({ operation: "requestShutdown", target_agent_id: "worker-1" })
 </span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>// Wait for approval...
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>Teammate({ operation: &quot;cleanup&quot; })
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>Teammate({ operation: "cleanup" })
 </span></code></pre></div>
 <h3 id="debug-commands">Debug Commands<a class="headerlink" href="#debug-commands" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c1"># Check team config</span>
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/config.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.members[] | {name, agentType}&#39;</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/config.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.members[] | {name, agentType}'</span>
 </span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>
 </span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="c1"># Check inboxes</span>
-</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/inboxes/team-lead.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.&#39;</span>
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>cat<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/inboxes/team-lead.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.'</span>
 </span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a>
 </span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="c1"># List tasks</span>
-</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>cat<span class="w"> </span>~/.claude/tasks/<span class="o">{</span>team<span class="o">}</span>/*.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;{id, subject, status, owner}&#39;</span>
+</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>cat<span class="w"> </span>~/.claude/tasks/<span class="o">{</span>team<span class="o">}</span>/*.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'{id, subject, status, owner}'</span>
 </span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a>
 </span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a><span class="c1"># Watch for messages</span>
 </span><span id="__span-44-11"><a id="__codelineno-44-11" name="__codelineno-44-11" href="#__codelineno-44-11"></a>tail<span class="w"> </span>-f<span class="w"> </span>~/.claude/teams/<span class="o">{</span>team<span class="o">}</span>/inboxes/team-lead.json
@@ -3919,7 +3891,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

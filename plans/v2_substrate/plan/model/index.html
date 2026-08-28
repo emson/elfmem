@@ -1,0 +1,2853 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/plans/v2_substrate/plan/model/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Concept model — elfmem v2, Steps 8–9 - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#concept-model-elfmem-v2-steps-89" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Concept model — elfmem v2, Steps 8–9
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invariants
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generative-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generative core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#derived-from-the-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived from the core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domains
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Domains">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supporting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pace-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pace layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Seams
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concept-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concept graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spec-defects-found-during-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec defects found during interpretation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#amendments-applied-to-the-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amendments applied to the spec
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-drift-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model drift log
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/plans/v2_substrate/plan/model.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="concept-model-elfmem-v2-steps-89">Concept model — elfmem v2, Steps 8–9<a class="headerlink" href="#concept-model-elfmem-v2-steps-89" title="Permanent link">&para;</a></h1>
+<p><em>The shared interpretation of the spec. Durable: changes only when the architecture
+changes. Every builder receives the core concepts verbatim via the constitution, so
+wording here is load-bearing.</em></p>
+<p><strong>Spec:</strong>
+<code>docs/research/v2_substrate_and_reasoning_ownership_research.md</code> (entry point, §1–§11)
++ <code>docs/plans/plan_v2_substrate_reevaluation.md</code> (companion — block format, migration
+phases, config chain detail referenced rather than repeated) · <strong>Interpreted:</strong> 2026-08-09
+· <strong>Covers:</strong> Steps 8–9 only (full · Steps 1–7b are already shipped and out of scope
+for this model)</p>
+<p><strong>Spec hashes</strong> (sha256, first 16 hex): <code>473ef56f4ae49c8e</code> (research doc),
+<code>cf645763314e5dfc</code> (companion plan). <strong>Base commit:</strong> <code>752cd9f</code> on <code>elfmem_index</code>.</p>
+<p><strong>Decision-gate context:</strong> the user was asked whether to gather cross-instance
+(Alv/Mira) usage data before committing to Step 8, per the plan doc's own stated
+precondition (§10). <strong>Decision: commit now on single-instance evidence.</strong> The
+instance-dependent finding (decay is inert) is explicitly the weakest one; the
+architecture-level findings (missing edit API, unguarded constitutional overwrite,
+52x cost amplification, key-resolution fragility) do not depend on session length
+and are the load-bearing evidence for this model.</p>
+<hr />
+<h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
+<p><em>Statements that hold everywhere, regardless of which unit is being built.</em></p>
+<ol>
+<li><strong>The index is the map; the files are the territory.</strong> <code>.elfmem/index.db</code> never
+   holds information that cannot be reconstructed from <code>.elfmem/memory/**.md</code> by
+   <code>elfmem index</code> with zero LLM calls. Anything that can't be rebuilt this way is a
+   bug, not a feature. (research doc §4.1, quoting MOSS: <em>"the corpus is never
+   altered, chunked into oblivion, or replaced by derived representations."</em>)</li>
+<li><strong><code>self.md</code> is never a block-table row.</strong> It is read directly into the <code>self</code>
+   frame; it is never superseded, never decayed, never subject to <code>consolidate()</code>.
+   No supersession path can reach it because it was never a row to begin with —
+   this is a structural guarantee, not a guard (plan doc Iteration 4, S3).</li>
+<li><strong>A block's <code>id:</code> is permanent and content-independent</strong>, assigned once at
+   creation. <code>sha256(content)</code> becomes a secondary field, used only to decide
+   whether re-embedding is needed. Reinforcement count, decay clock, and edges key
+   off <code>id:</code>, not content hash — otherwise every edit orphans the block's history
+   (research doc §4.2).</li>
+<li><strong>No LLM call mutates memory directly.</strong> Every change to <code>.elfmem/memory/**.md</code>
+   is either (a) a deterministic operation — <code>learn</code> (append), <code>edit</code>, <code>forget</code>,
+   <code>promote</code> — or (b) a human-approved <code>--apply</code> of a proposal file an LLM only
+   <em>drafted</em>. Reasoning proposes; a human or deterministic code applies (plan doc
+   §5.4, "proposal, not mutation").</li>
+<li><strong>A pinned block (<code>pinned: true</code> in frontmatter, superseding today's
+   <code>self/constitutional</code> tag-based guard) is never proposed for removal and is
+   always included in its frame.</strong></li>
+</ol>
+<hr />
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Markdown files under <code>.elfmem/memory/</code> are the sole source of truth; SQLite
+(<code>.elfmem/index.db</code>) is a zero-LLM-cost, disposable, rebuildable derived index;
+all LLM-mediated curation moves from per-block write-time mutation to
+corpus-level, proposal-only, human-approved review, with the review's reasoning
+supplied either by elfmem's own optional gateway (headless/no-host-agent) or by
+whichever host agent invokes the <code>elf-review</code> skill (interactive).</p>
+</blockquote>
+<p>This is Iteration 5 of the plan doc's Simulation I (substrate) composed with
+Iteration 4 of the research doc's Simulation II (reasoning ownership) — both
+already run, against ten and eleven frozen scenarios respectively, converging
+cleanly with no further improvement found (Iteration 6 in each case regressed).
+This model does not re-run Choose; it inherits the decision.</p>
+<p><strong>What becomes free.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Free because</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constitutional block can never be silently destroyed by supersession (S3)</td>
+<td><code>self.md</code> was never a row — no supersession path exists, not merely guarded</td>
+</tr>
+<tr>
+<td>"What changed in memory last month" audit (S9)</td>
+<td><code>git log -p .elfmem/memory/</code> — no mutation-log table to build or maintain</td>
+</tr>
+<tr>
+<td>Constitution survives 6+ months unattended (S10)</td>
+<td>Survives by construction as a version-controlled file</td>
+</tr>
+<tr>
+<td>Fresh install needs no LLM API key for the common case (S5, S9 of Sim II)</td>
+<td>Nothing is auto-added, so nothing needs curating; <code>elf-review</code>'s reasoning is borrowed from the host session</td>
+</tr>
+<tr>
+<td>Undo any memory change</td>
+<td><code>git revert</code> — no bespoke undo mechanism</td>
+</tr>
+<tr>
+<td>"Edit a block" is a text edit with a visible diff</td>
+<td>Files are the source of truth; no round-trip through an opaque mutation API required</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rejected, and why.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Failed on</th>
+<th>Or converged into</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iteration 2: CRUD + pin guard, SQLite unchanged (= today's shipped Steps 1–2)</td>
+<td>Cost (S4) and simplicity untouched — a table, a column, three methods on top of 23.5k LOC</td>
+<td>Kept as the emergency patch that bought time, not the destination</td>
+</tr>
+<tr>
+<td>Iteration 6: drop SQLite entirely, pure markdown + grep</td>
+<td>S7 (scale to 14,000 blocks) fails hard — no semantic retrieval, no budget mechanism</td>
+<td>Confirms the index is not incidental; it buys the entire scale story</td>
+</tr>
+<tr>
+<td>Sim II Iteration 3: replace <code>frame()</code>/<code>recall()</code> themselves with a <code>ctx</code>-style skill, no index at all</td>
+<td>S2 fails twice (no human to checkbox-review an autonomous loop's every call; grep can't rank by recency/reinforcement/centrality), S3 fails (no host agent at 3am for cron), S4 fails (non-Claude-Code peer has no <code>SKILL.md</code>)</td>
+<td>Confirms exactly where the occasional/autonomous split holds</td>
+</tr>
+<tr>
+<td>Sim II Iteration 5: drop embeddings from the index too</td>
+<td>Silent regression on vocabulary-mismatch queries — grep cannot solve this, embeddings can</td>
+<td>Kept as an explicit <code>index.embeddings: auto\|always\|never</code> opt-out, not the default</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="generative-core">Generative core<a class="headerlink" href="#generative-core" title="Permanent link">&para;</a></h2>
+<p><em>A concept earns a row only if removing it makes something in the spec
+inexpressible.</em></p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>What it is</th>
+<th>Inexpressible without it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Stable block identity</strong> (<code>id:</code> frontmatter field, content-hash-independent)</td>
+<td>A permanent identifier assigned once at block creation, carried in frontmatter</td>
+<td>Editing a block without losing its reinforcement/decay/edge history; the entire "files are hand-editable" promise breaks on the first edit without this</td>
+</tr>
+<tr>
+<td><strong>L1/L2 authority split</strong></td>
+<td>Files are truth; the index is derived, disposable, rebuildable with zero LLM calls</td>
+<td>"The index can be deleted without loss" (S7, S9, S10 all route through this) — without the split there is no derived/authoritative distinction to reason about at all</td>
+</tr>
+<tr>
+<td><strong>Markdown block format with frontmatter</strong> (<code>id</code>, <code>tags</code>, <code>pinned</code>, <code>created</code>)</td>
+<td>The concrete syntax carrying block metadata in a human-editable file</td>
+<td>Metadata (pin state, tags, id) existing outside the DB — without a format, "edit the file" can't also mean "edit the metadata"</td>
+</tr>
+<tr>
+<td><strong>Corpus-level, proposal-only review engine</strong> (Discover → Judge → Worksheet → Apply, one LLM call over the whole corpus, reasoning-source-agnostic)</td>
+<td>The mechanism that replaces pairwise write-time curation</td>
+<td>Cutting LLM cost from 20.7 calls/block to ~1 call per review cycle (S4); also the single mechanism addressing RC1 (control), RC2 (cost) and RC3 (audit) at once, per the plan doc's own claim</td>
+</tr>
+<tr>
+<td><strong>Reasoning-ownership seam</strong> (review's LLM call is bound to either the host agent invoking <code>elf-review</code>, or elfmem's own optional L3 gateway)</td>
+<td>Where the review engine gets its LLM</td>
+<td>A solo user never needing an API key for the common case (Sim II S9); also what keeps <code>elf-review</code>'s cost off elfmem's bill and onto the host session's turns</td>
+</tr>
+<tr>
+<td><strong><code>elfmem index</code> rebuild</strong></td>
+<td>The zero-LLM operation that derives L2 from L1</td>
+<td>The L1/L2 split being anything more than a claim — without a rebuild path, "derived" is just an assertion</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note on collapse found during interpretation:</strong> the plan doc's <code>elfmem review</code>
+(§5.4, CLI command using elfmem's own gateway) and the research doc's <code>elf-review</code>
+skill (§5, host-agent reasoning) are described in two places as if they were two
+mechanisms. They are not — same Discover → Judge → Worksheet → Apply pipeline,
+same proposal-file format, same <code>--apply</code> semantics. The only difference is <em>which
+LLM answers the Judge step</em>. Modelled here as <strong>one review engine with a pluggable
+reasoning source</strong>, not two review implementations. This is a real reduction, not
+just a naming exercise — building two would mean two proposal-file parsers, two
+worksheet UIs, two sets of tests for the same Apply logic. See "Amendments applied
+to the spec" below.</p>
+<hr />
+<h2 id="derived-from-the-core">Derived from the core<a class="headerlink" href="#derived-from-the-core" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Named in the spec</th>
+<th>Derived from</th>
+<th>How</th>
+<th>Rent the collapse pays</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>elfmem export --to-markdown</code> (migration Phase 1)</td>
+<td>Block format + stable identity</td>
+<td>One-time tool: read every active/archived block row, assign <code>id:</code> (reuse existing <code>sha256(content)[:16]</code> as the seed the first time, since no block has a permanent id yet), write frontmatter + content to <code>.elfmem/memory/**.md</code></td>
+<td>A single well-tested exporter, not export logic duplicated per migration phase</td>
+</tr>
+<tr>
+<td><code>elfmem promote &lt;id&gt; --to notes/x.md</code></td>
+<td>Mutation API (file move) + block format</td>
+<td>Move a <code>## heading</code> block between <code>log/YYYY-MM.md</code> and <code>notes/*.md</code>, frontmatter unchanged</td>
+<td>No new persistence concept — it's <code>edit</code> + <code>forget</code> composed</td>
+</tr>
+<tr>
+<td><code>elfmem index --check</code></td>
+<td><code>elfmem index</code> rebuild + parser</td>
+<td>Same parse path as rebuild, dry-run, report malformed frontmatter</td>
+<td>No second parser to maintain in sync</td>
+</tr>
+<tr>
+<td>Migration Phase 4 verification (10 fixed queries, parity check)</td>
+<td><code>frame()</code>/<code>recall()</code> (unchanged) + <code>elfmem index</code></td>
+<td>Run existing retrieval before and after migration, diff the top-5 sets</td>
+<td>Not a new retrieval mechanism — reuses L3 as-is against two index states</td>
+</tr>
+<tr>
+<td><code>elf-recall</code> skill</td>
+<td><code>ctx</code>'s Discover mechanics, forked (not shared as a dependency — see spec defect below)</td>
+<td>Live <code>ripgrep</code> over <code>.elfmem/memory/</code>, unranked, no index</td>
+<td>Proven pipeline reused rather than reimplemented from scratch</td>
+</tr>
+<tr>
+<td>Retrieval budget-driven selection (<code>corpus &lt;= budget → return all</code>, <code>&gt; budget → hybrid</code>)</td>
+<td>Existing 7-stage <code>hybrid_retrieve()</code> in <code>memory/retrieval.py</code> (prefilter → vector → BM25 → RRF → graph expand → composite score → MMR)</td>
+<td>Unchanged mechanism, re-pointed at the rebuilt index</td>
+<td>Zero rewrite of the retrieval stack — this is explicitly <strong>not</strong> part of Steps 8–9's core</td>
+</tr>
+<tr>
+<td>Config/gitignore/onboarding template changes</td>
+<td>Existing <code>ElfmemConfig</code>/<code>ReviewConfig</code> (already has a <code>corpus: CorpusReviewConfig</code> sub-tree from step 6a)</td>
+<td>Extend <code>ReviewConfig</code>, not a new config tree</td>
+<td>One config surface for all three review flavors (constitutional / staleness / corpus-LLM) instead of three</td>
+</tr>
+<tr>
+<td>Gateway profiles, <code>api_key_env</code>, <code>doctor --resolve</code></td>
+<td>Already shipped (Step 5)</td>
+<td>Reused as-is by the now-optional L3 gateway</td>
+<td>Nothing to build — flagged only so it isn't mistaken for in-scope work</td>
+</tr>
+<tr>
+<td><strong>Peer bundle import</strong> (resolved via <code>/scout</code> + <code>/simulate</code> — see "Spec defects" below)</td>
+<td>The append-only log convention already chosen for <code>learn()</code> + stable <code>msg_id</code> provenance + existing <code>merge_peer_evidence()</code> math</td>
+<td>Peer messages append to the log tagged <code>source_peer:</code>/<code>msg_id:</code>; <code>elfmem index</code> rebuild groups entries by <code>msg_id</code> before calling <code>merge_peer_evidence()</code> once per distinct message</td>
+<td>No new persistence mechanism — the only new logic is "group by <code>msg_id</code> before merge," which has to exist somewhere regardless of substrate. Also fixes a <strong>currently-shipped, confirmed double-count bug</strong>: <code>_import_single_block</code> matches by <code>content_id = sha256(content)</code>, so a verbatim resend and a distinct same-content message are indistinguishable today and both re-run the merge arithmetic</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="domains">Domains<a class="headerlink" href="#domains" title="Permanent link">&para;</a></h2>
+<h3 id="core">Core<a class="headerlink" href="#core" title="Permanent link">&para;</a></h3>
+<p><em>Differentiators. Built first, most rigour. This is what becomes the constitution.</em></p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Definition</th>
+<th>Defined in</th>
+<th>Depended on by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stable block identity</td>
+<td>Permanent <code>id:</code>, content-hash as secondary field</td>
+<td>Block format (new)</td>
+<td>Everything that touches a block after this migration</td>
+</tr>
+<tr>
+<td>L1/L2 authority split</td>
+<td>Files=truth, index=derived/disposable</td>
+<td>Architecture decision (this doc)</td>
+<td>All Steps 8 units</td>
+</tr>
+<tr>
+<td>Corpus-level proposal-only review engine</td>
+<td>One LLM call, proposal file, human <code>--apply</code></td>
+<td>New <code>operations/</code> module</td>
+<td><code>elfmem review</code> (Step 8) and <code>elf-review</code> skill (Step 9) both bind to it</td>
+</tr>
+<tr>
+<td>Reasoning-ownership seam</td>
+<td>Pluggable Judge-step LLM source</td>
+<td>Review engine's design</td>
+<td><code>elf-review</code> skill vs. L3 gateway path</td>
+</tr>
+</tbody>
+</table>
+<h3 id="supporting">Supporting<a class="headerlink" href="#supporting" title="Permanent link">&para;</a></h3>
+<p><em>Necessary and specific to this product, not differentiating.</em></p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Definition</th>
+<th>Defined in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Markdown block/frontmatter parser</td>
+<td>Reads/writes <code>## heading</code> + HTML-comment frontmatter</td>
+<td>New <code>memory/</code> module — <strong>single owner, see Seams</strong></td>
+</tr>
+<tr>
+<td><code>elfmem index</code> rebuild</td>
+<td>Zero-LLM derivation of L2 from L1</td>
+<td>New, replaces DB-native write paths in <code>consolidate.py</code>/<code>memory/blocks.py</code></td>
+</tr>
+<tr>
+<td>Mutation API → file ops</td>
+<td><code>edit</code>/<code>forget</code>/<code>ls</code>/<code>promote</code> operate on files, not rows</td>
+<td><code>api.py</code> (existing methods re-pointed)</td>
+</tr>
+<tr>
+<td>Migration tooling</td>
+<td>Export, phase-gate verification, hand-restore</td>
+<td>New, one-shot</td>
+</tr>
+</tbody>
+</table>
+<h3 id="generic">Generic<a class="headerlink" href="#generic" title="Permanent link">&para;</a></h3>
+<p><em>Solved elsewhere. Never the interesting part.</em></p>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Provided by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Versioning, diff, undo</td>
+<td>git — "obtained for free" (research doc §4.5)</td>
+</tr>
+<tr>
+<td>Live grep retrieval for <code>elf-recall</code></td>
+<td><code>ctx</code>'s Discover mechanics (forked pattern, not a shared dependency — open decision 5)</td>
+</tr>
+<tr>
+<td>Hybrid ranked retrieval (FTS5 + vector + RRF)</td>
+<td>Already exists, <code>memory/retrieval.py</code>, unchanged</td>
+</tr>
+<tr>
+<td>LLM gateway / profile resolution</td>
+<td>Already shipped, Step 5</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="pace-layers">Pace layers<a class="headerlink" href="#pace-layers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Rate</th>
+<th>Contains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Slow (build first)</td>
+<td>slow</td>
+<td>Block identity scheme (<code>id:</code> format), L1/L2 authority split, frontmatter format, migration Phase 0–4 (export + parity gate)</td>
+</tr>
+<tr>
+<td>Fast (build after, revisit often)</td>
+<td>fast</td>
+<td>Review worksheet UX, <code>elf-recall</code> skill polish, <code>promote</code> command, file/directory organisation (Taxonomy Contract P1–P5 — explicitly meant to be periodically re-decided by <code>elf-review</code>, never fixed once at migration time, per research doc §4.7)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="seams">Seams<a class="headerlink" href="#seams" title="Permanent link">&para;</a></h2>
+<p><em>Path is the concrete file/path this seam controls. Owner unit must be a real unit id
+from <code>build-plan.md</code> — <code>validate_plan.py</code> cross-checks the two documents agree.</em></p>
+<table>
+<thead>
+<tr>
+<th>Seam</th>
+<th>Path</th>
+<th>Owner unit</th>
+<th>Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Markdown frontmatter parser</td>
+<td><code>src/elfmem/memory/blockfile.py</code></td>
+<td>U-001</td>
+<td><code>sole owner</code> — index rebuild, mutation API, <code>elf-recall</code>, and migration export must all call this, none may re-parse independently</td>
+</tr>
+<tr>
+<td>Index write path</td>
+<td><code>.elfmem/index.db</code></td>
+<td>U-002</td>
+<td><code>sole owner</code> — no other unit writes to index.db directly; <code>frame()</code>/<code>recall()</code> only read it</td>
+</tr>
+<tr>
+<td>Review config surface</td>
+<td><code>src/elfmem/config.py</code></td>
+<td>U-008</td>
+<td><code>growable by injection</code> — add a sibling field/sub-config to <code>ReviewConfig</code> for the new corpus-LLM review (already has <code>corpus: CorpusReviewConfig</code> from step 6a), not a new top-level config tree</td>
+</tr>
+<tr>
+<td>Peer bundle import (landing)</td>
+<td><code>src/elfmem/operations/peer.py</code></td>
+<td>U-012</td>
+<td><code>append-only</code> — writes to the log only, never mutates</td>
+</tr>
+<tr>
+<td>Peer bundle reconciliation</td>
+<td><code>.elfmem/index.db</code></td>
+<td>U-002</td>
+<td><code>sole owner</code> — reconciliation (via the log-folding extension point) happens exactly once, at rebuild/review time, never at import time; U-012 satisfies this as an injected dedup function, not an edit to U-002's file</td>
+</tr>
+<tr>
+<td>Peer bundle export</td>
+<td><code>src/elfmem/operations/peer.py</code></td>
+<td>U-012</td>
+<td><code>sole owner</code></td>
+</tr>
+</tbody>
+</table>
+<p>CLI command registration (<code>src/elfmem/cli.py</code>, Typer <code>@app.command()</code>) is
+deliberately <strong>not</strong> listed as a seam requiring an owner: Typer's decorator
+registry is already <code>growable by injection</code> as shipped infrastructure — U-003,
+U-004, and U-012 each add commands without editing a shared dispatch table or
+one another's code, so there is no unowned risk here to track.</p>
+<hr />
+<h2 id="concept-graph">Concept graph<a class="headerlink" href="#concept-graph" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>stable block identity (id:)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ▼
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>markdown frontmatter format ──────► elfmem index (rebuild, L1→L2)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        │                                   │
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ▼                                   ▼
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>mutation API (edit/forget/ls/promote)   frame()/recall() (unchanged, re-pointed)
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        │
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        ▼
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>corpus-level review engine (Discover→Judge→Worksheet→Apply)
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        │
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        ├──► elfmem review (Step 8, L3 gateway reasoning — headless/cron)
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        └──► elf-review skill (Step 9, host-agent reasoning — interactive)
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>elf-recall skill (Step 9) ──► forked from `ctx` ──► reads markdown frontmatter
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>   (independent of the index; can disagree with frame()/recall() — labelled risk S11)
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>migration tooling (export, parity gate) ──► depends on: frontmatter format,
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                                             elfmem index, frame()/recall()
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>peer bundle import ──► append-only log (same convention as learn())
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                              │
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>                              ▼
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>                       elfmem index rebuild ──► group by msg_id ──► merge_peer_evidence()
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>                              │                  (fixes live double-count bug;
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>                              │                   resolves ADR 0005 Phase 5)
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                              ▼
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                       corpus-level review engine (promotion into notes/, same as any other content)
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>peer bundle export ──► reads elf's own notes/log (independent of the import path)
+</span></code></pre></div>
+<hr />
+<h2 id="spec-defects-found-during-interpretation">Spec defects found during interpretation<a class="headerlink" href="#spec-defects-found-during-interpretation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Defect</th>
+<th>Severity</th>
+<th>Destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~~<strong>Peer bundle export/import has no owner in the new architecture.</strong>~~ <strong>RESOLVED</strong> (2026-08-09, via <code>/scout</code> decision-mode research + <code>/simulate</code> optimize loop, 3 candidates × 7 scenarios). Winner: peer messages append to the same append-only log convention already chosen for <code>learn()</code>, tagged <code>source_peer:</code>/<code>msg_id:</code>; <code>elfmem index</code> rebuild groups by <code>msg_id</code> before running the existing <code>merge_peer_evidence()</code> once per distinct message. Rejected: DB-native-with-exemption (violates the L1/L2 invariant outright, and reintroduces the original unguarded-supersession bug for peer content specifically) and file-native-with-write-time-mutation (races under concurrent same-peer sends; doesn't solve resend/collision without the same <code>msg_id</code> ledger this design already has). External research found no verified precedent for markdown-as-truth peer sync specifically, but did verify (Graphiti/SEDM, 2025-2026): idempotent merge via scoped identity reuse not exact-hash matching, explicit non-double-counting reconciliation on merge, and non-destructive soft-invalidation — this design satisfies all three. <strong>Bonus finding</strong>: simulation surfaced that <code>_import_single_block</code> (shipped code) matches by <code>content_id = sha256(content)</code>, so it <strong>already cannot distinguish a resend from a distinct same-content message</strong> — a live double-count bug, not a hypothetical one — and this design fixes it as a side effect. It also resolves <a href="../../../../decisions/0005-peer-protocol-hardening/">ADR 0005</a>'s deferred Phase 5 (<code>msg_id</code> collision on repeat-content sends), whose own stated reopen trigger — "wire-format evolution" — this migration is. <strong>One residual risk, not a failure</strong>: deferred reconciliation uses <code>peer_trust</code> <em>at rebuild time</em> rather than <em>at receipt time</em>; document this as an intentional behavior change (arguably more correct — applies the operator's latest trust judgment) when the unit is built. Recorded as amendment D-002 below.</td>
+<td>Resolved — High severity retired</td>
+<td>Fed into Seams and "Derived from the core" above; owner assigned</td>
+</tr>
+<tr>
+<td><strong><code>elfmem review</code> (Step 8, CLI/gateway) and <code>elf-review</code> (Step 9, skill) are describable as the same engine with a pluggable reasoning source</strong>, but the two source documents present them as separate deliverables in separate steps.</td>
+<td>Medium</td>
+<td>Resolved here as a modelling collapse (see Generative core note above) — not a spec-behaviour change, just a build-organisation simplification. Recorded as an amendment below.</td>
+</tr>
+<tr>
+<td><strong>One-file-per-block vs. many-per-file is explicitly left as "working assumption, needs periodic re-check"</strong> (§4.7, open decision 3) rather than resolved. Building the parser to assume one shape and discovering the other is needed mid-migration is a real rework risk.</td>
+<td>Medium</td>
+<td>Needs elicitation before Stage 3 unit contracts are written for the parser — either the user picks a starting convention now, or the parser is built format-agnostic from the start (higher initial cost, no rework risk)</td>
+</tr>
+<tr>
+<td><strong><code>self.md</code>-as-file vs. constitutional-blocks-in-retrieval-scoring — resolved by consequence, not a fresh choice.</strong> Reading <code>self.md</code> as always-included preamble is Architecture M from ADR 0003, previously deferred and measured at +33pp under drift / −7pp under stability. <strong>Re-examined</strong>: Invariant 2 ("self.md is never a block-table row") is not new here — it was already load-bearing in the architecture the user approved when choosing "commit now on single-instance evidence" (Iteration 4/5, the winning design in both source documents). Once self.md is never indexed/embedded, there is no ranking-based alternative to "always included as preamble" — nothing else <em>could</em> selectively surface "parts of self.md," since nothing about it participates in retrieval scoring at all. This is a logical entailment of an already-made decision, not an independent one.</td>
+<td>Resolved by entailment</td>
+<td>Proceed on this basis. Still needs its own ADR when Step 8 ships (citing this document and superseding ADR 0003's deferral, since production evidence — not new reasoning — is what changed), same pattern as ADR 0009/0010</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="amendments-applied-to-the-spec">Amendments applied to the spec<a class="headerlink" href="#amendments-applied-to-the-spec" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Amendment</th>
+<th>Behaviour preserved?</th>
+<th>Decision id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Collapsed <code>elfmem review</code> (Step 8) and <code>elf-review</code> (Step 9) into one review engine with a pluggable reasoning source, instead of two separate implementations</td>
+<td>yes — same Discover→Judge→Worksheet→Apply behaviour from both source documents, only the build organisation changes</td>
+<td>D-001</td>
+</tr>
+<tr>
+<td>Peer bundle import moves from DB-native, write-time arithmetic merge to append-only file log + rebuild-time, <code>msg_id</code>-deduplicated merge. <strong>Not purely behaviour-preserving</strong> — it fixes a live double-count bug (see resolved defect above) as a deliberate side effect, and changes which <code>peer_trust</code> value a merge uses (rebuild-time vs. receipt-time)</td>
+<td>no — two behaviour changes, both intentional and net-positive, both need to survive in an ADR when Step 8 ships (candidate: cites this document + <a href="../../../../decisions/0005-peer-protocol-hardening/">ADR 0005</a>)</td>
+<td>D-002</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="model-drift-log">Model drift log<a class="headerlink" href="#model-drift-log" title="Permanent link">&para;</a></h2>
+<p><em>Three entries after building U-001, U-002, and U-012 — all real. Two are
+about U-002 (different concepts); the third (U-012) is the same </em>pattern<em> as
+both — a unit's actual build surfacing a real interaction the plan hadn't
+spelled out — appearing for a third time. Per the guide, repeated entries are
+the signal to revise the interpretation, not work around it again: </em><em>the
+pattern itself is now the finding.</em><em> The generative core (model.md's
+"Generative core" table) treats the block format (U-001) as settled
+infrastructure that later units simply use. Three times now, a later unit
+has instead discovered a real constraint the format didn't anticipate
+(edges have no representation; <code>self.md</code> wiring has no owner; per-file
+duplicate-<code>id:</code> collides with legitimate same-content peer messages). The
+format is not wrong, but it is less finished than "generative core" implied
+— treat U-001 as still-settling through Wave 3, not closed after Wave 1.</em></p>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Unit</th>
+<th>Concept needed</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-08-09</td>
+<td>U-002</td>
+<td>Graph-edge reconstruction from files — the model's "Derived from the core" and build-plan.md's Done-when both assumed <code>elfmem index</code> rebuild reproduces edge rows, but the block format (U-001) has no way to encode an edge in frontmatter</td>
+<td>Scoped out of U-002: edges are DB-only and lost on a full rebuild, same as the already-disclosed α/β trade-off in model.md's residual risks — extended to cover edges too, not a new risk class. If edges need to survive rebuild, that's a frontmatter-format decision for U-001's format (not yet made) — flagged, not resolved</td>
+</tr>
+<tr>
+<td>2026-08-09</td>
+<td>U-002</td>
+<td>Wiring <code>self.md</code> into <code>frame('self', ...)</code> — model.md's Invariant 2 and the resolved <code>self.md</code>-as-preamble defect both describe this as settled, but no unit in build-plan.md actually owns <code>context/frames.py</code> or <code>operations/recall.py</code>, which is where the wiring would happen</td>
+<td><strong>Real coverage gap, not yet assigned to any unit</strong> — U-002 exposes <code>self.md</code> content via <code>RebuildResult.self_content</code> (proving it's available, not lost) but does not wire it into <code>frame()</code>. Added to build-plan.md's Coverage table as unassigned</td>
+</tr>
+<tr>
+<td>2026-08-10</td>
+<td>U-012</td>
+<td>U-001's per-file duplicate-<code>id:</code> invariant (correct and desirable for ordinary notes/log content) collides with landing two distinct peer messages that share identical content in one file — the exact scenario U-012 exists to fix, blocked by the format it's built on</td>
+<td>Fixed at the landing layer, not by weakening U-001's invariant: each peer message lands in its own file (<code>log/peer/&lt;peer&gt;-&lt;msg_id&gt;.md</code>) rather than a shared monthly file. Turned out to be a strict improvement (better concurrency story too), but the <em>need</em> to redesign came from the format, not from the reconciliation logic <code>/simulate</code> had already stress-tested</td>
+</tr>
+<tr>
+<td>2026-08-10</td>
+<td>U-005 (via a real-data dry run, not a unit build)</td>
+<td><strong>U-001's own parser had a real bug</strong>, not a coverage gap this time: every <code>##</code> line was treated as a block boundary, but real content (Theory-of-Mind blocks especially) legitimately contains its own <code>##</code> sub-headings. Confirmed on the real 185-block production corpus — 15 blocks mis-split into 158 on rebuild, invisible to every hand-written fixture because none happened to contain a nested heading</td>
+<td><strong>Fixed in U-001 directly</strong> (<code>docs/plans/v2_substrate/plan/dry_run_2026-08-10.md</code>), not deferred — a boundary now requires either no prior block, a bare (frontmatter-less) current block, or the candidate line itself being followed by frontmatter. Two new regression tests. Re-run confirmed block count now matches exactly (140=140) on the real corpus. This is the fourth "unit's real build/use surfaces a gap U-001 didn't anticipate" entry — treat the format as validated against real data now, not just its own fixtures, but still revisit this pattern if a fifth instance appears</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

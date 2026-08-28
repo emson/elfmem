@@ -1,0 +1,2935 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/frames_and_credit_assignment_report/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Frames and Credit Assignment — what broke after seeding a constitution - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#frames-and-credit-assignment-what-broke-after-seeding-a-constitution" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Frames and Credit Assignment — what broke after seeding a constitution
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../research/long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#issue-1-constitutional-blocks-starve-the-attention-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue 1 — constitutional blocks starve the ATTENTION frame
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issue 1 — constitutional blocks starve the ATTENTION frame">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-happened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happened
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-it-happens-structurally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why it happens, structurally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-i-expected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What I expected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-i-had-to-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What I had to do
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#suggested-fix-pick-either" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suggested fix — pick either
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issue-2-outcome-cannot-express-do-not-score-my-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue 2 — outcome() cannot express "do not score my identity"
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issue 2 — outcome() cannot express &#34;do not score my identity&#34;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-happened_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happened
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-i-expected_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What I expected
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issue-3-mind_outcome-has-no-interimpartial-concept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue 3 — mind_outcome() has no interim/partial concept
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-i-would-keep-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What I would keep, again
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pattern-across-both-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pattern across both reports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concrete-asks-ranked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concrete asks, ranked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-b079660d-both-issues-shipped-and-one-leak-remains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum (b079660d) — both issues shipped, and one leak remains
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Addendum (b079660d) — both issues shipped, and one leak remains">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-remaining-leak-exclude_tag_patterns-is-partially-effective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The remaining leak: exclude_tag_patterns is partially effective
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution-of-the-addendum-the-leak-was-real-and-it-was-graph-expansion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution of the addendum — the leak was real, and it was graph expansion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-2-outcome-on-an-inbox-block-is-a-silent-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum 2 — outcome() on an inbox block is a silent zero
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-3-cebc242e-task-has-issue-1-again-and-two-new-footguns-in-weighted-credit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum 3 (cebc242e) — TASK has Issue 1 again, and two new footguns in weighted credit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Addendum 3 (cebc242e) — TASK has Issue 1 again, and two new footguns in weighted credit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-task_frame-never-got-the-exclude_tag_patterns-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a — TASK_FRAME never got the exclude_tag_patterns fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3b-scoredblocksimilarity-outcomeweight-is-a-footgun-for-the-natural-weighted-credit-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b — ScoredBlock.similarity + outcome(weight=) is a footgun for the natural weighted-credit pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3c-signal05-reads-as-neutral-and-is-not-for-any-block-not-already-at-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3c — signal=0.5 reads as neutral and is not, for any block not already at 0.5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updated-concrete-asks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updated concrete asks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution-of-addendum-3-one-fix-two-documentation-gaps-and-one-corrected-premise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution of Addendum 3 — one fix, two documentation gaps, and one corrected premise
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/frames_and_credit_assignment_report.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="frames-and-credit-assignment-what-broke-after-seeding-a-constitution">Frames and Credit Assignment — what broke after seeding a constitution<a class="headerlink" href="#frames-and-credit-assignment-what-broke-after-seeding-a-constitution" title="Permanent link">&para;</a></h1>
+<p>Follow-up to <code>integration_friction_report.md</code>, from the same trading-agent integration
+(elfmem <code>0.20.0.dev0</code>, <code>elfmem_index</code> @ 8a38bba3). That report covered getting blocks <em>in</em>.
+This one covers what happened the day after: <strong>seeding ten constitutional principles silently
+broke the agent's ability to recall anything it had learned, and wired its trade P&amp;L directly
+into its identity.</strong></p>
+<blockquote>
+<p><strong>Context:</strong> the first report has since been actioned — P1/P2/P3/P5/P6/P8/P9 shipped, and
+P11's premise was correctly rebutted (consolidation <em>unions</em> tags, so a declared
+<code>self/role/x</code> does survive; the <code>frames.py</code> comment I reasoned from was wrong). Checked
+against <code>elfmem_index</code> @ 8a38bba3 as of writing: those changes are not on that branch yet, so
+the issues below are diagnosed on the pre-fix build. <strong>Neither issue here is addressed by the
+shipped work</strong> — <code>ATTENTION_FRAME.filters</code> still has no exclusion, and <code>OutcomeResult</code> still
+has no skipped/refused field. Both are new territory, opened up <em>by</em> successfully seeding a
+constitution, which is only possible now the first report's fixes exist.</p>
+</blockquote>
+<p><strong>Short answer to "is it working as expected?"</strong> Storage, decay tiers, the SELF frame and the
+amendment API all work as documented. Two things do not, and both are architectural rather than
+bugs: <strong>frames have no exclusion mechanism</strong>, and <strong><code>outcome()</code> has no notion of which blocks
+should be immune to task outcomes.</strong> I worked around both in my adapter, but every agent that
+seeds a constitution will hit them, and the workaround required bypassing <code>frame()</code> entirely.</p>
+<blockquote>
+<p><strong>Status (2026-08-27): asks 1, 2 and 4 shipped; 5 shipped previously. Kept as the incident
+record.</strong> Both issues were reproduced on the post-fix branch before anything was changed, and
+two of the three stated <em>mechanisms</em> turned out to be wrong — worth recording, because the
+corrected mechanisms changed the fix.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Ask</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>outcome()</code> skips <code>self/constitutional</code></td>
+<td><strong>shipped</strong> with <code>skipped_constitutional</code> + <code>allow_constitutional=True</code>. Mechanism corrected: decay was <em>already</em> protected (<code>accelerate_block_decay</code> skips PERMANENT), so "the damage never washes out" via decay is not what happens. The harm is entirely through the Beta posterior — measured at 0.50 → 0.275 after one losing trade, 0.114 after six — which feeds ranking, which decides what survives a budget-bound SELF frame. Worse than described for mature instances, not better</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>FrameFilters.exclude_tag_patterns</code>, applied to ATTENTION</td>
+<td><strong>shipped</strong>, with a <code>peer/%</code> exemption the report did not propose. Measured on elf's own corpus: a bare exclusion removed Alv's letters, which are genuine knowledge that accreted the tag from the consolidating LLM. Result: 36% → 24% constitutional share, double-served blocks 3/25 → <strong>0/25</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Cross-frame dedupe in multi-frame assembly</td>
+<td><strong>not built.</strong> Option (a) turned out to subsume it: with ATTENTION excluding what SELF serves, double-serving went to zero without introducing a multi-frame assembly API or hidden cross-call state</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>mind_outcome(..., weight=)</code> / <code>provisional=</code></td>
+<td><strong>documentation instead.</strong> Premise corrected: <code>mind_outcome</code> is <strong>not terminal</strong> — re-resolving the same decision block reverses cleanly (early miss → later hit restored confidence 0.43 → 0.50 and the count to 1/1). The signal was lost because nothing said so, so <code>guide("mind_outcome")</code> now states both that <code>hit</code> is binary with no weight and that it is re-resolvable</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Every reducing operation reports what it reduced</td>
+<td><strong>shipped</strong> in the previous round — and the third silent reducer (contradiction suppression) was found by running the tool that round produced</td>
+</tr>
+</tbody>
+</table>
+<p>The report's closing principle — <em>any operation that can silently reduce, reword, or degrade
+what the caller intended should say so in its result</em> — is now recorded in
+<code>docs/agent_friendly_principles.md</code> as an earned principle, with these two issues as its
+evidence.</p>
+</blockquote>
+<hr />
+<h2 id="issue-1-constitutional-blocks-starve-the-attention-frame">Issue 1 — constitutional blocks starve the ATTENTION frame<a class="headerlink" href="#issue-1-constitutional-blocks-starve-the-attention-frame" title="Permanent link">&para;</a></h2>
+<h3 id="what-happened">What happened<a class="headerlink" href="#what-happened" title="Permanent link">&para;</a></h3>
+<p>Day 1: seeded 10 principles tagged <code>self/constitutional</code>. Verified they render in SELF. Good.</p>
+<p>Day 2: checked what ATTENTION returned for a real decide query
+(<code>"SPY bull put spread, is the thesis intact"</code>):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>score=0.958  principle/recency          Recent direction is evidence about the recent past…
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>score=0.954  principle/premise          When live data contradicts a thesis's premise…
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>score=0.909  bull_put_spread            The agent holds a short 755 put on SPY…   &lt;- the only real hit
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>score=0.827  principle/contradictions   When evidence conflicts with something I hold…
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>score=0.815  principle/precision        Context serves the decision at hand…
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>score=0.801  principle/regimes          A pattern learned in one regime is a hypothesis…
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>…10 of 12 hits were principles…
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>score=0.343  mind/spy-options-trading   # Mind Model: SPY options trading
+</span></code></pre></div>
+<p>After de-duplicating against what SELF had already rendered, <strong>ATTENTION returned nothing at
+all.</strong> The agent's entire learned market knowledge had been displaced by its own identity, one
+day after seeding it — and nothing anywhere reported this.</p>
+<h3 id="why-it-happens-structurally">Why it happens, structurally<a class="headerlink" href="#why-it-happens-structurally" title="Permanent link">&para;</a></h3>
+<p>Three properties compound:</p>
+<ol>
+<li>Constitutional principles are written in general epistemic language ("evidence", "confidence",
+   "premise", "pattern"), so they are <strong>semantically close to almost any reasoning query</strong>.</li>
+<li>They carry <strong>PERMANENT decay</strong>, so recency scoring never demotes them.</li>
+<li><code>ATTENTION_FRAME</code> has <code>filters=FrameFilters()</code> — <strong>no tag filter and no exclusion</strong>. SELF
+   filters <em>in</em> (<code>tag_patterns=["self/%"]</code>); ATTENTION cannot filter <em>out</em>.</li>
+</ol>
+<p>The better a constitution is written, the worse this gets: a well-phrased general principle
+outscores a specific market observation on a general query, every time.</p>
+<h3 id="what-i-expected">What I expected<a class="headerlink" href="#what-i-expected" title="Permanent link">&para;</a></h3>
+<p>ATTENTION means "what have I learned that bears on this question". Identity is what SELF is
+for, and it is already injected unconditionally and queryless. <strong>A block that SELF guarantees
+should not also compete in ATTENTION</strong> — it is served twice, costs budget twice, and crowds out
+the thing ATTENTION exists to surface.</p>
+<h3 id="what-i-had-to-do">What I had to do<a class="headerlink" href="#what-i-had-to-do" title="Permanent link">&para;</a></h3>
+<p>Abandon <code>frame("attention")</code> and hand-roll it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mem</span><span class="o">.</span><span class="n">recall</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">"attention"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="n">want</span> <span class="o">+</span> <span class="n">n_self</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">kept</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">already_in_self</span><span class="p">][:</span><span class="n">want</span><span class="p">]</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">text</span> <span class="o">=</span> <span class="s2">"## Relevant memory</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">kept</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Over-fetch, filter, render myself. That loses the frame template and the frame cache, and every
+integrator seeding a constitution will independently reinvent it.</p>
+<h3 id="suggested-fix-pick-either">Suggested fix — pick either<a class="headerlink" href="#suggested-fix-pick-either" title="Permanent link">&para;</a></h3>
+<p><strong>(a) Frame-level exclusions</strong> — the minimal change, symmetric with existing filters:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">ATTENTION_FRAME</span> <span class="o">=</span> <span class="n">FrameDefinition</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="o">...</span><span class="p">,</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">filters</span><span class="o">=</span><span class="n">FrameFilters</span><span class="p">(</span><span class="n">exclude_tag_patterns</span><span class="o">=</span><span class="p">[</span><span class="s2">"self/constitutional"</span><span class="p">]),</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong>(b) Cross-frame dedupe in context assembly</strong> — better, if there is a single call that builds
+several frames: a block already rendered in a higher-priority frame is skipped by later ones,
+and the caller is told. This also fixes the token double-spend, which is real: my SELF frame is
+501 tokens and the same principles were re-rendering inside ATTENTION's 2000.</p>
+<p>I would take (b) if <code>assemble_context()</code>-style multi-frame assembly is on the roadmap, (a)
+otherwise. (a) is a two-line change today.</p>
+<hr />
+<h2 id="issue-2-outcome-cannot-express-do-not-score-my-identity">Issue 2 — <code>outcome()</code> cannot express "do not score my identity"<a class="headerlink" href="#issue-2-outcome-cannot-express-do-not-score-my-identity" title="Permanent link">&para;</a></h2>
+<h3 id="what-happened_1">What happened<a class="headerlink" href="#what-happened_1" title="Permanent link">&para;</a></h3>
+<p>My positions record which blocks informed each decision, per frame, and at resolution I call:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">await</span> <span class="n">mem</span><span class="o">.</span><span class="n">outcome</span><span class="p">(</span><span class="n">block_ids</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">position_id</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Because constitutional blocks were being recalled into the decision context (Issue 1), those
+<code>block_ids</code> <strong>included all ten principles</strong>. A losing trade would have pushed negative signal
+onto the agent's constitution. And since principles carry PERMANENT decay, <strong>that damage never
+washes out</strong> — the block stays forever, with a posterior degraded by an unrelated market
+outcome.</p>
+<p>I caught it before a loss resolved, and now filter to <code>("task", "attention")</code> frames at my
+layer. But the library happily accepted a call that would have corrupted identity with P&amp;L.</p>
+<h3 id="what-i-expected_1">What I expected<a class="headerlink" href="#what-i-expected_1" title="Permanent link">&para;</a></h3>
+<p>Constitutional blocks are <em>how the agent reasons</em>, not <em>a bet it placed</em>. A trade going against
+me says nothing about whether "recent is not structural" is a good principle — that judgement
+needs incident review, which is exactly what <code>review_constitutional</code> is for, and which is
+correctly manual. So:</p>
+<p><strong><code>outcome()</code> should refuse, or at minimum warn, on blocks tagged <code>self/constitutional</code>.</strong>
+Something like:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mem</span><span class="o">.</span><span class="n">outcome</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"trade-123"</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># r.skipped_constitutional == ["7681c66e3b", …]</span>
+</span></code></pre></div>
+<p>Silently accepting is the dangerous option, because the corruption is invisible: the posterior
+moves, nothing logs, and the block renders identically. If some caller genuinely wants to score
+a principle from an outcome, make it explicit — <code>outcome(..., allow_constitutional=True)</code>.</p>
+<p>The general shape: <strong>the tier that grants permanence should also grant protection.</strong> Right now
+<code>self/constitutional</code> confers PERMANENT decay (excellent) but no write protection against
+ordinary scoring (a hole).</p>
+<hr />
+<h2 id="issue-3-mind_outcome-has-no-interimpartial-concept">Issue 3 — <code>mind_outcome()</code> has no interim/partial concept<a class="headerlink" href="#issue-3-mind_outcome-has-no-interimpartial-concept" title="Permanent link">&para;</a></h2>
+<p>Smaller, but it cost me real signal.</p>
+<p><code>outcome()</code> takes a <code>weight</code>, so I can say "this is an unrealised mark, worth 0.1 of a real
+resolution". <code>mind_outcome()</code> takes a <strong>binary <code>hit</code></strong> with no weight. My housekeeping scored
+open positions at low weight for the block path — and unavoidably recorded a <strong>full miss</strong>
+against the mind on every one.</p>
+<p>Result, live:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Mind: spy-options-trading  confidence=0.34  predictions=1  hit/total=0/1
+</span></code></pre></div>
+<p>The mind believed its SPY thesis had failed. The position was <strong>profitable</strong> at the time, and
+its horizon had not arrived. A prediction is right or wrong <em>once</em>, at its horizon — but nothing
+in the API stops you resolving it early, and once resolved the mind's confidence is wrong in a
+way that then influences sizing.</p>
+<p><strong>Expected:</strong> either <code>mind_outcome(..., weight=…)</code> symmetric with <code>outcome()</code>, or an explicit
+<code>provisional=True</code> that can be superseded, or a documented refusal to re-resolve. Any of the
+three would have prevented it. Today the guide does not warn that <code>mind_outcome</code> is terminal.</p>
+<hr />
+<h2 id="what-i-would-keep-again">What I would keep, again<a class="headerlink" href="#what-i-would-keep-again" title="Permanent link">&para;</a></h2>
+<p>Everything from the first report stands. Two additions specific to this territory:</p>
+<ul>
+<li><strong>The <code>frames.py</code> comment explaining why <code>self/role/%</code> was abandoned as a guarantee</strong> is what
+  let me diagnose Issue 1 in minutes instead of hours. It is a comment describing a <em>failed</em>
+  design; those are the most valuable comments in a codebase.</li>
+<li><strong><code>guarantees=[...]</code> as a declarative frame property</strong> is exactly the right primitive. The gap
+  is only that there is no matching <em>anti</em>-guarantee, and <code>guarantee_excludes</code> already proves
+  the concept exists — it just applies to slots rather than to other frames.</li>
+</ul>
+<hr />
+<h2 id="the-pattern-across-both-reports">The pattern across both reports<a class="headerlink" href="#the-pattern-across-both-reports" title="Permanent link">&para;</a></h2>
+<p>Three of the four issues I have now hit share a shape: <strong>a write or read succeeds, and the
+damage is invisible in the return value.</strong> Blocks stored but not rendered. Principles rewritten
+but reported as created. Identity scored by trade P&amp;L. A mind resolved on an unrealised mark.</p>
+<p>If there is one architectural principle I would push for, it is: <strong>any operation that can
+silently reduce, reword, or degrade what the caller intended should say so in its result.</strong>
+<code>FrameResult.dropped</code>, <code>OutcomeResult.skipped_constitutional</code>, <code>ConsolidateResult.analyses_unused</code>,
+<code>LearnResult.pending_consolidation</code> — four fields, and every failure I have hit in two days
+becomes self-reporting.</p>
+<hr />
+<h2 id="concrete-asks-ranked">Concrete asks, ranked<a class="headerlink" href="#concrete-asks-ranked" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Change</th>
+<th>Effort</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>outcome()</code> skips (or warns on) <code>self/constitutional</code> blocks</td>
+<td>small</td>
+<td>Silently corrupts permanent identity with unrelated outcomes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>FrameFilters.exclude_tag_patterns</code>, applied to ATTENTION</td>
+<td>small</td>
+<td>A good constitution starves the frame that holds learned knowledge</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Cross-frame dedupe in multi-frame assembly</td>
+<td>medium</td>
+<td>Token double-spend + the same block scored twice</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>mind_outcome(..., weight=)</code> or <code>provisional=</code></td>
+<td>small</td>
+<td>Binary early resolution corrupts a mind that then drives sizing</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Every reducing operation reports what it reduced</td>
+<td>medium</td>
+<td>The single pattern behind all of the above</td>
+</tr>
+</tbody>
+</table>
+<p>Happy to send diffs for 1, 2 and 4 — they are small and I have the failing cases already
+written as tests.</p>
+<hr />
+<h2 id="addendum-b079660d-both-issues-shipped-and-one-leak-remains">Addendum (b079660d) — both issues shipped, and one leak remains<a class="headerlink" href="#addendum-b079660d-both-issues-shipped-and-one-leak-remains" title="Permanent link">&para;</a></h2>
+<p>Pulled <code>elfmem_index</code> @ b079660d and re-ran against it. <strong>Everything asked for in both reports
+is in:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ask</th>
+<th>shipped as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report 1 P1</td>
+<td><code>FrameResult.dropped</code> / <code>budget_used</code> / <code>budget_total</code> / <code>excluded_by_filter</code></td>
+</tr>
+<tr>
+<td>Report 1 P3</td>
+<td><code>LearnResult.pending_consolidation</code></td>
+</tr>
+<tr>
+<td>Report 1 P5</td>
+<td><code>ConsolidateResult.analyses_unused</code></td>
+</tr>
+<tr>
+<td>Report 2 Issue 1</td>
+<td><code>ATTENTION_FRAME.filters.exclude_tag_patterns=['self/constitutional']</code></td>
+</tr>
+<tr>
+<td>Report 2 Issue 2</td>
+<td><code>OutcomeResult.skipped_constitutional</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>FrameResult.dropped</code> carrying a per-block <code>DroppedBlock(id, content, tags, reason)</code> is better
+than the flat list I asked for — it names <em>which</em> block and <em>why</em>, which is what made the
+finding below visible at all. The report asked for a signal; you shipped a diagnosis.</p>
+<h3 id="the-remaining-leak-exclude_tag_patterns-is-partially-effective">The remaining leak: <code>exclude_tag_patterns</code> is partially effective<a class="headerlink" href="#the-remaining-leak-exclude_tag_patterns-is-partially-effective" title="Permanent link">&para;</a></h3>
+<p>Same query as the original issue, on the new build:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>ATTENTION: 5 blocks | 216/2000 tok | excluded_by_filter=10
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  constitutional blocks still rendered: 4
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    "Not finding a memory is not evidence it did not happen…"      (fallible-recall)
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    "I propose amendments to these principles; I never enact them" (amendments)
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    "Recent direction is evidence about the recent past…"          (recency)
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    "A pattern learned in one regime is a hypothesis in another…"  (regimes)
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  dropped: 5 more constitutional blocks, every one reason='top_k'
+</span></code></pre></div>
+<p>Two things do not add up. <code>excluded_by_filter=10</code> accounts for all ten principles, yet four of
+them are in <code>blocks</code> and five more are in <code>dropped</code> with <code>reason='top_k'</code> — and a block dropped
+for <code>top_k</code> was, by definition, still a <em>candidate</em>, so the exclusion had not removed it from
+the pool. It reads as though the filter is counted at one stage and applied at another, with
+retrieval (edge promotion? the <code>edges_promoted</code> path?) re-introducing blocks downstream of it.</p>
+<p>Net effect for an integrator: <code>exclude_tag_patterns</code> reduces but does not eliminate the
+crowding, so the hand-rolled ATTENTION workaround in this report's Issue 1 is still required.
+I have kept it rather than reverting to <code>frame("attention")</code>.</p>
+<p><strong>Suggested check:</strong> assert <code>excluded_by_filter</code> blocks appear in neither <code>blocks</code> nor <code>dropped</code>
+— they were never candidates. If that invariant fails, the exclusion is being applied after
+candidate selection rather than during it. Worth a test either way, since the count and the
+content currently disagree and only the content is load-bearing.</p>
+<p>Everything else behaves as documented: SELF renders 11 blocks at 501/600 tokens with
+<code>dropped=[]</code>, and our constitution verification passes 10/10 unchanged.</p>
+<hr />
+<h2 id="resolution-of-the-addendum-the-leak-was-real-and-it-was-graph-expansion">Resolution of the addendum — the leak was real, and it was graph expansion<a class="headerlink" href="#resolution-of-the-addendum-the-leak-was-real-and-it-was-graph-expansion" title="Permanent link">&para;</a></h2>
+<p>Confirmed and fixed. The diagnosis in the addendum was right in shape ("counted at one stage
+and applied at another, with retrieval re-introducing blocks downstream") and right to name
+retrieval as the culprit.</p>
+<p><strong>Mechanism.</strong> <code>exclude_ids</code> was applied at the stage-1 prefilter. That is not the only way into
+the candidate pool: stage 3 expands the graph by fetching a seed's 1-hop neighbours from the
+database <em>by id</em>, checking only that they are active. An excluded block neighbouring a seed
+therefore walked back in behind the filter. Constitutional blocks are the worst case by
+construction — being unusually well connected is what puts them in reach of expansion at all —
+and although they arrive with <code>similarity=0.0</code>, they still rank on confidence, centrality, and a
+recency that PERMANENT decay never erodes. That is how a block could be excluded and rendered at
+the same time, and why five more appeared in <code>dropped</code> with <code>reason="top_k"</code>: they were genuine
+candidates by then. Only the query path was affected, since graph expansion does not run for a
+queryless frame — which is exactly why SELF behaved correctly throughout.</p>
+<p><strong>Fix.</strong> The exclusion is now enforced once where the candidate set is final, rather than being
+patched into stage 3. Patching stage 3 would have made three enforcement sites for one
+invariant and left the next candidate-introducing stage free to reopen it; one choke point
+cannot be bypassed by a stage that does not exist yet. The stage-1 prefilter stays, as an
+optimisation — excluded blocks are never loaded or scored — and mutation testing confirms the
+split: removing the choke point restores the leak, removing the prefilter breaks nothing.</p>
+<p><strong>The suggested invariant is now a test</strong>, in the form you proposed: an excluded block appears
+in neither <code>blocks</code> nor <code>dropped</code>. It holds across elf's own 162-block corpus on five different
+queries.</p>
+<p><strong>On the count.</strong> <code>excluded_by_filter</code> is a property of the corpus and the frame — how many
+active blocks this frame bars — not a count of what a given query would otherwise have returned.
+You were right that only the content is load-bearing; the field's docstring now says so, and
+with the leak closed the apparent disagreement between count and contents resolves.</p>
+<p><strong>You can drop the hand-rolled ATTENTION workaround.</strong> <code>frame("attention")</code> no longer leaks, so
+over-fetch-and-filter is no longer required. Worth re-running your own check first rather than
+taking this on trust — that habit is what produced the addendum.</p>
+<hr />
+<h2 id="addendum-2-outcome-on-an-inbox-block-is-a-silent-zero">Addendum 2 — <code>outcome()</code> on an inbox block is a silent zero<a class="headerlink" href="#addendum-2-outcome-on-an-inbox-block-is-a-silent-zero" title="Permanent link">&para;</a></h2>
+<p>Found by an end-to-end learning-loop simulation, then confirmed by direct measurement on
+d86e6d62:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">cue</span><span class="o">=...</span><span class="p">)</span>     <span class="c1"># pending_consolidation=True</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">out</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">outcome</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">block_id</span><span class="p">],</span> <span class="mf">0.9</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># out.blocks_updated == 0, out.blocks_penalized == 0 - no error, no field naming the id</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">consolidate</span><span class="p">()</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">out2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">outcome</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">block_id</span><span class="p">],</span> <span class="mf">0.9</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># out2.blocks_updated == 1</span>
+</span></code></pre></div>
+<p><strong>Why this bites real agents:</strong> our theses are remembered at FILL time and consolidation runs at
+end-of-day housekeeping. Any position that resolves the same day it was opened - our first
+profitable trade did exactly this - fires <code>outcome()</code> at a block still in the inbox, and the
+credit vanishes with nothing reported. The caller cannot distinguish "wrong id" from "not yet
+consolidated" from "constitutional skip": all three return the same shape.</p>
+<p>This is the same pattern as the first report's organising idea - a reducing operation that does
+not say what it reduced. <code>OutcomeResult</code> already gained <code>skipped_constitutional</code>; the natural
+completion is:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">OutcomeResult</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">pending_inbox</span><span class="o">=</span><span class="p">[</span><span class="s2">"3f2a1b…"</span><span class="p">],</span> <span class="n">unmatched</span><span class="o">=</span><span class="p">[</span><span class="s2">"deadbeef…"</span><span class="p">])</span>
+</span></code></pre></div>
+<p>Our workaround: when <code>blocks_updated + blocks_penalized &lt; len(ids)</code>, consolidate and retry once.
+It works, but it makes the caller responsible for knowing WHY a count came up short, which is
+exactly the guessing the result type should remove.</p>
+<hr />
+<h2 id="addendum-3-cebc242e-task-has-issue-1-again-and-two-new-footguns-in-weighted-credit">Addendum 3 (cebc242e) — TASK has Issue 1 again, and two new footguns in weighted credit<a class="headerlink" href="#addendum-3-cebc242e-task-has-issue-1-again-and-two-new-footguns-in-weighted-credit" title="Permanent link">&para;</a></h2>
+<p>Pulled <code>elfmem_index</code> @ cebc242e for the <code>agent_name</code> fix (separate report). While rebuilding our
+credit-assignment layer on top of it, found one recurrence of an already-fixed issue and two new
+ones, both in territory this report hadn't covered before: weighting <code>outcome()</code> by retrieval
+relevance rather than applying it uniformly.</p>
+<h3 id="3a-task_frame-never-got-the-exclude_tag_patterns-fix">3a — <code>TASK_FRAME</code> never got the <code>exclude_tag_patterns</code> fix<a class="headerlink" href="#3a-task_frame-never-got-the-exclude_tag_patterns-fix" title="Permanent link">&para;</a></h3>
+<p>Issue 1's fix (<code>ATTENTION_FRAME.filters.exclude_tag_patterns=["self/constitutional"]</code>) was scoped
+to ATTENTION. <code>TASK_FRAME</code> still ships <code>filters=FrameFilters()</code> — no exclusion — with the
+identical structural cause Issue 1 named: principles are semantically close to any reasoning-shaped
+query, carry PERMANENT decay, and TASK's own <code>guarantees=["self/goal"]</code> forces exactly one of them
+in regardless. Measured on our corpus, worse than Issue 1's original numbers:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>SELF:      11 blocks (10 constitution + identity)
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>TASK:       5 blocks — ALL FIVE already present in SELF. Zero unique.
+</span></code></pre></div>
+<p>Every TASK recall, on every query we tried, returned a strict subset of SELF. Not "crowded" —
+<em>total</em> capture. Cost us real tokens (TASK's block text was being appended a second time under a
+different heading until we caught it — a caller-side fix, not asking for one here) and, more to
+the point of this report, would have double-weighted five of eleven principles against the other
+six had we not deduped before crediting.</p>
+<p><strong>Suggested fix:</strong> the one already proven. <code>TASK_FRAME.filters = FrameFilters(exclude_tag_patterns=
+["self/constitutional"])</code>, same as ATTENTION. If <code>guarantees=["self/goal"]</code> is meant to survive
+that filter (i.e. the one guaranteed goal-tagged block should still render even if it also carries
+<code>self/constitutional</code>), the addendum's own resolved mechanism — enforce the exclusion once at
+final candidate selection, downstream of guarantees — already handles that ordering; it would just
+need to run for TASK too.</p>
+<h3 id="3b-scoredblocksimilarity-outcomeweight-is-a-footgun-for-the-natural-weighted-credit-pattern">3b — <code>ScoredBlock.similarity</code> + <code>outcome(weight=)</code> is a footgun for the natural weighted-credit pattern<a class="headerlink" href="#3b-scoredblocksimilarity-outcomeweight-is-a-footgun-for-the-natural-weighted-credit-pattern" title="Permanent link">&para;</a></h3>
+<p>We wanted <code>outcome()</code>'s <code>weight</code> to reflect how well each recalled block matched the query that
+produced the decision it is now being credited or debited for — a block barely retrieved should
+move less than one retrieved as the top hit. <code>ScoredBlock.similarity</code> reads as exactly that
+number, so the natural first attempt was <code>weight=block.similarity</code>.</p>
+<p>That crashes on the first call with a non-trivial result set. Measured directly, confirmed with a
+contract test we now run against every version bump:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">fr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">"attention"</span><span class="p">,</span> <span class="s2">"NVDA options setup"</span><span class="p">)</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">sims</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">similarity</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">fr</span><span class="o">.</span><span class="n">blocks</span><span class="p">]</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nb">min</span><span class="p">(</span><span class="n">sims</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span>   <span class="c1"># holds on every multi-block recall we tried, every query</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">max</span><span class="p">(</span><span class="n">sims</span><span class="p">)</span> <span class="o">==</span> <span class="mf">1.0</span>
+</span></code></pre></div>
+<p>and independently:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">await</span> <span class="n">system</span><span class="o">.</span><span class="n">outcome</span><span class="p">([</span><span class="n">block_id</span><span class="p">],</span> <span class="mf">0.9</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"t"</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># ValueError: weight must be &gt; 0.0, got 0.0</span>
+</span></code></pre></div>
+<p><code>similarity</code> is relative <em>within one recall</em> — it is not a portable relevance score, and it is
+guaranteed to bottom out at 0.0 for the worst-matching block of any result set with more than one
+candidate. (Addendum 1 already names this in passing — constitutional blocks "arrive with
+<code>similarity=0.0</code>" — which is the same fact from the other side.) So <code>weight=similarity</code> isn't an
+edge case an integrator might hit; it is guaranteed to fail on essentially every real recall,
+for the single most natural way to use the field.</p>
+<p>Our workaround is a floor: <code>weight = 0.25 + 0.75 * clamp(similarity, 0, 1)</code>, chosen only so the
+best match still carries 4x the worst and nothing hits zero. It works, but the ratio and the floor
+are both invented at our layer with no signal from the library about what a reasonable choice is.</p>
+<p><strong>Suggested fix, either:</strong>
+1. Document the interaction explicitly wherever <code>ScoredBlock.similarity</code> and <code>outcome(weight=)</code>
+   are both mentioned — the guide, the <code>ScoredBlock</code> docstring, or <code>outcome()</code>'s own — so the next
+   integrator doing the obvious thing hits documentation instead of a stack trace.
+2. Consider whether <code>outcome()</code> should clamp a very small or zero positive weight rather than
+   raise, since <code>weight</code> is continuous everywhere else in the API and a hard floor at a single
+   forbidden point (<code>0.0</code>) is an unusual contract for a float parameter. We are not confident this
+   is the right call — <code>weight&lt;=0</code> failing loudly instead of silently no-op'ing has real value —
+   which is why this is ranked below (1).</p>
+<h3 id="3c-signal05-reads-as-neutral-and-is-not-for-any-block-not-already-at-05">3c — <code>signal=0.5</code> reads as neutral and is not, for any block not already at 0.5<a class="headerlink" href="#3c-signal05-reads-as-neutral-and-is-not-for-any-block-not-already-at-05" title="Permanent link">&para;</a></h3>
+<p>Separate from Issue 2 (which is about which blocks should be excluded from scoring at all): for
+blocks we DO want to score, we needed a way to say "this outcome teaches nothing about whether
+these blocks are trustworthy" — our own "profited on a thesis we know was wrong" case, where
+crediting the view would learn the wrong lesson from a lucky trade. <code>signal</code> is documented as
+<code>[0.0, 1.0]</code>, so the natural encoding of "neither confirms nor refutes" is the midpoint, 0.5.</p>
+<p><code>outcome()</code>'s own docstring gives the exact update math (<code>α += weight·signal</code>, <code>β += weight·(1
+-signal)</code>, confidence = α/(α+β)) precisely enough that this is derivable — but it does not say
+outright that 0.5 is not a no-op, and we did not derive it until we measured it against real
+blocks and found the sign was backwards from what we expected:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">compute_bayesian_update_ab</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>   <span class="c1"># a block at confidence 1.0</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># -&gt; confidence 0.750   (moved DOWN 0.250)</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">compute_bayesian_update_ab</span><span class="p">(</span><span class="mf">3.1</span><span class="p">,</span> <span class="mf">7.9</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>   <span class="c1"># a block at confidence ~0.28</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># -&gt; confidence 0.300   (moved UP 0.018)</span>
+</span></code></pre></div>
+<p>Applying our "neutral" signal punished the high-confidence block and rewarded the low-confidence
+one — the update pulls every block toward 0.5 from wherever it already sits, so 0.5 is neutral
+only for a block already AT 0.5. For anything else it is a direction, same as any other value.
+Our fix was simply not calling <code>outcome()</code> for those cases — "teaches nothing" turned out to mean
+"apply nothing," which the API already supports, we just had not realised the alternative (a
+"real" 0.5 call) actively does harm rather than doing nothing.</p>
+<p><strong>Suggested fix:</strong> one sentence in <code>outcome()</code>'s docstring, right next to the update-math
+paragraph that already explains everything needed to derive this: <em>"signal=0.5 is not a neutral
+no-op — it pulls every block's confidence toward 0.5 from wherever it currently sits. To apply no
+information, do not call <code>outcome()</code> for those block ids."</em> The math was already fully documented;
+the one missing sentence is the one that would have stopped us acting on the natural but wrong
+reading of it.</p>
+<h3 id="updated-concrete-asks">Updated concrete asks<a class="headerlink" href="#updated-concrete-asks" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Change</th>
+<th>Effort</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6</td>
+<td><code>TASK_FRAME.filters.exclude_tag_patterns=["self/constitutional"]</code></td>
+<td>tiny</td>
+<td>Same fix as #2, unapplied to the other frame with the identical vulnerability - TASK is currently 100% captured, not just crowded</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Document the <code>similarity</code> / <code>outcome(weight=)</code> interaction (guaranteed 0.0 in any multi-block recall vs. <code>weight&lt;=0</code> rejected)</td>
+<td>tiny</td>
+<td>The obvious first implementation of weighted credit assignment crashes on its first real call</td>
+</tr>
+<tr>
+<td>8</td>
+<td>One sentence in <code>outcome()</code>'s docstring: <code>signal=0.5</code> is not a no-op</td>
+<td>tiny</td>
+<td>The update math is already fully documented; only the natural-but-wrong reading of it is not warned against</td>
+</tr>
+</tbody>
+</table>
+<p>All three are documentation or a one-line filter change - no new API surface, and #6 reuses a
+mechanism the library already ships and already proved correct for ATTENTION.</p>
+<hr />
+<h2 id="resolution-of-addendum-3-one-fix-two-documentation-gaps-and-one-corrected-premise">Resolution of Addendum 3 — one fix, two documentation gaps, and one corrected premise<a class="headerlink" href="#resolution-of-addendum-3-one-fix-two-documentation-gaps-and-one-corrected-premise" title="Permanent link">&para;</a></h2>
+<p>All three actioned. Each claim was reproduced against elf's own corpus before
+anything changed, which is what turned up the correction in 3b.</p>
+<p><strong>6 — <code>TASK_FRAME</code> exclusion: shipped.</strong> ATTENTION and TASK now share one
+declaration (<code>IDENTITY_TAGS</code> / <code>IDENTITY_EXEMPT_TAGS</code> in <code>context/frames.py</code>)
+rather than repeating the pattern, so a third frame added later inherits the
+decision instead of rediscovering it. Your read of the ordering was right: the
+resolved mechanism already handles it. <code>recall()</code> resolves
+<code>excluded_ids -= guaranteed_ids</code>, so a block tagged both <code>self/goal</code> and
+<code>self/constitutional</code> keeps its guaranteed slot.</p>
+<p>That ordering also made this safe to ship against a live frame, and the check
+is worth stating because it cuts the other way on your corpus and ours.
+Measured on elf's own corpus, where the consolidating LLM has applied
+<code>self/goal</code> broadly, <strong>the change is a byte-for-byte no-op</strong> — every block TASK
+returns is goal-tagged, therefore guaranteed, therefore protected from the
+filter. On yours, where principles are not goal-tagged, it removes them. Both
+outcomes are correct: the filter only ever removes identity that no <code>self/goal</code>
+declaration is protecting. If a specific block should stay in TASK, tagging it
+<code>self/goal</code> is the escape hatch — and it is the more accurate tag anyway.</p>
+<p><strong>7 — <code>similarity</code> / <code>outcome(weight=)</code>: documented, and your model of it was
+half right in a way that matters.</strong> <code>ScoredBlock</code> had <em>no</em> field documentation
+at all, which is the actual root cause. It now does. But the correction:</p>
+<blockquote>
+<p><code>min(sims) == 0.0</code> holds on every multi-block recall we tried, every query</p>
+</blockquote>
+<p>This is not generally true, and the reason it held for you is not "relative
+within one recall". Measured on elf's corpus: <code>n=5 min=0.9051 max=1.0000</code>. Two
+independent mechanisms are at work:</p>
+<ul>
+<li><strong><code>0.0</code> is a sentinel, not a floor.</strong> It means "vector search never scored
+  this" — a queryless frame (SELF scores every block 0.0; there is no query to
+  be similar to) or a block pulled in by graph expansion rather than the query
+  (<code>was_expanded=True</code>, which is the discriminator). It is not the bottom of a
+  normalised range.</li>
+<li><strong><code>1.0</code> is RRF-normalised</strong>, not a perfect cosine — when BM25 has signal the
+  scores are rank-fused and scaled so the top block is exactly 1.0, and the
+  rest land in a <em>narrow band</em> rather than spreading across [0, 1].</li>
+</ul>
+<p>Which means your mitigation does not do what it was designed to do.
+<code>0.25 + 0.75 * similarity</code> was chosen so the best match carries 4× the worst;
+against a 0.905–1.0 band it yields <strong>1.08×</strong>, and on any queryless frame every
+block gets exactly 0.25 — a uniform weight. It never crashes again, so the
+symptom is gone, but the weighting is close to inert. Rank order within
+<code>result.blocks</code> is the portable signal; <code>similarity</code> is not, and <code>score</code> is a
+composite ranking blend rather than semantic similarity (a high <code>score</code> against
+an unrelated query is normal, not a bug — now documented too).</p>
+<p>We did <strong>not</strong> take option (2), softening <code>weight&lt;=0</code> to a clamp — your
+instinct to rank it second was right, and it now has a stated reason: a
+zero-weight call is a caller bug worth failing on, and softening it would blur
+the rule below.</p>
+<p><strong>8 — <code>signal=0.5</code>: documented, exactly as measured.</strong> Confirmed against the
+real function: <code>(1.0, 0.0)</code> → 0.75 (DOWN), <code>(3.1, 7.9)</code> → 0.30 (UP),
+<code>(1.0, 1.0)</code> → 0.5 (unmoved).</p>
+<p>Both 7 and 8 turned out to be the same gap stated twice, so they are documented
+as one rule in <code>outcome()</code>'s docstring and <code>guide("outcome")</code>:
+<strong>to apply no information, do not call <code>outcome()</code>.</strong> There is no parameter
+value meaning "no update", and both candidates look like one — <code>signal=0.5</code> is
+a direction whose sign depends on the block rather than the signal, and
+<code>weight=0.0</code> is rejected outright. Your own resolution ("teaches nothing turned
+out to mean apply nothing") is the correct one, and is now what the library
+says.</p>
+<p>Pinned by tests so the documentation cannot quietly drift from the behaviour:
+the sentinel on queryless and expanded blocks, the <code>ValueError</code> the obvious
+weighting hits, the block-dependent direction of <code>signal=0.5</code>, TASK's exclusion
+and the guarantee that overrides it.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

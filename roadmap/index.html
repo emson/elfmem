@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -651,10 +651,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v020-production-signal-response" class="md-nav__link">
+  <a href="#v021-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.20 — Production signal response
+        📋 v0.21 — Production signal response
       
     </span>
   </a>
@@ -727,6 +727,17 @@
     <span class="md-ellipsis">
       
         🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#goal-directed-edge-metabolism-tier-2-edges-via-self-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Goal-directed edge metabolism (tier-2 edges via self frame)
       
     </span>
   </a>
@@ -946,34 +957,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2375,10 +2358,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v020-production-signal-response" class="md-nav__link">
+  <a href="#v021-production-signal-response" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📋 v0.20 — Production signal response
+        📋 v0.21 — Production signal response
       
     </span>
   </a>
@@ -2451,6 +2434,17 @@
     <span class="md-ellipsis">
       
         🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#goal-directed-edge-metabolism-tier-2-edges-via-self-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Goal-directed edge metabolism (tier-2 edges via self frame)
       
     </span>
   </a>
@@ -2604,9 +2598,11 @@
 What's shipped, what's next, what we've considered and explicitly rejected.</p>
 <p><strong>What this is not</strong>: a calendar. elfmem is solo OSS. Dates are illustrative;
 sequence is what matters.</p>
-<p><strong>Last reviewed</strong>: 2026-05-25 (post-v0.19.0 release; original v0.19
-production-signal slot shifted to v0.20). Reviewed quarterly. Open
-issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
+<p><strong>Last reviewed</strong>: 2026-08-28 (v0.20.0 merge-readiness pass — moved the v2
+substrate entry from "In Progress" to "Recently Released" now that it's
+shipping; renumbered the pre-empted "Production signal response" item to
+v0.21, since v0.20 is now this release). Reviewed quarterly.
+Open issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfmem/issues</a>.</p>
 </blockquote>
 <hr />
 <h2 id="project-axioms">Project axioms<a class="headerlink" href="#project-axioms" title="Permanent link">&para;</a></h2>
@@ -2662,6 +2658,11 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>✅ <strong>v0.20.0</strong></td>
+<td><strong>v2 substrate — file-backed memory, direct edit primitives, review over auto-archival.</strong> The largest release since v0.19.3, spanning ADRs 0009–0013. Direct memory management (<code>edit()</code>/<code>forget()</code>/<code>ls()</code>/<code>inbox()</code>, explicit and no-LLM); the markdown file substrate itself (<code>.elfmem/memory/**.md</code>, <code>elfmem migrate</code> export → cutover with a git-history undo path, <code>elfmem index rebuild/parity</code>); corpus &amp; constitutional review replace silent archival (<strong>breaking</strong>: decay-driven archival retired, ADR 0009); pairwise LLM contradiction detection at consolidate-time retired for near-zero realized value (<strong>breaking</strong>, ADR 0010); <code>elfmem init --seed</code> now defaults to off (<strong>breaking</strong>); provider flexibility (<code>api_key_env</code>, <code>.env</code> auto-discovery, <code>doctor --resolve</code>); host-supplied analysis (<code>dream(host_analyses=...)</code>); frame isolation and credit-assignment protection — ATTENTION no longer returns <code>self/constitutional</code> blocks and <code>outcome()</code> no longer scores them (<code>docs/frames_and_credit_assignment_report.md</code>); write-path visibility — every stage that reduces what the caller asked for now reports it (<code>FrameResult.dropped</code>, <code>elfmem doctor --frames</code>, <code>docs/integration_friction_report.md</code>); the SELF frame's preamble now reads <code>project.agent_name</code> instead of hardcoding "elf" (<code>docs/self_preamble_naming_report.md</code>), with <code>elfmem migrate</code> offering to set it explicitly. See <a href="CHANGELOG.md">CHANGELOG.md</a> for the full itemized list.</td>
+<td>2026-08-28</td>
+</tr>
 <tr>
 <td>✅ <strong>v0.19.3</strong></td>
 <td>MCP entry default, drift detection, and migration — <code>mcp_json_snippet()</code> now resolves the running <code>elfmem</code> executable to an absolute path instead of a bare <code>"elfmem"</code> string (broke on project-local <code>uv</code> venvs); <code>elfmem serve --env-file</code> reliably delivers API keys to the spawned MCP subprocess instead of silently degrading to mock/no-op behaviour; <code>elfmem migrate</code>/<code>doctor --migrate-mcp</code> now scan the real <code>~/.claude.json</code> (previously omitted) and its nested <code>projects[path].mcpServers</code> shape, with a new drift check catching an MCP entry wired to a <em>different</em> project's config. Unplanned, bug-driven — found via elfmem's own dev instance drifting to an unrelated config/db with peer messaging silently broken (<a href="https://github.com/emson/elfmem/pull/81">#81</a>, <a href="docs/decisions/0008-mcp-entry-default.md">ADR 0008</a>)</td>
@@ -2727,20 +2728,22 @@ issues at <a href="https://github.com/emson/elfmem/issues">github.com/emson/elfm
 <p>See <a href="CHANGELOG.md">CHANGELOG.md</a> for full history.</p>
 <hr />
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
-<h3 id="v020-production-signal-response">📋 v0.20 — Production signal response<a class="headerlink" href="#v020-production-signal-response" title="Permanent link">&para;</a></h3>
+<h3 id="v021-production-signal-response">📋 v0.21 — Production signal response<a class="headerlink" href="#v021-production-signal-response" title="Permanent link">&para;</a></h3>
 <blockquote>
-<p>Originally slated as v0.19. Pre-empted by v0.19.0 peer-protocol hardening
-(an unplanned signal from elf's own peer-messaging usage; see "Recently
-Released" above and <a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>).
-v0.19.2 (consolidation checkpointing) and v0.19.3 (MCP entry default +
-drift migration) also slotted in ahead of this without renumbering it —
-the telemetry gate is unchanged — date-bound, not version-bound.</p>
+<p>Originally slated as v0.19, then v0.20. Pre-empted twice: first by v0.19.0
+peer-protocol hardening (an unplanned signal from elf's own peer-messaging
+usage; see "Recently Released" above and
+<a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a>), then by v0.20.0
+claiming the number for the v2 substrate release (unplanned in scope,
+already in flight when this section was last written). v0.19.2/v0.19.3 also
+slotted in ahead of this without renumbering it — the telemetry gate below
+is unchanged either time — date-bound, not version-bound.</p>
 </blockquote>
-<p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open. Concrete v0.20 scope depends on:
+<p>v0.17 (sufficient stats + scoring bundle) shipped 2026-05-23. v0.18 (manual constitutional review) shipped 2026-05-23. Telemetry window for both now open (past the ~2026-08-24 gate below as of this release). Concrete v0.21 scope depends on:
 - Dmitry's follow-up answer (postponed until we have something substantive — draft preserved in <a href="docs/plans/archive/plan_memory_scoring.md#appendix---draft-follow-up-question-for-dmitry-issue-50">archived plan</a>)
 - ≥3 months of v0.17 + v0.18 telemetry from real instances (i.e., not before ~2026-08-24)
 - Any newly-observed systematic failure modes — especially around the new amendment loop</p>
-<p>Possible v0.20 candidates (each requires its own ADR before committing):
+<p>Possible v0.21 candidates (each requires its own ADR before committing):
 - <strong>Amendment loop tuning</strong> if v0.18 defaults are off (drift_threshold, cooldown_hours, max_proposals)
 - <strong>Stronger rescore tuning</strong> if v0.17 defaults need adjustment
 - <strong>Scheduled review triggers</strong> — <code>dream(review=True)</code> integration so review is part of the deep-sleep rhythm rather than a manual ritual (only if production data shows manual cadence is too sparse)</p>
@@ -2761,7 +2764,7 @@ the telemetry gate is unchanged — date-bound, not version-bound.</p>
 <h3 id="multi-context-work-self-vs-personal-self">🔍 Multi-context (work-self vs personal-self)<a class="headerlink" href="#multi-context-work-self-vs-personal-self" title="Permanent link">&para;</a></h3>
 <p>Per-tag parameter sets or per-frame overrides. Real demand: unconfirmed. Filed for tracking only.</p>
 <h3 id="multi-parameter-self-tuning-issue-73">🔍 Multi-parameter self-tuning (<a href="https://github.com/emson/elfmem/issues/73">issue #73</a>)<a class="headerlink" href="#multi-parameter-self-tuning-issue-73" title="Permanent link">&para;</a></h3>
-<p><code>ConsolidationPolicy</code> adapts only <code>effective_threshold</code>; the four other consolidation knobs (edge score, contradiction, prefilter, decay-λ) remain static constants. The full design space (5 architectures, 4 scenarios) was explored in <a href="docs/plans/issue_self_tune_research.md"><code>docs/plans/issue_self_tune_research.md</code></a>; every adaptive variant fails on axioms 1 ("no magic numbers") or 3 ("ship minimum, earn each layer"), consistent with <a href="docs/decisions/0003-defer-constitutional-evolution.md">ADR 0003</a>'s prior deferral of self-architecting parameter search. Decision recorded in <a href="docs/decisions/0006-defer-multi-parameter-self-tuning.md">ADR 0006</a>.</p>
+<p><code>ConsolidationPolicy</code> adapts only <code>effective_threshold</code>; <code>edge_score_threshold</code> and decay-λ remain static constants (contradiction detection and its prefilter were retired entirely — <a href="docs/decisions/0010-retire-pairwise-contradiction-detection.md">ADR 0010</a> — so they're no longer knobs to tune at all). The full design space (5 architectures, 4 scenarios) was explored in <a href="docs/plans/issue_self_tune_research.md"><code>docs/plans/issue_self_tune_research.md</code></a>; every adaptive variant fails on axioms 1 ("no magic numbers") or 3 ("ship minimum, earn each layer"), consistent with <a href="docs/decisions/0003-defer-constitutional-evolution.md">ADR 0003</a>'s prior deferral of self-architecting parameter search. Decision recorded in <a href="docs/decisions/0006-defer-multi-parameter-self-tuning.md">ADR 0006</a>.</p>
 <p>Observability-only delta shipped: <code>ConsolidationHealthMetrics</code> on <code>ConsolidateResult.health</code> (five diagnostic ratios). <strong>Triggers to reopen</strong>: ≥30 consecutive cycles of any health-metric field outside a sane band on a real deployment, OR concrete underperformance on MemoryAgentBench / LoCoMo traceable to a specific static threshold. The likely fix when triggered is making one constant a config-yaml override — not adaptive tuning.</p>
 <h3 id="peer-protocol-architectural-cleanup-phases-5-6-of-v019">🔍 Peer-protocol architectural cleanup (phases 5 &amp; 6 of v0.19)<a class="headerlink" href="#peer-protocol-architectural-cleanup-phases-5-6-of-v019" title="Permanent link">&para;</a></h3>
 <p><a href="docs/decisions/0005-peer-protocol-hardening.md">ADR 0005</a> deferred two phases from v0.19 because no current bug justified the blast radius. They unblock on trigger, not on a date:</p>
@@ -2778,6 +2781,22 @@ the telemetry gate is unchanged — date-bound, not version-bound.</p>
   beyond ~10 entries (federation noise becomes material), or federation to a
   product-elf at scale (per the cloud-architecture sketch in <code>note-to-alv</code>).</li>
 </ul>
+<h3 id="goal-directed-edge-metabolism-tier-2-edges-via-self-frame">🔍 Goal-directed edge metabolism (tier-2 edges via self frame)<a class="headerlink" href="#goal-directed-edge-metabolism-tier-2-edges-via-self-frame" title="Permanent link">&para;</a></h3>
+<p>Full plan: <a href="docs/plans/plan_edge_metabolism.md"><code>docs/plans/plan_edge_metabolism.md</code></a>.
+Extends <code>rescore()</code> (Deep Sleep) to propose connections judged against elf's
+own <code>self/goal</code> blocks, not just cosine similarity — ungated, correctable
+via <code>connect()</code>/<code>forget()</code>/amending self rather than a human-review step.</p>
+<p>This reopens a previously-deferred idea: <a href="docs/plans/archive/plan_memory_scoring.md"><code>plan_memory_scoring.md</code></a>
+explicitly deferred "Zettelkasten auto-linking" pending evidence that manual
+<code>connect()</code> is undertilised (checked against the real self-hosted DB — it
+is) and a way to validate LLM-judged links aren't phantom edges. <a href="docs/decisions/0010-retire-pairwise-contradiction-detection.md">ADR 0010</a>
+(2026-08-08) retired a different pairwise-LLM mechanism for measured
+near-zero realized value — the most recent and most directly cautionary
+precedent for this shape of feature.</p>
+<p><strong>Status</strong>: Stage A (read-only dry-run instrument, no schema change, no
+edge writes) approved and building. Stage B (live autonomous edge creation)
+requires reviewing Stage A's real output first — recorded as an open
+decision in the plan doc, to become ADR 0011 once resolved.</p>
 <hr />
 <h2 id="rejected">Rejected<a class="headerlink" href="#rejected" title="Permanent link">&para;</a></h2>
 <p>Things we considered and decided <strong>not</strong> to do. Documented so they aren't relitigated.</p>
@@ -2810,10 +2829,11 @@ the telemetry gate is unchanged — date-bound, not version-bound.</p>
 <h2 id="long-term-north-star">Long-term north star<a class="headerlink" href="#long-term-north-star" title="Permanent link">&para;</a></h2>
 <p>Not committed, but where this is heading.</p>
 <ul>
-<li><strong>v0.19</strong>: peer-protocol hardening (shipped/shipping — unplanned, signal-driven)</li>
-<li><strong>v0.20+</strong>: production signal response (originally v0.19; gated on ≥3 months of v0.17/v0.18 telemetry)</li>
-<li><strong>v0.21+</strong>: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed</li>
-<li><strong>v0.22+</strong>: earned architectural features (only the deferred items that empirical evidence supports)</li>
+<li><strong>v0.19</strong>: peer-protocol hardening (shipped — unplanned, signal-driven)</li>
+<li><strong>v0.20</strong>: v2 substrate — file-backed memory (shipped — unplanned in scope, see "Recently Released")</li>
+<li><strong>v0.21+</strong>: production signal response (originally v0.19, then v0.20; gated on ≥3 months of v0.17/v0.18 telemetry)</li>
+<li><strong>v0.22+</strong>: benchmarking against MemoryAgentBench / LoCoMo if calibration is needed</li>
+<li><strong>v0.23+</strong>: earned architectural features (only the deferred items that empirical evidence supports)</li>
 <li><strong>v1.0</strong>: public API freeze. Stable for years. Backwards-compatible changes only.</li>
 </ul>
 <p><strong>Discipline</strong>: every subsequent layer must be earned with evidence — not designed in advance.</p>
@@ -2905,7 +2925,7 @@ the telemetry gate is unchanged — date-bound, not version-bound.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

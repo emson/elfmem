@@ -1,0 +1,3236 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Adaptive memory for LLM agents — knowledge that gets used survives.">
+      
+      
+      
+        <link rel="canonical" href="https://emson.github.io/elfmem/research/v2_substrate_and_reasoning_ownership_research/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>elfmem v2 — Substrate, Retrieval, and Reasoning-Ownership Research - elfmem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#elfmem-v2-substrate-retrieval-and-reasoning-ownership-research" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="elfmem" class="md-header__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            elfmem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              elfmem v2 — Substrate, Retrieval, and Reasoning-Ownership Research
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SETUP_AND_CONFIG/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent_usage_patterns_guide/" class="md-tabs__link">
+          
+  
+  
+  Building Agents
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../amgs_architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-tabs__link">
+          
+  
+  
+  MCP Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../long_term_evolution/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../decisions/" class="md-tabs__link">
+          
+  
+  
+  Decisions (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../coding_principles/" class="md-tabs__link">
+          
+  
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../plans/" class="md-tabs__link">
+          
+  
+  
+  Design History
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="elfmem" class="md-nav__button md-logo" aria-label="elfmem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    elfmem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emson/elfmem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emson/elfmem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SETUP_AND_CONFIG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CLAUDE_CODE_INTEGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MULTIPLE_MCP_QUICK_REFERENCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiple MCP Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../multiple_mcp_steps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Steps Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Agents
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building Agents
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_usage_patterns_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cognitive_loop_operations_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cognitive Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operationalize_cognitive_loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operationalizing Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../amgs_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dreaming_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dreaming System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_connect_design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph & Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent_friendly_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent-First Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    MCP Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MCP_DOCUMENTATION_INDEX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../elfmem_tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    elfmem Tool Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../long_term_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Long-term Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoring_proposed_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoring Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory_scoring_survey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Scoring Survey
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methodology/longitudinal_evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology — Longitudinal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../graph_improvement_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Graph Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research_agent_patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Pattern Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualisation_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../simulation_behaviour_research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Behaviour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design_simulation_quick_ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation Quick Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0001-power-law-decay-rejected/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Power-law decay rejected
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0002-v017-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 v0.17 scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0003-defer-constitutional-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Defer constitutional evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0004-manual-constitutional-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Manual constitutional review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/0005-peer-protocol-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Peer-protocol hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Plans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#abstract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abstract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-evidence-from-the-live-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Evidence from the live instance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Evidence from the live instance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Cost
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-decay-is-arithmetically-inert-supersession-does-all-the-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Decay is arithmetically inert; supersession does all the work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-the-constitution-eroded-and-the-mechanism-is-identified-in-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 The constitution eroded, and the mechanism is identified in code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-expensive-subsystems-near-zero-realised-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Expensive subsystems, near-zero realised value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-root-causes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Root causes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-framing-the-two-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Framing the two questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-simulation-i-substrate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Simulation I — substrate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Simulation I — substrate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iterations-condensed-full-step-wise-traces-in-the-companion-plan-doc-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iterations (condensed — full step-wise traces in the companion plan doc §6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-external-validation-research-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. External validation — research sweep
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. External validation — research sweep">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-files-as-truth-db-as-index-is-not-a-compromise-position" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Files-as-truth, DB-as-index is not a compromise position
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-stable-identity-across-moves-is-genuinely-unsolved-with-one-exception-already-in-elfmem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Stable identity across moves is genuinely unsolved — with one exception already in elfmem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-query-type-routing-is-thin-evidence-dont-build-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Query-type routing is thin evidence — don't build it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-the-measured-win-is-on-the-write-path-not-the-read-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 The measured win is on the write path, not the read path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-worth-stealing-flagged-as-unverified-in-this-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Worth stealing, flagged as unverified in this sweep
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-honest-gaps-in-this-research-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 Honest gaps in this research pass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47-addendum-2026-08-08-filedirectory-organization-not-just-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 Addendum (2026-08-08) — file/directory organization, not just storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-simulation-ii-reasoning-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Simulation II — reasoning ownership
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Simulation II — reasoning ownership">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-ctx-precedent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The ctx precedent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-why-d-002-does-not-transfer-wholesale-to-elfmem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Why D-002 does not transfer wholesale to elfmem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-frozen-scenario-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Frozen scenario set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-consequences-worth-stating-plainly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Consequences worth stating plainly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-combined-target-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Combined target architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-gets-deleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What gets deleted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Migration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-sequencing-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Sequencing recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-residual-risks-and-honest-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Residual risks and honest caveats
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-open-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Open decisions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/emson/elfmem/edit/main/docs/research/v2_substrate_and_reasoning_ownership_research.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="elfmem-v2-substrate-retrieval-and-reasoning-ownership-research">elfmem v2 — Substrate, Retrieval, and Reasoning-Ownership Research<a class="headerlink" href="#elfmem-v2-substrate-retrieval-and-reasoning-ownership-research" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: research document — under review, not yet a plan
+<strong>Author</strong>: elf (Ben Emson, with Claude collaboration)
+<strong>Date</strong>: 2026-08-08
+<strong>Driver</strong>: four compounding operational problems reported directly by the maintainer —
+(1) memory blocks drift and cannot be directly edited or removed, (2) LLM consolidation
+cost feels disproportionate to the value delivered, (3) config/env-var resolution has
+caused repeated production incidents, (4) fresh installs seed unwanted content that is
+hard to remove. The question behind all four: is SQLite-backed block consolidation the
+right substrate at all, or should elfmem look more like plain markdown documents — and if
+neither extreme is right, what is?</p>
+<p><strong>Companion document</strong>: <a href="../../plans/plan_v2_substrate_reevaluation/"><code>docs/plans/plan_v2_substrate_reevaluation.md</code></a>
+— an earlier, narrower pass over the same evidence, written before the external research
+sweep (§4) and the reasoning-ownership simulation (§5) below. This document supersedes it
+as the entry point; the plan doc's block-format and migration detail still stand and are
+referenced rather than repeated.</p>
+<hr />
+<h2 id="abstract">Abstract<a class="headerlink" href="#abstract" title="Permanent link">&para;</a></h2>
+<p>We audited the live production instance of elfmem (the maintainer's own dev database,
+2026-04-07 to 2026-06-21) and found that its LLM-mediated consolidation pipeline spends a
+<strong>52x token amplification</strong> — 1.65M input tokens across 2,903 LLM calls — to maintain a
+31.6k-token active corpus, while the mechanism most responsible for removing content
+(near-duplicate supersession) silently destroyed 6 of 10 constitutional identity blocks
+over four months with no audit trail, no guard, and no undo. The decay/archival system
+built to <em>intentionally</em> remove stale content accounts for exactly one of the 42 archivals
+observed; the other 41 were this same silent-overwrite mechanism.</p>
+<p>We ran two sequential optimize-style simulations. The first (§3) tests the substrate
+question — SQLite-only vs. plain markdown vs. a hybrid — against a ten-scenario frozen
+set and converges on <strong>git-versioned markdown files as the source of truth, with SQLite
+demoted to a derived, disposable, zero-LLM-cost index</strong>. The second (§5), prompted by
+reviewing a sibling project's already-shipped design (<code>ctx</code>, a Claude Code Skill for
+markdown-vault context curation), tests where <em>reasoning</em> should live and converges on
+<strong>splitting elfmem into a deterministic index plus a small set of Claude Code Skills that
+borrow the host agent's own model instead of elfmem managing its own LLM credentials</strong>,
+with elfmem's own LLM gateway demoted to an optional path for the one case that still
+needs it — unattended, headless operation with no host agent present.</p>
+<p>An external research sweep (§4) independently corroborates the substrate direction (three
+unrelated 2026 systems converge on the same files-are-truth/index-is-derived shape) and
+the cost-reduction direction (a published paper measures the same write-time-to-corpus-
+level-review trade we propose, and it wins on quality <em>and</em> cost, not one for the other).
+It also surfaces one genuinely open problem the field has not solved — content identity
+that survives file edits, not just moves — which we resolve with a design already half-
+present in elfmem's existing code.</p>
+<p>We close with a combined target architecture, a deletion list, a non-destructive migration
+path, and eleven open decisions that are the maintainer's to make, not ours.</p>
+<hr />
+<h2 id="1-evidence-from-the-live-instance">1. Evidence from the live instance<a class="headerlink" href="#1-evidence-from-the-live-instance" title="Permanent link">&para;</a></h2>
+<p>All figures below are computed directly from <code>~/.elfmem/databases/elfmem.db</code>, not
+estimated. Full computation detail lives in the companion plan document §2; this section
+gives the figures load-bearing for the decisions in §3 and §5.</p>
+<h3 id="11-cost">1.1 Cost<a class="headerlink" href="#11-cost" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lifetime LLM calls</td>
+<td>2,903</td>
+</tr>
+<tr>
+<td>Lifetime LLM input tokens</td>
+<td>1,646,801</td>
+</tr>
+<tr>
+<td>Blocks ever created / active now</td>
+<td>185 / 140</td>
+</tr>
+<tr>
+<td>Live corpus size</td>
+<td>≈31,633 tokens</td>
+</tr>
+<tr>
+<td>LLM calls per surviving block</td>
+<td>20.7</td>
+</tr>
+<tr>
+<td>Input tokens per corpus token</td>
+<td><strong>52.1x</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At the ~14s/call latency the project's own <code>config.yaml</code> and ADR 0007 cite for local
+adapters, 2,903 calls is roughly 11 hours of compute to curate 32k tokens of text.</p>
+<h3 id="12-decay-is-arithmetically-inert-supersession-does-all-the-work">1.2 Decay is arithmetically inert; supersession does all the work<a class="headerlink" href="#12-decay-is-arithmetically-inert-supersession-does-all-the-work" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>archive_reason | count
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>---------------+------
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>superseded     |   41
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>decayed        |    1
+</span></code></pre></div>
+<p>The four-tier decay model exists to retire stale content gracefully over time. In four
+months of real use it retired one block. The session-aware activity clock reads 3.69 total
+active hours across 370 sessions (36s average) — recency at the STANDARD decay tier is
+still 0.96 after the instance's entire lifetime. Whatever reshapes this memory, it is not
+decay.</p>
+<h3 id="13-the-constitution-eroded-and-the-mechanism-is-identified-in-code">1.3 The constitution eroded, and the mechanism is identified in code<a class="headerlink" href="#13-the-constitution-eroded-and-the-mechanism-is-identified-in-code" title="Permanent link">&para;</a></h3>
+<p>6 of 10 seeded constitutional role slots (<code>self/role/&lt;name&gt;</code>) are gone; the 4 survivors
+hold different content than was seeded. The live mechanism is
+<code>operations/consolidate.py</code>'s <code>_collect_decisions</code>/<code>_apply_decisions</code> pair — not
+<code>memory/dedup.py::resolve_near_duplicate</code>, a near-identical function with the same
+"inherits nothing" character but zero callers in <code>src/</code>, which an earlier pass of this
+analysis mis-cited. At <code>near_dup_near_threshold = 0.90</code>, any incoming block within 0.90
+cosine of an existing one triggers a silent, unlogged, irreversible overwrite — no tier
+check, no pin check, no audit row, regardless of <code>self/constitutional</code> status or a
+Beta-confidence of 1.0. <code>update_block_status</code> additionally hard-deletes the archived
+block's tags, edges, and contradictions outright on the same call. Confirmation in the
+data: active blocks average 4.4 tags each; archived blocks average 0.17 — the blocks that
+died were the ones that never accumulated standing.</p>
+<h3 id="14-expensive-subsystems-near-zero-realised-value">1.4 Expensive subsystems, near-zero realised value<a class="headerlink" href="#14-expensive-subsystems-near-zero-realised-value" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Lifetime usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contradiction detection</td>
+<td>14 found, 12 unresolved; ~2/3 of all LLM calls</td>
+</tr>
+<tr>
+<td>Bayesian α/β outcome evidence (v0.17)</td>
+<td>6 records</td>
+</tr>
+<tr>
+<td>Constitutional review + amendments (v0.18)</td>
+<td>0 amendments</td>
+</tr>
+</tbody>
+</table>
+<h3 id="15-root-causes">1.5 Root causes<a class="headerlink" href="#15-root-causes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>RC1</strong> — no direct mutation API. <code>MemorySystem</code> exposes ~40 public methods; none is
+  edit, delete, or list. Every change to memory is a side effect of an LLM decision.</li>
+<li><strong>RC2</strong> — write-time pairwise LLM curation is the wrong shape at 31.6k-token scale. The
+  entire corpus fits in one prompt; one call can see everything at once, which 2,903
+  pairwise calls structurally cannot.</li>
+<li><strong>RC3</strong> — destructive operations have no audit trail and no undo, except on the one path
+  (constitutional amendments) explicitly designed with review in mind.</li>
+<li><strong>RC4</strong> — config resolution is multi-layered and partly implicit; API keys come from
+  neither <code>config.yaml</code> nor a documented chain but from SDK defaults, with <code>--env-file</code>
+  wired only to <code>serve</code>. v0.19.3 shipped specifically because an MCP entry silently drifted
+  to a different project's config.</li>
+<li><strong>RC5</strong> — <code>init --seed</code> defaults to on and writes ten prose blocks into memory before the
+  user has an opinion, with no way to remove them once consolidated.</li>
+</ul>
+<hr />
+<h2 id="2-framing-the-two-questions">2. Framing the two questions<a class="headerlink" href="#2-framing-the-two-questions" title="Permanent link">&para;</a></h2>
+<p>The maintainer's original question — "should this be plain markdown instead?" — turns out
+to bundle two independent design questions that the rest of this document treats
+separately, because they have different answers:</p>
+<ol>
+<li><strong>Where does the data live, and what's authoritative?</strong> (§3) — files vs. database vs.
+   hybrid.</li>
+<li><strong>Who does the reasoning that curates it, and does elfmem need to own an LLM
+   relationship at all?</strong> (§5) — elfmem's own adapters vs. borrowing a host agent.</li>
+</ol>
+<p>Collapsing these into one question ("markdown or not") obscures that the honest answer to
+each is different — the first resolves to a genuine hybrid, the second resolves to "it
+depends which of four distinct consumption modes is calling."</p>
+<hr />
+<h2 id="3-simulation-i-substrate">3. Simulation I — substrate<a class="headerlink" href="#3-simulation-i-substrate" title="Permanent link">&para;</a></h2>
+<p><strong>Goal</strong>: maximise control and correctness per unit of LLM cost, subject to being robust,
+flexible, and elegant.</p>
+<p><strong>Fitness dimensions</strong> (ranked): Control (can the operator deterministically change or
+remove any memory?) · Integrity (can memory be silently destroyed?) · Cost (LLM calls to
+maintain steady state) · Simplicity · Scale headroom.</p>
+<p><strong>Frozen scenario set</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Reword one constitutional principle</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Delete 3 unwanted seeded blocks</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>New block lands at 0.91 cosine to a pinned constitutional block</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>10 blocks learned in a batch; steady-state maintenance cost</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>Fresh install, new machine, local model only</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>API key absent; MCP server starts anyway</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Corpus grows 140 → 14,000 blocks</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>Two agents write concurrently</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Audit "what changed in memory last month"</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>Does the constitution survive 6 months?</td>
+</tr>
+</tbody>
+</table>
+<h3 id="iterations-condensed-full-step-wise-traces-in-the-companion-plan-doc-6">Iterations (condensed — full step-wise traces in the companion plan doc §6)<a class="headerlink" href="#iterations-condensed-full-step-wise-traces-in-the-companion-plan-doc-6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Iter</th>
+<th>Design</th>
+<th>Outcome</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Baseline (elfmem v0.19.3 as shipped)</td>
+<td>8 fail / 1 partial / 1 pass</td>
+<td>baseline</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add CRUD (<code>edit</code>/<code>forget</code>/<code>ls</code>) + pin guard + mutation log</td>
+<td>S1–S3, S9, S10 fixed; cost (S4) and simplicity untouched — a table, a column, three methods added on top of 23.5k LOC</td>
+<td>kept as emergency patch, not destination</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Move curation from per-block write-time to corpus-level review (one LLM call over the whole corpus, proposal file, human-approved apply)</td>
+<td>S4 drops from up to 110 calls to ~1–11; S7 improves (graceful degradation via chunking vs. unbounded O(n) pairwise); simplicity improves (deletes the contradiction loop and most of ADR 0007's checkpointing, which existed only to survive the path being removed)</td>
+<td>kept</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Files (<code>.elfmem/memory/**.md</code>) become authoritative; SQLite becomes a derived, rebuildable index; <code>self.md</code> is read directly, never enters the block table</td>
+<td>S1/S2 become file edits; <strong>S3 becomes structurally impossible</strong> — no supersession path can reach a file that was never a row; S5 fixed (nothing to remove because nothing was auto-added); S8 regresses to 🟡 (file conflicts vs. SQLite's clean WAL locking) — mitigated by an append-only log for fast ingestion, human-paced edits for curated notes</td>
+<td>kept, one accepted trade</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Profile-based LLM gateway (<code>api_key_env</code>, <code>api_key: none</code> for local endpoints), one printed config-resolution chain, boot-time preflight</td>
+<td>S6 fixed — preflight fails loudly instead of degrading silently; the specific v0.19.3 incident (MCP entry pointing at the wrong config) is caught at the root by <code>doctor --resolve</code> rather than patched at one call site</td>
+<td>kept — all dimensions green except the one accepted S8 trade</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Drop SQLite entirely — pure markdown + grep</td>
+<td>S7 regresses hard: no semantic retrieval, no context-budget mechanism at 14,000 blocks</td>
+<td><strong>rejected</strong> — confirms the index is not incidental, it is what buys the scale story</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Winner</strong>: Iteration 5. See §6 for the combined architecture; block format, mutation API,
+migration phases, and full scenario traces are detailed in the companion plan document.</p>
+<hr />
+<h2 id="4-external-validation-research-sweep">4. External validation — research sweep<a class="headerlink" href="#4-external-validation-research-sweep" title="Permanent link">&para;</a></h2>
+<p>A structured web research pass (decision-mode, 22 sources fetched, 15 claims independently
+verified by adversarial multi-vote before inclusion) was run against four questions: how
+named 2026 agentic-memory systems index file-based knowledge, whether any solve identity-
+continuity across file moves, whether query-type routing is an established pattern, and
+what's published on cost/quality tradeoffs at personal-corpus scale.</p>
+<h3 id="41-files-as-truth-db-as-index-is-not-a-compromise-position">4.1 Files-as-truth, DB-as-index is not a compromise position<a class="headerlink" href="#41-files-as-truth-db-as-index-is-not-a-compromise-position" title="Permanent link">&para;</a></h3>
+<p>Three independent, unrelated 2026 sources converge on the same architecture Iteration 4
+(§3) arrived at:</p>
+<ul>
+<li><strong>MOSS</strong> (arXiv 2607.04391, a production case study): <em>"The database is the map; the
+  documents are the territory."</em> The corpus "is never altered, chunked into oblivion, or
+  replaced by derived representations."</li>
+<li><strong>markdown-vault-mcp</strong> (<a href="https://github.com/pvliesdonk/markdown-vault-mcp">GitHub</a>): a
+  working MCP server — SQLite FTS5/BM25 + vector, fused by Reciprocal Rank Fusion — over an
+  untouched markdown vault.</li>
+<li><strong>Vault-LD</strong> (<a href="https://vault-ld.org/">vault-ld.org</a>): frontmatter resolved into RDF
+  triples, prose body left alone, "no database required" for the source of truth itself.</li>
+</ul>
+<p>Confidence: high, three independent 2-0 verified sources.</p>
+<h3 id="42-stable-identity-across-moves-is-genuinely-unsolved-with-one-exception-already-in-elfmem">4.2 Stable identity across moves is genuinely unsolved — with one exception already in elfmem<a class="headerlink" href="#42-stable-identity-across-moves-is-genuinely-unsolved-with-one-exception-already-in-elfmem" title="Permanent link">&para;</a></h3>
+<p>What's actually published: <strong>SHA256 content-hash change detection plus a boot-time
+reconciliation pass</strong> (markdown-vault-mcp, test-covered) — this answers "did this file
+change since I last indexed it," not "does this chunk's accumulated history (reinforcement
+count, decay clock, edges) survive being renamed, moved, or <em>edited</em>." No system in this
+sweep was shown to key chunk identity on a stable ID for continuity purposes across edits;
+the one claim asserting path-based identity semantics was independently refuted (0-2).</p>
+<p>This is where elfmem is ahead of the published field, not behind it: <code>compute_content_hash()</code>
+in <code>memory/blocks.py</code> already makes the block ID <code>sha256(content)[:16]</code> — already
+content-addressable. The gap the research surfaces: once free-form file editing is the
+whole point of §3's design, content-hash-as-ID breaks on every edit (new hash → new ID →
+lost history), which moves-only reconciliation never had to handle. <strong>Refinement to carry
+into §6</strong>: a permanent <code>id:</code> in frontmatter, assigned once, independent of content; the
+hash becomes a secondary field used only to detect "does this need re-embedding."</p>
+<h3 id="43-query-type-routing-is-thin-evidence-dont-build-it">4.3 Query-type routing is thin evidence — don't build it<a class="headerlink" href="#43-query-type-routing-is-thin-evidence-dont-build-it" title="Permanent link">&para;</a></h3>
+<p>Exactly one verified instance of "route structurally different query types differently
+against one corpus" exists: MOSS classifies each question as temporal / thematic /
+affective / personal / documentary and runs different SQL per type, on the stated
+principle that <em>"relevance is not a static property of stored items; it is a property of
+the question being asked."</em> It is a single unreplicated deployment (one person, ~44M
+tokens, ~1 year) with no ablation showing it beats one well-tuned hybrid strategy. Every
+other routing claim checked in this sweep — a four-bundle depth router, a "MemScheduler,"
+a coarse-to-fine hierarchy — <strong>failed independent verification</strong> against its own primary
+source.</p>
+<p>Implication for elfmem: the existing two-tier split (constitution = full inclusion, no
+ranking needed; everything else = one hybrid strategy) is not a lesser version of a fancier
+system — it is the reference architecture found in the literature. There is no published
+evidence that per-query-type routing on top of it would earn its complexity.</p>
+<h3 id="44-the-measured-win-is-on-the-write-path-not-the-read-path">4.4 The measured win is on the write path, not the read path<a class="headerlink" href="#44-the-measured-win-is-on-the-write-path-not-the-read-path" title="Permanent link">&para;</a></h3>
+<p><strong>SAGE</strong> (arXiv 2605.30711) measured, against underlying tables rather than an abstract,
+exactly the trade proposed in §3 Iteration 3: Mem0 and A-Mem invoke an LLM on every
+candidate fact regardless of novelty; SAGE gates with a cheap rule-based novelty check
+first. Result: best average token-F1 against Mem0 on 7 of 7 open-weight backbones tested,
+while cutting add-phase API cost 3.4x and add-phase latency 2.5x on GPT-4o-mini for a 1.3-
+point LLM-judge gap. This is independent, external, measured validation that moving
+curation off the per-item write-time path can win on quality <em>and</em> cost simultaneously,
+not trade one for the other.</p>
+<h3 id="45-worth-stealing-flagged-as-unverified-in-this-sweep">4.5 Worth stealing, flagged as unverified in this sweep<a class="headerlink" href="#45-worth-stealing-flagged-as-unverified-in-this-sweep" title="Permanent link">&para;</a></h3>
+<p>One source (Zep/Graphiti) reportedly never deletes a superseded fact — it marks the old
+one invalid with a timestamp and retains it. This is exactly the fix for §1.3's silent
+constitutional destruction, but the claim was not among the batch independently checked in
+this run (surfaced, not verified — treat as a pattern worth borrowing, not a confirmed
+citation). It costs almost nothing to adopt regardless: in a git-backed file world, "keep
+the old version with a timestamp" is git history, obtained for free.</p>
+<h3 id="46-honest-gaps-in-this-research-pass">4.6 Honest gaps in this research pass<a class="headerlink" href="#46-honest-gaps-in-this-research-pass" title="Permanent link">&para;</a></h3>
+<p>Despite asking directly, no claim about Zep/Graphiti, Letta/MemGPT, HippoRAG, or GraphRAG
+survived independent verification in this run — a gap in this sweep, not evidence those
+systems work some other way. The field is young (every surviving source dated Dec 2025–Aug
+2026); several are non-peer-reviewed preprints or vendor blogs (one vendor "state of the
+art" claim was explicitly checked and refuted). MOSS, the strongest single source for §4.1,
+is one deployment with no external replication.</p>
+<h3 id="47-addendum-2026-08-08-filedirectory-organization-not-just-storage">4.7 Addendum (2026-08-08) — file/directory organization, not just storage<a class="headerlink" href="#47-addendum-2026-08-08-filedirectory-organization-not-just-storage" title="Permanent link">&para;</a></h3>
+<p>§4.1–4.6 answered <em>where the data lives</em> (files vs. database). A separate paper — Zhou et
+al., <a href="https://arxiv.org/html/2607.26637v1">"Filesystem-Based Memory for LLM Agents: Organization, Evolution, and
+Sustainability"</a> (UIUC, UC San Diego, UC Merced, Adobe
+Research, Texas A&amp;M) — studies <em>how the files should be organized</em>, at 32k–128k token scale
+(comparable to elfmem's own 31.6k-token corpus, §1.1). Five claims below were verified
+directly against the primary text via WebFetch, not taken from the secondhand digest that
+prompted this addendum — confidence: high for all five.</p>
+<ul>
+<li><strong>The "Taxonomy Contract"</strong> (P1–P5, Section 2.1): sibling distinction (siblings
+  distinguishable by label alone), sibling relatedness (siblings belong together),
+  parent-child coverage (a parent covers its children), tree-wide proximity (distance
+  mirrors relatedness), structural economy (structure serves the search, not itself). A
+  concrete framework for §11 open decision 3 (one file per block vs. many-per-file) — the
+  answer isn't a fixed rule, it's "whichever satisfies P1–P5 for this content," decided and
+  periodically re-decided by <code>elf-review</code>, not fixed once at migration time.</li>
+<li><strong>Organization risk, not just organization benefit.</strong> The same agent-curated store shape
+  scored 86.1% on LoCoMo and 37.5% on PersonaMem 32k (Table 1) — organization choice can be
+  a large correctness risk depending on task type, not a safe aesthetic decision. Directly
+  strengthens why the companion plan's §8 Phase 4 migration gate (verify retrieval output
+  before flipping authority) is load-bearing, not optional ceremony.</li>
+<li><strong>Curator strength shapes style, not quality; searcher strength pays directly.</strong> On
+  PersonaMem 128k, correctness across three curator strengths was 73.8% → 66.7% → 71.4% —
+  not even monotone in model strength — while resulting store structure varied from 122 to
+  2 to 105 files (Section 4.3). Supports §5's <code>elf-review</code>/<code>elf-recall</code> split on independent
+  grounds: <code>elf-review</code> (curator) doesn't need a strong model; an agentic <code>elf-recall</code>
+  (searcher) does. If step 5's <code>api_key_env</code> gateway is ever used to route to a stronger
+  model somewhere, this is the evidence for where.</li>
+<li><strong>Taxonomy adherence erodes with growth except under the strongest curator</strong> (Section
+  4.4) — only the strongest management agent tested held organization at 140 accumulated
+  tasks; weaker curators visibly drifted. A concrete, named risk for <code>elf-review</code>: it should
+  check its own proposals against P1–P5 explicitly, not rely on unchecked LLM judgment
+  staying good over many cycles.</li>
+<li><strong>The tool harness is a control knob</strong>, reshaping the resulting store "as strongly as
+  swapping the model" (Section 4.5). Whatever mutation tools <code>elf-review</code> gets beyond
+  <code>edit</code>/<code>forget</code>/<code>ls</code> (§1 — a <code>move</code>/<code>split</code>/<code>merge</code> tool, say) is itself a design decision
+  with measured effect on outcome — worth treating deliberately when step 8 specs it, not
+  adding tools ad hoc.</li>
+</ul>
+<p>Source captured at
+<code>/Users/emson/Dropbox/vaults/elf_vault_proj/elf_vault/sources/papers/filesystem-based-memory-for-llm-agents.md</code>
+(2026-08-08).</p>
+<hr />
+<h2 id="5-simulation-ii-reasoning-ownership">5. Simulation II — reasoning ownership<a class="headerlink" href="#5-simulation-ii-reasoning-ownership" title="Permanent link">&para;</a></h2>
+<h3 id="51-the-ctx-precedent">5.1 The <code>ctx</code> precedent<a class="headerlink" href="#51-the-ctx-precedent" title="Permanent link">&para;</a></h3>
+<p><code>ctx</code> (<code>/Users/emson/Dropbox/vaults/skill_forge/skills/ctx</code>) is a shipped Claude Code
+Skill solving an adjacent problem — curating context from a personal markdown vault into a
+cited prompt — that made two decisions directly relevant here, one of which elfmem should
+adopt and one of which does not transfer:</p>
+<ul>
+<li><strong>D-001</strong>: it is a Skill, not an application with its own LLM client. Its own research
+  found <em>"most of a standalone app's plumbing — LLM gateway, key management, response
+  capture — exists only to connect the tool to an LLM the app doesn't otherwise have. A
+  skill runs inside an agent that already has all of it."</em> No adapters, no API key, no
+  gateway — the "judge" reasoning is whichever agent is running the skill.</li>
+<li><strong>D-002</strong>: no index, ever — live <code>ripgrep</code> on every query, backed by a citation that
+  agentic grep beats embedding search for literal-span recovery at personal-vault scale.</li>
+<li><strong>D-003</strong>: the compiler never lets an LLM rewrite curated text — deterministic
+  template-fill only, gated by a human checkbox worksheet that defaults checked (Claude may
+  <em>judge and suggest</em>, never <em>decide and include without review</em>).</li>
+</ul>
+<h3 id="52-why-d-002-does-not-transfer-wholesale-to-elfmem">5.2 Why D-002 does not transfer wholesale to elfmem<a class="headerlink" href="#52-why-d-002-does-not-transfer-wholesale-to-elfmem" title="Permanent link">&para;</a></h3>
+<p><code>ctx</code> is built for <strong>occasional, human-supervised, unranked</strong> retrieval — a human types a
+query a few times a day, reviews a worksheet, and the answer only needs to <em>match</em>, not be
+<em>ranked</em>, because a human is filtering it anyway. elfmem's primary consumption mode
+(<code>frame()</code>/<code>recall()</code> called by an autonomous agent loop, silently, every turn, with no
+human present) is <strong>frequent, autonomous, ranked</strong> — it must reflect recency, reinforcement
+history, and graph centrality, none of which grep can supply, and it cannot insert a
+checkbox review into an agentic loop without breaking the loop.</p>
+<h3 id="53-frozen-scenario-set">5.3 Frozen scenario set<a class="headerlink" href="#53-frozen-scenario-set" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Human, in a Claude Code session, asks "what do I know about X" — occasional</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Autonomous agent loop calls <code>frame('attention', query)</code> every turn, no human present</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Nightly cron runs <code>elfmem curate</code> — no session, no host agent</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>Peer agent (not Claude Code) queries elf's memory</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>elf records a new memory mid-task</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>Human reviews/dedupes memory (the RC1/RC3 fix from §1)</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>Corpus grows to 10,000+ chunks</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>A skill's LLM judge proposes a bad dedup — who catches it?</td>
+</tr>
+<tr>
+<td>S9</td>
+<td>Fresh install — does elfmem need an LLM API key on day one?</td>
+</tr>
+<tr>
+<td>S10</td>
+<td>A scheduled review is mid-flight while S2's autonomous loop also fires</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-iterations">5.4 Iterations<a class="headerlink" href="#54-iterations" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Iter</th>
+<th>Design</th>
+<th>Outcome</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Baseline: §3's winner (files + derived index + own LLM gateway for corpus review)</td>
+<td>S9 still fails — a solo user needs a key for a capability (review) they may never use headlessly</td>
+<td>baseline</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add <code>elf-review</code> — a Skill mirroring <code>ctx</code>'s Discover→Judge→Worksheet→Apply, reasoning done by the host agent</td>
+<td>S6/S8 strengthen (inherits <code>ctx</code>'s tested worksheet mechanics); S9 partly fixed (review no longer needs a key; S2–S5 still do)</td>
+<td>kept</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Go further: replace <code>frame()</code>/<code>recall()</code> themselves with a <code>ctx</code>-style skill, no index at all</td>
+<td><strong>S2 fails twice</strong> — no human present to checkbox-review an autonomous loop's every call, and grep alone cannot rank by recency/reinforcement/centrality; <strong>S3 fails</strong> — no host agent at 3am; <strong>S4 fails</strong> — a non-Claude-Code peer has no <code>SKILL.md</code> to invoke</td>
+<td><strong>rejected</strong> — confirms precisely where §5.2's prediction holds</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Split by consumption mode: <code>elf-review</code> (writes, human-gated) and <code>elf-recall</code> (read-only, literally <code>ctx</code> pointed at <code>.elfmem/memory/</code>, live grep, no index) for the occasional/human case; the index-backed MCP tools stay untouched for the autonomous/no-human case; the gateway shrinks to cover only S3</td>
+<td>S1 now genuinely good (proven mechanics, not a reimplementation); S9 fixed for the common case; new labelled risk <strong>S11</strong> — <code>elf-recall</code> (unranked grep) and <code>frame()</code> (ranked index) can disagree on the same question, mitigated by labelling <code>elf-recall</code>'s output as unranked</td>
+<td>kept</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Test dropping embeddings from the index too, per §4.1's own citation</td>
+<td>S2 regresses silently on vocabulary-mismatch queries (the exact "error handling" / "swallow exceptions silently" case worked through earlier in this investigation) — embeddings solve precisely this, and grep cannot</td>
+<td><strong>rejected as default</strong>; kept as an explicit <code>index.embeddings: auto\|always\|never</code> option, since <code>elf-recall</code> (Iteration 4) already covers the case where embeddings add nothing</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Winner</strong>: Iteration 4. <strong>Stopping reason</strong>: goal reached — every fitness dimension green
+with one labelled, mitigated risk (S11); Iteration 5 confirmed the boundary rather than
+finding a further improvement.</p>
+<h3 id="55-consequences-worth-stating-plainly">5.5 Consequences worth stating plainly<a class="headerlink" href="#55-consequences-worth-stating-plainly" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Not literally free</strong> — <code>elf-review</code>'s reasoning cost moves from elfmem's API bill to
+  the host session's context and turns. Real cost, just not a separate credential to
+  manage, and not double-paid.</li>
+<li><strong>Two retrieval paths now exist</strong> and can disagree (S11) — must stay legible, not hidden.</li>
+<li><strong>More artifacts, not fewer</strong> — a <code>SKILL.md</code> + scripts alongside the library/CLI/MCP
+  surface. §3 simplified elfmem's internals; §5 simplifies its LLM <em>ownership</em>, at the cost
+  of a second packaging format to maintain.</li>
+<li><strong>Peers stay on the protocol path</strong> — Alv/Mira were never going to invoke a <code>SKILL.md</code>;
+  they call the index directly and reason with their own model. Skills solve the
+  Claude-Code-specific slice of this, not the whole peer story.</li>
+<li><strong>Curator/searcher model strength should be asymmetric</strong> (§4.7) — external evidence that
+  <code>elf-review</code>'s reasoning strength barely moves correctness (it shapes organizational style
+  instead), while an agentic <code>elf-recall</code>'s strength pays off directly. Don't spend a
+  stronger model on the cheap, frequent operation; spend it on the one that's occasional and
+  actually reasoning-heavy.</li>
+</ul>
+<hr />
+<h2 id="6-combined-target-architecture">6. Combined target architecture<a class="headerlink" href="#6-combined-target-architecture" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>L0  SUBSTRATE     .elfmem/memory/**.md        git-versioned, hand-editable, AUTHORITATIVE
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                    self.md                   constitution — read directly, never a row, never superseded
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>                    notes/*.md                curated knowledge; each block carries a permanent
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>                                               frontmatter id (§4.2), independent of content hash
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>                    log/YYYY-MM.md            append-only fast path (mitigates S8 file conflicts)
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>L1  INDEX         .elfmem/index.db            DERIVED, disposable, rebuildable with zero LLM calls
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                                               embeddings (default on, §5.4) + FTS5/BM25 + graph + RRF
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                                               reinforcement/recency/centrality bookkeeping lives here
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>L2a SKILLS        elf-review                  Discover(index) → Judge(host LLM) → Worksheet → Apply
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>                  elf-recall                  ctx, pointed at .elfmem/memory/ — live grep, unranked,
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>                                               occasional/human-supervised only (labelled as such — S11)
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>L2b MCP TOOLS     frame() / recall()          index-backed, ranked, no human review — the autonomous,
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>                                               every-turn path; unchanged in spirit from today
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>L3  GATEWAY       optional                    only exercised by headless/no-host-agent operation
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>                  (profile-based, §3 Iter 5)  (S3: scheduled cron review with nobody watching)
+</span></code></pre></div>
+<p><strong>What each layer owns</strong>: L0 is truth. L1 is math (no LLM). L2a is reasoning borrowed from
+whichever agent invokes the skill, gated by a human checkbox before any write. L2b is
+reasoning-free ranked retrieval for the agentic loop. L3 is the fallback for the one
+scenario nothing else covers.</p>
+<p>Block/frontmatter format, the <code>edit()</code>/<code>forget()</code>/<code>ls()</code> API surface, config-resolution
+chain, <code>doctor --resolve</code> preflight design, and onboarding template detail are unchanged
+from the companion plan document §5 and §5.6–5.7, with the single refinement from §4.2
+(permanent <code>id:</code> separate from content hash) folded in.</p>
+<hr />
+<h2 id="7-what-gets-deleted">7. What gets deleted<a class="headerlink" href="#7-what-gets-deleted" title="Permanent link">&para;</a></h2>
+<p>Unchanged from the companion plan document's assessment (§7 there), with one addition from
+§5: most of the <code>LLMService</code> protocol's <code>process_block</code>/<code>detect_contradiction</code>/
+<code>propose_amendment</code> surface shrinks to a minimal interface used only by the now-optional L3
+gateway, since the primary interactive path no longer calls it at all.</p>
+<p>Roughly 8–11k of 23,500 source lines are candidates for removal on the evidence in §1 that
+they do no observable work on the one deployment audited: pairwise contradiction detection,
+decay tiers and <code>curate()</code> archival, near-dup supersession, the inbox/active/archived state
+machine, <code>rescue.py</code> and the embedding-model lock, and the ADR 0007 checkpointing machinery
+that exists only to survive the write-time path being removed.</p>
+<p>Each ADR governing a removed subsystem (0001, 0003, 0006, 0007) was sound given its
+premises; what changed is the evidence, not the reasoning. Each removal should carry its
+own ADR citing this document.</p>
+<hr />
+<h2 id="8-migration">8. Migration<a class="headerlink" href="#8-migration" title="Permanent link">&para;</a></h2>
+<p>Non-destructive, reversible, verified at each step — full six-phase sequence in the
+companion plan document §8 (export to markdown → commit → rebuild index → verify retrieval
+parity on 10 fixed queries → hand-restore lost constitutional roles → flip authority).
+Phase 4 (retrieval parity) is the gate; do not proceed past it on the assumption that a
+diverging ranking is "probably fine."</p>
+<hr />
+<h2 id="9-sequencing-recommendation">9. Sequencing recommendation<a class="headerlink" href="#9-sequencing-recommendation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Ship</th>
+<th>Fixes</th>
+<th>Risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Pin guard + supersession log</td>
+<td>stops active data loss (§1.3)</td>
+<td>trivial</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>edit()</code> / <code>forget()</code> / <code>ls()</code></td>
+<td>RC1</td>
+<td>low</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>doctor --resolve</code> + <code>.env</code> everywhere + preflight</td>
+<td>RC4</td>
+<td>low</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>init</code> writes zero blocks</td>
+<td>RC5</td>
+<td>low</td>
+</tr>
+<tr>
+<td>5</td>
+<td>LLM gateway profiles + <code>api_key_env</code></td>
+<td>OpenRouter/local support</td>
+<td>low</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>elfmem review</code> — corpus-level, proposal-only</td>
+<td>RC2</td>
+<td>medium</td>
+</tr>
+<tr>
+<td>7a</td>
+<td>Retire decay-driven block archival (ADR 0009)</td>
+<td>cost, complexity</td>
+<td>low</td>
+</tr>
+<tr>
+<td>7b</td>
+<td>Retire pairwise contradiction detection (ADR 0010)</td>
+<td>cost, complexity</td>
+<td>medium</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Markdown substrate + derived index</td>
+<td>structural (§3)</td>
+<td>high</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>elf-review</code> / <code>elf-recall</code> skills</td>
+<td>reasoning-ownership (§5)</td>
+<td>medium — depends on 8</td>
+</tr>
+</tbody>
+</table>
+<p>Step 7 split after grounding: decay's archival trigger and pairwise
+contradiction detection have different replacement-readiness (6a shipped
+before 7a; 6b, contradiction's replacement, has not shipped) and different
+blast radius (7a's mechanism was evidenced-inert in production; 7b's
+retirement accepts a disclosed coverage gap for new content). See ADR 0009
+and ADR 0010.</p>
+<p><strong>Steps 1–5 are worth doing regardless of whether steps 8–9 are ever taken</strong> — independently
+valuable, low-risk, each closes a reported problem on its own. Step 1 stops live data loss
+and should not wait on the rest of this document being decided.</p>
+<hr />
+<h2 id="10-residual-risks-and-honest-caveats">10. Residual risks and honest caveats<a class="headerlink" href="#10-residual-risks-and-honest-caveats" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every §1 figure is from one instance (solo use, 36s average sessions)</td>
+<td>The decay-is-inert finding specifically would weaken under longer sessions. What does <em>not</em> depend on instance-specifics: the missing edit API, the "inherits nothing" overwrite semantics, the 52x cost amplification, and <code>OPENAI_API_KEY</code>-only key resolution — those are properties of the code. Recommend pulling the same <code>lifetime_token_usage</code>/<code>archive_reason</code> breakdown from the Alv and Mira instances before committing to §3 Step 8.</td>
+</tr>
+<tr>
+<td>Concurrent file writes can conflict (S8, §3 Iter 4)</td>
+<td>Mitigated, not eliminated, by the append-only log split</td>
+</tr>
+<tr>
+<td>Whole-corpus review outgrows one context window as the corpus scales</td>
+<td>Not binding below ~2,000 blocks; needs a cluster-then-review fallback beyond that</td>
+</tr>
+<tr>
+<td><code>elf-recall</code> and <code>frame()</code> can disagree (S11, §5.4)</td>
+<td>Must stay legible — label unranked results as such</td>
+</tr>
+<tr>
+<td>§4's external research is young and thin in places</td>
+<td>Several sources are non-peer-reviewed preprints; the query-routing and stable-ID pillars specifically are single-source or unverified — treat as directional, not settled</td>
+</tr>
+<tr>
+<td>Markdown parsing is a new bug surface</td>
+<td>Strict format, fail-fast, <code>elfmem index --check</code></td>
+</tr>
+<tr>
+<td>This document's own convergence (files-as-truth confirmed by both simulation and external research) could be confirmation bias rather than independent triangulation</td>
+<td>The three external sources (§4.1) were found via a structured adversarial-verification research pass, not selected to confirm §3's conclusion — but the reader should weigh this themselves rather than take the alignment as proof</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-open-decisions">11. Open decisions<a class="headerlink" href="#11-open-decisions" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Emergency patch now, or wait for the full picture?</strong> Step 1 (§9) is a few lines and
+   stops live constitutional data loss today. Recommend shipping it standalone,
+   immediately, independent of any decision on the rest of this document.</li>
+<li><strong>Is <code>self.md</code>-as-file acceptable</strong>, given constitutional blocks currently participate
+   in retrieval scoring? Reading it as always-included preamble is Architecture M from
+   ADR 0003 — previously deferred, measured there at +33pp under drift, −7pp under
+   stability.</li>
+<li><strong>One file per block, or many blocks per file?</strong> §4.7's Taxonomy Contract (P1–P5) gives
+   this a real decision framework instead of a fixed global rule — decided per content area
+   and periodically re-checked by <code>elf-review</code>, not chosen once at migration time. This
+   document's working assumption (many-per-file with <code>##</code> headings, matching <code>ctx</code>'s
+   convention) is easier to browse but needs the sibling-distinction/relatedness checks
+   (P1/P2) to avoid becoming a junk drawer; one-per-file is simpler to parse and diff.</li>
+<li><strong>Do peer, mind, and amendment subsystems survive unchanged</strong>, or does this evidence
+   base warrant reassessing them too?</li>
+<li><strong>Should <code>elf-recall</code> literally depend on <code>ctx</code>, or fork its pattern?</strong> Sharing code
+   creates a cross-project dependency; forking duplicates a proven pipeline. <code>ctx</code>'s
+   read-only-vault invariant (D-004) does not hold for elfmem, since <code>elf-review</code> must
+   write — the two skills cannot simply share one script set unmodified.</li>
+<li><strong>Should embeddings default on or off</strong> (§5.4 Iteration 5)? Recommended default is on
+   for the index (silent degradation on vocabulary mismatch is worse than the cost of
+   embedding), off-by-default acceptable for <code>elf-recall</code> specifically.</li>
+<li><strong>Is the peer/multi-tool sharing case (§5.5, "peers stay on the protocol path") real
+   enough day-to-day to justify keeping the index/MCP layer at elfmem's current scale</strong>,
+   or would a single-tool, single-user deployment be better served by skipping straight to
+   <code>ctx</code>-style retrieval with no index at all? (Raised, not resolved, earlier in this
+   investigation — the honest answer depends on how load-bearing Alv/Mira sync actually is
+   in practice.)</li>
+</ol>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Live production database: <code>~/.elfmem/databases/elfmem.db</code> (queried 2026-08-04)</li>
+<li>Companion plan: <a href="../../plans/plan_v2_substrate_reevaluation/"><code>docs/plans/plan_v2_substrate_reevaluation.md</code></a></li>
+<li><code>ctx</code> skill: <code>/Users/emson/Dropbox/vaults/skill_forge/skills/ctx</code> (<code>SKILL.md</code>, <code>docs/decisions.md</code> D-001–D-005)</li>
+<li>MOSS: <a href="https://arxiv.org/pdf/2607.04391">arXiv 2607.04391</a></li>
+<li>markdown-vault-mcp: <a href="https://github.com/pvliesdonk/markdown-vault-mcp">github.com/pvliesdonk/markdown-vault-mcp</a></li>
+<li>Vault-LD: <a href="https://vault-ld.org/">vault-ld.org</a></li>
+<li>SAGE: <a href="https://arxiv.org/pdf/2605.30711">arXiv 2605.30711</a></li>
+<li>Memanto (architecture cited, benchmark claims refuted on independent check): <a href="https://arxiv.org/pdf/2604.22085">arXiv 2604.22085</a></li>
+<li>Zhou et al., "Filesystem-Based Memory for LLM Agents: Organization, Evolution, and
+  Sustainability" (Taxonomy Contract, §4.7): <a href="https://arxiv.org/html/2607.26637v1">arXiv 2607.26637v1</a></li>
+<li>Existing project ADRs referenced: 0001, 0003, 0006, 0007 (<code>docs/decisions/</code>)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/emson/elfmem" target="_blank" rel="noopener" title="elfmem on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/elfmem" target="_blank" rel="noopener" title="elfmem on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://emson.github.io/elfmem/MULTIPLE_MCP_QUICK_REFERENCE/">
       
       
-        <link rel="prev" href="../MCP_SERVER_SETUP/">
+        <link rel="prev" href="../CLAUDE_CODE_INTEGRATION/">
       
       
         <link rel="next" href="../multiple_mcp_steps/">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -666,34 +666,6 @@
     
   
     Claude Code
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MCP_SERVER_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
   
 
     
@@ -2557,8 +2529,8 @@
 <h2 id="current-setup">Current Setup ✓<a class="headerlink" href="#current-setup" title="Permanent link">&para;</a></h2>
 <h3 id="registered-mcp-servers">Registered MCP Servers<a class="headerlink" href="#registered-mcp-servers" title="Permanent link">&para;</a></h3>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;elfmem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.elfmem/default.db&quot;</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">el</span><span class="kc">f</span><span class="mi">0</span><span class="err">_mem_sim</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;movemyth_elfmem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.elfmem/movemyth.db&quot;</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">move_my</span><span class="kc">t</span><span class="err">h_proj</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">"elfmem"</span><span class="p">:</span><span class="w"> </span><span class="s2">"~/.elfmem/default.db"</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">el</span><span class="kc">f</span><span class="mi">0</span><span class="err">_mem_sim</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">"movemyth_elfmem"</span><span class="p">:</span><span class="w"> </span><span class="s2">"~/.elfmem/movemyth.db"</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">move_my</span><span class="kc">t</span><span class="err">h_proj</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="project-mappings">Project Mappings<a class="headerlink" href="#project-mappings" title="Permanent link">&para;</a></h3>
@@ -2596,14 +2568,14 @@
 </span></code></pre></div>
 <h3 id="step-2-update-global-config">Step 2: Update Global Config<a class="headerlink" href="#step-2-update-global-config" title="Permanent link">&para;</a></h3>
 <p>Edit: <code>~/.claude/claude_code_config.json</code></p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">&quot;&lt;PROJECT_NAME&gt;_elfmem&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uv&quot;</span><span class="p">,</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem.mcp&quot;</span><span class="p">],</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;ELFMEM_DB_PATH&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.elfmem/&lt;PROJECT_NAME&gt;.db&quot;</span><span class="p">,</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">&quot;ELFMEM_CONFIG_PATH&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.elfmem/&lt;PROJECT_NAME&gt;_config.yaml&quot;</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">"&lt;PROJECT_NAME&gt;_elfmem"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uv"</span><span class="p">,</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"run"</span><span class="p">,</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-m"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem.mcp"</span><span class="p">],</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">"ELFMEM_DB_PATH"</span><span class="p">:</span><span class="w"> </span><span class="s2">"~/.elfmem/&lt;PROJECT_NAME&gt;.db"</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">"ELFMEM_CONFIG_PATH"</span><span class="p">:</span><span class="w"> </span><span class="s2">"~/.elfmem/&lt;PROJECT_NAME&gt;_config.yaml"</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;alwaysAllow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;elfmem_recall&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_remember&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_outcome&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_dream&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_curate&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_status&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;elfmem_guide&quot;</span><span class="p">]</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">"alwaysAllow"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"elfmem_recall"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_remember"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_outcome"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_dream"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_curate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_status"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elfmem_guide"</span><span class="p">]</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="step-3-create-project-directory">Step 3: Create Project Directory<a class="headerlink" href="#step-3-create-project-directory" title="Permanent link">&para;</a></h3>
@@ -2624,13 +2596,13 @@
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="gu">## Available Operations</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="gs">**elfmem_recall(query, frame=&quot;attention&quot;, top_k=5)**</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="gs">**elfmem_recall(query, frame="attention", top_k=5)**</span>
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">-</span><span class="w"> </span>Retrieve knowledge (frames: self, attention, task, simulate)
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
 </span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="gs">**elfmem_remember(content, tags=[])**</span>
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="k">-</span><span class="w"> </span>Store knowledge with semantic tags
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="gs">**elfmem_outcome(block_ids, signal, source=&quot;&quot;)**</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="gs">**elfmem_outcome(block_ids, signal, source="")**</span>
 </span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">-</span><span class="w"> </span>Provide feedback (0.0-1.0) on retrieved blocks
 </span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>
 </span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="gs">**elfmem_dream(rescore=False, rescore_max=None, no_llm=False, skip_contradictions=False)**</span>
@@ -2645,7 +2617,7 @@
 </span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="gs">**elfmem_status()**</span>
 </span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="k">-</span><span class="w"> </span>View memory health
 </span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
-</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="gs">**elfmem_guide(topic=&quot;&quot;)**</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="gs">**elfmem_guide(topic="")**</span>
 </span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="k">-</span><span class="w"> </span>Get documentation
 </span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
 </span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="gs">**Theory of Mind (model other agents / users / stakeholders):**</span>
@@ -2670,7 +2642,7 @@
 </ul>
 <h3 id="step-6-test">Step 6: Test<a class="headerlink" href="#step-6-test" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Open the new project
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Invoke: elfmem_recall(&quot;test&quot;, frame=&quot;self&quot;)
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Invoke: elfmem_recall("test", frame="self")
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Should connect to ~/.elfmem/&lt;PROJECT_NAME&gt;.db
 </span></code></pre></div>
 <hr />
@@ -2679,12 +2651,12 @@
 <p><strong>No.</strong> One implementation serves all projects via different databases.</p>
 <h3 id="how-does-routing-work">How Does Routing Work?<a class="headerlink" href="#how-does-routing-work" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Project A opens
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  → System prompt says: use &quot;elfmem&quot;
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  → System prompt says: use "elfmem"
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  → Claude Code starts MCP server with ELFMEM_DB_PATH=default.db
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  → All calls use default.db
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>User switches to Project B
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  → System prompt says: use &quot;movemyth_elfmem&quot;
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  → System prompt says: use "movemyth_elfmem"
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  → Claude Code stops previous server
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  → Claude Code starts MCP server with ELFMEM_DB_PATH=movemyth.db
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>  → All calls use movemyth.db
@@ -2788,7 +2760,7 @@ In separate Claude Code windows: Yes (each manages its own MCP server).</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
